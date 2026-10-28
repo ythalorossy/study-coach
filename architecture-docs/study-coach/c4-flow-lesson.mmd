@@ -1,0 +1,24 @@
+---
+title: "Learner takes a lesson and answers the check question"
+---
+sequenceDiagram
+    actor learner as Learner
+    participant coach_web as Web app
+    participant src_coach as src/coach
+    participant coach_db as Coach database
+    participant src_agents as src/agents
+    participant ext_minimax as MiniMax API
+    participant src_subagents as src/subagents
+    participant src_tools as src/tools
+    participant docs_corpus as Docs corpus and fact sheets
+    learner->>coach_web: Starts a lesson for a skill (or lets the lead choose in an area)
+    coach_web->>src_coach: POST /api/sessions [JSON/HTTP]
+    src_coach->>coach_db: Inserts the session with its skills and area
+    coach_web->>src_agents: Opens /agents/coach/:sessionId and sends the learner's messages [Flue client]
+    src_agents->>ext_minimax: Lead instructor turn [HTTPS]
+    src_agents->>src_subagents: Delegates the scenario to the skill's specialist (task)#59; while a question waits for the learner, the specialist stays idle
+    src_subagents->>src_tools: read_ms_docs checks a fact against the skill's pages
+    src_tools->>docs_corpus: Reads the page from the local corpus, else fetches it from Learn
+    src_agents->>src_tools: present_question (lesson-check) picks a verified question and ends the turn
+    coach_web->>src_coach: POST /api/answers records the attempt [JSON/HTTP]
+    coach_web->>src_agents: answer-result signal#59; the lead explains a wrong answer and may present a follow-up

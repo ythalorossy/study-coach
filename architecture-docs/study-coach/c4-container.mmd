@@ -1,0 +1,40 @@
+---
+title: "Study Coach · Containers"
+---
+flowchart TB
+    learner("Learner<br/>[Person]<br/>Studies for AZ-104: takes lessons,<br/>practises questions, reads the<br/>docs and fact sheets")
+    maintainer("Content maintainer<br/>[Person]<br/>Syncs the docs, builds fact sheets<br/>and generates the question bank<br/>from the command line (the same<br/>person as the learner)")
+    subgraph boundary["Study Coach [Software System]"]
+        coach_web["Web app<br/>[Container: React 18, Vite]<br/>Home, Room (live lesson),<br/>Practice, Coverage and Docs<br/>screens in the browser; proxies<br/>/api and /agents to the server"]
+        study_coach["Coach server<br/>[Container: Node.js, Hono, Flue 2.3 runtime (vite dev on 127.0.0.1:8787)]<br/>Hosts the Coach agent (lead plus<br/>specialist subagents) behind<br/>Flue's agent router and the coach<br/>JSON API for skills, sessions,<br/>practice, answers, coverage and<br/>docs"]
+        content_cli["Content pipeline<br/>[Container: Node.js scripts, flue run]<br/>docs:sync, docs:sheets and<br/>generate: clones the Microsoft<br/>docs, runs the FactSheetWriter and<br/>QuestionWriter agents as child<br/>processes, one per question"]
+        coach_db[("Coach database<br/>[Container: SQLite (node:sqlite, WAL)]<br/>Skills, areas, verified questions,<br/>sessions, attempts, flags and<br/>cached Learn pages; shared by the<br/>server and generation runs")]
+        flue_db[("Conversation store<br/>[Container: SQLite (Flue sqlite adapter)]<br/>Durable Flue conversations for<br/>lessons; batch runs use an in-<br/>memory store instead")]
+        docs_corpus[("Docs corpus and fact sheets<br/>[Container: Markdown files (data/docs, content/fact-sheets)]<br/>Markdown-only sparse clones of<br/>azure-docs and entra-docs, plus<br/>one committed fact sheet per skill<br/>that the writer and verifier read")]
+    end
+    ext_minimax["MiniMax API<br/>[Software System]<br/>Language model (MiniMax-M3 by<br/>default) for every role: lead,<br/>specialists, writer, verifier,<br/>fact-sheet writer"]
+    ext_learn["Microsoft Learn<br/>[Software System]<br/>Live documentation pages, fetched<br/>and cached when a page is not in<br/>the local corpus"]
+    ext_github_docs["MicrosoftDocs on GitHub<br/>[Software System]<br/>Source repositories (azure-docs,<br/>entra-docs) cloned sparsely into<br/>the local corpus"]
+    learner -->|"Takes lessons and practises<br/>in<br/>[Browser]"| coach_web
+    maintainer -->|"Runs<br/>[npm scripts]"| content_cli
+    coach_web -->|"Calls the coach API and<br/>streams lesson conversations<br/>from<br/>[JSON/HTTP, Flue client]"| study_coach
+    study_coach -->|"Reads skills and questions,<br/>records sessions and<br/>attempts in<br/>[node:sqlite]"| coach_db
+    study_coach -->|"Persists lesson<br/>conversations in<br/>[Flue sqlite adapter]"| flue_db
+    study_coach -->|"Reads doc pages and fact<br/>sheets from<br/>[fs]"| docs_corpus
+    study_coach -->|"Runs the lead and specialist<br/>instructors on<br/>[HTTPS]"| ext_minimax
+    study_coach -->|"Fetches pages missing from<br/>the corpus from<br/>[HTTPS, fetch]"| ext_learn
+    content_cli -->|"Saves verified questions to<br/>[node:sqlite]"| coach_db
+    content_cli -->|"Syncs pages and writes fact<br/>sheets in<br/>[git, fs]"| docs_corpus
+    content_cli -->|"Writes and verifies<br/>questions and fact sheets<br/>with<br/>[HTTPS]"| ext_minimax
+    content_cli -->|"Clones the documentation<br/>from<br/>[git over HTTPS]"| ext_github_docs
+    content_cli -->|"Fetches pages missing from<br/>the corpus from<br/>[HTTPS, fetch]"| ext_learn
+    classDef person fill:#08427b,stroke:#052e56,color:#ffffff
+    classDef container fill:#1168bd,stroke:#0b4884,color:#ffffff
+    classDef system fill:#1168bd,stroke:#0b4884,color:#ffffff
+    classDef component fill:#85bbf0,stroke:#5d82a8,color:#000000
+    classDef external fill:#999999,stroke:#6b6b6b,color:#ffffff
+    classDef shared fill:#dbe9f6,stroke:#5d82a8,color:#000000,stroke-dasharray:4 3
+    class learner,maintainer person
+    class coach_web,study_coach,content_cli,coach_db,flue_db,docs_corpus container
+    class ext_minimax,ext_learn,ext_github_docs external
+    style boundary fill:none,stroke:#444444,stroke-dasharray:6 4

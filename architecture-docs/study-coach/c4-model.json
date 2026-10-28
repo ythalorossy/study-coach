@@ -1,0 +1,456 @@
+{
+  "system": {
+    "name": "Study Coach",
+    "description": "A local study coach for Microsoft certification exams, starting with AZ-104: AI instructors teach each skill and the learner practises with original, documentation-checked questions"
+  },
+  "people": [
+    {
+      "id": "learner",
+      "name": "Learner",
+      "description": "Studies for AZ-104: takes lessons, practises questions, reads the docs and fact sheets",
+      "evidence": [
+        "README.md:3",
+        "README.md:41"
+      ]
+    },
+    {
+      "id": "maintainer",
+      "name": "Content maintainer",
+      "description": "Syncs the docs, builds fact sheets and generates the question bank from the command line (the same person as the learner)",
+      "evidence": [
+        "README.md:51",
+        "README.md:63",
+        "README.md:67"
+      ]
+    }
+  ],
+  "containers": [
+    {
+      "id": "coach-web",
+      "name": "Web app",
+      "technology": "React 18, Vite",
+      "description": "Home, Room (live lesson), Practice, Coverage and Docs screens in the browser; proxies /api and /agents to the server",
+      "evidence": [
+        "web/vite.config.ts:9-14",
+        "web/src/screens/Room.tsx:37-38",
+        "web/src/lib/api.ts:38"
+      ]
+    },
+    {
+      "id": "study-coach",
+      "name": "Coach server",
+      "technology": "Node.js, Hono, Flue 2.3 runtime (vite dev on 127.0.0.1:8787)",
+      "description": "Hosts the Coach agent (lead plus specialist subagents) behind Flue's agent router and the coach JSON API for skills, sessions, practice, answers, coverage and docs",
+      "evidence": [
+        "src/app.ts:9-16",
+        "package.json:9"
+      ]
+    },
+    {
+      "id": "content-cli",
+      "name": "Content pipeline",
+      "technology": "Node.js scripts, flue run",
+      "description": "docs:sync, docs:sheets and generate: clones the Microsoft docs, runs the FactSheetWriter and QuestionWriter agents as child processes, one per question",
+      "evidence": [
+        "package.json:11-14",
+        "scripts/flue-jobs.ts:110-115",
+        "scripts/generate.ts:209"
+      ]
+    },
+    {
+      "id": "coach-db",
+      "name": "Coach database",
+      "technology": "SQLite (node:sqlite, WAL)",
+      "type": "database",
+      "description": "Skills, areas, verified questions, sessions, attempts, flags and cached Learn pages; shared by the server and generation runs",
+      "evidence": [
+        "src/coach/db.ts:83-102"
+      ]
+    },
+    {
+      "id": "flue-db",
+      "name": "Conversation store",
+      "technology": "SQLite (Flue sqlite adapter)",
+      "type": "database",
+      "description": "Durable Flue conversations for lessons; batch runs use an in-memory store instead",
+      "evidence": [
+        "src/db.ts:8",
+        "scripts/flue-jobs.ts:41-43"
+      ]
+    },
+    {
+      "id": "docs-corpus",
+      "name": "Docs corpus and fact sheets",
+      "technology": "Markdown files (data/docs, content/fact-sheets)",
+      "type": "database",
+      "description": "Markdown-only sparse clones of azure-docs and entra-docs, plus one committed fact sheet per skill that the writer and verifier read",
+      "evidence": [
+        "src/coach/corpus.ts:12",
+        "src/coach/fact-sheets.ts:10"
+      ]
+    }
+  ],
+  "external_systems": [
+    {
+      "id": "ext-minimax",
+      "name": "MiniMax API",
+      "description": "Language model (MiniMax-M3 by default) for every role: lead, specialists, writer, verifier, fact-sheet writer",
+      "evidence": [
+        "src/coach/models.ts:1-15",
+        ".env:3"
+      ]
+    },
+    {
+      "id": "ext-learn",
+      "name": "Microsoft Learn",
+      "description": "Live documentation pages, fetched and cached when a page is not in the local corpus",
+      "evidence": [
+        "src/coach/docs.ts:49-68",
+        "src/coach/corpus.ts:119"
+      ]
+    },
+    {
+      "id": "ext-github-docs",
+      "name": "MicrosoftDocs on GitHub",
+      "description": "Source repositories (azure-docs, entra-docs) cloned sparsely into the local corpus",
+      "evidence": [
+        "scripts/docs-sync.ts:25-26"
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "from": "learner",
+      "to": "coach-web",
+      "description": "Takes lessons and practises in",
+      "technology": "Browser"
+    },
+    {
+      "from": "maintainer",
+      "to": "content-cli",
+      "description": "Runs",
+      "technology": "npm scripts"
+    },
+    {
+      "from": "coach-web",
+      "to": "study-coach",
+      "description": "Calls the coach API and streams lesson conversations from",
+      "technology": "JSON/HTTP, Flue client"
+    },
+    {
+      "from": "study-coach",
+      "to": "coach-db",
+      "description": "Reads skills and questions, records sessions and attempts in",
+      "technology": "node:sqlite"
+    },
+    {
+      "from": "study-coach",
+      "to": "flue-db",
+      "description": "Persists lesson conversations in",
+      "technology": "Flue sqlite adapter"
+    },
+    {
+      "from": "study-coach",
+      "to": "docs-corpus",
+      "description": "Reads doc pages and fact sheets from",
+      "technology": "fs"
+    },
+    {
+      "from": "study-coach",
+      "to": "ext-minimax",
+      "description": "Runs the lead and specialist instructors on",
+      "technology": "HTTPS"
+    },
+    {
+      "from": "study-coach",
+      "to": "ext-learn",
+      "description": "Fetches pages missing from the corpus from",
+      "technology": "HTTPS, fetch"
+    },
+    {
+      "from": "content-cli",
+      "to": "coach-db",
+      "description": "Saves verified questions to",
+      "technology": "node:sqlite"
+    },
+    {
+      "from": "content-cli",
+      "to": "docs-corpus",
+      "description": "Syncs pages and writes fact sheets in",
+      "technology": "git, fs"
+    },
+    {
+      "from": "content-cli",
+      "to": "ext-minimax",
+      "description": "Writes and verifies questions and fact sheets with",
+      "technology": "HTTPS"
+    },
+    {
+      "from": "content-cli",
+      "to": "ext-github-docs",
+      "description": "Clones the documentation from",
+      "technology": "git over HTTPS"
+    },
+    {
+      "from": "content-cli",
+      "to": "ext-learn",
+      "description": "Fetches pages missing from the corpus from",
+      "technology": "HTTPS, fetch"
+    }
+  ],
+  "components": {
+    "study-coach": {
+      "src (files)": "Server entry (Hono app: agent routers and the coach API) and the Flue persistence adapter",
+      "src/agents": "Flue agents: Coach (lead instructor), QuestionWriter, FactSheetWriter, and the scaffold Assistant",
+      "src/coach": "Domain core: database and seed, skills and instructor catalog, question admission (leak check and verifier), readiness, docs corpus, fact sheets, HTTP API",
+      "src/subagents": "One specialist instructor subagent per catalog entry, delegated to by the lead",
+      "src/tools": "Agent tools: speak, show_diagram, progress, present_question, set_lesson, read_ms_docs, and the waiting gates",
+      "src/evals": "Live lesson evals against the real model (vitest)"
+    }
+  },
+  "flows": [
+    {
+      "id": "lesson",
+      "name": "Learner takes a lesson and answers the check question",
+      "description": "From starting a session on Home to the coach reacting to the answer.",
+      "steps": [
+        {
+          "from": "learner",
+          "to": "coach-web",
+          "description": "Starts a lesson for a skill (or lets the lead choose in an area)",
+          "evidence": [
+            "web/src/lib/api.ts:65"
+          ]
+        },
+        {
+          "from": "coach-web",
+          "to": "src/coach",
+          "description": "POST /api/sessions",
+          "technology": "JSON/HTTP",
+          "evidence": [
+            "src/coach/api.ts:95"
+          ]
+        },
+        {
+          "from": "src/coach",
+          "to": "coach-db",
+          "description": "Inserts the session with its skills and area",
+          "evidence": [
+            "src/coach/api.ts:95"
+          ]
+        },
+        {
+          "from": "coach-web",
+          "to": "src/agents",
+          "description": "Opens /agents/coach/:sessionId and sends the learner's messages",
+          "technology": "Flue client",
+          "evidence": [
+            "web/src/screens/Room.tsx:37-38",
+            "src/app.ts:15"
+          ]
+        },
+        {
+          "from": "src/agents",
+          "to": "ext-minimax",
+          "description": "Lead instructor turn",
+          "technology": "HTTPS",
+          "evidence": [
+            "src/agents/coach.ts:60"
+          ]
+        },
+        {
+          "from": "src/agents",
+          "to": "src/subagents",
+          "description": "Delegates the scenario to the skill's specialist (task); while a question waits for the learner, the specialist stays idle",
+          "evidence": [
+            "src/agents/coach.ts:75"
+          ]
+        },
+        {
+          "from": "src/subagents",
+          "to": "src/tools",
+          "description": "read_ms_docs checks a fact against the skill's pages",
+          "evidence": [
+            "src/subagents/specialists.ts:32",
+            "src/tools/read-ms-docs.ts:15"
+          ]
+        },
+        {
+          "from": "src/tools",
+          "to": "docs-corpus",
+          "description": "Reads the page from the local corpus, else fetches it from Learn",
+          "evidence": [
+            "src/coach/corpus.ts:119"
+          ]
+        },
+        {
+          "from": "src/agents",
+          "to": "src/tools",
+          "description": "present_question (lesson-check) picks a verified question and ends the turn",
+          "evidence": [
+            "src/agents/coach.ts:95",
+            "src/tools/coach-tools.ts:59"
+          ]
+        },
+        {
+          "from": "coach-web",
+          "to": "src/coach",
+          "description": "POST /api/answers records the attempt",
+          "technology": "JSON/HTTP",
+          "evidence": [
+            "src/coach/api.ts:168-174"
+          ]
+        },
+        {
+          "from": "coach-web",
+          "to": "src/agents",
+          "description": "answer-result signal; the lead explains a wrong answer and may present a follow-up",
+          "evidence": [
+            "web/src/screens/Room.tsx:52-61",
+            "src/agents/coach.ts:140"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "generate",
+      "name": "Maintainer generates questions for an area",
+      "description": "One flue run per question, scheduled per skill; a question is saved only after the leak check and an independent verifier agree with its key.",
+      "steps": [
+        {
+          "from": "maintainer",
+          "to": "content-cli",
+          "description": "npm run generate -- --until-target",
+          "evidence": [
+            "package.json:14"
+          ]
+        },
+        {
+          "from": "content-cli",
+          "to": "src/agents",
+          "description": "Spawns flue run question-writer with the skill, format and an in-memory conversation store",
+          "technology": "child process",
+          "evidence": [
+            "scripts/generate.ts:209",
+            "scripts/flue-jobs.ts:110-115"
+          ]
+        },
+        {
+          "from": "content-cli",
+          "to": "src/agents",
+          "description": "A question that runs past the time limit (10 min) or ends in a model error is stopped with its process group and retried once on the fallback model",
+          "technology": "child process",
+          "evidence": [
+            "scripts/generate.ts:144",
+            "scripts/flue-jobs.ts:67-69"
+          ]
+        },
+        {
+          "from": "src/agents",
+          "to": "docs-corpus",
+          "description": "Reads the skill's fact sheet",
+          "evidence": [
+            "src/agents/question-writer.ts:323"
+          ]
+        },
+        {
+          "from": "src/agents",
+          "to": "ext-minimax",
+          "description": "Writes the question",
+          "technology": "HTTPS",
+          "evidence": [
+            "src/agents/question-writer.ts:319"
+          ]
+        },
+        {
+          "from": "src/agents",
+          "to": "src/coach",
+          "description": "save_question hands the candidate to admitQuestion",
+          "evidence": [
+            "src/agents/question-writer.ts:117"
+          ]
+        },
+        {
+          "from": "src/coach",
+          "to": "src/coach",
+          "description": "Schema, source and leak checks",
+          "evidence": [
+            "src/coach/admit.ts:77-84"
+          ]
+        },
+        {
+          "from": "src/coach",
+          "to": "ext-minimax",
+          "description": "Verifier answers from the fact sheet, without the key",
+          "technology": "HTTPS",
+          "evidence": [
+            "src/agents/question-writer.ts:120-123",
+            "src/coach/admit.ts:104"
+          ]
+        },
+        {
+          "from": "src/coach",
+          "to": "coach-db",
+          "description": "Inserts the verified question",
+          "evidence": [
+            "src/coach/admit.ts:111"
+          ]
+        },
+        {
+          "from": "src/agents",
+          "to": "content-cli",
+          "description": "Outcome per question, appended to data/generate-log.jsonl",
+          "reply": true,
+          "evidence": [
+            "src/agents/question-writer.ts:24",
+            "src/agents/question-writer.ts:89"
+          ]
+        },
+        {
+          "from": "src/agents",
+          "to": "content-cli",
+          "description": "Tokens and cost of every model call, appended to data/generate-usage.jsonl and summed per model in the run summary",
+          "reply": true,
+          "evidence": [
+            "src/agents/question-writer.ts:27",
+            "src/coach/usage-log.ts:52-60",
+            "scripts/generate.ts:353"
+          ]
+        }
+      ]
+    }
+  ],
+  "code": [
+    {
+      "container": "study-coach",
+      "component": "src/agents",
+      "description": "The lead Coach and the QuestionWriter: hooks, tools and instructions"
+    },
+    {
+      "container": "study-coach",
+      "component": "src/coach",
+      "description": "Question admission, persistence and the instructor catalog"
+    }
+  ],
+  "excluded": [],
+  "summary": {
+    "overview": "Study Coach is a single-user application run locally. A React web app talks to one Node server that hosts a Flue Coach agent (a lead instructor delegating to per-area specialist subagents) and a Hono JSON API over a SQLite database. A separate command-line pipeline syncs the Microsoft documentation into a local corpus, builds a fact sheet per skill and generates the question bank by running a writer agent once per question, admitting a question only after a leak check and an independent verifier agree with its key. Every model call goes to MiniMax (M3 by default; M3.1 Flash is available). Generation retries a slow or failing question once on a fallback model and logs each call's tokens and cost.",
+    "findings": [
+      "Every role defaults to one provider, `minimax/MiniMax-M3` (`src/coach/models.ts:1`, fallbacks at `src/coach/models.ts:15`). Generation now retries a question that times out or ends in a model error once on a fallback model (`scripts/generate.ts:144`, default at `scripts/generate.ts:261`), but a used-up plan (usage-limit 429) still stops both generation and lessons, and lessons have no fallback at all.",
+      "The server and generation runs share `data/coach.db`; this is handled with WAL and a 5 s busy timeout (`src/coach/db.ts:86-89`). Flue's own store has no such setting, so batch runs avoid it with an in-memory store (`scripts/flue-jobs.ts:107-110`), which means generation conversations are not kept.",
+      "The scaffold `Assistant` agent is still mounted at `/agents/assistant` with a hard-coded model (`src/app.ts:14`, `src/agents/assistant.ts:8`); nothing in the web app uses it.",
+      "There is no authentication on `/api` or `/agents` (`src/app.ts:11-16`); safety rests on the dev server binding to 127.0.0.1 (`package.json:9`). There is no production build or start script, only `vite dev`.",
+      "`src/coach/instructors.ts:4` imports `seed.ts`, which imports `instructors.ts` back (`src/coach/seed.ts:2`). It works because both are used only at call time; a top-level use on either side would break module loading.",
+      "Adding an area touches several places: skills in `src/coach/seed.ts`, instructors in `src/coach/instructors.ts` and `web/src/lib/instructors.ts`, colour tokens in `web/src/styles.css` and diagram nouns in `src/coach/diagram-schema.ts`.",
+      "The lead's tools and hand-overs are gated by a read-only \"learner has the floor\" flag (`src/tools/coach-tools.ts:185`, `src/agents/coach.ts:68-75`). Flue renders a subagent at delegation time and throws on any state write during a render, so the check must never write. An earlier version wrote there, and every hand-over failed while the evals still passed because they checked only speaker names; the eval now fails on any failed hand-over (`src/evals/coach.eval.ts:91`).",
+      "Generation runs each question as its own `flue run` process (`scripts/flue-jobs.ts:115`), so usage is recorded from inside the agent module through Flue's `observe()` (`src/coach/usage-log.ts:52-60`) and tied to the run by `GENERATE_RUN_ID` (`scripts/generate.ts:208`); the verifier's scratch conversation would otherwise be counted separately."
+    ],
+    "recommendations": [
+      "Extend the fallback model to lessons, and to a usage-limit 429, so a used-up plan does not stop lessons.",
+      "Remove the scaffold Assistant route, or stop mounting it, since nothing uses it.",
+      "Keep the server bound to localhost; add authentication before exposing it on any other interface.",
+      "Break the instructors/seed cycle by moving AREAS and SKILLS into a module that imports neither.",
+      "Derive the web instructor list and colours from the server catalog (for example via /api/skills) so a new area is data in one place."
+    ]
+  }
+}

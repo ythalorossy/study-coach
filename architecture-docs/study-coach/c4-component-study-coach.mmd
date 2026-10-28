@@ -1,0 +1,39 @@
+---
+title: "Coach server"
+---
+flowchart TB
+    subgraph boundary["Coach server [Container]"]
+        src__files["src (root files)<br/>[Component]<br/>Server entry (Hono app: agent<br/>routers and the coach API) and the<br/>Flue persistence adapter"]
+        src_agents["agents<br/>[Component]<br/>Flue agents: Coach (lead<br/>instructor), QuestionWriter,<br/>FactSheetWriter, and the scaffold<br/>Assistant"]
+        src_coach["coach<br/>[Component]<br/>Domain core: database and seed,<br/>skills and instructor catalog,<br/>question admission (leak check and<br/>verifier), readiness, docs corpus,<br/>fact sheets, HTTP API"]
+        src_evals["evals<br/>[Component]<br/>Live lesson evals against the real<br/>model (vitest)"]
+        src_subagents["subagents<br/>[Component]<br/>One specialist instructor subagent<br/>per catalog entry, delegated to by<br/>the lead"]
+        src_tools["tools<br/>[Component]<br/>Agent tools: speak, show_diagram,<br/>progress, present_question,<br/>set_lesson, read_ms_docs, and the<br/>waiting gates"]
+    end
+    src__files --> src_agents
+    src_agents --> src_subagents
+    src_evals --> src_agents
+    src_subagents --> src_tools
+    src_tools --> src_coach
+    coach_web["Web app<br/>[Container: React 18, Vite]<br/>Home, Room (live lesson),<br/>Practice, Coverage and Docs<br/>screens in the browser; proxies<br/>/api and /agents to the server"]
+    coach_web -->|"Calls the coach API and<br/>streams lesson conversations<br/>from<br/>[JSON/HTTP, Flue client]"| boundary
+    coach_db[("Coach database<br/>[Container: SQLite (node:sqlite, WAL)]<br/>Skills, areas, verified questions,<br/>sessions, attempts, flags and<br/>cached Learn pages; shared by the<br/>server and generation runs")]
+    boundary -->|"Reads skills and questions,<br/>records sessions and<br/>attempts in<br/>[node:sqlite]"| coach_db
+    flue_db[("Conversation store<br/>[Container: SQLite (Flue sqlite adapter)]<br/>Durable Flue conversations for<br/>lessons; batch runs use an in-<br/>memory store instead")]
+    boundary -->|"Persists lesson<br/>conversations in<br/>[Flue sqlite adapter]"| flue_db
+    docs_corpus[("Docs corpus and fact sheets<br/>[Container: Markdown files (data/docs, content/fact-sheets)]<br/>Markdown-only sparse clones of<br/>azure-docs and entra-docs, plus<br/>one committed fact sheet per skill<br/>that the writer and verifier read")]
+    boundary -->|"Reads doc pages and fact<br/>sheets from<br/>[fs]"| docs_corpus
+    ext_minimax["MiniMax API<br/>[Software System]<br/>Language model (MiniMax-M3 by<br/>default) for every role: lead,<br/>specialists, writer, verifier,<br/>fact-sheet writer"]
+    boundary -->|"Runs the lead and specialist<br/>instructors on<br/>[HTTPS]"| ext_minimax
+    ext_learn["Microsoft Learn<br/>[Software System]<br/>Live documentation pages, fetched<br/>and cached when a page is not in<br/>the local corpus"]
+    boundary -->|"Fetches pages missing from<br/>the corpus from<br/>[HTTPS, fetch]"| ext_learn
+    classDef person fill:#08427b,stroke:#052e56,color:#ffffff
+    classDef container fill:#1168bd,stroke:#0b4884,color:#ffffff
+    classDef system fill:#1168bd,stroke:#0b4884,color:#ffffff
+    classDef component fill:#85bbf0,stroke:#5d82a8,color:#000000
+    classDef external fill:#999999,stroke:#6b6b6b,color:#ffffff
+    classDef shared fill:#dbe9f6,stroke:#5d82a8,color:#000000,stroke-dasharray:4 3
+    class src__files,src_agents,src_coach,src_evals,src_subagents,src_tools component
+    class coach_web,coach_db,flue_db,docs_corpus container
+    class ext_minimax,ext_learn external
+    style boundary fill:none,stroke:#444444,stroke-dasharray:6 4

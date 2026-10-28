@@ -1,0 +1,22 @@
+---
+title: "Maintainer generates questions for an area"
+---
+sequenceDiagram
+    actor maintainer as Content maintainer
+    participant content_cli as Content pipeline
+    participant src_agents as src/agents
+    participant docs_corpus as Docs corpus and fact sheets
+    participant ext_minimax as MiniMax API
+    participant src_coach as src/coach
+    participant coach_db as Coach database
+    maintainer->>content_cli: npm run generate -- --until-target
+    content_cli->>src_agents: Spawns flue run question-writer with the skill, format and an in-memory conversation store [child process]
+    content_cli->>src_agents: A question that runs past the time limit (10 min) or ends in a model error is stopped with its process group and retried once on the fallback model [child process]
+    src_agents->>docs_corpus: Reads the skill's fact sheet
+    src_agents->>ext_minimax: Writes the question [HTTPS]
+    src_agents->>src_coach: save_question hands the candidate to admitQuestion
+    src_coach->>src_coach: Schema, source and leak checks
+    src_coach->>ext_minimax: Verifier answers from the fact sheet, without the key [HTTPS]
+    src_coach->>coach_db: Inserts the verified question
+    src_agents-->>content_cli: Outcome per question, appended to data/generate-log.jsonl
+    src_agents-->>content_cli: Tokens and cost of every model call, appended to data/generate-usage.jsonl and summed per model in the run summary
