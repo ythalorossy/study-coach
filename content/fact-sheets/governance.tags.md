@@ -1,0 +1,46 @@
+---
+skill: governance.tags
+sources: 5fa3710e095159e1479c4ece44cd5083c8f4eb721a3b97a41644676bbbb1bd9a
+built: 2026-10-22T20:28:29.945Z
+---
+# Apply and manage tags on resources
+
+## Key concepts
+- Tags are name/value metadata pairs you attach to Azure resources so you can group and report on them by organizational criteria, e.g. the pair `Environment = Production` ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources))
+- You can tag individual resources, resource groups, and subscriptions — but not management groups ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources))
+- Tags do not cascade: resources never inherit tags placed on their resource group or subscription; to push a subscription or resource-group tag down to resources you use a policy definition instead ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-policies))
+- Tag names are case-insensitive for read/write operations, but the resource provider stores the casing you supply and that casing is what appears in cost reports; tag values are case-sensitive ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources))
+- Tag storage is plain text, so never store secrets in tags — they can leak via cost reports, tag-listing commands, deployment history, exported templates, and monitoring logs ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources))
+- Tags are a billing tool: you group usage/invoice lines by cost centre or environment, download the usage file from the Azure portal, and read the **Tags** column for services that report it ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources))
+- A reserved tag `cm-resource-parent` whose value is the resource ID of another resource rolls costs up under that parent so you can review them in Cost Management without filters (for example, an Azure Virtual Desktop host pool) ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources))
+- Azure Policy enforces tag conventions: the **Modify** effect can add/overwrite tags automatically at deployment time, and a remediation task applies the same tags to resources that already exist ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-policies))
+
+## Settings and limits
+- Maximum tag count: 50 name/value pairs per resource, per resource group, and per subscription; beyond that, pack many values into a single JSON string in one tag value ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources))
+- Size limits: tag name up to 512 characters and tag value up to 256 characters ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources))
+- Storage accounts are an exception: the tag name limit drops to 128 characters while the value stays at 256 ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources))
+- Illegal characters in a tag name: `<`, `>`, `%`, `&`, `\`, `?`, `/` ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources))
+- Reduced 15-tag cap applies to Azure Automation, Azure Content Delivery Network, Azure Public DNS (zones and A records), Azure Private DNS (zones and A records), and Azure Log Analytics saved search; Azure API Management also caps each service at 15 tag pairs ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources))
+- Restricted characters per service: Azure DNS zones reject spaces, parentheses, leading digits and special/Unicode characters in names (values are unrestricted); Traffic Manager rejects spaces, `#`, `:` and a leading digit; Azure Front Door rejects `#` and `:` ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources))
+- Classic resources such as Cloud Services do not support tags at all ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources))
+- Permissions: write access to `Microsoft.Resources/tags` lets you tag anything without access to the resource itself (granted by **Tag Contributor**); write access to the resource itself also works (granted by **Contributor**, or the type-specific role such as **Virtual Machine Contributor** for VMs) ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources))
+- **Tag Contributor** cannot tag resources or resource groups in the portal, but it can tag subscriptions in the portal and it supports every tag operation through Azure PowerShell and the REST API ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources))
+- To pull every usage/cost record into tag reporting regardless of whether the resource type supports or emits tags, turn on tag inheritance in Cost Management; the support matrix lists a **Supports tags** column and a separate **Tag in cost report** column per resource type ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-support))
+
+## Compare and choose
+- Choose manual tagging when a one-off or ad-hoc classification is enough; choose a **Modify** policy when tags must be applied automatically during deployment so nothing lands untagged ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-policies))
+- Choose **Tag Contributor** when the job is purely tagging and no other resource changes are needed; choose **Contributor** (or a narrower resource-type role) when the principal must also modify the resource itself ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources))
+- Management groups cannot hold tags, so scope organizational tagging at the subscription or resource-group level and enforce propagation with a policy ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources))
+- Relying on tags inherited by human convention will not work — resources do not inherit subscription/resource-group tags, so use a policy with **Modify** plus a remediation task for existing resources ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-policies))
+- When the goal is cost roll-up, prefer the reserved `cm-resource-parent` tag (grouping in Cost Management) over ad-hoc filters or free-text tags ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources))
+
+## Gotchas
+- Not every resource type supports tags — check the per-type support matrix (e.g. child types such as `Microsoft.Authorization/roleAssignments`, diagnostic settings, and many `Microsoft.Billing` types show **No**), and expect a failure if you tag an unsupported type ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-support))
+- Some resource types support tags but do not pass them to the cost report — for example `Microsoft.AppConfiguration/configurationStores` is **Yes** for supports tags but **No** for tag in cost report, as are Azure Arc data resources such as `SqlServerInstances` and `SqlManagedInstances` ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-support))
+- Fine-grained action resources rarely accept tags even when their parent does — for example in Microsoft.App `functions` and `logicApps` are **No** while `containerApps` and `managedEnvironments` are **Yes** ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-support))
+- Some types have their own operational rules for tag updates — virtual machine extensions can only be updated through tags while the VM is running; read the error text and follow it when a tag update is rejected ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources))
+- Azure IP Groups and Azure Firewall policies do not support PATCH, so portal tag edits fail on them; use the resource's update command instead, e.g. `az network ip-group update` ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources))
+- The Unique tags API paginates by page size, and a tag key can repeat across pages, which makes tools such as the Azure portal display the same tag key twice ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources))
+- Avoid non-English characters in tags: decoding can fail while a virtual machine loads its metadata from IMDS (Instance Metadata Service) ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources))
+- Free services are excluded from cost reports (for example all Microsoft.Advisor resources are free), so their tags won't show up in billing data ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-support))
+- Hitting the 50-tag cap is a per-entity limit, not a hierarchy limit: one subscription or resource group can hold many resources that each carry 50 pairs ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources))
