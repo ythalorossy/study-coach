@@ -266,6 +266,7 @@ Question rules:
 - ${init.format === "multiple-choice" ? "Four short options, exactly one correct." : "Keep every choice short."}
 - Give a perChoice explanation for every wrong choice, following the coverage rule below.
 - Explanations must be factually accurate and consistent with the documentation.
+- Never refer to a choice by its letter or position ("Option B", "the first choice") in an explanation: choices are shuffled when delivered. Say "this option" or name its content.
 ${sourcesRule}
 - Never copy question text from any site. No exam dumps, no third-party question sites, and no text copied from any source: write every stem, option and explanation in your own words.
 
