@@ -1,0 +1,1604 @@
+{
+	"skill": "compute.aci",
+	"questions": [
+		{
+			"id": "q_01M5RS9WBC11M99BDWSSZYC094",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your team has deployed a container group into a subnet of an Azure virtual network so that the workload keeps a private IP address. Clients inside the corporate network reach the group's port 8080 successfully, but every outbound HTTPS call the container makes to an external partner API times out. You need to restore the container's outbound connectivity without exposing it publicly. Which component should you add to the subnet?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting or observation",
+						"Value"
+					],
+					"rows": [
+						[
+							"Container group",
+							"reportsvc"
+						],
+						[
+							"Operating system",
+							"Linux"
+						],
+						[
+							"Image source",
+							"Private Azure Container Registry repository"
+						],
+						[
+							"Placement",
+							"Subnet sn-app of virtual network vnet-prod"
+						],
+						[
+							"IP address type",
+							"Private"
+						],
+						[
+							"Inbound traffic",
+							"Port 8080 reachable from internal clients"
+						],
+						[
+							"Outbound traffic",
+							"HTTPS requests to the partner API fail with a connection timeout"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "NAT gateway"
+					},
+					{
+						"id": "b",
+						"text": "Application Gateway"
+					},
+					{
+						"id": "c",
+						"text": "Azure Bastion"
+					},
+					{
+						"id": "d",
+						"text": "Azure Firewall"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A container group placed in a virtual network subnet requires a NAT gateway for its outbound traffic; it is the only outbound arrangement the Azure Container Instances service supports for subnet placement. Without it the group has no outbound path, which matches the symptom in the exhibit: inbound calls to port 8080 succeed while outbound HTTPS calls time out. Adding a NAT gateway to the subnet restores outbound connectivity while the group keeps its private IP.",
+				"perChoice": {
+					"b": "Application Gateway is a front-end (ingress) component. It can sit in front of a container group to provide a stable public address, but it does not provide the outbound path for a group deployed into a subnet, so it does not fix the timed-out outbound calls.",
+					"c": "Azure Bastion gives administrators browser-based RDP/SSH access to virtual machines without exposing public ports on them. It does not provide outbound connectivity for a container group running in a subnet.",
+					"d": "Azure Firewall is a network security appliance for inspecting and filtering traffic, and it is not the outbound arrangement supported by the Azure Container Instances service for groups deployed in a virtual network; that role belongs to the NAT gateway."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-quickstart-portal"
+				}
+			],
+			"subtopics": [
+				"container-instance-networking",
+				"virtual-network-deployment"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RSC8K5SJ6P3FSNJADNJ4QQ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have deployed a container group that runs a nightly batch job. The job exits with code 0 when it finishes successfully and with code 1 when it hits a transient failure. You need the group to retry a batch that ended with an error, while a batch that has already completed successfully must not be started again. Which restart policy should you configure for this container group?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Container OS type",
+							"Linux"
+						],
+						[
+							"Restart policy currently set on the group",
+							"Never"
+						],
+						[
+							"Exit code of the most recent successful batch",
+							"0"
+						],
+						[
+							"Exit code of the previous failed batch",
+							"1"
+						],
+						[
+							"Container state after each batch finished",
+							"Terminated"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Always"
+					},
+					{
+						"id": "b",
+						"text": "Never"
+					},
+					{
+						"id": "c",
+						"text": "OnFailure"
+					},
+					{
+						"id": "d",
+						"text": "Leave the restart policy unset so the service applies its default"
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "OnFailure restarts the container only when the process inside it fails, meaning it terminates with a nonzero exit code, and the container is always run at least once. That is exactly the behavior needed here: the batch that exited with code 1 is retried, while the batch that exited with code 0 is left alone, so a completed batch is not run again.",
+				"perChoice": {
+					"a": "Always restarts the container every time it stops, including after a clean exit with code 0, so a batch that already succeeded would be executed again and again.",
+					"b": "Never only guarantees that the container is not restarted after a clean exit with code 0. After a nonzero exit code the platform might still restart the container, so this setting does not deliver the deliberate retry-after-error behavior the scenario calls for.",
+					"d": "When no restart policy is specified at container creation, the service applies Always as the default, which repeats the container after every exit, including successful ones, so completed batches would run again."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-restart-policy"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-overview"
+				}
+			],
+			"subtopics": [
+				"restart-policy",
+				"container-groups"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RSG6XK4E0AG1RX9CHAW6AC",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have created the container group shown below to run the order-processing application. The application must save each day's results to an Azure Files share, and you also want a log shipper to run next to the application inside that same container group. The image is published for every operating system that Azure Container Instances can schedule. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Container group name",
+							"order-processor"
+						],
+						[
+							"OS type",
+							"Windows"
+						],
+						[
+							"Image source",
+							"Azure Container Registry"
+						],
+						[
+							"Container image",
+							"myregistry.azurecr.io/orderprocessor:1.4"
+						],
+						[
+							"Containers in group",
+							"1"
+						],
+						[
+							"Mounted volumes",
+							"None"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Recreate the container group with the OS type set to Linux."
+					},
+					{
+						"id": "b",
+						"text": "Add the log shipper as a second container to the existing container group and keep its current OS type."
+					},
+					{
+						"id": "c",
+						"text": "Mount the Azure Files share into the existing container group and keep its current OS type."
+					},
+					{
+						"id": "d",
+						"text": "Deploy the log shipper as a separate container group with the same OS type and mount the same Azure Files share."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Two of the capabilities this workload needs are restricted to Linux container groups in Azure Container Instances: running multiple containers in one container group and mounting volumes such as Azure Files shares. Because the group must hold both the application and the log shipper sidecar and must have the share mounted, the group has to be deployed with the OS type preference set to Linux, which is the operating system you indicate when creating the container group.",
+				"perChoice": {
+					"b": "Running several containers inside a single group (for example an application plus a logging sidecar) is only offered for Linux container groups, so the extra container cannot be added while the group keeps its current OS type.",
+					"c": "Volume mounting, including Azure Files shares, is restricted to Linux container groups, so the share cannot be mounted into a group that keeps its current OS type.",
+					"d": "A second, separate container group does not satisfy the requirement that the log shipper run inside the same group as the application: containers only share a container host, local network, storage and lifecycle when they belong to one group, and two groups do not share those resources."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-quickstart-portal"
+				}
+			],
+			"subtopics": [
+				"container-groups",
+				"os-compatibility"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RSK00QV8JXDM2S4YP2DQ5Q",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have deployed a container group to Azure Container Instances from your own Azure Container Registry with the command shown below. The pull currently relies on a shared registry user name and password, and your security team requires the group to authenticate to the registry with no user name or password kept in its definition, while the same application image continues to be pulled. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "az container create \\\n  --resource-group rg-contoso \\\n  --name ci-order-api \\\n  --image myregistry.azurecr.io/order-api:1.4 \\\n  --registry-server myregistry.azurecr.io \\\n  --registry-username svc-aci-pull \\\n  --registry-password 'P@ssw0rd-2024' \\\n  --dns-name-label ci-order-api \\\n  --ports 8080"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Assign a managed identity to the container group and authorize it to pull images in the registry"
+					},
+					{
+						"id": "b",
+						"text": "Assign a managed identity to the container group but keep the registry user name and password so the pull of the images still uses the shared secret"
+					},
+					{
+						"id": "c",
+						"text": "Pass the registry user name and password to the container group as environment variables and let the image pull authenticate with them"
+					},
+					{
+						"id": "d",
+						"text": "Create a private endpoint for the registry and place the container group in a delegated subnet of the same virtual network"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Azure Container Instances supports managed identity, which lets a container group authenticate to any service that supports Microsoft Entra authentication without credentials in the container code, and the same identity can be used for an authenticated image pull against Azure Container Registry so that no user name or password has to be included in the container group definition. Assigning the identity to the group and giving it rights to pull from the registry therefore removes the embedded shared secret shown in the command while the same image continues to be pulled.",
+				"perChoice": {
+					"b": "Assigning an identity is only half of the change: keeping --registry-username and --registry-password means the pull still authenticates with the shared secret, and those credentials remain in the group definition and in the deployment command, which is exactly what the requirement forbids.",
+					"c": "Environment variables still place the registry user name and password inside the container group definition, and the pull still authenticates as a shared secret rather than as the group itself. Moving the secret to a variable hides it on the command line but does not remove the stored credentials, so the stated requirement is not met.",
+					"d": "A private endpoint and a delegated subnet control network reachability to the registry, not authentication. With this change the group would still need the registry user name and password to perform the pull, so the credentials remain in the definition."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-quickstart-portal"
+				}
+			],
+			"subtopics": [
+				"managed-identity",
+				"acr-image-pull"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RSPZKQW7PNXZ0N7G7CC6KR",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have deployed a container group to Azure Container Instances to run an image-processing pipeline. Each job pulls a message from a queue, writes its output to Azure Storage and then exits; if a job is stopped partway, the queue hands the message to another worker, so no work is lost. Finance wants the smallest compute bill for this workload, and the operations team has confirmed that cutting the pipeline short and retrying it later has no business impact. The group was created with the command below and is running today.\n\nYou need the container group to run under the deployment option that gives the lowest cost for this workload while tolerating interruption. Which change should you make to the container group?",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "$ az container create --resource-group rg-imaging --name imaging-job \\\n    --image myregistry.azurecr.io/imagingapi:v4 \\\n    --cpu 2 --memory 4 \\\n    --restart-policy OnFailure \\\n    --dns-name-label imaging-job-90321\n\n$ az container show -g rg-imaging -n imaging-job --query \"{sku:sku.name, priority:priority, state:instanceView.state}\"\n{\n  \"sku\": \"Standard\",\n  \"priority\": \"Regular\",\n  \"state\": \"Running\"\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Deploy the container group as a Spot container so that it uses unused Azure capacity and may be evicted"
+					},
+					{
+						"id": "b",
+						"text": "Deploy the container group with the Confidential SKU so that it can be hardware-isolated and its memory is encrypted by Azure"
+					},
+					{
+						"id": "c",
+						"text": "Deploy the container group with a standby pool so that new containers start faster and the group scales out in Azure"
+					},
+					{
+						"id": "d",
+						"text": "Deploy the container group as part of an NGroup in Azure so that a target count is maintained and upgrades roll across groups"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The Spot variant places a container group on spare Azure capacity, is priced up to 70% below regular-priority containers, and is billed per second of memory and core usage. Azure is allowed to preempt such a group whenever it needs the room back. In this pipeline every job is independent, its output is already persisted and the queue redelivers the message, so being stopped early costs nothing in business terms and the group can be re-created later. That makes the Spot variant the cheapest deployment option for this workload. The group's CPU, memory and restart policy have no effect on this price difference; the group shown is currently a regular-priority Standard deployment, so it should be redeployed with the Spot variant.",
+				"perChoice": {
+					"b": "Choosing the Confidential SKU protects data while it is in memory and provides hardware-level isolation and integrity through a trusted execution environment. It does not change the price model, so it does not deliver the lowest cost for this workload.",
+					"c": "A standby pool keeps pre-warmed instances so that new containers start faster, which helps latency for scale-out. It keeps regular pricing and does not make the workload evictable, so it does not lower the bill in the way this pipeline needs.",
+					"d": "NGroups provide fleet-level control over several linked groups: a maintained target count, coordinated rolling upgrades, placement across zones and load-balanced ingress. That suits a set of related long-running groups, but it does not offer the discounted, interruptible pricing this workload is after."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-overview"
+				}
+			],
+			"subtopics": [
+				"spot-priority-containers",
+				"container-group-deployment-options"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RSTS459AYR7MVW0JSVZV98",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a container image stored in an Azure Container Registry that your team wants to run as an Azure Container Instances container group. You need the image to run on the service and to stay within the size the service allows. Which change should you make to the image before deploying it?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Image property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Registry",
+							"contoso.azurecr.io"
+						],
+						[
+							"Image tag",
+							"wordcount:v4"
+						],
+						[
+							"Container OS",
+							"Linux"
+						],
+						[
+							"Architecture",
+							"arm64"
+						],
+						[
+							"Compressed image size",
+							"18 GB"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Rebuild the image for AMD64 and keep its compressed size at 15 GB or smaller, then deploy it."
+					},
+					{
+						"id": "b",
+						"text": "Rebuild the image for arm64 and keep its compressed size at 15 GB or smaller, then deploy it."
+					},
+					{
+						"id": "c",
+						"text": "Rebuild the image for AMD64 and keep its compressed size below 20 GB, then deploy it."
+					},
+					{
+						"id": "d",
+						"text": "Rebuild the image for arm64 and keep its compressed size below 20 GB, then deploy it."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Azure Container Instances schedules only x64 (AMD64) images; arm64 images are not supported. The service also caps container images at 15 GB, and images above that size may behave unpredictably. The registry image in the exhibit is an arm64 build of 18 GB, so it has to be rebuilt for AMD64 and reduced to 15 GB or less before a container group can run it.",
+				"perChoice": {
+					"b": "Trimming the image down to an accepted size does not help while the build is still arm64, because Azure Container Instances cannot run arm64 images; the container group would fail to start.",
+					"c": "The architecture is right, but a 20 GB allowance still permits the current 18 GB image, which is above the 15 GB maximum and may behave unpredictably.",
+					"d": "This leaves both problems in place: arm64 images cannot run on Azure Container Instances, and an 18 GB image is over the 15 GB ceiling."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-overview"
+				}
+			],
+			"subtopics": [
+				"container-image-requirements",
+				"image-architecture",
+				"image-size-limits"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RSY5H31RWPD7WFHNC65FGE",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an AKS cluster, and the checkout workload is delivered with the Kubernetes objects shown below. The application team rolls out changes and scales the workload through the Kubernetes API. You need this workload to run without any cluster worker machines being provisioned or maintained. Which deployment target should you choose?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: checkout-api\nspec:\n  replicas: 4\n  selector:\n    matchLabels:\n      app: checkout-api\n  template:\n    metadata:\n      labels:\n        app: checkout-api\n    spec:\n      containers:\n        - name: checkout-api\n          image: myregistry.azurecr.io/checkout-api:1.4\n          resources:\n            requests:\n              cpu: 250m\n              memory: 512Mi\n---\napiVersion: autoscaling/v2\nkind: HorizontalPodAutoscaler\nmetadata:\n  name: checkout-api\nspec:\n  scaleTargetRef:\n    apiVersion: apps/v1\n    kind: Deployment\n    name: checkout-api\n  minReplicas: 2\n  maxReplicas: 20\n  metrics:\n    - type: Resource\n      resource:\n        name: cpu\n        target:\n          type: Utilization\n          averageUtilization: 70"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "A single Azure Container Instances container group that runs the application image directly"
+					},
+					{
+						"id": "b",
+						"text": "AKS virtual nodes backed by Azure Container Instances"
+					},
+					{
+						"id": "c",
+						"text": "AKS with a managed Linux node pool that the cluster autoscaler scales up and down"
+					},
+					{
+						"id": "d",
+						"text": "ACI NGroups with an ingress load balancer in front of several related groups"
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "Virtual nodes on Azure Container Instances let you deploy pods in an AKS cluster that run as container groups in ACI. The pods execute on ACI's serverless infrastructure, so the existing Kubernetes manifests, the Deployment, and the HorizontalPodAutoscaler keep working with the same Kubernetes APIs and cluster scheduling, while the cluster autoscaler does not have to provision worker compute nodes for this workload.",
+				"perChoice": {
+					"a": "A single container group is an isolated container on ACI with no Kubernetes API, no cluster scheduling, and no support for applying the Deployment and HorizontalPodAutoscaler objects shown, so the application's rollout and scaling process would not work.",
+					"c": "A managed node pool still depends on worker machines that the cluster autoscaler provisions and maintains, which conflicts with the requirement to run the workload without any cluster worker machines.",
+					"d": "NGroups manages a fleet of related container groups with a maintained group count, rolling upgrades, multi-zone placement, and load-balanced ingress, but it does not expose the Kubernetes APIs, manifests, or cluster scheduling that this workload depends on."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-overview"
+				}
+			],
+			"subtopics": [
+				"aci-virtual-nodes",
+				"aks-integration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RT0VSXW2KH44950HPT1QK2",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have pushed the application image below to your Azure Container Registry and want to run it as a container group on Azure Container Instances. The group deployment is rejected before any container starts.\n\nThe registry reports the following metadata for the image.\n\nYou need the container group to run this same application release. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Image property",
+						"Recorded value"
+					],
+					"rows": [
+						[
+							"Repository",
+							"contoso.azurecr.io/orders-api"
+						],
+						[
+							"Tag",
+							"2.4"
+						],
+						[
+							"Operating system",
+							"linux"
+						],
+						[
+							"Processor architecture",
+							"arm64"
+						],
+						[
+							"Compressed size",
+							"184 MB"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Rebuild the image for the x64 (AMD64) architecture and deploy the rebuilt image in the container group"
+					},
+					{
+						"id": "b",
+						"text": "Rebuild the image for the arm64 architecture and deploy the rebuilt image in the container group"
+					},
+					{
+						"id": "c",
+						"text": "Keep the published image and set the container group's operating system type to Windows so the service can schedule it"
+					},
+					{
+						"id": "d",
+						"text": "Keep the published image and deploy the container group with the Confidential SKU so the service can schedule it"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The image is built for arm64, and Azure Container Instances runs only x64 (AMD64) images — arm64 images cannot run on the service. Rebuilding the same application release for x64 (AMD64) produces an image the service can schedule; the image is well under the 15 GB ceiling, so size is not the problem. Changing a group-level setting cannot make an arm64 image runnable.",
+				"perChoice": {
+					"b": "The published image is already built for arm64, so rebuilding it for the same architecture changes nothing. The service only schedules x64 (AMD64) images, so a rebuild has to target x64 (AMD64).",
+					"c": "The operating system type only declares whether the group runs Linux or Windows containers; it does not convert the image or select its processor architecture. An arm64 image still cannot be scheduled, and this image is a Linux image, so the published artifact must be rebuilt for x64 (AMD64).",
+					"d": "The Confidential SKU affects how the container is isolated and how data in memory is protected; it does not enable image architectures that the service cannot run. The image itself must be rebuilt for x64 (AMD64)."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-quickstart-portal"
+				}
+			],
+			"subtopics": [
+				"container-images",
+				"image-architecture"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RT5SZ4J08XX8EA9369X37J",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Each row of the table describes a situation with a container group running on Azure Container Instances. Drag the action that resolves the situation into the matching case.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Case",
+						"Situation",
+						"What you need"
+					],
+					"rows": [
+						[
+							"A",
+							"Clients reach the container group at the address it was assigned. Overnight the platform bounced the group, the address changed, and every call now fails.",
+							"The service must stay reachable at one address that does not change when the group is restarted."
+						],
+						[
+							"B",
+							"Five container groups serve the same application today, and each one is deployed and updated by hand.",
+							"The operations team wants a target number of instances kept running, upgrades rolled out without interrupting service, instances spread over more than one zone, and a single load-balanced way for callers to enter."
+						],
+						[
+							"C",
+							"The workload handles customer payment data inside the container.",
+							"Compliance approves the workload only if the platform guarantees that the data cannot be exposed outside the container's own memory while it is being processed; controls inside the application do not satisfy the standard."
+						],
+						[
+							"D",
+							"A container completes its work, writes a summary of the result to its standard output, and exits. The group overview shows the container is no longer running.",
+							"An administrator must obtain the lines the container wrote before it exited."
+						],
+						[
+							"E",
+							"A review of a group's deployment reports that the registry password is kept as plain text in the service backend. The deployment script passes that password straight into its arguments.",
+							"The stored value must be protected so that it is not kept in plain text."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Put Application Gateway in front of the container group"
+					},
+					{
+						"id": "i2",
+						"text": "Manage the related groups with NGroups"
+					},
+					{
+						"id": "i3",
+						"text": "Create the container group with the confidential SKU"
+					},
+					{
+						"id": "i4",
+						"text": "Inspect the finished container with the az container logs command"
+					},
+					{
+						"id": "i5",
+						"text": "Supply the credentials through CLI environment variables"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Case A: the group is unreachable after the platform restarts it"
+					},
+					{
+						"id": "s2",
+						"label": "Case B: the service must keep a target number of instances running"
+					},
+					{
+						"id": "s3",
+						"label": "Case C: platform protection for data held in memory"
+					},
+					{
+						"id": "s4",
+						"label": "Case D: retrieving what a stopped container wrote"
+					},
+					{
+						"id": "s5",
+						"label": "Case E: the deployment leaves a value stored in plain text"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "Each case points at a distinct documented behavior of Azure Container Instances. Case A: when a container group restarts its IP address can change, so a service that must stay reachable at one address needs a fixed public address provided by putting Application Gateway in front of the group. Case B: operating several related groups as one fleet (target count, rolling upgrades, placement over multiple zones, load-balanced ingress) is what NGroups provides. Case C: the approval requires the platform itself to protect data in use and encrypt it in memory, which is what the confidential SKU delivers through a trusted execution environment. Case D: the text a task wrote to standard output is retrieved with the az container logs command, which works after the container has stopped. Case E: credentials passed on a command line are stored as plain text in the backend, so they must be supplied through CLI environment variables to be encrypted or transformed when stored.",
+				"perChoice": {
+					"i1": "Belongs in Case A. Restarting a container group can change its IP address, so clients holding the old address lose access. Putting Application Gateway in front of the group gives the workload a fixed public address that survives restarts.",
+					"i2": "Belongs in Case B. NGroups is the ACI capability for managing several related container groups together: maintaining a specified number of groups, performing rolling upgrades, deploying across multiple availability zones, and using load balancers for ingress.",
+					"i3": "Belongs in Case C. Confidential containers run in a trusted execution environment that gives hardware-based confidentiality and integrity protection, protects data in use, and encrypts data held in memory; you opt in by choosing that SKU when deploying the group.",
+					"i4": "Belongs in Case D. The az container logs command prints the STDOUT stream of the container, so the lines the task wrote before exiting can be retrieved even after the container has stopped (its state shows Terminated).",
+					"i5": "Belongs in Case E. Credentials typed on a CLI command line are kept as plain text in the backend; passing them through CLI environment variables means they are encrypted or transformed when stored."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-restart-policy"
+				}
+			],
+			"subtopics": [
+				"container-groups",
+				"deployment-options",
+				"container-logs"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RT89G9DHDQPAVJZD7NMK1J",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have four workloads that have to run on Azure Container Instances, and each one has a different constraint that drives how it should be deployed. The table describes each workload and what it requires.\n\nYou need to pick the deployment option for every workload. Drag the deployment option that satisfies each workload's requirement into the matching row.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Workload",
+						"Requirement"
+					],
+					"rows": [
+						[
+							"Public-facing order API",
+							"Must answer customer requests at all times; the operations team cannot accept the service being taken out of service when Azure capacity is tight."
+						],
+						[
+							"CI build sandboxes",
+							"Every pull request starts a throwaway build environment; a build that is cut short can simply be re-run, and the platform team wants the smallest possible bill across thousands of short runs."
+						],
+						[
+							"Cardholder data application",
+							"Company policy requires the payment data to stay protected even while the application holds it in memory, and requires the workload to be isolated from other tenants' workloads by the underlying hardware."
+						],
+						[
+							"Checkout service replicas",
+							"The platform team wants a maintained number of identical instances placed across several availability zones, with coordinated rolling upgrades and a single load-balanced entry point."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Regular priority container group"
+					},
+					{
+						"id": "i2",
+						"text": "Spot container group"
+					},
+					{
+						"id": "i3",
+						"text": "Confidential container group"
+					},
+					{
+						"id": "i4",
+						"text": "NGroups fleet"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Public-facing order API"
+					},
+					{
+						"id": "s2",
+						"label": "CI build sandboxes"
+					},
+					{
+						"id": "s3",
+						"label": "Cardholder data application"
+					},
+					{
+						"id": "s4",
+						"label": "Checkout service replicas"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Each row is matched to the deployment option that satisfies the constraint it states. The order API must never lose capacity, so it uses the standard Regular priority group rather than an interruptible one. The disposable CI builds tolerate being cut short and are re-run on demand, so they belong on Spot capacity, which is priced up to 70% below Regular priority and can be preempted when Azure runs short on room. The cardholder data application requires hardware-level isolation and encryption of data held in memory, which is what the Confidential variant provides by running the container in a trusted execution environment. The set of identical checkout instances that must stay at a target count, span several zones, receive rolling upgrades and be reached through one load-balanced entry point is managed with NGroups, which controls several linked container groups as a fleet.",
+				"perChoice": {
+					"i1": "Belongs to 'Public-facing order API'. When a workload has to stay available and cannot be removed from service when capacity is tight, standard priority is the right choice; an interruptible option risks the service disappearing during a capacity shortage.",
+					"i2": "Belongs to 'CI build sandboxes'. Spot containers are scheduled onto spare Azure capacity, cost up to 70% less than regular priority containers, are charged per second of memory and core usage, and may be preempted at any time, which suits short, repeatable builds that are re-run when cut short.",
+					"i3": "Belongs to 'Cardholder data application'. Confidential containers run inside a trusted execution environment that provides hardware-level confidentiality and integrity and encrypts data while it sits in memory, meeting the stated policy for data in use.",
+					"i4": "Belongs to 'Checkout service replicas'. NGroups gives control over several linked container groups, including a target count, rolling upgrades, multi-zone placement and load-balancer ingress, which is exactly the fleet management the platform team asks for."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-overview"
+				}
+			],
+			"subtopics": [
+				"aci-deployment-options",
+				"container-group-fleets"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RTCRPYK7XKVP8WH2XHG4EV",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are reviewing four requests about container groups that run on Azure Container Instances, and each request comes from a different team. You need to attach the deployment option that answers each request to the request it belongs to. Drag each deployment option into the matching request in the exhibit.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "REQUEST 1 - Checkout API\nThe marketing campaign starts at a fixed hour. The group has to be answering\nrequests within seconds of the deployment finishing, not after a slow start-up.\n\nREQUEST 2 - Claims adjudication\nThis workload handles sensitive personal records. The business requires that\nthose records be isolated from other tenants by the underlying hardware and\nthat they stay encrypted while the workload works with them in memory.\n\nREQUEST 3 - Partner integration fleet\nThe company runs five regional copies of the same integration. Every release\nhas to reach all five copies without downtime, the number of live copies has\nto stay at five, and external callers must reach them through a single\nload balancer.\n\nREQUEST 4 - Tax reporting service\nCompliance has reserved one part of the region for this workload. The group\nhas to be deployed into that reserved part instead of into whichever part\nthe scheduler chooses."
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Standby pools"
+					},
+					{
+						"id": "b",
+						"text": "Confidential SKU"
+					},
+					{
+						"id": "c",
+						"text": "NGroups"
+					},
+					{
+						"id": "d",
+						"text": "Specific availability zone"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Checkout API"
+					},
+					{
+						"id": "s2",
+						"label": "Claims adjudication"
+					},
+					{
+						"id": "s3",
+						"label": "Partner integration fleet"
+					},
+					{
+						"id": "s4",
+						"label": "Tax reporting service"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d"
+			},
+			"explanation": {
+				"correct": "Each request is answered by a different deployment option. Standby pools shorten start-up times, so they fit REQUEST 1, where the Checkout API must be serving requests within seconds of the deployment finishing. The Confidential SKU places the group in a trusted execution environment with hardware-based confidentiality and integrity and encrypts data while it is processed in memory, which fits REQUEST 2. NGroups maintains a specified number of related groups, performs rolling upgrades, places groups across availability zones and offers load balancer ingress, which fits REQUEST 3. A group can be pinned to an availability zone that you select yourself, and leaving that setting unset lets the platform choose instead of honouring the reserved part of the region, which fits REQUEST 4.",
+				"perChoice": {
+					"a": "Belongs in REQUEST 1 (Checkout API): standby pools are the Azure Container Instances capability for even faster start-up times, which is what the time-boxed campaign requires.",
+					"b": "Belongs in REQUEST 2 (Claims adjudication): the Confidential SKU runs the group in a trusted execution environment that delivers hardware-based confidentiality and integrity and encrypts data being processed in memory, matching the isolation and in-memory encryption the business demands.",
+					"c": "Belongs in REQUEST 3 (Partner integration fleet): NGroups supports maintaining a specified number of container groups, performing rolling upgrades, deploying across availability zones and using load balancers for ingress, which covers the five-copy fleet with coordinated releases and shared ingress.",
+					"d": "Belongs in REQUEST 4 (Tax reporting service): a container group can be pinned to an availability zone you select yourself, decided one group at a time, so the group can be placed in the part of the region that compliance reserved instead of wherever the scheduler chooses."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-quickstart-portal"
+				}
+			],
+			"subtopics": [
+				"container-instances-deployment-options",
+				"ngroups",
+				"availability-zones"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RTGNZ4Q821A3THHZJ58DYC",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You look after the container groups running on Azure Container Instances that are described in the exhibit. Each owning team has asked for one change to its own group. Drag the action that answers each request into the matching row.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Group",
+						"What the owning team reports",
+						"Request"
+					],
+					"rows": [
+						[
+							"Group 1",
+							"The container writes each run's results into a folder inside the container itself. After the platform restarted the group last week, the folder was empty and the whole batch had to be repeated.",
+							"Keep the results of a run available after the group restarts."
+						],
+						[
+							"Group 2",
+							"The team wants charts that show how much processor time and how much memory the container consumed each hour.",
+							"Show the team how much of each resource the container consumes."
+						],
+						[
+							"Group 3",
+							"The image is published for both operating systems the service can schedule, and this group was deployed with the Windows variant. The team wants a log shipper to run next to the main container, inside the same group and sharing its network and storage.",
+							"Get the log shipper running alongside the main container in this one group."
+						],
+						[
+							"Group 4",
+							"The application keeps the group's public IP address in its configuration. Last week the group was restarted, the address changed, and the application could no longer reach it.",
+							"Give the application one public address that stays the same when the group restarts."
+						],
+						[
+							"Group 5",
+							"Creating the group is rejected because the hostname the team picked is already taken by another group in the same region.",
+							"Get this group deployed with a public hostname in that region."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Mount an Azure Files share as a volume in the container group."
+					},
+					{
+						"id": "i2",
+						"text": "Collect resource-usage metrics for the container group with Azure Monitor."
+					},
+					{
+						"id": "i3",
+						"text": "Redeploy the container group on a Linux operating system so several containers can run in it."
+					},
+					{
+						"id": "i4",
+						"text": "Put Application Gateway in front of the container group."
+					},
+					{
+						"id": "i5",
+						"text": "Choose a different DNS name label for the container group."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Group 1"
+					},
+					{
+						"id": "s2",
+						"label": "Group 2"
+					},
+					{
+						"id": "s3",
+						"label": "Group 3"
+					},
+					{
+						"id": "s4",
+						"label": "Group 4"
+					},
+					{
+						"id": "s5",
+						"label": "Group 5"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "Each row takes the one action that meets its request: mounting a share for Group 1 so run output survives a restart, turning on platform metrics for Group 2 so per-resource consumption can be charted, redeploying on a Linux operating system for Group 3 so a second container can share the group, putting a gateway in front for Group 4 so the public address survives restarts, and picking a different hostname label for Group 5 because the chosen one is taken in that region.",
+				"perChoice": {
+					"i1": "Group 1. Mounting an Azure Files share into the group is the documented way to persist state so the results of a run are still there after the group restarts; without a mounted share, anything written inside the container is lost.",
+					"i2": "Group 2. Resource-usage metrics with Azure Monitor report how much processor time and memory the container group consumed, which is exactly what the per-resource charts need; usage metrics are among the capabilities offered for Linux containers.",
+					"i3": "Group 3. Scheduling several containers that share one host, network, storage and lifecycle is offered for Linux containers only, so the group created from the Windows variant has to be recreated on a Linux operating system before the log shipper can run beside the main container.",
+					"i4": "Group 4. A group that restarts can come back with a different IP address, which breaks a hard-coded address in the application configuration; placing Application Gateway in front of the group gives the application a static public address.",
+					"i5": "Group 5. Hostname labels are claimed per region, so a label already taken in that region causes the deployment to be rejected; picking a different label for the same region lets the group deploy with its public hostname."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-quickstart-portal"
+				}
+			],
+			"subtopics": [
+				"aci-container-groups",
+				"aci-feature-limits",
+				"aci-networking"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SV1EEW07PFCCNHK1J9JT0X",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have four container groups running on Azure Container Instances, and each owning team has a different operational need. You need to attach the Azure capability that meets each need to the group it belongs to. Drag each item into the matching slot.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Container group",
+						"Current deployment",
+						"Team requirement"
+					],
+					"rows": [
+						[
+							"Payments API",
+							"A public IP address is assigned to the group; the address has changed twice after maintenance events",
+							"Clients must keep using one fixed public address even when the service replaces the group and assigns it a different address"
+						],
+						[
+							"Video encoder",
+							"Linux image; each newly created group takes a noticeable amount of time before it can serve its first request",
+							"The team wants the shortest delay between asking for a new group and having it serve traffic, and the service may hold prepared capacity in reserve ahead of time"
+						],
+						[
+							"Claims processor",
+							"Linux image; the workload handles sensitive records while it processes them",
+							"The compliance team requires that sensitive data being processed cannot be exposed to the host, even while the workload is running"
+						],
+						[
+							"Reporting estate",
+							"Many related groups run the same reporting image across several regions",
+							"The team wants gradual upgrades across those related groups plus automatic upkeep of a target number of running groups"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Confidential SKU for the container group"
+					},
+					{
+						"id": "b",
+						"text": "Standby pool for the container group"
+					},
+					{
+						"id": "c",
+						"text": "Application Gateway in front of the container group"
+					},
+					{
+						"id": "d",
+						"text": "NGroups fleet for the container group"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Payments API"
+					},
+					{
+						"id": "s2",
+						"label": "Video encoder"
+					},
+					{
+						"id": "s3",
+						"label": "Claims processor"
+					},
+					{
+						"id": "s4",
+						"label": "Reporting estate"
+					}
+				]
+			},
+			"key": {
+				"s1": "c",
+				"s2": "b",
+				"s3": "a",
+				"s4": "d"
+			},
+			"explanation": {
+				"correct": "The four rows call for four different service capabilities. A container group's IP address can change when the group is replaced or bounced by platform maintenance, so the Payments API needs Application Gateway in front of the group to give clients a fixed public address. The video encoder needs the shortest delay before a new group can serve traffic, which standby pools deliver by keeping prepared capacity ready in advance. The claims processor must keep data in use protected from the host, which the Confidential SKU provides by running the workload in a trusted execution environment with hardware-based protections and memory encryption. The reporting estate needs coordinated rolling upgrades and a maintained target number of running groups across many related groups, which is exactly what NGroups delivers.",
+				"perChoice": {
+					"a": "Fits the Claims processor: confidential containers run in a trusted execution environment that gives hardware-based confidentiality and integrity protections, protect data in use, and encrypt data being processed in memory, and they are selected as a deployment SKU.",
+					"b": "Fits the Video encoder: standby pools keep prepared capacity ready so new container groups begin serving sooner than an ordinary deployment would allow.",
+					"c": "Fits the Payments API: the IP address of a container group may change when the group restarts, and putting Application Gateway in front of the group is the documented way to keep a static public address.",
+					"d": "Fits the Reporting estate: NGroups manages multiple related container groups, maintaining a specified number of them and performing rolling upgrades, and it can also spread them across availability zones."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-overview"
+				}
+			],
+			"subtopics": [
+				"aci-deployment-options",
+				"confidential-containers",
+				"standby-pools"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SV9CM0J1W8X8FNS892KHR0",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Your team runs container groups on Azure Container Instances, and you are writing the runbook that the support engineers follow. Each row of the table describes one action that must be possible. You need to attach the right command or portal step to each row. Drag the command or portal step that carries out each action into the matching row.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Task",
+						"Action the runbook must make possible"
+					],
+					"rows": [
+						[
+							"T1",
+							"Deploy a new container group from a picture published in a public registry, for a job that should run once and then stop."
+						],
+						[
+							"T2",
+							"Confirm that a job container which has already finished is reported as stopped, and capture the exit code it returned."
+						],
+						[
+							"T3",
+							"Read back the text that the container's application printed to standard output, so the results can be pasted into the runbook."
+						],
+						[
+							"T4",
+							"Remove a container group that is no longer needed, and answer the prompt that appears afterwards."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "create",
+						"text": "az container create"
+					},
+					{
+						"id": "show",
+						"text": "az container show"
+					},
+					{
+						"id": "logs",
+						"text": "az container logs"
+					},
+					{
+						"id": "remove",
+						"text": "Overview > Delete"
+					}
+				],
+				"slots": [
+					{
+						"id": "t1",
+						"label": "Task T1"
+					},
+					{
+						"id": "t2",
+						"label": "Task T2"
+					},
+					{
+						"id": "t3",
+						"label": "Task T3"
+					},
+					{
+						"id": "t4",
+						"label": "Task T4"
+					}
+				]
+			},
+			"key": {
+				"t1": "create",
+				"t2": "show",
+				"t3": "logs",
+				"t4": "remove"
+			},
+			"explanation": {
+				"correct": "Each row is handled by a different step. T1 is the deployment of the group, which is done with az container create; the same command carries the --restart-policy parameter (Always, Never or OnFailure) that decides what happens to a job once its process ends. T2 needs the state of a container that has already finished, and az container show is the command that returns it, for example containers[0].instanceView.currentState.state returning Terminated, and the docs also point to it for watching the exit code. T3 needs the text the application wrote to standard output, which az container logs prints. T4 is the cleanup of a group that is no longer needed, which is done from the group's page in the portal: choose Delete and then answer Yes in the confirmation dialog.",
+				"perChoice": {
+					"create": "Belongs in Task T1. az container create submits the container group deployment, and it also takes the --restart-policy parameter (Always, Never or OnFailure) that decides how the group behaves once its process ends, which is what a one-off job needs.",
+					"logs": "Belongs in Task T3. az container logs prints the STDOUT stream that the container's application produced, for example the ten most frequent words written by the sample word-count image. It does not report the stopped state or the exit code, and it cannot remove anything.",
+					"remove": "Belongs in Task T4. The container group's page in the portal has a Delete option, and the confirmation dialog is answered with Yes, which removes the group. Nothing in the command line row needs this step, so it does not fit the other rows.",
+					"show": "Belongs in Task T2. az container show returns the container group's properties, and querying containers[0].instanceView.currentState.state is how the stopped state (Terminated) and the exit code of a finished container are read."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-restart-policy"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-quickstart-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-overview"
+				}
+			],
+			"subtopics": [
+				"aci-cli-commands",
+				"container-groups",
+				"operations-runbook"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TCAD17M4S09ABYSTB8EHF9",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have deployed a container group on Azure Container Instances that serves a partner-facing web workload. The partner's clients resolve the group's public hostname once and cache the resulting IP address for several hours. After Azure carried out a maintenance restart of the group, those clients could no longer connect, even though the container was healthy and none of its settings had changed. You need the partner to keep using a single public address that stays valid when the container group restarts, and your team does not want to manage any virtual machines. Which Azure service should you place in front of the container group?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Observation",
+						"DNS name label",
+						"Public IP address of the container group"
+					],
+					"rows": [
+						[
+							"Before the maintenance restart",
+							"partnerapi",
+							"20.62.190.5"
+						],
+						[
+							"After the maintenance restart",
+							"partnerapi",
+							"20.51.64.18"
+						]
+					]
+				},
+				"statement": "The Azure service that should front the container group so the partner keeps one unchanged public address is {{front}}.",
+				"slots": [
+					{
+						"id": "front",
+						"options": [
+							{
+								"id": "a",
+								"text": "Application Gateway"
+							},
+							{
+								"id": "b",
+								"text": "Front Door"
+							},
+							{
+								"id": "c",
+								"text": "Traffic Manager"
+							},
+							{
+								"id": "d",
+								"text": "API Management"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"front": "a"
+			},
+			"explanation": {
+				"correct": "A container group's own address is not guaranteed to stay the same: when the group restarts, its IP address can change, which is what the exhibit shows, so the address the partner cached no longer reaches the workload. For a static public IP address in this situation, the Azure Container Instances guidance specifies putting Application Gateway in front of the container group, so clients keep one unchanged front-end address without the team provisioning or maintaining virtual machines.",
+				"perChoice": {
+					"front:b": "Front Door is a global edge and content-delivery service for web experiences. It is not the component named in the Azure Container Instances guidance for giving a container group a stable public address.",
+					"front:c": "Traffic Manager routes traffic at the DNS level to endpoints in different regions and does not act as the component that fronts the container group with one fixed address.",
+					"front:d": "API Management adds API publishing, policies, and subscriptions on top of an existing endpoint; for a container group whose address changes on restart, the guidance points to Application Gateway as the component placed in front of the group."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-overview"
+				}
+			],
+			"subtopics": [
+				"container-group-networking",
+				"static-public-ip-address"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TCDD0DB0NH19Q6GQQSNJQ2",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your team has deployed a container group on Azure Container Instances for a healthcare provider that processes patient records. The group runs one Linux container whose image comes from the company's own registry, and it mounts an Azure Files share to keep each day's output. The provider's security addendum requires that patient records stay protected while the application is reading them in memory, and that no other customer's workload share the same physical hardware as this group. The image and the one-container layout cannot change. You need the running group to meet the addendum. Which deployment option should you choose for this container group?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Image",
+							"mcr.microsoft.com/contoso/patient-records:5.2 (Linux)"
+						],
+						[
+							"Containers in group",
+							"1 (patient-records)"
+						],
+						[
+							"Mounted volume",
+							"Azure Files share (daily output)"
+						],
+						[
+							"Public endpoint",
+							"Yes - DNS name label records-prod"
+						],
+						[
+							"Deployment option in use today",
+							"Regular containers"
+						]
+					]
+				},
+				"statement": "The container group should be deployed as {{variant}}.",
+				"slots": [
+					{
+						"id": "variant",
+						"options": [
+							{
+								"id": "a",
+								"text": "Confidential containers"
+							},
+							{
+								"id": "b",
+								"text": "Regular containers"
+							},
+							{
+								"id": "c",
+								"text": "Spot containers"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"variant": "a"
+			},
+			"explanation": {
+				"correct": "Confidential containers on ACI run inside a trusted execution environment that provides hardware-based confidentiality and integrity protection for the workload; they protect data in use and encrypt the data being processed in memory, and they are selected as a SKU when you deploy the workload. The provider's addendum demands protection for the records while the application is using them in memory and hardware-level isolation from other customers, so the group must be deployed as Confidential containers.",
+				"perChoice": {
+					"variant:b": "Regular containers are the standard variant of the service: a container on ACI is isolated at the hypervisor level, about as strongly as it would be inside a virtual machine, but the group adds no trusted execution environment and no encryption of data held in memory, so it does not satisfy the addendum.",
+					"variant:c": "Spot containers run interruptible workloads on unused Azure capacity at a discount of up to 70% and may be preempted whenever Azure is short on spare capacity. What they change is price and eviction behaviour; they add no protection for data held in memory, so they do not satisfy the addendum."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-overview"
+				}
+			],
+			"subtopics": [
+				"confidential-containers",
+				"container-group-deployment-options"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TCHMYQX0J9JFFQMF184DY8",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "The command below creates a container group for an internal service. Our company operates several Azure subscriptions under one organization, and a published naming standard requires that every container group we create in any of those subscriptions uses the same public hostname label, so that a service can be re-created in a different subscription without changing the address its clients call. Our auditors also require that no workload outside the company can register the same label, because the group's fully qualified domain name depends on a generated hash that guards against malicious subdomain takeover. Which value should you use for the DNS name label scope reuse of this container group?",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "az container create \\\n  --resource-group rg-contoso-platform \\\n  --name contoso-api \\\n  --image mcr.microsoft.com/azuredocs/aci-helloworld:latest \\\n  --dns-name-label contoso-api \\\n  --ports 80 \\\n  --location eastus"
+				},
+				"statement": "You should set the DNS name label scope reuse of the container group to {{scope}}.",
+				"slots": [
+					{
+						"id": "scope",
+						"options": [
+							{
+								"id": "a",
+								"text": "Tenant"
+							},
+							{
+								"id": "b",
+								"text": "Subscription"
+							},
+							{
+								"id": "c",
+								"text": "Resource Group"
+							},
+							{
+								"id": "d",
+								"text": "Any reuse"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"scope": "a"
+			},
+			"explanation": {
+				"correct": "The Tenant scope lets groups created anywhere in the company's own directory claim the same label, including groups placed in different subscriptions, while keeping the label out of reach of workloads from other organizations. That satisfies both halves of the requirement: the naming standard must hold across all of the company's subscriptions, and the label must not be registerable from outside the company, which preserves the protection that the generated hash in the fully qualified domain name gives against malicious subdomain takeover. The Subscription and Resource Group scopes are too narrow for a standard that must hold across every subscription the company owns, and Any reuse opens the label to every workload on the service.",
+				"perChoice": {
+					"scope:b": "Subscription: This scope only permits reuse among groups that live in the same Azure subscription, so a group re-created in one of the company's other subscriptions could not register the same label and the naming standard would break.",
+					"scope:c": "Resource Group: This scope only permits reuse among groups in the same resource group, which is narrower than the Subscription scope and therefore even less able to satisfy a naming standard that must hold across all of the company's subscriptions.",
+					"scope:d": "Any reuse: This is the least secure option, because any group from any organization could register the same label; that broad reuse weakens the protection that the generated hash in the fully qualified domain name provides against malicious subdomain takeover."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-quickstart-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-overview"
+				}
+			],
+			"subtopics": [
+				"dns-name-label",
+				"scope-reuse",
+				"container-group-networking"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TCMA9ZF4Y26XQZ4PE1Z4QJ",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a payments service that runs as a container group on Azure Container Instances, and the deployment script shown below hands the service the credential of an external partner API. The script runs unattended, and a colleague who can read the container group in the portal was able to print that credential in clear text. You need the credential to stop being readable that way, while the container still has to receive the value when it starts. Which change should you make to the deployment?",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "az container create \\\n  --resource-group rg-payments-prod \\\n  --name payments-api \\\n  --image contoso.azurecr.io/payments-api:2.4 \\\n  --secrets PARTNER_API_KEY='Kx7-vQ2pLm-9Zr4T'"
+				},
+				"statement": "To satisfy the security requirement without changing what the running container receives, the deployment should {{secretMethod}}.",
+				"slots": [
+					{
+						"id": "secretMethod",
+						"options": [
+							{
+								"id": "a",
+								"text": "pass the credential in a CLI environment variable"
+							},
+							{
+								"id": "b",
+								"text": "pass the credential base64-encoded on the command line"
+							},
+							{
+								"id": "c",
+								"text": "pass the credential in the container group's environment settings"
+							},
+							{
+								"id": "d",
+								"text": "pass the credential as a plain argument on the command line"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"secretMethod": "a"
+			},
+			"explanation": {
+				"correct": "Credentials that are handed to the tool on the command line are kept as plain text in the backend, which is exactly what the portal reader exploited. Microsoft advises keeping user credentials in CLI environment variables so that they are encrypted or transformed when they are written to the backend. Changing the script so the partner credential is supplied through a CLI environment variable therefore removes the recoverable plain-text copy while the container still gets the secret at start-up.",
+				"perChoice": {
+					"secretMethod:b": "Base64 is an encoding, not encryption, so the value that reaches the backend can still be decoded by anyone who can read the group's stored configuration; the credential stays recoverable.",
+					"secretMethod:c": "Values entered as part of the container group's own environment settings become part of the group's definition and stay visible to anyone who can read the resource, so the credential remains readable in clear text.",
+					"secretMethod:d": "This is the behaviour the security team flagged: a credential typed on the command line is stored as plain text in the backend, so changing nothing here leaves the exposure in place."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-overview"
+				}
+			],
+			"subtopics": [
+				"container-instances-security",
+				"container-instances-cli"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TCREMBT0R6GKRK6540M8PQ",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your team runs a nightly data-import job as a container group on Azure Container Instances, created with the command shown below. When it starts, the job fetches its database connection string from Azure Key Vault, and it prints a summary of every record it imported to standard output before it exits. Company policy states that no credential may be written into the container group definition or into the job's environment variables, and the support team must be able to read what the job printed after the run has finished. You need the container group to sign in to Microsoft Entra-supported services without any embedded credential, and you need the command that returns what the job printed.",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "az container create --resource-group rg-imports --name nightly-import \\\n  --image contoso/nightly-import:1.4 \\\n  --restart-policy Never \\\n  --dns-name-label nightly-import\n"
+				},
+				"statement": "Enable {{signinMethod}} on the container group, and have the support team run {{readOutputCommand}}.",
+				"slots": [
+					{
+						"id": "signinMethod",
+						"options": [
+							{
+								"id": "a",
+								"text": "Managed identity"
+							},
+							{
+								"id": "b",
+								"text": "Service principal with a client secret"
+							},
+							{
+								"id": "c",
+								"text": "Shared access key"
+							},
+							{
+								"id": "d",
+								"text": "User name and password"
+							}
+						]
+					},
+					{
+						"id": "readOutputCommand",
+						"options": [
+							{
+								"id": "a",
+								"text": "az container logs --resource-group rg-imports --name nightly-import"
+							},
+							{
+								"id": "b",
+								"text": "az container show --resource-group rg-imports --name nightly-import"
+							},
+							{
+								"id": "c",
+								"text": "az container list --resource-group rg-imports --output table"
+							},
+							{
+								"id": "d",
+								"text": "az container create --resource-group rg-imports --name nightly-import --image contoso/nightly-import:1.4"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"readOutputCommand": "a",
+				"signinMethod": "a"
+			},
+			"explanation": {
+				"correct": "Enabling a managed identity on the container group gives the group its own identity in Microsoft Entra, so it can authenticate to Azure Key Vault and to any other service that supports Microsoft Entra authentication without a user name, password or secret held in the container group definition or in environment variables. The job writes its summary to the standard output stream, and the az container logs command returns that stdout stream for the named container group, so it is the command the support team should run once the run has finished.",
+				"perChoice": {
+					"readOutputCommand:b": "The show command returns the group's configuration and the state of its containers, such as whether the container has reached the Terminated state, not the text the container printed.",
+					"readOutputCommand:c": "The list command enumerates the container groups in a resource group and shows their properties; it does not return the stdout stream of one group.",
+					"readOutputCommand:d": "The create command deploys a container group rather than reporting the result of a run that has already finished; against an existing name it fails, and against a deleted name it starts the job again instead of showing the earlier output.",
+					"signinMethod:b": "A service principal only authenticates when you also supply a secret or certificate, so a credential would have to be stored with the group, which the company policy forbids. A managed identity is created and rotated by the platform, so nothing has to be stored for the group to sign in.",
+					"signinMethod:c": "A shared access key is a static secret the group would have to carry with it, so it fails the requirement that no credential is kept with the deployment.",
+					"signinMethod:d": "A user name and password are exactly the kind of stored credential the policy prohibits, and the service does not issue them to the container group."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-restart-policy"
+				}
+			],
+			"subtopics": [
+				"managed-identity",
+				"container-logs",
+				"container-groups"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TCXF0GDC79MSMC93NYVNHG",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your company runs container groups on Azure Container Instances in a region that has zones. To keep read latency low, every group has to be placed in the same zone as the storage account that holds its files, and each team names the zone for its own group rather than picking one zone for a whole fleet. The group below was created from the portal with the values shown on its creation page. You need to change one setting so that the group lands in the zone that its team named. Which setting should you change?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Field on the creation page",
+						"Value"
+					],
+					"rows": [
+						[
+							"Resource group",
+							"rg-payments"
+						],
+						[
+							"Container name",
+							"payments-api"
+						],
+						[
+							"Image source",
+							"Quickstart images"
+						],
+						[
+							"Container image",
+							"mcr.microsoft.com/azuredocs/aci-helloworld:latest"
+						],
+						[
+							"DNS name label",
+							"payments-api-eastus"
+						],
+						[
+							"Region",
+							"East US"
+						]
+					]
+				},
+				"statement": "You should {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Set Availability zones to the zone that was requested"
+							},
+							{
+								"id": "b",
+								"text": "Set Availability zones to None so that no zone is chosen for the group"
+							},
+							{
+								"id": "c",
+								"text": "Set Availability zones to all zones so that the group is spread out"
+							},
+							{
+								"id": "d",
+								"text": "Set Availability zones to the zone where the resource group was created"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "A container group can be pinned to an availability zone that you choose yourself, and the zone is decided one group at a time. On the Basics tab, the Availability zones setting is where you pick that zone, so setting it to the zone that the owning team named places the workload in the same zone as its storage account. Leaving the setting at None, which is the default, skips pinning the group to a zone, and zonal placement is offered only in regions that have availability zones.",
+				"perChoice": {
+					"action:b": "None is the default value and it skips pinning the group to any zone, so the group would not be tied to the zone that its team named. Leaving the setting untouched is the opposite of what this workload requires.",
+					"action:c": "A single group is placed in one zone that you choose; there is no value that spreads one group across every zone in the region. Spreading a fleet of related groups across zones is a fleet-level capability (NGroups multi-zone placement), not a per-group setting.",
+					"action:d": "Resource groups are not tied to availability zones, so the zone of a resource group is not a valid choice. The zone for a group comes from the Availability zones setting on the group's creation page."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-quickstart-portal"
+				}
+			],
+			"subtopics": [
+				"availability-zones",
+				"container-groups"
+			],
+			"reviewed": false
+		}
+	]
+}

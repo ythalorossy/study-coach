@@ -1,0 +1,1887 @@
+{
+	"skill": "compute.app-service-create",
+	"questions": [
+		{
+			"id": "q_01M5SWQQNEWXPJJ4C1GFFD052Y",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a .NET web app running on Azure App Service on a Linux worker. The team wants the production configuration to be supplied by App Service configuration instead of the appsettings.json file that ships with the deployment package, and the app must keep resolving the same keys from environment variables at runtime. The configuration file that is currently deployed contains nested entries, as shown below. Which two App Service setting names should you create so the application receives the same values?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"Telemetry\": {\n    \"InstrumentationKey\": \"9a3f1c62-4b7d-4e51-9f0a-27c8d5e6a1b4\"\n  },\n  \"Custom\": {\n    \"Api.Endpoint\": \"https://api.contoso.example\"\n  }\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Telemetry:InstrumentationKey and Custom:Api.Endpoint"
+					},
+					{
+						"id": "b",
+						"text": "Telemetry__InstrumentationKey and Custom__Api_Endpoint"
+					},
+					{
+						"id": "c",
+						"text": "Telemetry_InstrumentationKey and Custom_Api_Endpoint"
+					},
+					{
+						"id": "d",
+						"text": "Telemetry__InstrumentationKey and Custom_Api_Endpoint"
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "In a default Linux App Service app (and in a custom Linux container), the nested names taken from a JSON configuration file are expressed in App Service setting names by replacing every colon with two underscores and every period with a single underscore. The entry Telemetry:InstrumentationKey therefore becomes Telemetry__InstrumentationKey, and the entry Custom:Api.Endpoint becomes Custom__Api_Endpoint, so the correct option supplies both values under the names the application resolves from its environment.",
+				"perChoice": {
+					"a": "Colons are not permitted in an App Service setting name, because names may contain only letters, digits, periods, and underscores. Keeping the colons here therefore breaks the naming rule as well as leaving the nested structure of the JSON file unmapped for the Linux app.",
+					"c": "This pair applies the period-to-single-underscore rule but also uses one underscore for the colon. On Linux, the colon in a nested name has to become two underscores, so Telemetry_InstrumentationKey would be treated as a flat name and would not deliver the value held under the nested Telemetry entry.",
+					"d": "The first name is correct, but the second one collapses both separators into single underscores. The colon in Custom:Api.Endpoint has to become two underscores while the period becomes one, giving Custom__Api_Endpoint, so this pair does not map both nested entries."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-common"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview"
+				}
+			],
+			"subtopics": [
+				"app-settings",
+				"nested-configuration-keys",
+				"linux-apps"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SWT7D1CCREBHEB6EF8K4PQ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a containerized API that runs on Linux. You need a hosting option where Azure maintains the operating system and runtime, and you do not require a dedicated isolated deployment for many applications. Which option should you use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Assessment item",
+						"Observed requirement"
+					],
+					"rows": [
+						[
+							"Workload",
+							"Containerized API"
+						],
+						[
+							"Operating system",
+							"Linux"
+						],
+						[
+							"Deployment artifact",
+							"Custom container image"
+						],
+						[
+							"Application count",
+							"One application"
+						],
+						[
+							"Maintenance responsibility",
+							"Azure handles operating system and runtime updates"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "A standard App Service plan"
+					},
+					{
+						"id": "b",
+						"text": "A Managed Instance"
+					},
+					{
+						"id": "c",
+						"text": "An App Service environment"
+					},
+					{
+						"id": "d",
+						"text": "A deployment slot"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A standard App Service plan is the appropriate choice for a Linux or containerized workload when Azure should handle operating system and runtime updates across its supported runtimes.",
+				"perChoice": {
+					"b": "Managed Instance is intended for legacy Windows applications that depend on operating-system internals, and it explicitly excludes Linux workloads and container deployment, so it cannot host this application.",
+					"c": "An App Service environment is for isolated deployment of many applications on dedicated networking and virtual machines. The exhibit shows a single application with no requirement for that dedicated isolated environment.",
+					"d": "A deployment slot is used to support staging environments and deployment swaps; it is not the hosting choice that provides Linux container execution with Azure-managed operating system and runtime updates."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview"
+				}
+			],
+			"subtopics": [
+				"app-service-hosting-options",
+				"linux-container-hosting"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SWWJDCBQ6QZH42ECXA6REV",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a legacy business application that must be hosted on Azure. You need a hosting option that satisfies the workload characteristics shown below, and the operations team must be able to reproduce the configuration of the machine on every startup. Which App Service hosting option should you create?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Workload characteristic",
+						"Observed detail"
+					],
+					"rows": [
+						[
+							"Application type",
+							"Line-of-business .NET application written for Windows"
+						],
+						[
+							"Startup behavior",
+							"Calls a COM component, updates registry keys, and executes an MSI package installation"
+						],
+						[
+							"File and network access",
+							"Needs a mapped drive to an SMB share plus private network integration to a back-end system"
+						],
+						[
+							"Access and release",
+							"Microsoft Entra ID sign-in for staff, CI/CD pipeline for releases"
+						],
+						[
+							"Number of applications to host",
+							"1"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Standard App Service plan on a Windows SKU"
+					},
+					{
+						"id": "b",
+						"text": "Managed Instance"
+					},
+					{
+						"id": "c",
+						"text": "App Service environment (ASE)"
+					},
+					{
+						"id": "d",
+						"text": "App Service plan hosting a custom Linux container"
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "The workload depends on Windows operating-system internals: COM calls, registry manipulation, MSI package installation, and a mapped drive. Managed Instance is the offering intended for legacy Windows applications tied to those internals, and its plan-scoped isolation fits this kind of workload; startup scripts can install dependencies, update COM, registry, IIS and ACL configuration, and execute MSI packages, so the machine state can be reproduced on every startup. The other three choices cannot satisfy the listed characteristics.",
+				"perChoice": {
+					"a": "A standard App Service plan is the right choice when the app must run on Linux or as a container, or when Azure should apply operating-system and runtime updates across many runtimes. It does not give the app the plan-scoped access to host internals that COM calls, registry writes, MSI installation and mapped drives require, so this legacy workload would break on it.",
+					"c": "An App Service environment is for isolated deployment of many applications on dedicated networking and virtual machines. It delivers isolation and network separation at that scale, but it does not provide the per-application Windows internals access (COM, registry, MSI) that this workload depends on, and only one application is being hosted here.",
+					"d": "Managed Instance explicitly excludes Linux workloads and container deployment, and a container cannot call a host COM component or install an MSI package against the host operating system, so this choice cannot run the application at all."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/getting-started"
+				}
+			],
+			"subtopics": [
+				"managed-instance",
+				"hosting-option-selection",
+				"legacy-windows-applications"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SWZXVHGMV4VYCN5A3JRKMT",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an ASP.NET Core web application running on Azure App Service. The deployment package ships a configuration file, and the team has also stored one of the keys it contains in the App Service configuration. The goal is to adjust production values in Azure without rebuilding and redeploying the package, while the packaged file keeps its development values. The current state of both places is shown below. Which values does the application read at runtime?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Key",
+						"appsettings.json in the deployment package",
+						"App Service configuration"
+					],
+					"rows": [
+						[
+							"StorageAccountName",
+							"devstorageacct",
+							"prodstorageacct"
+						],
+						[
+							"ApiBaseUrl",
+							"https://api-dev.contoso.internal",
+							"Not configured"
+						],
+						[
+							"TelemetryRetentionDays",
+							"7",
+							"Not configured"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "StorageAccountName uses devstorageacct from the deployment package file, and ApiBaseUrl and TelemetryRetentionDays use the values in that same file."
+					},
+					{
+						"id": "b",
+						"text": "StorageAccountName uses the App Service value prodstorageacct, and ApiBaseUrl and TelemetryRetentionDays have no values at all because the App Service configuration replaces the deployment package file."
+					},
+					{
+						"id": "c",
+						"text": "StorageAccountName uses the App Service value prodstorageacct, and ApiBaseUrl and TelemetryRetentionDays use the values in the deployment package file."
+					},
+					{
+						"id": "d",
+						"text": "All three keys use the values in the deployment package file, because app settings are handed to the app only as environment variables and are never read by ASP.NET Core applications."
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "For ASP.NET and ASP.NET Core, App Service app settings correspond to entries in Web.config or appsettings.json, and the App Service values take precedence over the matching values in the deployed file. StorageAccountName is configured in App Service, so the application reads prodstorageacct even though the package still ships devstorageacct. ApiBaseUrl and TelemetryRetentionDays have no App Service entry, so nothing overrides them and the application continues to read the values from appsettings.json in the package (https://api-dev.contoso.internal and 7). This is what lets the file keep development values while Azure supplies production values.",
+				"perChoice": {
+					"a": "This reverses the rule: for ASP.NET Core a file packaged with the deployment does not override App Service values. Since StorageAccountName is set in App Service, prodstorageacct is what the app reads, and the packaged file only supplies keys that are not configured in App Service.",
+					"b": "Configuring a key in App Service does not delete the other keys from the deployed file. Only StorageAccountName is set in App Service, so ApiBaseUrl and TelemetryRetentionDays keep the values from appsettings.json in the package rather than becoming empty.",
+					"d": "ASP.NET Core applications do consume app settings: for ASP.NET and ASP.NET Core the App Service values correspond to entries in Web.config or appsettings.json and take precedence over the matching file values. That is why StorageAccountName resolves to prodstorageacct instead of devstorageacct."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-common"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview"
+				}
+			],
+			"subtopics": [
+				"app-settings",
+				"configuration-precedence"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SX1WTYYYQ9HBJZ246SJTCQ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an ASP.NET Core web application running on Azure App Service that connects to a production SQL database. The database does not support Entra ID authentication, so the application must present a shared credential. Security policy forbids keeping that credential as a literal value in the app configuration, and the operations team needs it to live in a central store that supports rotation. The current state of the app configuration is shown below. Which approach should you use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Current state"
+					],
+					"rows": [
+						[
+							"App setting name",
+							"DbPassword"
+						],
+						[
+							"App setting value",
+							"P@ssw0rd!2024"
+						],
+						[
+							"Where the credential currently lives",
+							"The app setting value only"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Store the password directly in the app setting value, because Azure already encrypts every app setting value while it is stored at rest."
+					},
+					{
+						"id": "b",
+						"text": "Store the secret in Azure Key Vault and put a reference to it in the app setting value, granting the app permission to retrieve it."
+					},
+					{
+						"id": "c",
+						"text": "Store the password in the appsettings.json file that ships inside the deployment package, and remove it from the app setting."
+					},
+					{
+						"id": "d",
+						"text": "Store the password in the app setting value, and update that value from the portal each time the credential is rotated in Azure Key Vault."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "For production credentials, the recommended pattern is to keep the secret itself in Azure Key Vault and place a vault reference in the App Service setting, so the setting no longer holds the credential in plain form and the app is authorized to fetch the current value at runtime. That satisfies both constraints in the scenario: the literal password is out of the app configuration, and the credential is centrally stored and rotatable without changing the setting.",
+				"perChoice": {
+					"a": "Values are encrypted while stored, but that protection only covers whatever you decide to place in the setting; the credential still sits in the app configuration, which the policy forbids, and there is no central copy to rotate.",
+					"c": "The packaged configuration file travels with the deployment artifact and is normally tracked alongside the source code, so the credential still exists outside a central store, and rotating it would mean rebuilding the package instead of updating one value in Azure.",
+					"d": "This keeps a copy of the credential in the setting and requires a manual portal edit on every rotation, so the setting does not point at the centrally stored copy and the two can drift out of sync."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-common"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview"
+				}
+			],
+			"subtopics": [
+				"app-settings",
+				"key-vault-references"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SX70A4H32ADCZM4HNBSPNB",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Python API that runs as a custom container on an App Service plan with a Linux worker. The platform hands the values you define in the App Service configuration to the container through the `--env` flag when the container starts, and the app reads its database password from one of those variables. The operations team issued the password shown below, and the database rejects anything that is not an exact match. Which value should you enter for the app setting?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Password issued by the operations team : pa$$w0rd\\\nWorker operating system               : Linux\nDeployment model                      : Custom container\n"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "`pa$$w0rd\\`"
+					},
+					{
+						"id": "b",
+						"text": "`pa\\$\\$w0rd\\\\`"
+					},
+					{
+						"id": "c",
+						"text": "`pa\\$\\$w0rd\\`"
+					},
+					{
+						"id": "d",
+						"text": "`pa$$w0rd\\\\`"
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "The value stored in an app setting must be escaped as needed by the target operating system, and this app runs on a Linux worker. Escaping both dollar signs and the final backslash yields `pa\\$\\$w0rd\\\\`, which is the stored form that delivers the issued password `pa$$w0rd\\` to the container through the `--env` flag at startup.",
+				"perChoice": {
+					"a": "This stores the characters exactly as they appear in the issued password. On a Linux worker the stored string has to be escaped for the target operating system, so what the container receives in its environment is not the password that was issued.",
+					"c": "The dollar signs are escaped here, but the trailing backslash is not. The value handed to the container therefore does not end with the backslash character of the issued password.",
+					"d": "Only the trailing backslash is escaped in this form; the dollar signs are still passed through as they are. The form used on Linux escapes the dollar signs along with the final backslash."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-common"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview"
+				}
+			],
+			"subtopics": [
+				"app-settings",
+				"linux-configuration",
+				"custom-containers"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TD3G6GD76RSWPBBTT77CWB",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an ASP.NET Core web app on Azure App Service that uploads files to a storage account. The app currently sends a shared access key that sits in the service's configuration as a literal value. You need to take that credential out of the app configuration and stop the app from retrieving a key at runtime, while the upload feature keeps working. Which approach should you use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Observed state"
+					],
+					"rows": [
+						[
+							"Hosted app",
+							"ASP.NET Core web app on Azure App Service (Windows worker)"
+						],
+						[
+							"Back-end resource",
+							"Storage account prodassets"
+						],
+						[
+							"Sign-in methods accepted by the back end",
+							"Microsoft Entra ID; shared key"
+						],
+						[
+							"Sign-in flow used by the app today",
+							"Shared access key sent on every upload request"
+						],
+						[
+							"Entry in the app configuration",
+							"App setting StorageAccessKey holds the literal key value"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Assign managed identity to the app and let it connect to the storage account without a secret"
+					},
+					{
+						"id": "b",
+						"text": "Assign a Key Vault reference to the app and let it resolve the storage account access key at runtime"
+					},
+					{
+						"id": "c",
+						"text": "Assign the storage account access key to an app setting and let the app resolve the key at runtime"
+					},
+					{
+						"id": "d",
+						"text": "Assign the storage account connection string to an app setting and let the app resolve the value at runtime"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The storage account accepts Microsoft Entra ID sign-in, so the app does not need a shared key at all. Assigning a managed identity to the App Service app lets it authenticate to the storage account with short-lived tokens, and that identity can be authorized on the storage account through role-based access control. This removes the literal key from the app configuration and avoids fetching a secret at runtime, satisfying both requirements.",
+				"perChoice": {
+					"b": "A Key Vault reference keeps the secret out of the app setting value and is the recommended pattern when the downstream service needs a key or connection string. Here the storage account accepts Microsoft Entra ID sign-in, and the requirement rules out retrieving a key at runtime, so this option would still pull a secret into the running app.",
+					"c": "The shared access key would remain in the app configuration as a literal value, which is exactly what has to be removed. App setting values are encrypted at rest, but that only protects the stored value and does not satisfy the requirement, and the app still reads the key while it runs.",
+					"d": "A connection string placed in an app setting is still a literal credential in the app configuration, so both requirements remain unmet: the credential stays in the configuration and the app retrieves it at runtime."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-common"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview"
+				}
+			],
+			"subtopics": [
+				"managed-identity",
+				"app-settings",
+				"credential-management"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TD4Z6JKK7BQYBKMK8R18HQ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an ASP.NET Core application running on Azure App Service with several configuration entries stored for it. The operations engineer who is responsible for those entries reports that the page that lists them does not open for them, and even when it does, the stored values stay masked. You need to grant a single built-in role that lets this engineer list the entries, reveal their stored values, and update them. Which role should you assign?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Engineer",
+						"Current role assignment on the app",
+						"Reported result when opening the app's configuration page"
+					],
+					"rows": [
+						[
+							"Priya",
+							"Reader",
+							"Page does not open; no entries are listed"
+						],
+						[
+							"Omar",
+							"Monitoring Reader",
+							"Page does not open; no entries are listed"
+						],
+						[
+							"Lee",
+							"Key Vault Contributor",
+							"Page does not open; no entries are listed"
+						],
+						[
+							"Hana",
+							"Storage Blob Data Contributor",
+							"Page does not open; no entries are listed"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Key Vault Contributor"
+					},
+					{
+						"id": "b",
+						"text": "Monitoring Reader"
+					},
+					{
+						"id": "c",
+						"text": "Storage Blob Data Contributor"
+					},
+					{
+						"id": "d",
+						"text": "Website Contributor"
+					}
+				]
+			},
+			"key": {
+				"optionId": "d"
+			},
+			"explanation": {
+				"correct": "The app's configuration entries live under Settings > Environment variables > App settings, and the documentation states that Read/Write user permissions are required to view that section; the built-in roles with sufficient permissions are Owner, Contributor, and Website Contributor, while Reader alone is not allowed to open the page. Of the four candidate assignments shown, only Website Contributor grants write access to web sites, so assigning it lets the engineer open the page, use Show value (one entry) or Show values (all entries) to reveal the concealed values, and add or edit entries — noting that any change to an entry restarts the app. The other three roles either cover read-only monitoring or grant data-plane rights to vault secrets and blob containers, none of which unlocks the app's configuration page.",
+				"perChoice": {
+					"a": "This role manages the keys, secrets, and permissions inside a Key Vault. It grants no write access to the app itself, so the configuration page remains unavailable to this engineer.",
+					"b": "This is a read-only role for monitoring data. The configuration page requires Read/Write permissions on the app, so a monitoring-only assignment cannot open it.",
+					"c": "This role grants data-plane access to blob containers in a storage account. It does not include write access to the app's configuration entries, so it does not resolve the reported problem."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-common"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview"
+				}
+			],
+			"subtopics": [
+				"rbac-app-settings",
+				"app-service-configuration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TD9N98F3N903E0GB9RGB74",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a new web application that you are creating in Azure App Service, and the operations team has listed what the service must provide. You need to choose the capability that satisfies each requirement. Which capability should you select for each requirement?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Ref",
+						"Requirement"
+					],
+					"rows": [
+						[
+							"R1",
+							"A tested release must be promoted into the live site while the current live version continues to serve requests."
+						],
+						[
+							"R2",
+							"Outbound requests from the application to a database that has a private IP address must remain inside the organization's private address space."
+						],
+						[
+							"R3",
+							"The team wants to acquire its web address through Azure and have it come with a certificate that Azure manages at no additional cost, rather than uploading certificate files."
+						],
+						[
+							"R4",
+							"When request volume increases sharply, the service must add capacity without an operator changing any setting."
+						],
+						[
+							"R5",
+							"The service must continue serving requests if one of the physical locations that hosts it fails."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "d1",
+						"text": "Deployment slots"
+					},
+					{
+						"id": "d2",
+						"text": "Azure Virtual Network integration"
+					},
+					{
+						"id": "d3",
+						"text": "App Service domain"
+					},
+					{
+						"id": "d4",
+						"text": "Automatic scaling"
+					},
+					{
+						"id": "d5",
+						"text": "Zone redundancy"
+					},
+					{
+						"id": "d6",
+						"text": "Custom domain"
+					},
+					{
+						"id": "d7",
+						"text": "App Service environment (ASE)"
+					},
+					{
+						"id": "d8",
+						"text": "Azure Pipelines"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "R1"
+					},
+					{
+						"id": "s2",
+						"label": "R2"
+					},
+					{
+						"id": "s3",
+						"label": "R3"
+					},
+					{
+						"id": "s4",
+						"label": "R4"
+					},
+					{
+						"id": "s5",
+						"label": "R5"
+					}
+				]
+			},
+			"key": {
+				"s1": "d1",
+				"s2": "d2",
+				"s3": "d3",
+				"s4": "d4",
+				"s5": "d5"
+			},
+			"explanation": {
+				"correct": "R1 pairs with deployment slots, which support staging environments so a tested release can be promoted while the live site keeps serving traffic. R2 pairs with Azure Virtual Network integration, which protects application ingress and egress and lets the app reach resources in its private address space. R3 pairs with an App Service domain, because that option comes with a free managed certificate, matching an Azure-acquired web address whose certificate Azure manages at no cost. R4 pairs with automatic scaling, since capacity can be scaled up or out automatically in response to demand. R5 pairs with zone redundancy, one of the reliability features that keeps the service serving requests when a zone hosting it fails.",
+				"perChoice": {
+					"d1": "This belongs in R1: deployment slots support staging environments, so the team can promote a tested release while the live site remains available.",
+					"d2": "This belongs in R2: virtual network integration protects application ingress and egress, so outbound calls to a private back end stay inside the organization's private address space.",
+					"d3": "This belongs in R3: an App Service domain comes with a free managed certificate, which matches a web address acquired through Azure with a certificate Azure manages at no additional cost.",
+					"d4": "This belongs in R4: capacity can be scaled up or out, including automatic scaling in response to demand, so no operator action is needed when traffic grows.",
+					"d5": "This belongs in R5: zone redundancy is listed among the reliability features that keep the service available when one of the zones hosting it fails.",
+					"d6": "This fits no slot. A custom domain is paired with supplying your own certificate, so it does not meet the requirement for an Azure-acquired web address with a certificate Azure manages at no cost.",
+					"d7": "This fits no slot. An App Service environment is intended for isolated deployment of many apps on dedicated networking and virtual machines; it is not the feature that connects this app's outbound calls to private resources.",
+					"d8": "This fits no slot. Azure Pipelines is a continuous delivery system that automates builds and releases, but it does not by itself provide the separate pre-production environment from which a tested release is promoted."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview"
+				}
+			],
+			"subtopics": [
+				"deployment-slots",
+				"virtual-network-integration",
+				"managed-certificates"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TDF7XQ51ZAGPSBY8WRCG9Y",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have created a web application on Azure App Service, and the operations team has recorded five events since it began maintaining the application's configuration in the portal. You need to explain each recorded event by choosing the configuration setting or service behavior that accounts for it. Which option should you place in each target?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Row",
+						"Recorded event"
+					],
+					"rows": [
+						[
+							"A",
+							"The application stopped answering requests for a few seconds immediately after the team changed one of its configuration records."
+						],
+						[
+							"B",
+							"During a release, one parameter stayed on the test site instead of traveling to the live site."
+						],
+						[
+							"C",
+							"The team tried to save a parameter whose identifier includes a hyphen, but the service rejected it."
+						],
+						[
+							"D",
+							"An engineer confirmed that the new data was still missing from the overview screen even after closing the editor."
+						],
+						[
+							"E",
+							"A security reviewer asked whether the text kept on disk can be recovered by someone who bypasses the portal."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "The platform cycles the running instance whenever an app setting is added, removed, or edited."
+					},
+					{
+						"id": "i2",
+						"text": "Mark the app setting as sticky to the current deployment slot."
+					},
+					{
+						"id": "i3",
+						"text": "Setting names may contain only letters, digits, periods, and underscores."
+					},
+					{
+						"id": "i4",
+						"text": "Apply in the setting dialog and then apply again on the Environment variables page."
+					},
+					{
+						"id": "i5",
+						"text": "App setting values are encrypted while stored at rest."
+					},
+					{
+						"id": "i6",
+						"text": "Use a Key Vault reference so the secret stays outside the entry itself."
+					},
+					{
+						"id": "i7",
+						"text": "Receive configured values as an environment variable at runtime."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Recorded event A"
+					},
+					{
+						"id": "s2",
+						"label": "Recorded event B"
+					},
+					{
+						"id": "s3",
+						"label": "Recorded event C"
+					},
+					{
+						"id": "s4",
+						"label": "Recorded event D"
+					},
+					{
+						"id": "s5",
+						"label": "Recorded event E"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "Each recorded event has a matching platform behavior or configuration option. A brief loss of service right after an edit corresponds to the restart that occurs when an app setting is added, removed, or edited (A). A parameter that remains on the test site during a release corresponds to a setting marked sticky to the current deployment slot (B). A rejected identifier containing a hyphen corresponds to the restricted character set allowed for setting names, namely letters, digits, periods, and underscores (C). Data still missing after the editor is closed corresponds to the two-step save, applying in the setting dialog and then applying again on the Environment variables page (D). A reviewer asking whether the on-disk text can be read back corresponds to app setting values being encrypted while stored at rest (E).",
+				"perChoice": {
+					"i1": "Fits Recorded event A: adding, removing, or editing an app setting restarts the App Service, which accounts for the brief interruption in request handling right after the team changed a configuration record.",
+					"i2": "Fits Recorded event B: a setting marked sticky to the current deployment slot stays with that slot rather than traveling with the application, which explains why one parameter remained on the test site during the release.",
+					"i3": "Fits Recorded event C: a hyphen is not permitted in a setting name, because names accept only letters, digits, periods, and underscores, which explains why the service rejected the identifier.",
+					"i4": "Fits Recorded event D: the change is committed by applying in the setting dialog and then applying again on the Environment variables page, so closing the editor after only one apply leaves the data missing.",
+					"i5": "Fits Recorded event E: app setting values are encrypted while stored at rest, so the text kept on disk cannot be recovered in plain form by someone who bypasses the portal.",
+					"i6": "Fits no target: a Key Vault reference is the recommended way to keep production credentials outside the app setting value, but none of the recorded events concerns where a credential is held.",
+					"i7": "Fits no target: this describes how configured values reach the application as environment variables at runtime, which does not account for any of the recorded events."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-common"
+				}
+			],
+			"subtopics": [
+				"app-settings",
+				"configuration-management",
+				"deployment-slots"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TDJC62GEX34TNF5JQ0W9AJ",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are creating a new web site in Azure App Service for an internal team service. The facts the developers reported are listed below, and the creation form in the Azure portal asks you to choose one value for each field. Drag each value into the field where it belongs.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Fact",
+						"What the developers reported"
+					],
+					"rows": [
+						[
+							"Current implementation",
+							"An internal service already written with the Flask framework; the team does not want to rewrite it"
+						],
+						[
+							"Delivery",
+							"The release pipeline packages the service with Docker and pushes it to the company's private artifact store"
+						],
+						[
+							"Native dependency",
+							"The service calls a native library that the team compiles and ships only for Unix-like targets"
+						],
+						[
+							"Expected load",
+							"About 30 concurrent internal users"
+						],
+						[
+							"Isolation",
+							"No requirement for dedicated networking or separate virtual machines for each deployment"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Windows"
+					},
+					{
+						"id": "i2",
+						"text": "Linux"
+					},
+					{
+						"id": "i3",
+						"text": "Node.js"
+					},
+					{
+						"id": "i4",
+						"text": "Python"
+					},
+					{
+						"id": "i5",
+						"text": "Code from a repository"
+					},
+					{
+						"id": "i6",
+						"text": "Container image from a registry"
+					},
+					{
+						"id": "i7",
+						"text": "App Service plan"
+					},
+					{
+						"id": "i8",
+						"text": "App Service environment"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Runtime stack for the web app"
+					},
+					{
+						"id": "s2",
+						"label": "Operating system for the worker"
+					},
+					{
+						"id": "s3",
+						"label": "Publish method"
+					},
+					{
+						"id": "s4",
+						"label": "Compute resource that runs the workload"
+					}
+				]
+			},
+			"key": {
+				"s1": "i4",
+				"s2": "i2",
+				"s3": "i6",
+				"s4": "i7"
+			},
+			"explanation": {
+				"correct": "The reported facts determine one value per creation field. The service is an existing Flask application, and Flask runs on Python, so the runtime stack field takes Python rather than Node.js. The native library is only built for Unix-like targets, so the worker must run on Linux rather than Windows. The release pipeline produces a Docker package that the team stores privately and that the platform pulls at start-up, so the publish method is a container image from a registry rather than code from a repository. Finally, with roughly 30 concurrent internal users and no requirement for dedicated networking or separate virtual machines per deployment, a standard App Service plan is the right compute resource; it supports Linux and custom container workloads while Azure maintains the operating system and runtime updates. An App Service environment is reserved for isolated deployment of many applications on dedicated networking and virtual machines, which this team does not need.",
+				"perChoice": {
+					"i1": "This value fits no slot: the native dependency exists only for Unix-like targets, so a Windows worker cannot run the service.",
+					"i2": "This value belongs in the operating system field: the native library the service calls is compiled and shipped only for Unix-like targets, so the worker must be Linux.",
+					"i3": "This value fits no slot: the service is written with the Flask framework, which runs on Python, not on Node.js.",
+					"i4": "This value belongs in the runtime stack field: the existing service is written with the Flask framework, and Flask is a Python framework.",
+					"i5": "This value fits no slot: the team ships the service as a Docker package held in a private artifact store and the platform pulls that packaged image, so the app is not built from source code in Azure.",
+					"i6": "This value belongs in the publish method field: the release pipeline produces a Docker image that is stored privately and pulled by the platform when the app starts.",
+					"i7": "This value belongs in the compute resource field: a standard App Service plan runs the Linux containerized app and lets Azure handle operating-system and runtime updates, which matches a small internal workload with no isolation requirement.",
+					"i8": "This value fits no slot: an App Service environment is for isolated deployment of many applications on dedicated networking and virtual machines, and the team reported no such requirement."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/getting-started"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview"
+				}
+			],
+			"subtopics": [
+				"app-service-creation",
+				"hosting-plan-selection",
+				"container-deployment"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V2HGMYR4DG2ZH5R40BXMHK",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a legacy Windows business application running on Azure App Service with Managed Instance. The operations team has listed what this environment must support so the app can be operated day to day. Two of the capabilities listed below are not offered by this hosting option, so they belong in none of the slots. Drag each capability into the slot where it applies.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Application attributes\n----------------------\nOperating system .... Windows\nPlan ................ Managed Instance plan, SKU PMV4\nInstallation ........ Delivered to the platform as an MSI installer package\nDependencies ........ Calls COM components and keeps its settings in the registry\n"
+				},
+				"items": [
+					{
+						"id": "cap1",
+						"text": "Azure Bastion"
+					},
+					{
+						"id": "cap2",
+						"text": "Azure Key Vault"
+					},
+					{
+						"id": "cap3",
+						"text": "a startup PowerShell script"
+					},
+					{
+						"id": "cap4",
+						"text": "mapped drives"
+					},
+					{
+						"id": "cap5",
+						"text": "plan-scoped isolation"
+					},
+					{
+						"id": "cap6",
+						"text": "remote debugging"
+					},
+					{
+						"id": "cap7",
+						"text": "a Linux worker"
+					}
+				],
+				"slots": [
+					{
+						"id": "req1",
+						"label": "The team must be able to open a desktop session on one of the app's instances to troubleshoot, without that instance being exposed to the public Internet."
+					},
+					{
+						"id": "req2",
+						"label": "The registry settings of the machine must pick up their values from the organization's secret store instead of having the values typed in by hand."
+					},
+					{
+						"id": "req3",
+						"label": "Every time the instance boots, extra software must be installed and the COM, registry, IIS and ACL configuration must be put in place automatically."
+					},
+					{
+						"id": "req4",
+						"label": "The application must read files from a corporate Windows file share that is reachable over SMB or UNC."
+					},
+					{
+						"id": "req5",
+						"label": "Applications sharing the same hosting resource must not be able to reach one another's configuration or data."
+					}
+				]
+			},
+			"key": {
+				"req1": "cap1",
+				"req2": "cap2",
+				"req3": "cap3",
+				"req4": "cap4",
+				"req5": "cap5"
+			},
+			"explanation": {
+				"correct": "Azure Bastion supplies the RDP route that lets operators reach a Managed Instance for troubleshooting rather than exposing the instance directly, so it fits the first slot. At plan level, registry definitions may reference secrets held in Azure Key Vault, which covers the secret-store requirement. Startup PowerShell scripts for Managed Instance can install dependencies, update COM, registry, IIS and ACL configuration and execute MSI packages, which covers the requirement to configure the machine on every boot. Supported SMB/UNC paths can be mapped or referenced through drive-letter access, so mapped drives covers the corporate file share requirement. Plan-scoped isolation gives tighter network boundaries between applications that share the same plan, which covers the separation requirement. Remote debugging and Linux workloads are both excluded from Managed Instance, so those two capabilities fit no slot.",
+				"perChoice": {
+					"cap1": "Fits the desktop-session slot: Azure Bastion provides the RDP route for troubleshooting a Managed Instance instance.",
+					"cap2": "Fits the secret-store slot: at plan level, registry definitions can reference secrets held in Azure Key Vault.",
+					"cap3": "Fits the boot-time slot: a startup PowerShell script can install dependencies, update COM, registry, IIS and ACL configuration, and execute MSI packages.",
+					"cap4": "Fits the file-share slot: supported SMB/UNC paths can be mapped or referenced through drive-letter access.",
+					"cap5": "Fits the separation slot: plan-scoped isolation provides tighter network boundaries between applications that share the same plan.",
+					"cap6": "Fits no slot: remote debugging is excluded from Managed Instance, so it cannot satisfy any listed requirement.",
+					"cap7": "Fits no slot: Linux workloads are excluded from Managed Instance; this application has to run on Windows."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview"
+				}
+			],
+			"subtopics": [
+				"managed-instance",
+				"app-service-operations"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V2WF1676GX05GY3BSHEP6R",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a web site running on Azure App Service, and the go-live review has raised the expectations listed below for the hosting arrangement. Each expectation is met by exactly one App Service capability or pricing option. Drag each expectation into the slot of the option that satisfies it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Attribute",
+						"Current state"
+					],
+					"rows": [
+						[
+							"Hosting model",
+							"Standard App Service plan with a Linux worker"
+						],
+						[
+							"Pricing tier",
+							"B1"
+						],
+						[
+							"Public address",
+							"Microsoft-provided address only"
+						],
+						[
+							"Release method",
+							"Manual publish from a developer workstation"
+						],
+						[
+							"Traffic pattern",
+							"Flat, with no seasonal peaks"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "The public site currently answers on a Microsoft-provided address, and the company wants its own name shown in the browser together with a certificate that Microsoft renews at no extra charge."
+					},
+					{
+						"id": "i2",
+						"text": "Every change is published by hand from a developer workstation, and the team wants a release to be proven on a copy of the live site before live traffic is moved to it."
+					},
+					{
+						"id": "i3",
+						"text": "The organization must control the addressing through which the site is reached and through which it reaches other systems, using its own private address space."
+					},
+					{
+						"id": "i4",
+						"text": "The workload runs at a flat level every hour of every day, and finance wants a lower effective price in exchange for committing to it ahead of time."
+					},
+					{
+						"id": "i5",
+						"text": "If one datacenter location goes offline, the site must continue serving requests."
+					},
+					{
+						"id": "i6",
+						"text": "Each worker machine must run a high number of processes that consume large amounts of RAM side by side."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "App Service domain"
+					},
+					{
+						"id": "s2",
+						"label": "Deployment slots"
+					},
+					{
+						"id": "s3",
+						"label": "Virtual Network integration"
+					},
+					{
+						"id": "s4",
+						"label": "Azure savings plan"
+					},
+					{
+						"id": "s5",
+						"label": "Zone redundancy"
+					},
+					{
+						"id": "s6",
+						"label": "P*mv3 tier"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5",
+				"s6": "i6"
+			},
+			"explanation": {
+				"correct": "Each review expectation lines up with a single App Service capability or pricing option: brand protection with a free, automatically renewed certificate comes from an App Service domain; validating a release against a copy of the live site before traffic moves comes from deployment slots (staging environments); governing both inbound requests and outbound calls with the organization's own addressing comes from Virtual Network integration, which protects application ingress and egress; lowering the effective price of a workload that runs at a flat level in exchange for committing ahead of time comes from an Azure savings plan; staying available when one datacenter zone goes offline comes from zone redundancy; and packing many RAM-hungry processes onto a single machine comes from the memory-optimized P*mv3 tiers, which support high-density hosting.",
+				"perChoice": {
+					"i1": "Belongs in the App Service domain slot: brand protection with a free managed certificate that Microsoft renews is delivered by an App Service domain.",
+					"i2": "Belongs in the Deployment slots slot: deployment slots provide staging environments so a release can be validated on a copy of the live site before production traffic is switched over.",
+					"i3": "Belongs in the Virtual Network integration slot: Virtual Network integration protects application ingress and egress, which lets the organization's own addressing govern both directions.",
+					"i4": "Belongs in the Azure savings plan slot: savings plans (and reserved instances) reduce predictable-workload costs in exchange for a commitment made ahead of time, and this workload runs at a flat level.",
+					"i5": "Belongs in the Zone redundancy slot: zone redundancy is the reliability feature that keeps the site serving requests when one datacenter zone is unavailable.",
+					"i6": "Belongs in the P*mv3 tier slot: the memory-optimized P*mv3 tiers support high-density hosting, where many processes that consume large amounts of RAM share one machine."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-common"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/getting-started"
+				}
+			],
+			"subtopics": [
+				"app-service-hosting-features",
+				"cost-optimization",
+				"reliability"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V2ZHY7E47H8PB2H8WNE37F",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Your team is publishing a new web application to App Service for the first time, and each group follows a different publish path. The developers reported what they do on each path, as shown below. Drag each publishing tool into the slot of the path it matches.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Publish path",
+						"What the group does"
+					],
+					"rows": [
+						[
+							"A",
+							"The .NET code is written and published on a Windows workstation inside a full-featured IDE"
+						],
+						[
+							"B",
+							"The Java code is published from a developer workstation IDE"
+						],
+						[
+							"C",
+							"The Java build is produced and packaged by a command-line tool that runs inside the build script"
+						],
+						[
+							"D",
+							"The already-built .NET package is published by a shell script that runs on a Linux build agent"
+						],
+						[
+							"E",
+							"Every completed build is deployed to the site automatically, with no manual publish step"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "vs",
+						"text": "Visual Studio"
+					},
+					{
+						"id": "ij",
+						"text": "IntelliJ"
+					},
+					{
+						"id": "mvn",
+						"text": "Maven"
+					},
+					{
+						"id": "cli",
+						"text": "Azure CLI"
+					},
+					{
+						"id": "pipe",
+						"text": "Azure Pipelines"
+					}
+				],
+				"slots": [
+					{
+						"id": "a",
+						"label": "Path A: publish the .NET app from a full IDE on a Windows workstation"
+					},
+					{
+						"id": "b",
+						"label": "Path B: publish the Java app from a developer workstation IDE"
+					},
+					{
+						"id": "c",
+						"label": "Path C: build and package the Java app with a command-line tool"
+					},
+					{
+						"id": "d",
+						"label": "Path D: publish the built .NET package from a script on a Linux agent"
+					},
+					{
+						"id": "e",
+						"label": "Path E: deploy every completed build to the site with no manual step"
+					}
+				]
+			},
+			"key": {
+				"a": "vs",
+				"b": "ij",
+				"c": "mvn",
+				"d": "cli",
+				"e": "pipe"
+			},
+			"explanation": {
+				"correct": "Each path is matched to the publishing tool that the documentation lists for that kind of work: the Windows workstation IDE path for the .NET app matches Visual Studio, the Java workstation IDE path matches IntelliJ, the command-line build-and-package path for Java matches Maven, the scripted publish from a Linux build agent matches Azure CLI, and the unattended delivery of every completed build matches Azure Pipelines. Each tool is the only one of its kind offered in the list, so no path can be filled twice and every tool fits exactly one path.",
+				"perChoice": {
+					"cli": "Path D. Azure CLI is one of the command-line tools that can publish an application to App Service, and it is the option offered here that publishes from a shell script running on a Linux build agent.",
+					"ij": "Path B. IntelliJ is one of the purpose-built IDE deployment tools supported for publishing apps to App Service, and among the options offered it is the one that covers the Java workstation IDE path.",
+					"mvn": "Path C. Maven is one of the command-line tools that can build and deploy the Java application, so it matches the path where the build is produced and packaged inside the build script.",
+					"pipe": "Path E. Azure Pipelines is one of the CI/CD systems that can deliver continuous deployment of a new build to App Service without a manual publish step.",
+					"vs": "Path A. Visual Studio is one of the purpose-built deployment tools for the .NET app and is the IDE-based option offered for creating and publishing from a Windows workstation."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/getting-started"
+				}
+			],
+			"subtopics": [
+				"deployment-tools",
+				"app-service-publishing",
+				"create-app-service"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V36WY08AR82D352AZG1D4D",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "A company is preparing a public web site for launch on Azure App Service. The people who build and run the site recorded three constraints, shown below. Which action should you take for each constraint?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Constraint",
+						"What was recorded"
+					],
+					"rows": [
+						[
+							"Release artifact",
+							"The build output is a single pre-assembled bundle that already ships with the operating system, the runtime, and every dependency the application needs. It has to run exactly as delivered, without the platform installing a runtime or dependencies for it, and the operations team must not administer the operating system."
+						],
+						[
+							"Public hostname",
+							"The site has to answer on the company's own hostname rather than on the default one. The team must not have to buy, renew, or upload a certificate; the platform is expected to cover that part."
+						],
+						[
+							"Regional failure",
+							"The site has to keep serving visitors even if one datacenter inside the deployed region becomes unavailable."
+						]
+					]
+				},
+				"statement": "The correct approach is to {{s1}}, to {{s2}}, and to {{s3}}.",
+				"slots": [
+					{
+						"id": "s1",
+						"options": [
+							{
+								"id": "a",
+								"text": "Deploy it as a custom container"
+							},
+							{
+								"id": "b",
+								"text": "Deploy it as a code-based app"
+							},
+							{
+								"id": "c",
+								"text": "Deploy it from a Marketplace template"
+							},
+							{
+								"id": "d",
+								"text": "Deploy it as a virtual machine scale set"
+							}
+						]
+					},
+					{
+						"id": "s2",
+						"options": [
+							{
+								"id": "a",
+								"text": "Add an App Service domain with a free managed certificate"
+							},
+							{
+								"id": "b",
+								"text": "Add a custom domain with a certificate you purchase and upload"
+							},
+							{
+								"id": "c",
+								"text": "Add a custom domain with a certificate from your own certificate authority"
+							},
+							{
+								"id": "d",
+								"text": "Add an App Service domain with a certificate you upload yourself"
+							}
+						]
+					},
+					{
+						"id": "s3",
+						"options": [
+							{
+								"id": "a",
+								"text": "Enable zone redundancy for the site"
+							},
+							{
+								"id": "b",
+								"text": "Enable automatic scaling for the site"
+							},
+							{
+								"id": "c",
+								"text": "Enable a deployment slot for the site"
+							},
+							{
+								"id": "d",
+								"text": "Enable built-in social sign-in for the site"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "a",
+				"s3": "a"
+			},
+			"explanation": {
+				"correct": "The recorded bundle already carries the operating system, the runtime, and all dependencies, so App Service has to run it exactly as delivered; that is the custom container publishing model, which the documentation describes for containerized applications. For the hostname, the documented option that leaves the team out of certificate purchasing and renewal is an App Service domain with a free managed certificate — bringing your own domain and certificate is the alternative the constraint rules out. For surviving the loss of a datacenter inside the region, the documented reliability feature is zone redundancy; scaling changes capacity and staging slots change how releases are promoted, and neither keeps the site running through a datacenter outage.",
+				"perChoice": {
+					"s1:b": "A code-based publishing model means you publish source code and the platform installs and maintains the matching runtime and its dependencies. The recorded constraint says the delivered bundle already carries the runtime and dependencies and must run without the platform installing anything for it, so this model contradicts the requirement.",
+					"s1:c": "Marketplace application templates (for example WordPress, Joomla, Django, Node.js, and Drupal) provide ready-made applications. The team has its own pre-assembled application, so a ready-made template is not what should be deployed.",
+					"s1:d": "A virtual machine scale set is infrastructure you administer yourself, including the operating system of every instance. The recorded constraint says the operations team must not administer the operating system and that the platform must run the bundle as delivered.",
+					"s2:b": "Bringing your own domain and certificate is a supported alternative, but the team then has to purchase the certificate and upload it. The recorded constraint states the team must not buy, renew, or upload a certificate.",
+					"s2:c": "A certificate issued by the company's own certificate authority still has to be obtained and uploaded to the site, so the team remains responsible for buying and renewing the certificate, which the recorded constraint forbids.",
+					"s2:d": "Using an App Service domain with a certificate you upload yourself still leaves the team responsible for supplying and renewing that certificate, which the recorded constraint rules out.",
+					"s3:b": "Automatic scaling adds or removes capacity in response to demand. It does not keep the site serving when a datacenter inside the region is lost.",
+					"s3:c": "A deployment slot provides a staging copy of the site for testing and promotion between environments. It does not protect the site against a datacenter failure in the region.",
+					"s3:d": "Built-in social sign-in controls which identities can sign in to the site. It has no effect on whether the site keeps running when a datacenter in the region fails."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/getting-started"
+				}
+			],
+			"subtopics": [
+				"app-service-publishing-models",
+				"custom-domain-and-managed-certificate",
+				"zone-redundancy"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V3D5RNDVPCTWEN5E1D5KD7",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an enterprise that is moving sixty-two internal web applications onto Azure. The estate mixes Windows ones and Linux ones, and every application needs its own local settings instead of sharing them with the rest of the estate. The applications must run on infrastructure that is dedicated to the company, must not accept traffic from the public internet, and must call the company's on-premises systems over private IP addresses. You need to choose the hosting arrangement for the estate and the capability that gives the applications that private path to the on-premises systems. Which should you use for each?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Recorded detail",
+						"Value"
+					],
+					"rows": [
+						[
+							"Applications in scope",
+							"62 internal web applications, a mix of Windows and Linux ones"
+						],
+						[
+							"Configuration isolation",
+							"Every application needs different local settings; no setting is shared across the estate"
+						],
+						[
+							"Hosting isolation",
+							"Infrastructure must be dedicated to the company and not shared with other tenants"
+						],
+						[
+							"Inbound access",
+							"Applications must not accept traffic from the public internet"
+						],
+						[
+							"Dependencies",
+							"Applications call on-premises systems over private IP addresses"
+						]
+					]
+				},
+				"statement": "The estate should be hosted on {{slotHosting}}, and the private path from those applications to the on-premises systems should be provided by {{slotPrivateConnectivity}}.",
+				"slots": [
+					{
+						"id": "slotHosting",
+						"options": [
+							{
+								"id": "a",
+								"text": "App Service environment (ASE)"
+							},
+							{
+								"id": "b",
+								"text": "Managed Instance"
+							},
+							{
+								"id": "c",
+								"text": "Standard App Service plan"
+							},
+							{
+								"id": "d",
+								"text": "App Service plan with zone redundancy"
+							}
+						]
+					},
+					{
+						"id": "slotPrivateConnectivity",
+						"options": [
+							{
+								"id": "a",
+								"text": "Azure Virtual Network integration"
+							},
+							{
+								"id": "b",
+								"text": "Azure Bastion"
+							},
+							{
+								"id": "c",
+								"text": "App Service domain"
+							},
+							{
+								"id": "d",
+								"text": "Managed identity"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slotHosting": "a",
+				"slotPrivateConnectivity": "a"
+			},
+			"explanation": {
+				"correct": "The two requirements are decided by different parts of the service. For the estate itself, the documentation points to the isolated deployment option intended for hosting many applications on dedicated infrastructure rather than relying on operating-system customizations that are shared at the plan level, which matches sixty-two applications that each need their own local settings, dedicated infrastructure, and no exposure to the public internet. For the private path, the documentation states that Azure Virtual Network integration protects application ingress and egress, which is what lets these applications reach on-premises systems over private IP addresses while remaining off the public internet.",
+				"perChoice": {
+					"slotHosting:b": "Managed Instance is aimed at legacy Windows workloads that depend on operating-system internals such as COM objects, registry manipulation, MSI deployment, or mapped drives. Its isolation is scoped to the plan, it excludes Linux workloads, containers, and App Service environments, and it is not the answer for a large estate where each application needs separate settings.",
+					"slotHosting:c": "A standard App Service plan is the right choice when Azure should operate and update the operating system and runtime for Linux workloads or for containers, but it does not give the many-application deployment on dedicated infrastructure with per-application separation that this estate requires.",
+					"slotHosting:d": "Zone redundancy is a resilience feature that keeps a plan serving if one availability zone in the region fails. It does not create an isolated estate of many applications on dedicated infrastructure with separate settings per application.",
+					"slotPrivateConnectivity:b": "Bastion gives operators a browser-based RDP route to virtual machines for troubleshooting. It does not hand a running web application a private path to on-premises systems.",
+					"slotPrivateConnectivity:c": "An App Service domain with a free managed certificate protects the site's hostname and brand over HTTPS. It does not govern how traffic enters and leaves the application.",
+					"slotPrivateConnectivity:d": "A managed identity lets the application authenticate to back-end Azure resources without storing connection secrets. It grants no connectivity to on-premises systems and does not shape the application's ingress and egress."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-common"
+				}
+			],
+			"subtopics": [
+				"app-service-hosting-options",
+				"private-connectivity"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V3YB1TMA57ESCFDCGTHR11",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Python API running on Azure App Service. The operations team wants to move several values into the service's configuration, and the application reads those values as environment variables at runtime. The team has drafted a naming policy for the new entries and wants to confirm which characters it may use so that every entry is accepted exactly as written. Which set of characters should the policy allow in each entry name?",
+				"statement": "The policy should allow {{nameChars}} in each configuration entry name.",
+				"slots": [
+					{
+						"id": "nameChars",
+						"options": [
+							{
+								"id": "a",
+								"text": "Letters, digits, periods, and underscores"
+							},
+							{
+								"id": "b",
+								"text": "Letters, digits, periods, and hyphens"
+							},
+							{
+								"id": "c",
+								"text": "Letters, digits, colons, and slashes"
+							},
+							{
+								"id": "d",
+								"text": "Letters, digits, spaces, and hyphens"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"nameChars": "a"
+			},
+			"explanation": {
+				"correct": "App Service accepts only letters, digits (0-9), periods (.), and underscores (_) in configuration entry names, and it supplies the values of those entries to the application as environment variables. This naming rule therefore lets the team store each value without renaming any entry.",
+				"perChoice": {
+					"nameChars:b": "Hyphens are not accepted in App Service configuration entry names, even though they are commonly used in environment variable names, so this policy would not be accepted as written.",
+					"nameChars:c": "Colons and slashes are not accepted in App Service configuration entry names, so entries that use them would have to be renamed.",
+					"nameChars:d": "Spaces and hyphens are not accepted in App Service configuration entry names, so the team would have to revise this proposed policy."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-common"
+				}
+			],
+			"subtopics": [
+				"app-settings",
+				"configuration-names"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V44C5VRQ2DBAHQX68KEQNN",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a public web site for a consumer brand that you are creating on Azure App Service. You need the service to satisfy the three requirements the product owner recorded below, and each requirement is met by exactly one capability you configure. Which option should you select for each requirement?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Area",
+						"Requirement recorded by the product owner"
+					],
+					"rows": [
+						[
+							"Customer sign-in",
+							"Visitors authenticate with the login they already hold on large consumer platforms. The team does not want to write or operate an authentication system itself."
+						],
+						[
+							"Public hostname and HTTPS",
+							"The company owns no DNS zone and will not purchase a certificate. It wants the domain name and the certificate handled for it, and browsers must show no certificate warning."
+						],
+						[
+							"Traffic growth",
+							"Usage can rise sharply without notice, and the plan must add capacity on its own, so nobody has to resize it by hand."
+						]
+					]
+				},
+				"statement": "For this web site, configure {{signin}} for returning visitors, {{hostname}} so the site is reachable over HTTPS, and {{capacity}} so that traffic growth is handled without anyone resizing the plan.",
+				"slots": [
+					{
+						"id": "signin",
+						"options": [
+							{
+								"id": "a",
+								"text": "Built-in social sign-in with Google, Facebook, X, and Microsoft accounts"
+							},
+							{
+								"id": "b",
+								"text": "Built-in social sign-in with Azure Active Directory tenants only"
+							},
+							{
+								"id": "c",
+								"text": "Custom sign-in code that calls Google, Facebook, X, and Microsoft directly"
+							},
+							{
+								"id": "d",
+								"text": "Built-in social sign-in with Azure Key Vault references"
+							}
+						]
+					},
+					{
+						"id": "hostname",
+						"options": [
+							{
+								"id": "a",
+								"text": "App Service domain with a free managed certificate"
+							},
+							{
+								"id": "b",
+								"text": "Custom domain with a purchased certificate"
+							},
+							{
+								"id": "c",
+								"text": "App Service domain with a self-signed certificate"
+							},
+							{
+								"id": "d",
+								"text": "Custom domain with a free managed certificate"
+							}
+						]
+					},
+					{
+						"id": "capacity",
+						"options": [
+							{
+								"id": "a",
+								"text": "Automatic scaling in response to demand"
+							},
+							{
+								"id": "b",
+								"text": "Manual scaling up to a larger instance size"
+							},
+							{
+								"id": "c",
+								"text": "Manual scaling out to more instances"
+							},
+							{
+								"id": "d",
+								"text": "A reserved instance for the baseline load"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"signin": "a",
+				"hostname": "a",
+				"capacity": "a"
+			},
+			"explanation": {
+				"correct": "The three requirements map to the platform-provided capabilities for a new App Service web site. For customer sign-in, the service offers built-in social sign-in covering Google, Facebook, X, and Microsoft accounts, so visitors can use the logins they already hold and the team writes no authentication code. For the public hostname and HTTPS, the service offers an App Service domain with a free managed certificate, which gives the company a domain and certificate handled for it with no purchase and no browser warning; a custom domain would require the company to register its own DNS name, and a self-signed certificate would still trigger a warning. For traffic growth, capacity can be scaled up or out, including automatic scaling in response to demand, which is the behavior the requirement describes: the plan adds capacity on its own as usage rises, with nobody resizing it by hand.",
+				"perChoice": {
+					"signin:b": "Azure Active Directory (Entra ID) sign-in authenticates workforce members who have identities in the organization's own directory; it does not let a visitor authenticate with a consumer-platform login, and this option also drops the other platforms covered by the requirement.",
+					"signin:c": "Writing and running a custom sign-in flow against the consumer platforms is precisely the build-and-maintain-an-authentication-system approach that the requirement rules out, and the platform already provides this capability without custom code.",
+					"signin:d": "Azure Key Vault references move secrets out of app configuration so they are not stored in the app or the deployment package; they are not a visitor sign-in mechanism and give visitors no way to log in.",
+					"hostname:b": "A custom domain means the company registers and points its own DNS name, and a purchased certificate adds cost, so both parts of this option contradict the requirement.",
+					"hostname:c": "A self-signed certificate is not issued by a trusted authority, so browsers still display a certificate warning, which the requirement forbids.",
+					"hostname:d": "The certificate arrangement is acceptable, but a custom domain still requires the company to register and maintain a DNS name of its own, which the requirement excludes.",
+					"capacity:b": "Scaling up enlarges the running instances, but as a manual step it depends on somebody acting, whereas the requirement states that nobody resizes the plan by hand.",
+					"capacity:c": "Scaling out adds more instances, but as a manual step it also depends on somebody acting, while the requirement calls for the plan to add capacity on its own.",
+					"capacity:d": "A reserved instance lowers cost for predictable baseline usage; it is a pricing arrangement and does not make the plan grow when usage rises."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-common"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/getting-started"
+				}
+			],
+			"subtopics": [
+				"app-service-create",
+				"app-service-authentication",
+				"app-service-scaling"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V4V2BQ9WA4M1W9CZMPWB2B",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your company is creating a new web app on Azure App Service, and the hosting arrangement has to satisfy two requirements that the team recorded before the first release, as shown below.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Recorded requirement",
+						"Detail"
+					],
+					"rows": [
+						[
+							"Release validation",
+							"Each build is published to a separate copy of the app that runs alongside the live one and mirrors its configuration. Once the automated checks pass, that copy is promoted so that it takes the live traffic."
+						],
+						[
+							"Density on the shared plan",
+							"Forty small internal tools run on the same compute. Most of them sit idle for long stretches, and the team wants the smallest possible number of machines to host them."
+						]
+					]
+				},
+				"statement": "The service should use {{slot1}} so that each build can be validated in a separate environment before it is promoted, and the many small tools should be hosted on {{slot2}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "Deployment slots"
+							},
+							{
+								"id": "b",
+								"text": "App Service environment"
+							},
+							{
+								"id": "c",
+								"text": "Azure DevOps environment"
+							},
+							{
+								"id": "d",
+								"text": "Container instances"
+							}
+						]
+					},
+					{
+						"id": "slot2",
+						"options": [
+							{
+								"id": "a",
+								"text": "P*mv3 tier family"
+							},
+							{
+								"id": "b",
+								"text": "Basic tier family (B1)"
+							},
+							{
+								"id": "c",
+								"text": "Standard tier family (S1)"
+							},
+							{
+								"id": "d",
+								"text": "Isolated tier family (I1)"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a",
+				"slot2": "a"
+			},
+			"explanation": {
+				"correct": "The first requirement asks for a pre-production copy of the web app that mirrors the live one and can be promoted to take live traffic once checks pass. App Service provides exactly this through deployment slots, which are live apps with their own host names and whose content and configuration can be swapped with the production slot, so they are the standard way to run a staging environment. The second requirement asks for high-density hosting, because many small, mostly idle applications should be packed onto as few machines as possible. App Service offers the memory-optimized P*mv3 tier family for exactly this purpose, letting more applications run on fewer VMs; the Basic, Standard and Isolated families are not the memory-optimized high-density offering.",
+				"perChoice": {
+					"slot1:b": "An App Service environment is a hosting arrangement for deploying many apps in isolation on dedicated networking and virtual machines, chosen for large-scale isolation. It does not give an individual web app a promotable pre-production copy that can be swapped into production.",
+					"slot1:c": "An Azure DevOps environment is used to gate releases with approvals and checks in a DevOps pipeline. It is not a running copy of the web app that serves traffic and mirrors the app's configuration.",
+					"slot1:d": "Container instances run containers on their own standalone compute. They do not provide a configuration-mirroring copy of the web app that can be promoted to take the live traffic.",
+					"slot2:b": "The Basic family is the lowest-cost, lowest-capacity tier meant for trials and light testing, not for packing many small applications onto a small number of machines.",
+					"slot2:c": "The Standard family is a production tier for moderate traffic; it is not the memory-optimized family that provides the high-density hosting the requirement describes.",
+					"slot2:d": "The Isolated family is used with App Service environments for dedicated, isolated deployments; it is not selected for running many small applications on as few machines as possible."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/getting-started"
+				}
+			],
+			"subtopics": [
+				"web-app-creation",
+				"deployment-slots",
+				"pricing-tiers"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V542N3HTEXABE1RP7R79S1",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a sports club that wants to publish a blog on Azure App Service. The facts the committee recorded before the launch are shown below. You need to decide how the site is created and how it reaches visitors on the club's own web address. Which option should you select for each requirement?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Recorded fact"
+					],
+					"rows": [
+						[
+							"Site type",
+							"Blog with posts, themes, and comments"
+						],
+						[
+							"Who works on the site",
+							"Club volunteers who publish content only"
+						],
+						[
+							"Development capacity",
+							"None: no code, no image builds, no build pipeline"
+						],
+						[
+							"Domain name",
+							"club.example, registered by the club through a registrar"
+						],
+						[
+							"Certificate",
+							"Purchased by the club and valid for club.example"
+						]
+					]
+				},
+				"statement": "The committee should use {{s1}} to create the blog, and it should use {{s2}} to serve the site on the domain name the club registered.",
+				"slots": [
+					{
+						"id": "s1",
+						"options": [
+							{
+								"id": "a",
+								"text": "A ready-made template from Azure Marketplace"
+							},
+							{
+								"id": "b",
+								"text": "A custom container image that the club builds and pushes to a registry"
+							},
+							{
+								"id": "c",
+								"text": "A code package that the club publishes with the Azure CLI"
+							},
+							{
+								"id": "d",
+								"text": "A Visual Studio solution that the club publishes from the IDE"
+							}
+						]
+					},
+					{
+						"id": "s2",
+						"options": [
+							{
+								"id": "a",
+								"text": "Bind the custom domain to the app and attach the certificate the club holds"
+							},
+							{
+								"id": "b",
+								"text": "Use an App Service domain for the club and the certificate that comes with it"
+							},
+							{
+								"id": "c",
+								"text": "Bind the custom domain to the app and buy the club a certificate for it"
+							},
+							{
+								"id": "d",
+								"text": "Use an App Service domain for the club and buy a certificate for it"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "a"
+			},
+			"explanation": {
+				"correct": "The volunteers only publish content and the club has no development capacity, so the blog should be created from one of the ready-made application templates offered in the Azure Marketplace (the catalog includes WordPress, Joomla, Django, Node.js, and Drupal), which needs no development work from the club. For the web address, the club registered club.example itself and holds a certificate valid for it; the documented option for protecting the brand when you supply your own domain and certificate is to bring that custom domain and certificate to the app, so club.example is bound to the app and the club's certificate is attached to it.",
+				"perChoice": {
+					"s1:b": "A custom container is the deployment route for an application that is already containerized, but it requires the club to build an image and push it to a registry, and the recorded facts show the club has no development capacity.",
+					"s1:c": "Publishing a code package assumes there is an application that someone builds and packages; the committee's volunteers publish content only, so there is no package to publish.",
+					"s1:d": "Opening and publishing a Visual Studio solution assumes a .NET application the club maintains; with no development capacity on the committee, the site has to come from a solution that is already prepared for use.",
+					"s2:b": "An App Service domain together with the certificate that comes with it is the documented pairing for a site that does not supply a domain of its own. Here the club registered club.example and holds a certificate for it, so the site must answer on the club's own name instead.",
+					"s2:c": "The domain part matches the requirement, but the club already holds a certificate valid for club.example, so buying another one adds cost and effort for no benefit.",
+					"s2:d": "An App Service domain is an Azure-provided hostname, not the club.example name the club registered and must serve, so this option cannot satisfy the requirement even though it produces a working site."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/getting-started"
+				}
+			],
+			"subtopics": [
+				"app-service-creation",
+				"marketplace-templates",
+				"custom-domain-and-ssl"
+			],
+			"reviewed": false
+		}
+	]
+}

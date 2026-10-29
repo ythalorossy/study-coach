@@ -1,0 +1,1692 @@
+{
+	"skill": "compute.app-service-backup",
+	"questions": [
+		{
+			"id": "q_01M5TD7150VNPCNK4RGB3F9CR7",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a web app on an Azure App Service plan with a custom backup. The configuration below is what the app team currently has. After a faulty release you need both the app content and the database to be recoverable. Which configuration change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"App name",
+							"contoso-orders"
+						],
+						[
+							"Plan pricing tier",
+							"Standard"
+						],
+						[
+							"App content size",
+							"4 GB"
+						],
+						[
+							"Backup type",
+							"Custom"
+						],
+						[
+							"Storage account",
+							"contosobackups"
+						],
+						[
+							"Backup schedule",
+							"Every 4 hours"
+						],
+						[
+							"Retention",
+							"21 days"
+						],
+						[
+							"Linked database",
+							"contoso-orders-db — Azure Database for PostgreSQL - Flexible Server, 2 GB"
+						],
+						[
+							"Current date",
+							"2026-10-25"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Increase the size limit for the custom backup so the app content and the linked database fit inside one backup and restore."
+					},
+					{
+						"id": "b",
+						"text": "Change the linked database from Azure Database for PostgreSQL - Flexible Server to an Azure Database for MySQL - Flexible Server instance so the custom backup captures the data."
+					},
+					{
+						"id": "c",
+						"text": "Exclude the linked database from the custom backup and let native backup and restore tooling handle the data."
+					},
+					{
+						"id": "d",
+						"text": "Switch the app from custom backups to automatic backups so the platform creates a copy every hour and keeps it for 30 days."
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "The linked database entry points at an Azure Database for PostgreSQL - Flexible Server instance, and the flexible server offerings are not supported for linked database capture in custom backups, so that entry can never produce a captured database. Because the engine cannot be linked, the linked database must be taken out of the custom backup, and the database's own backup and restore features have to cover the data. The rest of the custom backup configuration (storage account, 4-hour schedule, 21-day retention) stays valid once the linked database is excluded, so the app content remains protected. The size ceiling is not the blocker: the custom backup limit is 10 GB with at most 4 GB usable by a linked database, and the app content (4 GB) plus the database (2 GB) is well inside that.",
+				"perChoice": {
+					"a": "The size ceiling is not what prevents the database from being captured, and the app content (4 GB) plus the database (2 GB) already fits inside the 10 GB custom backup limit, so no increase is required. The custom backup cap is fixed at 10 GB with at most 4 GB usable by a linked database, and in any case this database engine cannot be captured as a linked database at all.",
+					"b": "Azure Database for MySQL - Flexible Server is also excluded from linked database capture in custom backups, so repointing the linked database at it would fail in the same way. Moving an application to a different database engine is a migration decision, not a way to make backups work.",
+					"d": "Automatic backups are platform-managed hourly copies with a fixed 30-day retention and no configuration options; linked database capture is a custom backup feature, and automatic copies also cannot be partial or downloaded. They therefore do not cover the database part of the requirement, and moving to them would also give up the schedule and retention the team already chose."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-backup"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/reliability/reliability-app-service"
+				}
+			],
+			"subtopics": [
+				"app-service-backup",
+				"linked-database",
+				"backup-configuration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TD8Q6JV1JMAKGXGAHEBR7X",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an App Service app named ContosoWeb that runs on a Basic tier plan. A faulty release deleted image files that the app keeps on local disk, and the business wants the previous state put back without taking the live site offline for an extended period. Which configuration change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Current value"
+					],
+					"rows": [
+						[
+							"App name",
+							"ContosoWeb"
+						],
+						[
+							"Plan",
+							"Basic (B1), Linux"
+						],
+						[
+							"Backup setup",
+							"No custom backup configured; platform-managed backups only"
+						],
+						[
+							"Storage account for backups",
+							"None"
+						],
+						[
+							"Deployment slots",
+							"None configured"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Move the app to a Standard tier plan and restore the backup into a deployment slot, then swap the slot into production."
+					},
+					{
+						"id": "b",
+						"text": "Move the app to a Standard tier plan and restore the backup into the production slot."
+					},
+					{
+						"id": "c",
+						"text": "Keep the app on the Basic tier plan and restore the backup into the production slot."
+					},
+					{
+						"id": "d",
+						"text": "Keep the app on the Basic tier plan and restore the backup into a deployment slot, then swap the slot into production."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Two conditions have to be satisfied here. First, the tier: backup and restore is offered on Basic, Standard, Premium and Isolated plans, but on the Basic tier only the production slot can be backed up or restored, so a slot-based restore workflow is not available there. The Standard tier supports backing up and restoring deployment slots. Second, the downtime goal: a restore stops the destination app or slot while it runs, so restoring into a separate deployment slot leaves production serving traffic during the operation, and the recovered slot can then be swapped into production. Placing the app on a Standard tier plan and restoring into a deployment slot meets both conditions.",
+				"perChoice": {
+					"b": "The tier is fine, but the restore target is not. Restoring into the production slot stops the destination app for the duration of the restore, so the live site is offline while the restore runs, which defeats the requirement that production keep serving traffic during the recovery.",
+					"c": "Restoring the production slot is allowed on Basic, but it stops the production app while the restore runs, so the site is unavailable for the recovery window. It therefore misses the minimal-downtime goal, and it also gives up the ability to restore into a slot later.",
+					"d": "On the Basic tier only the production slot can be backed up or restored, so restoring into a deployment slot is not possible while the app stays on that tier. The slot-based restore workflow this option depends on requires a higher tier."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-backup"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/reliability/reliability-app-service"
+				}
+			],
+			"subtopics": [
+				"app-service-backup",
+				"deployment-slots",
+				"restore-strategy"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TDB139CX9S6RFM5ARBR0X3",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an App Service web app named ContosoWeb running on a Standard tier plan. The exhibit lists what the records team requires and what the app provides today. Which configuration change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "[\n  {\n    \"recordsRequirement\": \"Each snapshot must be retrievable for as long as the records team needs it, with no expiry applied by the platform\",\n    \"currentState\": \"Hourly snapshots are created by the platform and always expire after 30 days, and that period cannot be changed\"\n  },\n  {\n    \"recordsRequirement\": \"Every snapshot must be exported as a file for the corporate archive\",\n    \"currentState\": \"The hourly snapshots cannot be downloaded\"\n  },\n  {\n    \"recordsRequirement\": \"Snapshot creation must follow a schedule the team sets, including manual runs on demand\",\n    \"currentState\": \"Snapshots are created hourly on a fixed platform schedule with no manual option\"\n  },\n  {\n    \"recordsRequirement\": \"Snapshot data must be held in a storage account in the team's own subscription\",\n    \"currentState\": \"No storage account is connected to the app; the snapshots stay in the platform's managed area\"\n  }\n]"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Enable the app's automatic backup with a linked storage account, and keep copies until the records team releases them."
+					},
+					{
+						"id": "b",
+						"text": "Configure a scheduled backup against a linked storage account, with retention set to indefinite, and keep copies until the records team releases them."
+					},
+					{
+						"id": "c",
+						"text": "Configure a scheduled backup against a linked storage account, with retention set to 30 days, and keep copies for the full 30-day window."
+					},
+					{
+						"id": "d",
+						"text": "Configure a scheduled backup with retention set to indefinite but without a linked storage account, and keep the copies inside the app itself."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "The requirements in the exhibit can only be met by a backup type that the team configures: a scheduled backup written to a storage account, with its own schedule, manual runs on demand, results that can be downloaded as Azure Storage blobs, and a retention period the team controls (0 to 30 days, or indefinite). The correct option does exactly that, so snapshots remain retrievable until the records team releases them, can be exported for the corporate archive, run on a schedule the team sets, and live in a storage account in the team's own subscription.",
+				"perChoice": {
+					"a": "Platform-managed automatic backups are created by the platform with no configuration: their hourly frequency and 30-day expiry are fixed and cannot be changed, they are not attached to a storage account, and they cannot be downloaded. They therefore fail the retention, export, and schedule requirements in the exhibit.",
+					"c": "Retention of 30 days is a valid value in the configurable range for a team-managed backup, but it reproduces the same fixed window that already applies today, so snapshots would still expire while the records team still needs them. The retention has to be indefinite for the requirement to hold.",
+					"d": "A team-managed backup cannot be created without a storage account, because that account is where the snapshot data is written. Setting a schedule and indefinite retention but supplying no storage account leaves nothing to store the snapshot in, so no backup is produced."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-backup"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/reliability/reliability-app-service"
+				}
+			],
+			"subtopics": [
+				"custom-backup-configuration",
+				"backup-retention",
+				"automatic-vs-custom-backups"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TDDFESK2ZCPM26DM5QQR6M",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an App Service web app on a Standard tier plan. You need backup copies of the app's on-disk content to stay available for at least one year with no fixed expiry date, and you need to decide when each copy is taken. Which configuration change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Current value"
+					],
+					"rows": [
+						[
+							"App Service plan tier",
+							"Standard"
+						],
+						[
+							"Backup mode",
+							"Automatic"
+						],
+						[
+							"Capture frequency",
+							"Hourly"
+						],
+						[
+							"Retention period",
+							"30 days"
+						],
+						[
+							"Storage account configured",
+							"No"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Configure custom backups with a Storage account and set the retention period to indefinite."
+					},
+					{
+						"id": "b",
+						"text": "Configure automatic backups with a Storage account and set the retention period to indefinite."
+					},
+					{
+						"id": "c",
+						"text": "Configure custom backups with a Storage account and set the retention period to 30 days."
+					},
+					{
+						"id": "d",
+						"text": "Configure automatic backups with a Storage account and set the retention period to 90 days."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Custom backups are the type that let you choose when copies are taken and how long they are kept, and their retention period can be set to indefinite, which satisfies keeping the app's on-disk content for at least a year with no fixed expiry date. A custom backup also needs a Storage account, so one must be configured before copies begin. Automatic backups cannot meet the requirement: the platform runs them hourly, they always expire after 30 days, and neither their frequency nor their retention can be changed.",
+				"perChoice": {
+					"b": "Automatic backups are created by the platform, always expire after 30 days, and their frequency and retention are not configurable, so the retention period cannot be set to indefinite. They also do not use a Storage account, so this change cannot deliver a year of retained copies.",
+					"c": "Custom backups do allow a configurable retention period, but that period can only range from 0 to 30 days unless it is set to indefinite. Keeping 30 days falls far short of the required one year, so this change does not meet the requirement.",
+					"d": "Automatic backups have a fixed 30-day retention that cannot be extended to 90 days, and their hourly capture schedule cannot be changed either. They also do not require or use a Storage account, so this change cannot produce a year of retained copies."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-backup"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/reliability/reliability-app-service"
+				}
+			],
+			"subtopics": [
+				"custom-backup-retention",
+				"automatic-backups"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TDFW850FC616141XK6G2V8",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an App Service web app on a Standard tier plan with the backup configuration shown in the exhibit. The operations team wants regular coverage of the app's on-disk content across the working day, and the team also takes on-demand copies on each release day. On release days the service refuses to accept the extra copies once the scheduled ones have run. They want the app adjusted so the number of copies taken in a day doesn't exceed what the service allows. Which configuration change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Plan tier",
+							"Standard"
+						],
+						[
+							"Backup type",
+							"Custom"
+						],
+						[
+							"Schedule interval",
+							"Every 2 hours"
+						],
+						[
+							"Storage account",
+							"Configured"
+						],
+						[
+							"Retention period",
+							"14 days"
+						],
+						[
+							"On-demand copies taken on each release day",
+							"2"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Change the schedule to run every three hours so the scheduled and on-demand copies stay inside the allowance of 12 backups a day"
+					},
+					{
+						"id": "b",
+						"text": "Keep the schedule at every 2 hours and rely on the daily allowance of 12 copies covering only scheduled copies, not on-demand copies"
+					},
+					{
+						"id": "c",
+						"text": "Change the schedule to run every 30 minutes so that a higher number of backups are taken each day"
+					},
+					{
+						"id": "d",
+						"text": "Set the retention period to indefinite so that stored copies are never deleted from the backup container"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A schedule of every 2 hours already produces 12 scheduled copies in a day, and the service allows at most 12 backups per day in total, counting on-demand and scheduled copies together. Adding the 2 on-demand copies taken on a release day pushes the total to 14, which is why the extra copies are refused. Running the schedule every three hours yields 8 scheduled copies, so 8 + 2 = 10 remains under the 12-per-day limit while keeping regular coverage, and three hours is a valid interval because the shortest supported interval is 2 hours.",
+				"perChoice": {
+					"b": "Leaving the schedule at every 2 hours keeps 12 scheduled copies in a day, and on-demand copies draw from the same combined daily allowance, so the 2 on-demand copies on a release day cannot be taken. The allowance is not applied to scheduled copies alone.",
+					"c": "The shortest interval supported for a custom backup schedule is 2 hours, so a 30-minute schedule is not a valid setting. It would also produce far more than 12 copies in a day, exceeding the daily limit.",
+					"d": "Retention controls how long copies that already exist are kept, not how many copies may be created in a day. Making the retention period indefinite leaves the daily allowance unchanged, so the on-demand copies on release days would still be rejected."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-backup"
+				}
+			],
+			"subtopics": [
+				"backup-frequency-limits",
+				"custom-backup-scheduling"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TDHNXN51F03DMF990Z87CY",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an App Service app on a Standard tier plan whose custom backup is already configured against a storage account, as shown in the exhibit. The team needs the app content and the sessions data captured together in a single custom backup, and the other database's contents to remain recoverable. Which configuration change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Current value"
+					],
+					"rows": [
+						[
+							"App Service plan SKU",
+							"Standard"
+						],
+						[
+							"Backup type",
+							"Custom"
+						],
+						[
+							"Storage account used for backups",
+							"stcontosoappbk"
+						],
+						[
+							"Custom backup schedule",
+							"Every 4 hours"
+						],
+						[
+							"Custom backup retention",
+							"30 days"
+						],
+						[
+							"Database holding sessions data",
+							"MySQL in-app"
+						],
+						[
+							"Database holding order history",
+							"Azure Database for PostgreSQL - Flexible Server"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add MySQL in-app as a linked database in the custom backup, and use the Azure Database for PostgreSQL - Flexible Server's own backup and restore tooling for that database."
+					},
+					{
+						"id": "b",
+						"text": "Add the Azure Database for PostgreSQL - Flexible Server as a linked database in the custom backup, and use MySQL in-app's own backup and restore tooling for that database."
+					},
+					{
+						"id": "c",
+						"text": "Add MySQL in-app and the Azure Database for PostgreSQL - Flexible Server as linked databases in the custom backup, so both are captured together with the app content."
+					},
+					{
+						"id": "d",
+						"text": "Add neither MySQL in-app nor the Azure Database for PostgreSQL - Flexible Server as a linked database in the custom backup, and rely on the platform's automatic backups to capture both databases with the app content."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A custom backup can link MySQL in-app, so linking it captures the sessions data together with the app content in the same copy, which is what the team asked for. Azure Database for PostgreSQL - Flexible Server is explicitly excluded from the list of linkable databases, so the order history has to stay under that database product's own backup and restore tooling. Two limits to plan around: only 4 GB of the 10 GB custom backup can hold linked database data, and linked database capture in custom backups is withdrawn on March 31, 2028, after which the database's native backup and restore is the only recovery path.",
+				"perChoice": {
+					"b": "The flexible server variants of Azure Database for PostgreSQL and Azure Database for MySQL cannot be linked by a custom backup; the linkable list is SQL Database, Azure Database for MySQL, Azure Database for PostgreSQL and MySQL in-app. This configuration therefore leaves the sessions data out of the backup.",
+					"c": "Linking the Azure Database for PostgreSQL - Flexible Server is not possible, so the restore would still be missing the order history even though the sessions data would be captured. The plan must also fit inside the 10 GB custom backup ceiling, of which only 4 GB can be used by a linked database.",
+					"d": "Automatic backups are created by the platform with no configuration and never include a linked database, so the sessions data and the order history would not be part of any copy you can restore. They also run on a fixed hourly schedule with a non-configurable 30-day retention, which does not match the custom backup the team is using."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-backup"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/reliability/reliability-app-service"
+				}
+			],
+			"subtopics": [
+				"linked-database-backup",
+				"custom-backup-configuration",
+				"backup-type-comparison"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TDJX3AZM6WS0DD5YP71TYV",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an App Service app named ContosoWeb on a Standard tier plan, with a custom backup already configured against a storage account. After a corrupted release the team must put a copy of the app back, keep production traffic flowing throughout the recovery, and keep the customer uploads currently sitting in the existing staging deployment slot. Which restore configuration should you use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"App property",
+						"Value"
+					],
+					"rows": [
+						[
+							"App name",
+							"ContosoWeb"
+						],
+						[
+							"Plan tier",
+							"Standard"
+						],
+						[
+							"Deployment slots",
+							"staging"
+						],
+						[
+							"Data held in the staging slot",
+							"Customer uploads received after the last release"
+						],
+						[
+							"Custom backup",
+							"Configured, stored in storage account contosobackups"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Restore the backup into the existing staging deployment slot, then swap that slot into production."
+					},
+					{
+						"id": "b",
+						"text": "Restore the backup into the production deployment slot of the app, then swap that slot into production."
+					},
+					{
+						"id": "c",
+						"text": "Restore the backup into a new deployment slot, then swap that slot into production."
+					},
+					{
+						"id": "d",
+						"text": "Restore the backup into a new App Service app, then swap that app into production."
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "Point the restore at a deployment slot created for the recovery, then swap it into production. The service stops the target app or target slot while a restore runs, so restoring into a separate slot keeps the production site answering traffic during the recovery, and swapping that slot into production afterwards makes the recovered content live. Because the target slot is created for this purpose, its file system holds nothing to erase, so the uploads in the existing staging slot are left intact.",
+				"perChoice": {
+					"a": "Restoring over an existing slot erases everything in that slot's file system and overwrites it with the backup contents, so the customer uploads currently stored in staging would be lost. The restore must target a slot created for the recovery, not one that already holds data.",
+					"b": "The production slot carries the same name as the app, so a restore aimed at it overwrites production itself instead of a side slot, and the app is stopped for the duration of the restore. That is exactly the production outage the team wants to avoid.",
+					"d": "Restoring into a separate App Service app yields a recovered copy that stays independent of the original app and its slots. A swap only moves a slot within the app it belongs to, so the recovered content would never take over the production site."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-backup"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/reliability/reliability-app-service"
+				}
+			],
+			"subtopics": [
+				"backup-restore",
+				"deployment-slots"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V2EKKJMT2WMAME415JFY9P",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an App Service web app on a Standard tier plan that keeps a 24 GB media library plus its application files on local disk. The exhibit shows the app as it is configured today. The team does not want to own a storage account for this purpose or manage when copies are taken, and every copy has to contain the whole media library. Which backup configuration should you select?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"app_service_plan\": \"Standard S1\",\n  \"content_on_local_disk\": \"27 GB total (24 GB media library, 3 GB application files)\",\n  \"backup_storage_account_connected_to_app\": \"None\",\n  \"backup_schedule_maintained_by_team\": \"None\",\n  \"deployment_slots\": \"production, staging\"\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Custom backup with a linked storage account — up to 10 GB per copy, scheduled by the team"
+					},
+					{
+						"id": "b",
+						"text": "Automatic backup — up to 30 GB per copy, taken hourly by the platform"
+					},
+					{
+						"id": "c",
+						"text": "Custom backup with a linked storage account — up to 30 GB per copy, scheduled by the team"
+					},
+					{
+						"id": "d",
+						"text": "Automatic backup — up to 10 GB per copy, taken hourly by the platform"
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "Automatic backups are produced by the platform with no setup and no storage account to supply, and their maximum size is 30 GB per copy, which covers the 27 GB of on-disk content shown in the exhibit. They are taken every hour and expire after 30 days. Custom backups, in contrast, must be configured against a storage account and are capped at 10 GB per copy, so they cannot hold this app's full content.",
+				"perChoice": {
+					"a": "The 10 GB per-copy ceiling is the limit for custom backups, and this app keeps 27 GB on local disk, so a custom copy could not include the whole media library. Custom backups also require connecting a storage account and setting a schedule, which the team does not want to maintain.",
+					"c": "Custom backups are always capped at 10 GB per copy; no configuration raises that ceiling to 30 GB. The 30 GB allowance belongs to the platform-produced type, and a custom backup would still require a storage account and a team-maintained schedule.",
+					"d": "The 10 GB per-copy ceiling is a custom-backup limit, not an automatic-backup limit. Platform-produced backups allow up to 30 GB per copy, so 27 GB of on-disk content fits within that allowance."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-backup"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/reliability/reliability-app-service"
+				}
+			],
+			"subtopics": [
+				"app-service-backup",
+				"automatic-vs-custom-backup",
+				"backup-size-limits"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V2N6SB7JTSSZF2WE2AKPFW",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have an App Service web app named ContosoWeb that runs on a Standard tier plan, and you are defining its backup policy with the team. The team has written down what it needs from the service, and you have a set of capabilities to assign to each need. Match each need to the capability that delivers it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Application",
+							"ContosoWeb"
+						],
+						[
+							"Plan tier",
+							"Standard"
+						],
+						[
+							"Copies the service creates today",
+							"None"
+						],
+						[
+							"Order records",
+							"Stored in SQL"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "it1",
+						"text": "Automatic backup"
+					},
+					{
+						"id": "it2",
+						"text": "Custom backup"
+					},
+					{
+						"id": "it3",
+						"text": "Partial backup"
+					},
+					{
+						"id": "it4",
+						"text": "Linked database"
+					},
+					{
+						"id": "it5",
+						"text": "Backup across a virtual network"
+					},
+					{
+						"id": "it6",
+						"text": "Backup downloaded as Azure Storage blobs"
+					},
+					{
+						"id": "it7",
+						"text": "Zone redundancy"
+					},
+					{
+						"id": "it8",
+						"text": "Restore into a new deployment slot"
+					}
+				],
+				"slots": [
+					{
+						"id": "sl1",
+						"label": "Copies must exist from the day the app goes live, with no setup by the team, and each copy must hold the app's whole 30 GB media library."
+					},
+					{
+						"id": "sl2",
+						"label": "The team must choose when each copy is taken and how long it is kept, and must first connect an account of their own to hold the copies."
+					},
+					{
+						"id": "sl3",
+						"label": "Only the folders the team lists should end up in a copy, so that it stays small."
+					},
+					{
+						"id": "sl4",
+						"label": "The order records the app keeps in SQL must be captured in the same copy as the site files."
+					},
+					{
+						"id": "sl5",
+						"label": "The app sits on a private address range, and the service still has to capture its files."
+					},
+					{
+						"id": "sl6",
+						"label": "The team wants to take the copies out of the service and keep them in its own long-term archive."
+					}
+				]
+			},
+			"key": {
+				"sl1": "it1",
+				"sl2": "it2",
+				"sl3": "it3",
+				"sl4": "it4",
+				"sl5": "it5",
+				"sl6": "it6"
+			},
+			"explanation": {
+				"correct": "Each need maps to one capability. Copies that appear with no configuration by the team, with a ceiling of 30 GB per copy, are automatic backups (it1). Team-chosen timing and retention, with an account of their own supplied first, describes a custom backup (it2). Capturing only the folders the team lists is a partial backup (it3). Capturing the SQL order records in the same copy as the site files is done with a linked database (it4). Capturing files that sit on a private address range is a backup made across a virtual network (it5). Taking the copies out of the service into the team's own long-term archive is done by downloading a custom backup as Azure Storage blobs (it6). Zone redundancy and restoring into a new deployment slot are not ways of producing copies, so they satisfy none of the needs.",
+				"perChoice": {
+					"it1": "Belongs in the first slot. These copies are created by the platform without any configuration and without a storage account, and they allow up to 30 GB per copy, which covers the media library.",
+					"it2": "Belongs in the second slot. Custom backups are configured and run by the team, so the team controls when copies happen and how long they are kept, and a storage account must be connected before the first copy can run.",
+					"it3": "Belongs in the third slot. Partial backups are an option of custom backups that capture only the folders listed in the backup configuration.",
+					"it4": "Belongs in the fourth slot. A custom backup can include a linked database, so the order records held in SQL are captured in the same copy as the site files.",
+					"it5": "Belongs in the fifth slot. Custom backups can be made across a virtual network, so files on a private address range can still be captured by the service.",
+					"it6": "Belongs in the sixth slot. A custom backup can be downloaded as Azure Storage blobs, which lets the team hold copies in its own archive outside the service.",
+					"it7": "Fits no slot. Zone redundancy is an availability feature for Premium v2, v3 and v4 plans with at least two instances; it spreads plan instances across availability zones, produces no copies of app content, and is not a backup.",
+					"it8": "Fits no slot. Restoring into a new deployment slot is a destination for a copy that already exists, so it does not capture app content and does not meet any of the capture needs."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-backup"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/reliability/reliability-app-service"
+				}
+			],
+			"subtopics": [
+				"backup-types",
+				"custom-backup-options",
+				"backup-limits"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V2RVPB7EKSM3EFBKH3AJ6H",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have an App Service web app named ContosoWeb on a Standard tier plan, and a custom backup has already been configured for it. The operations team is planning the recovery from a failed release and has to decide where each restore should land. Drag each outcome to the restore destination that produces it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Plan tier",
+							"Standard"
+						],
+						[
+							"Custom backup",
+							"Configured against a storage account"
+						],
+						[
+							"Slots on the app",
+							"staging (QA test data)"
+						],
+						[
+							"Content held on local disk",
+							"2 GB"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "The recovered copy is kept running as a separate app, independent of the original app and its slots"
+					},
+					{
+						"id": "i2",
+						"text": "The live site keeps serving traffic while the recovery runs, and the checked copy is swapped into production afterwards"
+					},
+					{
+						"id": "i3",
+						"text": "The app's current content is replaced by the recovered copy, and the site is offline while that happens"
+					},
+					{
+						"id": "i4",
+						"text": "All files already in that target are erased first and then overwritten by the recovered copy"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "A newly created app"
+					},
+					{
+						"id": "s2",
+						"label": "A newly created deployment slot"
+					},
+					{
+						"id": "s3",
+						"label": "The production slot"
+					},
+					{
+						"id": "s4",
+						"label": "An existing deployment slot"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "The restore destination decides what happens to the recovered content and to the live site. Choosing Create new under App Service (s1) brings up a separate app, so the recovered copy stays independent of the original app and its slots (i1). Choosing Create new under Deployment slot (s2) puts the recovered copy in a side slot that can be checked and then swapped into production, so the live site keeps serving traffic throughout the recovery (i2). The production slot (s3) carries the same name as the app, so a restore aimed there replaces the app's current content and the target is stopped while the restore runs (i3). Choosing a slot that already exists (s4) erases everything in that slot's file system first and then writes the recovered content over it (i4).",
+				"perChoice": {
+					"i1": "Belongs in \"A newly created app\". Restoring with Create new under App Service creates a separate app, so the recovered copy runs independently of the original app and its slots.",
+					"i2": "Belongs in \"A newly created deployment slot\". Restoring into a side slot first and then swapping it into production is the recommended way to keep the live site serving traffic while the recovered copy is validated.",
+					"i3": "Belongs in \"The production slot\". The production slot shares the app's name, so restoring into it replaces the app's current content; the target is stopped during the operation, so the site is briefly offline.",
+					"i4": "Belongs in \"An existing deployment slot\". If you pick a slot that already exists, all existing data in its file system is erased and overwritten by the backup contents, so anything already stored there is lost."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-backup"
+				}
+			],
+			"subtopics": [
+				"app-service-backup",
+				"backup-restore-destinations"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V2W75RYJN2TSMNB91YTNES",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have an App Service web app named ContosoWeb that runs on a Standard tier plan, and the operations team is writing a backup runbook for the on-call engineer. The engineer has to know in advance which requests the service will accept and which ones it will refuse, so the team has collected the service's own limits. Drag each limit into the place in the runbook where it applies.",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"appName\": \"ContosoWeb\",\n  \"planTier\": \"Standard\",\n  \"backupType\": \"custom\",\n  \"storageAccountLinked\": true\n}"
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "30 GB"
+					},
+					{
+						"id": "i2",
+						"text": "10 GB"
+					},
+					{
+						"id": "i3",
+						"text": "4 GB"
+					},
+					{
+						"id": "i4",
+						"text": "2 hours"
+					},
+					{
+						"id": "i5",
+						"text": "12"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Maximum size of a snapshot the platform takes on its own"
+					},
+					{
+						"id": "s2",
+						"label": "Maximum size of a snapshot you configure and trigger yourself"
+					},
+					{
+						"id": "s3",
+						"label": "Part of a configured snapshot that can hold the linked database"
+					},
+					{
+						"id": "s4",
+						"label": "Shortest gap allowed between two scheduled configured snapshots"
+					},
+					{
+						"id": "s5",
+						"label": "Most configured snapshots the service accepts in a single day"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "The platform-created (automatic) snapshot is capped at 30 GB, while a snapshot the team configures and triggers (custom) is capped at 10 GB. Inside that 10 GB custom limit, no more than 4 GB may be used for the linked database. A custom backup schedule can run as often as every 2 hours, and the service allows at most 12 custom backups in a day in total, counting both on-demand and scheduled runs.",
+				"perChoice": {
+					"i1": "Belongs in the slot for the maximum size of a snapshot the platform takes on its own: automatic backups are capped at 30 GB. It is too large for the configured-snapshot size slot, which allows only 10 GB.",
+					"i2": "Belongs in the slot for the maximum size of a snapshot you configure and trigger yourself: custom backups are capped at 10 GB. The platform-created type allows a larger ceiling, so 30 GB, not 10 GB, fits the other size slot.",
+					"i3": "Belongs in the slot for the part of a configured snapshot that can hold the linked database: of the 10 GB allowed for a custom backup, no more than 4 GB can be used for the linked database.",
+					"i4": "Belongs in the slot for the shortest gap allowed between two scheduled configured snapshots: a custom backup schedule can run as often as every 2 hours, and no scheduled interval can be shorter.",
+					"i5": "Belongs in the slot for the most configured snapshots the service accepts in a single day: the service allows at most 12 custom backups per day, and that allowance covers on-demand and scheduled runs combined."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-backup"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/reliability/reliability-app-service"
+				}
+			],
+			"subtopics": [
+				"backup-limits",
+				"backup-configuration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V33RRC9ZNK4DG67HCEHHKK",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have an App Service app named ContosoWeb that runs on a Standard tier plan. The platform copies the app on its own and stores those copies for a fixed window; the exhibit shows how the service handles them. The compliance team wants to restore the app from a specific point in time and needs to know how many restore points it can pick from on any given day inside that window. Drag each copy frequency to the day range where the platform keeps copies at that frequency.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Platform copy behavior",
+						"Value"
+					],
+					"rows": [
+						[
+							"What is captured",
+							"The app's own content"
+						],
+						[
+							"How long the copies are kept",
+							"30 days"
+						],
+						[
+							"Can the interval between copies be changed",
+							"No"
+						],
+						[
+							"Can the retention period be changed",
+							"No"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "f1",
+						"text": "Every hourly copy is kept"
+					},
+					{
+						"id": "f2",
+						"text": "Every third hourly copy is kept"
+					},
+					{
+						"id": "f3",
+						"text": "Every sixth hourly copy is kept"
+					},
+					{
+						"id": "f4",
+						"text": "No copy is kept"
+					}
+				],
+				"slots": [
+					{
+						"id": "d1",
+						"label": "Days 1-3"
+					},
+					{
+						"id": "d2",
+						"label": "Days 4-14"
+					},
+					{
+						"id": "d3",
+						"label": "Days 15-30"
+					},
+					{
+						"id": "d4",
+						"label": "After day 30"
+					}
+				]
+			},
+			"key": {
+				"d1": "f1",
+				"d2": "f2",
+				"d3": "f3",
+				"d4": "f4"
+			},
+			"explanation": {
+				"correct": "The platform's own copies are thinned as the fixed 30-day window ages: every hourly copy is kept for days 1-3, every third hourly copy is kept for days 4-14, and every sixth hourly copy is kept for days 15-30. The copies then expire at the end of that window, so nothing is left to restore from after day 30.",
+				"perChoice": {
+					"f1": "Days 1-3: for the first three days of the retention window the platform keeps every hourly copy, so a full day of copies is available.",
+					"f2": "Days 4-14: from day 4 the platform starts thinning the set and keeps every third hourly copy.",
+					"f3": "Days 15-30: from day 15 the set is thinned further and only every sixth hourly copy is kept.",
+					"f4": "After day 30: platform copies always expire once the 30-day retention window closes, so no copy is kept beyond that point."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-backup"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/reliability/reliability-app-service"
+				}
+			],
+			"subtopics": [
+				"automatic-backup",
+				"retention"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V3BZTTTM1YVKZWGWMAJS17",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have an App Service app named ContosoWeb that runs on the Standard tier. The operations group is settling three recovery cases for it, listed in the exhibit, and each case calls for a different treatment. Drag each treatment to the case it belongs to.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Case",
+						"What has to be recovered",
+						"Condition set by the operations group"
+					],
+					"rows": [
+						[
+							"A",
+							"Sessions and orders held in Azure SQL Database",
+							"The data must come back together with the app's own files in a single operation"
+						],
+						[
+							"B",
+							"Reporting data held in Azure Database for MySQL - Flexible Server",
+							"The data must be recoverable on its own, and the app's backup configuration must not be changed for it"
+						],
+						[
+							"C",
+							"Customer uploads kept on the app's local disk",
+							"The data must be recoverable with no resources to create and no configuration to perform"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Add it to the custom backup now and schedule the move to the product's native backup and restore tools after March 31, 2028"
+					},
+					{
+						"id": "i2",
+						"text": "Leave it out of the custom backup and use the product's native backup and restore tools now"
+					},
+					{
+						"id": "i3",
+						"text": "Add it to the custom backup and treat that arrangement as permanent, with no expiry"
+					},
+					{
+						"id": "i4",
+						"text": "Let the platform's own hourly copies handle it, with nothing for anyone to set up"
+					}
+				],
+				"slots": [
+					{
+						"id": "sA",
+						"label": "Case A — sessions and orders in Azure SQL Database"
+					},
+					{
+						"id": "sB",
+						"label": "Case B — reporting data in Azure Database for MySQL - Flexible Server"
+					},
+					{
+						"id": "sC",
+						"label": "Case C — customer uploads on local disk"
+					}
+				]
+			},
+			"key": {
+				"sA": "i1",
+				"sB": "i2",
+				"sC": "i4"
+			},
+			"explanation": {
+				"correct": "Case A needs a linked database capture: Azure SQL Database can be included in a custom backup until March 31, 2028, so the treatment is to add it to the custom backup now and move to the product's native backup and restore tools after that date (i1). Case B uses Azure Database for MySQL - Flexible Server, which is not supported as a linked database in custom backups, so its reporting data must be recovered with the product's own native backup and restore tools, leaving the app's backup configuration untouched (i2). Case C is only on-disk content and must be recoverable with no resources and no configuration, which matches the platform's automatic hourly copies that work with no setup and need no storage account (i4). i3 fits no case: linked database capture ends on March 31, 2028, so a no-expiry arrangement is not valid for the SQL data, and the local-disk content still needs a configured custom backup, which the Case C condition rules out.",
+				"perChoice": {
+					"i1": "Keyed to Case A. Until March 31, 2028 a custom backup can include a linked Azure SQL Database, which is the only way the sessions and orders data comes back together with the app's files; from that date the database product's native backup and restore tools take over, so the treatment pairs the custom backup now with a later move.",
+					"i2": "Keyed to Case B. Azure Database for MySQL - Flexible Server is not supported as a linked database in custom backups, so it can never travel with the app content; its data is recovered with the product's native backup and restore tools and the app's backup configuration is left as it is.",
+					"i3": "Fits no case. Linked database capture in custom backups stops on March 31, 2028, so the SQL data cannot be captured with no expiry, and for the on-disk uploads the custom backup still has to be configured against a storage account, which the Case C condition forbids.",
+					"i4": "Keyed to Case C. Automatic backups are created by the platform with no setup, need no storage account, and are kept for 30 days, so the uploads can be recovered without the team creating resources or performing configuration work."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-backup"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/reliability/reliability-app-service"
+				}
+			],
+			"subtopics": [
+				"linked-database-backup",
+				"automatic-vs-custom-backup",
+				"backup-limits"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V3SQD9C8ZQMWAJEWQBZJMK",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have an App Service app named ContosoWeb that runs on a Standard tier plan. The exhibit lists the backup settings the operations team has applied to the app. Each request or complaint below traces back to one of those settings. Drag each request or complaint to the setting that is responsible for it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Plan tier",
+							"Standard"
+						],
+						[
+							"Backup type",
+							"Custom, created by the operations team"
+						],
+						[
+							"Scheduled interval",
+							"2 hours"
+						],
+						[
+							"Retention period",
+							"14 days"
+						],
+						[
+							"Files captured",
+							"All files on local disk"
+						],
+						[
+							"Linked data source",
+							"Azure Database for PostgreSQL - Flexible Server"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "r1",
+						"text": "The team needs to put back the app's files from a copy taken three weeks ago, but that copy is no longer available."
+					},
+					{
+						"id": "r2",
+						"text": "The team restored the app from a copy taken last week, but the orders the app keeps in its transactional store were missing from the restored content."
+					},
+					{
+						"id": "r3",
+						"text": "The team wants a copy every 30 minutes, and the service keeps refusing to set that up."
+					},
+					{
+						"id": "r4",
+						"text": "After restoring a copy over the staging slot, the team found that unrelated files they had left there were gone as well."
+					},
+					{
+						"id": "r5",
+						"text": "The team expected the platform to make copies on its own with no setup, but copies only appear when an engineer starts one."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Backup type: Custom"
+					},
+					{
+						"id": "s2",
+						"label": "Retention period: 14 days"
+					},
+					{
+						"id": "s3",
+						"label": "Linked data source: Azure Database for PostgreSQL - Flexible Server"
+					},
+					{
+						"id": "s4",
+						"label": "Scheduled interval: 2 hours"
+					},
+					{
+						"id": "s5",
+						"label": "Files captured: All files on local disk"
+					}
+				]
+			},
+			"key": {
+				"s1": "r5",
+				"s2": "r1",
+				"s3": "r2",
+				"s4": "r3",
+				"s5": "r4"
+			},
+			"explanation": {
+				"correct": "Each complaint is caused by one configured setting. The platform-made expectation traces to the backup type, because automatic backups are created by the platform with no configuration while custom backups are set up by the team and run on demand or on a schedule. The missing three-week-old copy traces to the retention window, because custom retention can be set from 0 to 30 days or to indefinite, so a copy taken 21 days ago has already passed the 14-day window. The missing orders trace to the linked data source, because Azure Database for PostgreSQL - Flexible Server isn't supported as a linked database in a custom backup, so that data never travels with the app's content. The refused 30-minute cadence traces to the schedule interval, because a custom backup schedule can run no more often than every 2 hours. The lost unrelated files trace to the file selection, because restoring over an existing slot erases its entire file system and replaces it with the captured content, and this copy contains everything on local disk.",
+				"perChoice": {
+					"r1": "Belongs in 'Retention period: 14 days'. A copy taken three weeks ago (21 days) has outlived the 14-day retention window configured for custom backups, so it is no longer available. Custom retention can be set anywhere from 0 to 30 days, or to indefinite.",
+					"r2": "Belongs in 'Linked data source: Azure Database for PostgreSQL - Flexible Server'. Flexible Server offerings aren't supported as a linked database in a custom backup, so the orders stored there were never captured and are missing after the restore; that data has to be recovered with the database product's own tooling.",
+					"r3": "Belongs in 'Scheduled interval: 2 hours'. A custom backup schedule can run as often as every 2 hours, and 2 hours is the shortest interval the service accepts, so a request for a copy every 30 minutes is refused.",
+					"r4": "Belongs in 'Files captured: All files on local disk'. When a restore targets an existing slot, the slot's entire file system is erased and overwritten with the backup contents; because this copy captured every file on local disk, the unrelated files that were sitting in the staging slot were replaced too.",
+					"r5": "Belongs in 'Backup type: Custom'. Automatic backups are produced by the platform and need no setup, whereas custom backups require initial configuration and are triggered on demand or on a schedule, which is why copies only appear when an engineer starts one."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-backup"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/reliability/reliability-app-service"
+				}
+			],
+			"subtopics": [
+				"custom-backup-configuration",
+				"backup-retention",
+				"linked-database-backup"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V3ZASJDBZ3KQQYXZCQZMMZ",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an App Service app named ContosoWeb that runs on a Standard tier plan. The app's custom backup captures the app content together with a linked Azure SQL Database, as shown in the exhibit. The product team wants the app content and the database data to be covered by backups for the next three years, and the platform team needs a dependable way to protect the database data across that whole period. Which configuration change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Current value"
+					],
+					"rows": [
+						[
+							"App name",
+							"ContosoWeb"
+						],
+						[
+							"Plan tier",
+							"Standard"
+						],
+						[
+							"Backup type in use",
+							"Custom backup"
+						],
+						[
+							"Content captured",
+							"App content and linked database"
+						],
+						[
+							"Linked database",
+							"Azure SQL Database (ContosoOrders)"
+						],
+						[
+							"Backup storage account",
+							"contosobackups"
+						],
+						[
+							"Retention",
+							"30 days"
+						],
+						[
+							"Schedule",
+							"Every 4 hours"
+						]
+					]
+				},
+				"statement": "The configuration change that satisfies the product team's goal is {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Remove the linked database from the custom backup and switch database recovery to native backup and restore tooling built into the database itself before March 31, 2028"
+							},
+							{
+								"id": "b",
+								"text": "Keep the linked database in the custom backup and set the retention period to indefinite"
+							},
+							{
+								"id": "c",
+								"text": "Keep the linked database in the custom backup and move the app to an Isolated tier plan"
+							},
+							{
+								"id": "d",
+								"text": "Keep the linked database in the custom backup and shorten the schedule to one run every 2 hours"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "Custom backups can capture a linked database only until March 31, 2028; from that date they stop supporting linked databases, and protecting the database data belongs to that database product's own native backup and restore tooling. That end date is fixed and cannot be pushed out by changing the tier, the retention window, or the schedule. Because the product team wants the app content and the database data to stay covered for the next three years, the linked database has to be taken out of the custom backup and the database's own backup and restore tooling has to be put in charge of the data.",
+				"perChoice": {
+					"action:b": "Retention controls only how long each custom backup is kept, and indefinite is a valid value, but it does not change which capabilities the service offers. The linked database stops being captured on the same fixed date, so the database data would be left with no copy once that date passes.",
+					"action:c": "The App Service tier decides which backup features and limits apply, but moving the app to another tier does not extend the life of linked database capture in custom backups. The database stops being captured on the same date, leaving its data unprotected.",
+					"action:d": "Changing how often the custom backup runs affects only the number of copies taken each day. It has no effect on the end of linked database support in custom backups, so the database data would still lose its copy after that date."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/reliability/reliability-app-service"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-backup"
+				}
+			],
+			"subtopics": [
+				"app-service-backup",
+				"linked-database-backup",
+				"custom-backup-lifecycle"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V48YNGG2C0H09BET5PVVZ4",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an App Service web app named ContosoWeb. The operations team wants copies of the user-uploaded files taken without the temporary cache folder, delivered to the storage account that is reachable only through the app's virtual network. The team also wants to choose when each copy is taken and to download the results later. Which configuration should you select?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"App Service plan tier",
+							"Standard"
+						],
+						[
+							"Content location",
+							"Local disk on the app"
+						],
+						[
+							"Storage account public network access",
+							"Disabled"
+						],
+						[
+							"Storage account private endpoint",
+							"ContosoVNet"
+						],
+						[
+							"App virtual network integration",
+							"ContosoVNet"
+						]
+					]
+				},
+				"statement": "The team should select {{configuration}} for the app.",
+				"slots": [
+					{
+						"id": "configuration",
+						"options": [
+							{
+								"id": "a",
+								"text": "Automatic backup"
+							},
+							{
+								"id": "b",
+								"text": "Custom backup"
+							},
+							{
+								"id": "c",
+								"text": "Zone redundancy"
+							},
+							{
+								"id": "d",
+								"text": "Multi-region deployment with data replication"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"configuration": "b"
+			},
+			"explanation": {
+				"correct": "Custom backup is the only App Service copy type that supports a team-chosen schedule, partial captures that skip selected folders, delivery across a virtual network to the linked storage account, and downloading the result as an Azure Storage blob. A storage account must be configured first, and the Standard tier shown is supported.",
+				"perChoice": {
+					"configuration:a": "Automatic backups run hourly with no setup, but they cannot cross a virtual network, cannot skip selected content, and cannot be downloaded.",
+					"configuration:c": "Zone redundancy needs Premium v2, v3, or v4 with at least two instances and spreads instances across availability zones; it does not copy app content.",
+					"configuration:d": "Multiple regions with load balancing, failover, and cross-region data replication address a regional outage, but they do not create the requested copies."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-backup"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/reliability/reliability-app-service"
+				}
+			],
+			"subtopics": [
+				"app-service-backup",
+				"virtual-network-backup",
+				"partial-content-capture"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V4G79V7W174FGY09P3PC7G",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an App Service web app named ContosoWeb running on a Standard tier plan in East US. The web app and the customer files it stores exist only in that area. The business wants the site to keep serving requests, and the customer files to remain reachable, during an outage that disables the entire East US area. The operations team has proposed covering this risk with the existing backup copies. Which configuration change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Current value"
+					],
+					"rows": [
+						[
+							"App Service plan",
+							"Standard (S1)"
+						],
+						[
+							"App location",
+							"East US"
+						],
+						[
+							"Instances",
+							"3"
+						],
+						[
+							"Zone redundancy",
+							"Off"
+						],
+						[
+							"Backup configuration",
+							"Automatic backups only; no custom backup configured"
+						]
+					]
+				},
+				"statement": "The configuration change to make is {{continuity}}.",
+				"slots": [
+					{
+						"id": "continuity",
+						"options": [
+							{
+								"id": "a",
+								"text": "Enable zone redundancy with two instances on the current plan"
+							},
+							{
+								"id": "b",
+								"text": "Turn on automatic backups and keep the copies for 30 days"
+							},
+							{
+								"id": "c",
+								"text": "Deploy a plan in another region with traffic failover and data replication"
+							},
+							{
+								"id": "d",
+								"text": "Turn on custom backups in a Storage account with indefinite retention"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"continuity": "c"
+			},
+			"explanation": {
+				"correct": "App Service is a single-region service, so an outage that disables the whole region takes the app offline. To keep serving requests and keep the stored files reachable through such an outage, the app needs plans in more than one region, with traffic directed to the healthy copy and the stored files copied between the regions. Backups only help recover content after the fact; a backup by itself does not keep the app running in another region, so the team's proposal is not sufficient.",
+				"perChoice": {
+					"continuity:a": "Zone redundancy spreads the instances of a plan across availability zones, so it addresses a single-zone failure rather than the loss of an entire region. It also requires Premium v2, Premium v3, or Premium v4 with at least two instances, so it is not offered on this Standard plan.",
+					"continuity:b": "Automatic backups run every hour and expire after 30 days on a schedule that cannot be changed. They help recover the app content afterwards, but they neither keep the site serving requests nor keep the stored files reachable while the region is unavailable.",
+					"continuity:d": "Custom backups let the team control when copies are taken and how long they are kept, and they can include a linked database, but a restored copy is still placed in the same single region. Backups alone therefore do not keep the site running in another region during an outage of that region."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/reliability/reliability-app-service"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-backup"
+				}
+			],
+			"subtopics": [
+				"app-service-backup",
+				"regional-resilience",
+				"backup-limitations"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V4K7T15H2XJCFG6PTWYS3D",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an App Service web app named ContosoWeb on a Standard tier plan, and a custom backup of the app is already configured against a storage account, as shown in the exhibit. A copy was taken on 20 October, and after that copy was taken the team repointed the app's connection strings at the new production database and corrected two other app settings. A deployment the next day removed several files from the app's local disk. The team wants the on-disk files returned to the state recorded in the 20 October copy, while the settings corrected after that copy must continue to be the ones the app runs with. Which restore configuration should the on-call engineer choose?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "App name:              ContosoWeb\nApp Service plan tier: Standard\nBackup type:           Custom, stored in the contosobackups storage account\nCopy chosen for recovery: 20 October 2026, 02:00 UTC\nChanges made after that copy:\n  - connection strings repointed to the new production database\n  - two app settings corrected\nFiles missing after the later deployment:\n  - /home/site/wwwroot/orders.js\n  - /home/site/wwwroot/catalog.js"
+				},
+				"statement": "To complete this recovery, the on-call engineer should select {{restoreSetting}}.",
+				"slots": [
+					{
+						"id": "restoreSetting",
+						"options": [
+							{
+								"id": "a",
+								"text": "Restore the content and apply the site configuration from the backup"
+							},
+							{
+								"id": "b",
+								"text": "Restore the content and retain the site configuration currently in place"
+							},
+							{
+								"id": "c",
+								"text": "Restore the site configuration from the backup and retain the content currently in place"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"restoreSetting": "b"
+			},
+			"explanation": {
+				"correct": "When you restore an App Service backup, the Backup details section is populated for you and the Advanced options area lets you decide whether the site configuration is restored together with the content. Here the deleted files on local disk have to come back from the 20 October copy, but the connection strings and the two app settings were corrected after that copy was taken, so pulling the configuration out of the backup as well would roll those corrections back. The right choice is therefore to restore the content while leaving the site's current configuration in place.",
+				"perChoice": {
+					"restoreSetting:a": "This option also restores the site configuration from the 20 October copy, which overwrites the connection strings and the two app settings the team corrected after that copy. The app would go back to values already known to be wrong.",
+					"restoreSetting:c": "This option works in the wrong direction: it brings the settings back from the backup but leaves the deleted files on local disk in place, so the missing application files are never recovered."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-backup"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/reliability/reliability-app-service"
+				}
+			],
+			"subtopics": [
+				"app-service-backup",
+				"restore-site-configuration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V4NVZDTZSN3J3F84D9ZRZT",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an App Service web app named ContosoWeb whose plan is shown in the exhibit. The business wants the site to keep serving requests if one availability zone in the region fails, and the operations group has so far been treating the app's backup copies as their answer to that risk. Which configuration change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "App name:          ContosoWeb\nPlan pricing tier: Standard\nPlan instance count: 1\nBackup arrangement: Custom backups on a daily schedule, written to an attached storage account\nDeployment slots in use: None"
+				},
+				"statement": "The configuration change you should make is to {{change}}.",
+				"slots": [
+					{
+						"id": "change",
+						"options": [
+							{
+								"id": "a",
+								"text": "Move the app to a Premium v3 plan, turn on zone redundancy for that plan, and run at least two instances on it"
+							},
+							{
+								"id": "b",
+								"text": "Move the app to a Premium v3 plan, turn on zone redundancy for that plan, and run a single instance on it"
+							},
+							{
+								"id": "c",
+								"text": "Keep the app on its Standard plan, turn on zone redundancy for that plan, and run at least two instances on it"
+							},
+							{
+								"id": "d",
+								"text": "Keep the app on its Standard plan and schedule extra custom backups each day so that copies are taken more often"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"change": "a"
+			},
+			"explanation": {
+				"correct": "The requirement is that the app keeps serving requests when an availability zone in the region fails. Backups do not deliver that: a copy is a recovery artifact for app content, not a running copy of the site, so the operations group's proposal cannot satisfy the business goal. Zone redundancy is the setting that addresses this risk, and it is only offered on Premium v2, Premium v3 and Premium v4 plans, is applied at the plan level (so it covers every app hosted on the plan), and requires the plan to run at least two instances so the plan's instances can be spread across zones. ContosoWeb therefore needs to move onto an eligible tier (Premium v3 works, as do Premium v2 and Premium v4), have zone redundancy turned on for that plan, and run at least two instances. Backups should still be kept for recovering on-disk content, but they complement this setting rather than substitute for it.",
+				"perChoice": {
+					"change:b": "Zone redundancy cannot do its job on a single instance, because the service requires the plan to run at least two instances for the plan's instances to be spread across availability zones. With one instance, the app would still be lost when the zone hosting that instance fails.",
+					"change:c": "Zone redundancy is only available on Premium v2, Premium v3 and Premium v4 plans, so it cannot be turned on for a Standard plan no matter how many instances that plan runs.",
+					"change:d": "Taking more copies does not keep the site serving requests during an availability-zone failure; a backup is a stored copy of app content used for recovery, not a second running instance in another zone. Adding scheduled copies therefore does not meet the stated requirement."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/reliability/reliability-app-service"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-backup"
+				}
+			],
+			"subtopics": [
+				"zone-redundancy",
+				"backup-configuration",
+				"app-service-plan"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V4VKTR8MRNNWGB37KXHV3D",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an App Service web app named ContosoWeb on a Standard tier plan. The exhibit lists how the app's backup setup looks today. The business wants the on-disk files and the contents of the linked Azure SQL Database to be recoverable after a failure, and it is willing to use more than one mechanism for that. Which configuration change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Plan tier",
+							"Standard"
+						],
+						[
+							"Backup type",
+							"Custom, scheduled every 6 hours"
+						],
+						[
+							"Storage account",
+							"contosobackups (West Europe)"
+						],
+						[
+							"Linked database",
+							"Azure SQL Database ContosoSql"
+						],
+						[
+							"Size of the linked database",
+							"6 GB"
+						],
+						[
+							"Size of the app's on-disk content",
+							"2 GB"
+						]
+					]
+				},
+				"statement": "The operations team should {{slot1}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "Remove the linked database from the custom backup and protect the database with the database product's native backup and restore tools"
+							},
+							{
+								"id": "b",
+								"text": "Move the app to a Premium v3 plan and keep the linked database in the custom backup so the whole database is captured"
+							},
+							{
+								"id": "c",
+								"text": "Reduce the retention to 0 days and keep the linked database in the custom backup so the whole database fits inside every copy"
+							},
+							{
+								"id": "d",
+								"text": "Switch the app to automatic backups so the platform captures the linked database for you"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a"
+			},
+			"explanation": {
+				"correct": "A custom backup can hold up to 10 GB in total, and inside that ceiling no more than 4 GB may be taken up by the linked database. The exhibit's linked database is 6 GB, so it cannot ride along in the custom backup even though the combined size (2 GB of app content + 6 GB of database = 8 GB) sits under the overall 10 GB ceiling. The database therefore has to be unlinked from the custom backup, and its contents covered with the database product's own native backup and restore tooling, while the custom backup keeps protecting the app's on-disk files. Moving to a higher plan tier does not raise the allowance for the linked database portion, shortening retention only controls how long copies are kept rather than their size, and platform-made automatic backups do not include a linked database at all.",
+				"perChoice": {
+					"slot1:b": "Plan tier has no effect on how much of a linked database a custom backup may carry: the 4 GB allowance for the database portion applies on every tier, so the 6 GB database still cannot be captured in full and the setup would leave the database unprotected.",
+					"slot1:c": "Retention decides how long each copy is kept, not how much it can hold. Shortening retention to 0 days only makes copies expire sooner, and the linked database portion of every copy stays capped at 4 GB, so the 6 GB database still cannot travel with the copy.",
+					"slot1:d": "Automatic backups are produced by the platform and do not include a linked database, so the Azure SQL Database contents would not be captured at all. The on-disk files would still be copied hourly, but the database would be left with none of the coverage the business asked for."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-backup"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/reliability/reliability-app-service"
+				}
+			],
+			"subtopics": [
+				"custom-backup-limits",
+				"linked-database-backup",
+				"backup-strategy"
+			],
+			"reviewed": false
+		}
+	]
+}

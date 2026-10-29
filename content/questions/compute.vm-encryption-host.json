@@ -1,0 +1,1797 @@
+{
+	"skill": "compute.vm-encryption-host",
+	"questions": [
+		{
+			"id": "q_01M5R56F4FKQTQ418TK6SMQ32P",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Linux virtual machine vm-sales-01 whose temporary disk, disk cache, and data path between compute and storage must all be encrypted. You need this protection without installing an in-guest encryption extension and without consuming CPU on the VM, and you need Microsoft Defender for Cloud to report the disk encryption status as Healthy. Which option should you choose?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Current state"
+					],
+					"rows": [
+						[
+							"Virtual machine",
+							"vm-sales-01 — Linux (Ubuntu 22.04), Standard_D4s_v5, East US 2"
+						],
+						[
+							"In-guest disk encryption extension",
+							"Not installed"
+						],
+						[
+							"Azure Disk Encryption",
+							"Disabled on the OS disk and on all data disks"
+						],
+						[
+							"OS and data disks",
+							"Managed disks with server-side encryption at rest using a customer-managed key through a disk encryption set"
+						],
+						[
+							"Temporary / ephemeral disk",
+							"Not encrypted at rest"
+						],
+						[
+							"Disk cache",
+							"Not encrypted"
+						],
+						[
+							"Data path between compute and storage",
+							"Not encrypted"
+						],
+						[
+							"Microsoft Defender for Cloud — disk encryption status",
+							"Unhealthy"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Enable encryption at host on the VM and keep the disk encryption set that supplies your customer-managed key"
+					},
+					{
+						"id": "b",
+						"text": "Enable Azure Disk Encryption on the VM with a key encryption key stored in your Key Vault"
+					},
+					{
+						"id": "c",
+						"text": "Enable confidential disk encryption on the VM and keep the disk encryption set for the data disks"
+					},
+					{
+						"id": "d",
+						"text": "Rely on the existing server-side encryption at rest with the customer-managed key and accept the Defender status"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Encryption at host is the Azure platform layer that adds exactly the coverage the VM is missing: temporary and ephemeral disks are encrypted at rest, disk caches are encrypted, and data travelling between compute and storage is encrypted. It needs no in-guest extension and consumes none of the VM's CPU. Because the managed disks already use a disk encryption set with a customer-managed key, the cache inherits the disk's encryption type (customer-managed key encrypted cache), while temporary and ephemeral disks remain encrypted with platform-managed keys. Defender for Cloud reports the disk encryption status as Healthy for encryption at host, so the current Unhealthy status also clears.",
+				"perChoice": {
+					"b": "Azure Disk Encryption encrypts OS and data disks from inside the guest operating system (BitLocker on Windows, DM-Crypt on Linux), so it requires the guest agent and it does consume VM CPU — it fails both stated constraints. It is also mutually exclusive with encryption at host: a VM that currently or ever had ADE can never have encryption at host switched on, and ADE cannot be enabled on disks that already use encryption at host.",
+					"c": "Confidential disk encryption protects the OS disk and, when opted in, the confidential temp disk, with keys bound to the VM's TPM, so it requires a confidential-capable VM size and it does consume CPU. It therefore violates the requirement to protect the workload without taking CPU from the VM.",
+					"d": "Server-side encryption at rest only covers data once it is persisted to the storage clusters; temp disks, disk caches and the compute-to-storage path stay unprotected. That gap is precisely why Defender for Cloud reports SSE-only VMs as Unhealthy, so accepting the current status does not meet the requirement."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disk-encryption-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-enable-host-based-encryption-portal"
+				}
+			],
+			"subtopics": [
+				"encryption-at-host",
+				"server-side-encryption",
+				"defender-for-cloud-disk-status"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R59JY3TAJ3GFA5CE11A73D",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You are preparing to deploy vm-orders-05 in the East US 2 subscription. The OS and data disk caches of that virtual machine must be protected with a customer-managed key held in Azure Key Vault, and the temporary disk plus the path between compute and storage must be protected too, with no in-guest extension involved. The key vault, the key and the disk encryption set already exist in the state shown below, and the subscription feature registration is already complete. Which action should you take before deploying the virtual machine?",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "$ az feature show --name EncryptionAtHost --namespace Microsoft.Compute --query registrationState\n\"Registered\"\n\n$ az keyvault show --name kv-orders --query \"{region:location, softDelete:properties.enableSoftDelete, purgeProtection:properties.enablePurgeProtection}\"\n{\n  \"region\": \"eastus2\",\n  \"softDelete\": false,\n  \"purgeProtection\": false\n}\n\n$ az role assignment list --scope /subscriptions/0a1b2c3d/resourceGroups/rg-orders/providers/Microsoft.KeyVault/vaults/kv-orders --query \"[].roleDefinitionName\"\n[]\n\n$ az disk-encryption-set show --name des-orders --resource-group rg-orders --query \"{region:location, encryptionType:properties.encryptionType, keySource:properties.keySource, keyName:properties.keyName, autoKeyRotation:properties.autoKeyRotation}\"\n{\n  \"region\": \"eastus2\",\n  \"encryptionType\": \"EncryptionAtRestWithCustomerKey\",\n  \"keySource\": \"Microsoft.KeyVault\",\n  \"keyName\": \"orders-key\",\n  \"autoKeyRotation\": true\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Enable soft delete and purge protection on kv-orders and add a Key Vault Administrator role assignment to the vault so des-orders can use the key, then deploy vm-orders-05 with Encryption at host selected and the customer-managed key chosen under Key management."
+					},
+					{
+						"id": "b",
+						"text": "Add a Reader role assignment to the Key Vault kv-orders so des-orders can use the key, then deploy vm-orders-05 with Encryption at host selected and the customer-managed key chosen under Key management; the vault's soft delete and purge protection settings do not need to change."
+					},
+					{
+						"id": "c",
+						"text": "Recreate des-orders with the encryption type set to Encryption at-rest with a platform-managed key and add a Key Vault Contributor role assignment to kv-orders, then deploy vm-orders-05 with Encryption at host selected."
+					},
+					{
+						"id": "d",
+						"text": "Enable soft delete and purge protection on kv-orders, then deploy vm-orders-05 with Encryption at host selected and the customer-managed key chosen under Key management; the disk encryption set already holds the permissions needed for the key once it is deployed."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "kv-orders is missing both mandatory vault settings (soft delete and purge protection are both false) and any Azure RBAC role assignment (the assignment list is empty). For a Key Vault used to encrypt managed disks, soft delete and purge protection are mandatory rather than optional hardening, and a role assignment (Key Vault Administrator, Owner, or Contributor) must be added on the vault so the disk encryption set can use the key. Once those are in place, the VM is deployed with Encryption at host selected on the Disks pane and the customer-managed key chosen under Key management: temporary disks are then encrypted at rest with platform-managed keys, the OS and data disk caches follow the encryption type of the disk itself (customer-managed key here), and data flows encrypted between compute and storage, without any in-guest agent and without consuming VM CPU. As an extra step after the disk encryption set is deployed, open it and select the displayed alert so the vault is granted permissions to the set.",
+				"perChoice": {
+					"b": "Reader is not one of the roles that lets a disk encryption set use the vault's key (Key Vault Administrator, Owner, or Contributor are), and soft delete plus purge protection are mandatory for a vault that encrypts managed disks. The exhibit shows both vault settings disabled and no role assignment, so this path leaves the vault unusable for customer-managed key encryption.",
+					"c": "Two problems: the stated goal is customer-managed key protection for the disk caches, and a disk encryption set created with a platform-managed encryption type would not deliver that; and the vault's soft delete and purge protection stay disabled, which is mandatory for a vault used to encrypt managed disks. (Changing the encryption type of an existing disk encryption set is in any case impossible — a brand-new set would be required.)",
+					"d": "Turning on soft delete and purge protection is necessary but not sufficient: the vault also needs an Azure RBAC role assignment so the disk encryption set can use the key. The disk encryption set does not obtain key access on its own, and the empty role assignment list in the exhibit shows this step is still missing."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-enable-host-based-encryption-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disk-encryption-overview"
+				}
+			],
+			"subtopics": [
+				"encryption-at-host",
+				"customer-managed-keys",
+				"key-vault-and-disk-encryption-set"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R5F3TRV7D61ZXYWF1DEEBT",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have Windows VM vm-pay-01 in the East US 2 subscription, and the configuration collected by the platform team is shown below. Azure Disk Encryption is scheduled to retire on September 15, 2028, and the workload's encrypted disks must still unlock after a reboot on that date, while the disk encryption status that Defender for Cloud reports must remain Healthy. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Observed value"
+					],
+					"rows": [
+						[
+							"Virtual machine",
+							"vm-pay-01 — Windows Server 2022 — East US 2"
+						],
+						[
+							"Guest extension",
+							"AzureDiskEncryption (BitLocker) — installed 2025-04-14 — state Succeeded"
+						],
+						[
+							"Disk encryption set",
+							"des-pay-01 — customer-managed key — East US 2"
+						],
+						[
+							"Subscription feature EncryptionAtHost",
+							"Registered"
+						],
+						[
+							"Defender for Cloud disk encryption status",
+							"Healthy"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Create a new VM with encryption at host enabled"
+					},
+					{
+						"id": "b",
+						"text": "Disable the AzureDiskEncryption extension on vm-pay-01, then enable encryption at host on its disks"
+					},
+					{
+						"id": "c",
+						"text": "Reimage vm-pay-01 with a new custom image, then enable encryption at host on its disks"
+					},
+					{
+						"id": "d",
+						"text": "Enable encryption at host on vm-pay-01's disks after attaching a disk encryption set that uses a customer-managed key"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "vm-pay-01 currently has the in-guest AzureDiskEncryption extension, and encryption at host cannot be enabled on a VM that currently or ever had ADE enabled — that block is historical, so it is not lifted by removing the extension, reimaging the VM, or attaching a disk encryption set. The subscription feature EncryptionAtHost is already Registered and a disk encryption set already exists, so the only way to satisfy the retirement deadline is to stand up a different VM resource with encryption at host enabled and move the workload onto it. That path keeps Defender for Cloud reporting the disk encryption status as Healthy (server-side encryption on its own would report Unhealthy) and removes the dependency on the in-guest extension before its retirement.",
+				"perChoice": {
+					"b": "Removing the extension does not clear the record of ADE ever having been used on that VM, so encryption at host still cannot be turned on for vm-pay-01 and the change fails.",
+					"c": "Reimaging rebuilds the guest OS but keeps the same virtual machine resource and its ADE history, so encryption at host remains unavailable on vm-pay-01.",
+					"d": "A disk encryption set and customer-managed key decide how the OS and data disk caches are encrypted; they have no bearing on whether encryption at host can be enabled on a VM that has had ADE, so this attempt still fails."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-enable-host-based-encryption-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disk-encryption-overview"
+				}
+			],
+			"subtopics": [
+				"encryption-at-host",
+				"azure-disk-encryption",
+				"disk-encryption-migration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R5H39F4QKG61FSKSTBCSX7",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You operate a Linux virtual machine scale set in the East US 2 subscription. Five instances are running today, and the security team requires that every instance — including the five that are already running — has its temporary disk, its disk cache, and the data path between compute and storage encrypted, with no in-guest extension installed. The provider feature registration for the subscription has already been completed. The current state of the scale set is shown below. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Scale set",
+							"vmss-web-03 (East US 2)"
+						],
+						[
+							"Guest OS",
+							"Linux, custom image custom-web-2024"
+						],
+						[
+							"Instance count",
+							"5"
+						],
+						[
+							"Instances running since",
+							"March 2024"
+						],
+						[
+							"Instance provisioning state",
+							"Succeeded (all five)"
+						],
+						[
+							"virtualMachineProfile.storageProfile.encryptionAtHost",
+							"false"
+						],
+						[
+							"upgradePolicy.mode",
+							"Manual"
+						],
+						[
+							"Provider feature Microsoft.Compute/EncryptionAtHost",
+							"Registered"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Enable encryption at host for the scale set, then deallocate and reallocate the five running instances so that they come back with the new model in place."
+					},
+					{
+						"id": "b",
+						"text": "Enable encryption at host for the scale set and leave the five running instances as they are, because instances created after the change pick it up on their own."
+					},
+					{
+						"id": "c",
+						"text": "Deallocate and reallocate the five running instances first, and only after that enable encryption at host for the scale set."
+					},
+					{
+						"id": "d",
+						"text": "Enable encryption at host for the scale set and let the platform recreate the five running instances during the next planned maintenance window."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The setting lives in the scale set model, so turning it on affects only instances created from that point onward. Members that already exist must be deallocated and reallocated so the platform recreates them with the new setting. Doing the model change first and then deallocating and reallocating the five running members therefore covers both the current instances and every instance created later; the custom image and the Linux configuration are unaffected by the change.",
+				"perChoice": {
+					"b": "Instances created after the model change are the only ones that pick up the setting automatically; members that already exist keep running unchanged until they are deallocated and reallocated. Leaving the five running instances in place therefore fails the requirement.",
+					"c": "The order matters. Instances deallocated and reallocated while the setting is still off come back without it, because the setting takes effect only for instances created after it is enabled on the model. Enabling first and reallocating the existing members afterwards is what covers them.",
+					"d": "The platform does not recreate existing members on its own when the model changes; there is no automatic maintenance step that rebuilds them. Deallocating and reallocating each existing member is an action you perform yourself."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-enable-host-based-encryption-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disk-encryption-overview"
+				}
+			],
+			"subtopics": [
+				"encryption-at-host-scale-set",
+				"existing-scale-set-instances",
+				"disk-encryption-at-host"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R5K8MEWG8QHG0H102GJ57E",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You are creating a new Linux virtual machine scale set in the Contoso-Prod subscription. The security team requires that every instance have its temporary disk, its disk cache, and the data path between compute and storage encrypted, and that no in-guest encryption extension be installed. The PowerShell session you are working in is connected to Contoso-Prod, and the subscription capability check you ran returns the result shown below. Which action should you take first?",
+				"exhibit": {
+					"kind": "code",
+					"language": "powershell",
+					"text": "PS C:\\> Get-AzProviderFeature -FeatureName \"EncryptionAtHost\" -ProviderNamespace \"Microsoft.Compute\" |\n      Select-Object FeatureName, RegistrationState\n\nFeatureName         RegistrationState\n------------         ------------------\nEncryptionAtHost     NotRegistered"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Register the EncryptionAtHost provider feature in the Contoso-Prod subscription and wait until it shows as Registered, then deploy the scale set"
+					},
+					{
+						"id": "b",
+						"text": "Register the EncryptionAtHost provider feature in the Contoso-Dev subscription, where it already shows as Registered, and deploy the scale set in that subscription instead"
+					},
+					{
+						"id": "c",
+						"text": "Deploy the scale set in the Contoso-Prod subscription first, register the EncryptionAtHost provider feature afterwards, and deallocate and reallocate the instances so they pick up the change"
+					},
+					{
+						"id": "d",
+						"text": "Install the Azure Disk Encryption extension on each instance of the scale set so the temporary disk and the disk cache are protected"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The host-side disk encryption capability is enabled per subscription: it must be registered in the subscription that hosts the virtual machine or scale set before the control on the Disks pane can be selected. The check in the exhibit shows the capability is NotRegistered for Contoso-Prod, so the first action is to run Register-AzProviderFeature (or az feature register) for the EncryptionAtHost feature in the Microsoft.Compute namespace against Contoso-Prod and confirm it reads Registered, which can take several minutes. Only after that can the scale set be deployed with the Disks pane option selected, which protects the temporary disk, the disk cache and the encrypted flow between compute and storage with no in-guest extension involved.",
+				"perChoice": {
+					"b": "Registration is scoped to a single subscription. Registering the capability in Contoso-Dev leaves it unavailable in Contoso-Prod, and the workload has to stay in Contoso-Prod, so a scale set deployed there would still miss the required protection for the temporary disk, the cache and the compute-to-storage path.",
+					"c": "The registration is a deployment prerequisite, not a follow-up step: the control on the Disks pane is unavailable until the registration reads Registered, and registration itself can take several minutes, so a scale set created beforehand is created without the option. Deallocating and reallocating instances applies to members of an existing scale set that was enabled after creation, not to instances that were deployed without the option in the first place.",
+					"d": "An in-guest extension is excluded by the stated requirement. Azure Disk Encryption encrypts from inside the guest operating system, consumes VM CPU, and cannot be combined with the host-side option, since a VM or scale set that currently or ever had Azure Disk Encryption can never use the host-side option; Azure Disk Encryption is also scheduled to retire on September 15, 2028."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-enable-host-based-encryption-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disk-encryption-overview"
+				}
+			],
+			"subtopics": [
+				"feature-registration",
+				"vm-scale-set",
+				"subscription-prerequisites"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R5MPC83KSDN4Z5MNBZJ0AX",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have Windows virtual machine vm-report-07 in the East US 2 subscription of Contoso-Prod. The compliance team has reviewed this virtual machine and decided that the extra protection layer that is switched on at the platform level is no longer required for this workload, so they asked you to turn that option off. The virtual machine has to be running again afterwards with the same disks and all data intact. The configuration collected by the platform team is shown below. Which action should you take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"name\": \"vm-report-07\",\n  \"location\": \"eastus2\",\n  \"properties\": {\n    \"hardwareProfile\": {\n      \"vmSize\": \"Standard_D4s_v5\"\n    },\n    \"storageProfile\": {\n      \"imageReference\": {\n        \"publisher\": \"MicrosoftWindowsServer\",\n        \"offer\": \"WindowsServer\",\n        \"sku\": \"2022-datacenter-azure-edition\"\n      },\n      \"osDisk\": {\n        \"managedDisk\": { \"storageAccountType\": \"Premium_LRS\" }\n      },\n      \"dataDisks\": [\n        { \"name\": \"vm-report-07-data01\", \"diskSizeGB\": 128, \"managedDisk\": { \"storageAccountType\": \"Premium_LRS\" } }\n      ]\n    },\n    \"securityProfile\": {\n      \"encryptionAtHost\": true\n    },\n    \"osProfile\": {\n      \"computerName\": \"vm-report-07\",\n      \"adminUsername\": \"azureuser\"\n    }\n  },\n  \"powerState\": \"VM running\"\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Deallocate vm-report-07, then set Encryption at host to No under Additional settings on the Disks pane and save."
+					},
+					{
+						"id": "b",
+						"text": "Restart vm-report-07, then set Encryption at host to No under Additional settings on the Disks pane and save."
+					},
+					{
+						"id": "c",
+						"text": "Set Encryption at host to No under Additional settings on the Disks pane and save while vm-report-07 keeps running."
+					},
+					{
+						"id": "d",
+						"text": "Enable Azure Disk Encryption on vm-report-07, then set Encryption at host to No under Additional settings on the Disks pane and save."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The option cannot be changed while the virtual machine is running, so the compute resources have to be released first: deallocate vm-report-07, open the Disks pane, expand Additional settings, set Encryption at host to No and save. The disks, their contents and the guest OS are untouched, and the virtual machine can then be started again.",
+				"perChoice": {
+					"b": "A restart only bounces the instance: the virtual machine stays running with its compute resources allocated, and the setting is refused while the virtual machine is running. The change is only accepted after the resources have been released (deallocated).",
+					"c": "Saving the Disks pane while the virtual machine is still running is rejected, because this option cannot be turned off on a running virtual machine. The virtual machine must be deallocated before the change is made.",
+					"d": "Azure Disk Encryption is mutually exclusive with this option: a virtual machine that currently or in the past used Azure Disk Encryption can never have the host-level option switched on, and enabling Azure Disk Encryption also encrypts from inside the guest OS, consuming the virtual machine's CPU. It is not a way to remove the platform-level setting."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-enable-host-based-encryption-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disk-encryption-overview"
+				}
+			],
+			"subtopics": [
+				"encryption-at-host",
+				"disable-encryption-at-host"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R5PEKM99SQCMH2F4HVKXKT",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You created the key vault kv-contoso-prod in resource group rg-platform, generated the key key-orders inside it, and added the Key Vault Administrator role at the vault scope so that a disk encryption set can use that key. You now want to protect managed disks with this key, but every attempt to create the disk encryption set that references key-orders fails. The configuration collected by the platform team is shown below. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Observed value"
+					],
+					"rows": [
+						[
+							"Key vault",
+							"kv-contoso-prod, resource group rg-platform, East US 2"
+						],
+						[
+							"Soft delete",
+							"Enabled"
+						],
+						[
+							"Purge protection",
+							"Disabled"
+						],
+						[
+							"Key",
+							"key-orders, Key Type RSA, RSA Key Size 2048, status Active"
+						],
+						[
+							"Role assignment at vault scope",
+							"Key Vault Administrator assigned to the disk encryption set identity"
+						],
+						[
+							"Planned disk encryption set",
+							"des-orders, East US 2, subscription Contoso-Prod"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Turn on purge protection for kv-contoso-prod and leave soft delete enabled."
+					},
+					{
+						"id": "b",
+						"text": "Turn off soft delete for kv-contoso-prod and turn on purge protection."
+					},
+					{
+						"id": "c",
+						"text": "Turn off soft delete for kv-contoso-prod and leave purge protection turned off."
+					},
+					{
+						"id": "d",
+						"text": "Leave kv-contoso-prod exactly as it is now — soft delete enabled and purge protection turned off — and retry the disk encryption set deployment."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A key vault that is used to encrypt managed disks must have both soft delete and purge protection turned on; the documentation states that these two settings are mandatory for that use rather than optional hardening. Reviewing the exhibit, everything else is already in order: the key is RSA with a 2048-bit size, the Key Vault Administrator role is assigned at the vault scope, and the planned disk encryption set sits in the same region (East US 2) and subscription as the vault and the future virtual machine. The one gap is purge protection, which is turned off, so the vault does not yet meet the requirements for encrypting managed disks and the disk encryption set that references key-orders cannot be created. Turning purge protection on while keeping soft delete enabled completes the required configuration.",
+				"perChoice": {
+					"b": "Turning soft delete off removes the retention of deleted keys, and both settings are required for a vault used to encrypt managed disks. Even with purge protection on, the vault would still not qualify, so this change does not unblock the deployment.",
+					"c": "This removes both of the settings that a vault must have before its keys can be used to encrypt managed disks, so key-orders would still not be usable by the disk encryption set.",
+					"d": "The key type, the role assignment and the region alignment in the exhibit are all correct, so retrying without changing the vault simply reproduces the same failure. The setting that is missing is purge protection, and it has to be turned on before the disk encryption set that references key-orders can be created."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-enable-host-based-encryption-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disk-encryption-overview"
+				}
+			],
+			"subtopics": [
+				"encryption-at-host-prerequisites",
+				"key-vault-requirements",
+				"customer-managed-keys"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R5T26R4G4RCA2AFAHN8GV0",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You are deploying a new Linux virtual machine vm-billing-12 in the East US 2 region of the Contoso-Prod subscription. The security policy requires the operating system disk and data disk caches of that virtual machine to be protected with the customer-managed key key-orders, and it also requires the temporary disk and the data path between compute and storage to be encrypted without installing anything inside the guest operating system. The resources prepared for this deployment are listed below. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Resource",
+						"Name",
+						"Region",
+						"Subscription",
+						"Configuration"
+					],
+					"rows": [
+						[
+							"Target virtual machine",
+							"vm-billing-12",
+							"East US 2",
+							"Contoso-Prod",
+							"Linux, new deployment"
+						],
+						[
+							"Key vault",
+							"kv-orders",
+							"East US 2",
+							"Contoso-Prod",
+							"Soft delete: On; Purge protection: On"
+						],
+						[
+							"Key",
+							"key-orders",
+							"East US 2",
+							"Contoso-Prod",
+							"RSA, 2048 bits"
+						],
+						[
+							"Disk encryption set",
+							"des-orders",
+							"East US 2",
+							"Contoso-Prod",
+							"Encryption type: Encryption at-rest with a platform-managed key"
+						],
+						[
+							"Provider feature",
+							"EncryptionAtHost",
+							"n/a",
+							"Contoso-Prod",
+							"State: Registered"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Create a new disk encryption set with the encryption type Encryption at-rest with a customer-managed key that references key-orders in kv-orders, then use it for the virtual machine's disks with Encryption at host enabled."
+					},
+					{
+						"id": "b",
+						"text": "Update the encryption type of des-orders to Encryption at-rest with a customer-managed key that references key-orders in kv-orders, then use it for the virtual machine's disks with Encryption at host enabled."
+					},
+					{
+						"id": "c",
+						"text": "Use des-orders for the virtual machine's disks with Encryption at host enabled and select key-orders in kv-orders under Key management."
+					},
+					{
+						"id": "d",
+						"text": "Create a new disk encryption set with the encryption type Encryption at-rest with a platform-managed key, then use it for the virtual machine's disks with Encryption at host enabled."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The encryption type of a disk encryption set is fixed at creation time, so des-orders, which was created with Encryption at-rest with a platform-managed key, can never be changed to use the customer-managed key key-orders. To meet the policy you must create a brand-new disk encryption set whose encryption type is Encryption at-rest with a customer-managed key, reference key-orders in kv-orders, and grant the set access to that key (by accepting the permission prompt on the set). Create the new set in the same region and subscription as the virtual machine and its disks, then select it under Key management on the Disks pane and enable Encryption at host. Because the disks are then protected with the customer-managed key, their caches are encrypted with that same key, and enabling Encryption at host additionally encrypts the temporary disk and the data path between compute and storage without any in-guest extension and without consuming VM CPU.",
+				"perChoice": {
+					"b": "The encryption type of a disk encryption set is permanent. des-orders was created with Encryption at-rest with a platform-managed key, so it cannot be updated to a customer-managed key; a later change to that type means creating a brand-new disk encryption set.",
+					"c": "Using des-orders as it is leaves the operating system and data disks on platform-managed encryption, so their caches would not be protected with key-orders. Choosing a key under Key management does not change the encryption type the set was created with.",
+					"d": "A disk encryption set created with Encryption at-rest with a platform-managed key leaves the operating system and data disk caches encrypted with platform-managed keys, so it does not satisfy the requirement to protect those caches with the customer-managed key key-orders."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-enable-host-based-encryption-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disk-encryption-overview"
+				}
+			],
+			"subtopics": [
+				"disk-encryption-set",
+				"customer-managed-keys",
+				"encryption-at-host"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R5WQVT829AQWND2C2BBNVS",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have four disk protection requirements for the virtual machines in the Contoso-Prod subscription, and you need to pick the option that satisfies each one. The scope of the review is shown below.\n\nMatch each requirement to the disk protection option that meets it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Subscription",
+							"Contoso-Prod"
+						],
+						[
+							"Region",
+							"East US 2"
+						],
+						[
+							"Operating systems in scope",
+							"Windows Server 2022 and Ubuntu 22.04 LTS"
+						],
+						[
+							"Virtual machine size in scope",
+							"Standard_D4s_v5"
+						],
+						[
+							"Purpose of the review",
+							"Quarterly platform security review"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Server-side encryption at rest (SSE)"
+					},
+					{
+						"id": "i2",
+						"text": "Encryption at host"
+					},
+					{
+						"id": "i3",
+						"text": "Azure Disk Encryption (ADE)"
+					},
+					{
+						"id": "i4",
+						"text": "Confidential disk encryption"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Temporary disk and the data path between compute and storage protected, with no CPU consumed on the virtual machine"
+					},
+					{
+						"id": "s2",
+						"label": "Operating system and data disks protected from inside the guest operating system"
+					},
+					{
+						"id": "s3",
+						"label": "Disk key bound to the virtual machine's trusted platform module so that the content is readable only by that virtual machine"
+					},
+					{
+						"id": "s4",
+						"label": "Operating system and data disks protected once they are persisted to the storage clusters, with no option to switch this protection off"
+					}
+				]
+			},
+			"key": {
+				"s1": "i2",
+				"s2": "i3",
+				"s3": "i4",
+				"s4": "i1"
+			},
+			"explanation": {
+				"correct": "Each requirement is met by exactly one of the four options. The requirement for a protected temporary disk and an encrypted path between compute and storage with no CPU cost on the virtual machine is satisfied by encryption at host, which adds temp disk protection, cache protection and encrypted traffic between compute and storage while leaving the VM's CPU untouched. The requirement for the operating system and data disks to be protected from inside the guest operating system is satisfied by Azure Disk Encryption, which runs BitLocker on Windows and DM-Crypt on Linux in the guest with keys held in Azure Key Vault. The requirement that the disk key be bound to the machine's trusted platform module so the content can only be read by that one virtual machine is satisfied by confidential disk encryption, which ties the disk encryption key to the VM's TPM. The requirement that the persisted disks stay protected with no option to switch the protection off is satisfied by server-side encryption at rest, which is always active for managed disks once they are written to the storage clusters.",
+				"perChoice": {
+					"i1": "Fits the slot that requires the disks to remain protected with no option to switch the protection off: server-side encryption at rest is always active for managed disks once they reach the storage clusters. It leaves temporary disks, disk caches and the compute-to-storage path unencrypted, so it does not satisfy the other three requirements.",
+					"i2": "Fits the slot that requires the temporary disk and the compute-to-storage path to be protected without spending CPU on the virtual machine: encryption at host adds temp disk protection, cache protection and encrypted traffic between compute and storage, and it does not consume CPU on the VM. It is applied at the platform level rather than inside the guest, and it can be switched off, so it does not meet the always-on requirement.",
+					"i3": "Fits the slot that requires the operating system and data disks to be protected from inside the guest operating system: Azure Disk Encryption uses BitLocker on Windows and DM-Crypt on Linux within the guest and keeps its keys in Azure Key Vault, optionally wrapped by a key encryption key. It does consume CPU on the virtual machine and it cannot be combined with encryption at host on the same virtual machine.",
+					"i4": "Fits the slot that requires the disk key to be bound to the machine's trusted platform module so the content is readable only by that virtual machine: confidential disk encryption binds the disk encryption key to the VM's TPM and releases it only to that VM. It consumes CPU on the virtual machine and it does not encrypt the disks from inside the guest operating system."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disk-encryption-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-enable-host-based-encryption-portal"
+				}
+			],
+			"subtopics": [
+				"compare-encryption-options",
+				"encryption-at-host",
+				"azure-disk-encryption"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R64D6HWS1Y36YPWR8236C7",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have four findings from a deployment readiness review of virtual machine workloads in the Contoso-Prod subscription, shown in the exhibit below. You need to resolve each finding so that the protection requirements for those workloads can be met. Which corrective action should you match to each finding?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Ref",
+						"Finding"
+					],
+					"rows": [
+						[
+							"F1",
+							"The disk encryption set des-orders was created with the encryption type Encryption at-rest with a platform-managed key. The business now wants the key material for this subscription's managed disks to sit in its own Azure Key Vault."
+						],
+						[
+							"F2",
+							"The data disk of vm-orders-04 is an Ultra Disk with a 512e sector size that was created on 3 March 2023, and that virtual machine must run with Encryption at host."
+						],
+						[
+							"F3",
+							"The size Standard_DS3_v2 was requested for vm-orders-06, which must run with Encryption at host. The output of the size check run by the platform team did not include Standard_DS3_v2."
+						],
+						[
+							"F4",
+							"The key vault kv-hsm-prod holds the keys used by Azure Disk Encryption for the OS and data disks of vm-audit-03, and it is a Managed HSM vault."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Create a new disk encryption set with the encryption type Encryption at-rest with a customer-managed key"
+					},
+					{
+						"id": "b",
+						"text": "Update the existing disk encryption set so that its encryption type is Encryption at-rest with a customer-managed key"
+					},
+					{
+						"id": "c",
+						"text": "Take a snapshot of the disk and create a new disk from that snapshot"
+					},
+					{
+						"id": "d",
+						"text": "Keep the disk that has the 512e sector size and attach it to the virtual machine"
+					},
+					{
+						"id": "e",
+						"text": "Choose a virtual machine size from the results of the supported-size check"
+					},
+					{
+						"id": "f",
+						"text": "Deploy the virtual machine with the size that was already chosen"
+					},
+					{
+						"id": "g",
+						"text": "Replace the Managed HSM key vault with an Azure Key Vault Premium vault, because Azure Disk Encryption supports only the Premium tier"
+					},
+					{
+						"id": "h",
+						"text": "Keep the Managed HSM vault and use it to protect the disks with Azure Disk Encryption"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Finding F1 — key control for the disk encryption set"
+					},
+					{
+						"id": "s2",
+						"label": "Finding F2 — data disk eligibility for this option"
+					},
+					{
+						"id": "s3",
+						"label": "Finding F3 — the virtual machine size that was requested"
+					},
+					{
+						"id": "s4",
+						"label": "Finding F4 — the key vault involved in this scenario"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "c",
+				"s3": "e",
+				"s4": "g"
+			},
+			"explanation": {
+				"correct": "F1 → a: the encryption type of a disk encryption set is fixed when the set is created and cannot be edited afterwards, so a set that was created with the platform-managed type has to be replaced by a new set created with the encryption type Encryption at-rest with a customer-managed key. F2 → c: the 512e-sector Ultra Disk was created on 3 March 2023, which is earlier than 13 May 2023; a disk that old has to be snapshotted and a new disk created from that snapshot before it can be used with Encryption at host. F3 → e: some older VM sizes are not supported, and the size check did not return Standard_DS3_v2, so a size taken from the supported-size results must be chosen. F4 → g: Azure Disk Encryption supports only Azure Key Vault Premium, while Managed HSM works with server-side encryption, Encryption at host and confidential disk encryption, so the Managed HSM vault must be replaced with a Premium vault for this workload.",
+				"perChoice": {
+					"a": "F1 — the encryption type chosen at creation is permanent, so the only way to get the customer-managed type is a brand-new disk encryption set.",
+					"b": "Does not fit any finding — the encryption type of an existing disk encryption set cannot be changed, so des-orders cannot be updated in place.",
+					"c": "F2 — the 512e-sector disk predates 13 May 2023, and the documented remedy is to snapshot it and create a new disk from that snapshot.",
+					"d": "Does not fit any finding — a 512e-sector disk created before 13 May 2023 cannot be kept for a host-encrypted virtual machine; it must be replaced.",
+					"e": "F3 — the requested size is absent from the supported-size results, so a size from that list has to be selected before deployment.",
+					"f": "Does not fit any finding — deploying with the size that was requested ignores the fact that it is not on the supported-size list.",
+					"g": "F4 — Azure Disk Encryption works only with Azure Key Vault Premium, so the Managed HSM vault has to be replaced for this workload.",
+					"h": "Does not fit any finding — Managed HSM is supported for server-side encryption, Encryption at host and confidential disk encryption, but not for Azure Disk Encryption."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-enable-host-based-encryption-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disk-encryption-overview"
+				}
+			],
+			"subtopics": [
+				"encryption-at-host",
+				"disk-encryption-set",
+				"customer-managed-keys"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R6BEF3BPJ7VRJYB9077G4Q",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a Linux virtual machine workload in the East US 2 subscription Contoso-Prod that must protect its operating system and data disk caches with a customer-managed key, and the security policy also requires temporary storage and the data path between compute and storage to be protected without installing anything inside the guest operating system. The subscription capability check shown below reports that the required registration is already complete, and none of the key-protection resources exist yet. You need to build these resources in the correct sequence. Which position does each setup action belong to?",
+				"exhibit": {
+					"kind": "code",
+					"language": "powershell",
+					"text": "PS> Get-AzProviderFeature -FeatureName \"EncryptionAtHost\" -ProviderNamespace \"Microsoft.Compute\"\n\nFeatureName       ProviderNamespace   State\n-----------       -----------------   -----\nEncryptionAtHost  Microsoft.Compute    Registered"
+				},
+				"items": [
+					{
+						"id": "vault",
+						"text": "Create the key vault with soft delete and purge protection enabled."
+					},
+					{
+						"id": "key",
+						"text": "Generate or import the RSA 2048 key inside the vault."
+					},
+					{
+						"id": "rbac",
+						"text": "Add the Key Vault Administrator role assignment to the vault in Access control (IAM)."
+					},
+					{
+						"id": "des",
+						"text": "Create the disk encryption set with Encryption at-rest with a customer-managed key, select the vault, key and key version, then select the displayed alert to grant the vault permissions."
+					},
+					{
+						"id": "vm",
+						"text": "Create the virtual machine, turn on Encryption at host and select the customer-managed key under Key management."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Position 1"
+					},
+					{
+						"id": "s2",
+						"label": "Position 2"
+					},
+					{
+						"id": "s3",
+						"label": "Position 3"
+					},
+					{
+						"id": "s4",
+						"label": "Position 4"
+					},
+					{
+						"id": "s5",
+						"label": "Position 5"
+					}
+				]
+			},
+			"key": {
+				"s1": "vault",
+				"s2": "key",
+				"s3": "rbac",
+				"s4": "des",
+				"s5": "vm"
+			},
+			"explanation": {
+				"correct": "Customer-managed key resources have to be built in dependency order, so the sequence is: (1) create the Azure Key Vault, enabling soft delete and purge protection at creation because both are mandatory for a vault that encrypts managed disks; (2) generate or import the RSA 2048 key inside that vault; (3) add an Azure RBAC role (Key Vault Administrator, Owner or Contributor) on the vault so the disk encryption set is allowed to use the key; (4) create the disk encryption set with the encryption type Encryption at-rest with a customer-managed key, select the vault, key and key version, and then select the displayed alert so the vault gets permissions on the set; (5) only then create the virtual machine, turn on Encryption at host on the Disks pane and select the customer-managed key under Key management. The subscription capability check in the exhibit shows the registration is already Registered, so registration takes no position in this sequence.",
+				"perChoice": {
+					"vault": "This belongs in position 1. The key, the role assignment and the disk encryption set all depend on an existing vault, and soft delete plus purge protection must be switched on when the vault is created because they are mandatory for a vault used to encrypt managed disks.",
+					"key": "This belongs in position 2. The key is generated or imported inside the vault (Key Type RSA, RSA Key Size 2048), so it follows vault creation and comes before the role assignment and the disk encryption set that reference it.",
+					"rbac": "This belongs in position 3. The vault-level role assignment that authorizes use of the key is added in the vault's Access control (IAM) tab after the key exists, and it must be in place before the disk encryption set is created so the set can reach the key.",
+					"des": "This belongs in position 4. The disk encryption set bundles the vault, key and key version, is created with the encryption type Encryption at-rest with a customer-managed key, and afterwards its displayed alert is selected to grant the vault permissions on the set. Its encryption type cannot be changed later, so it must be right when it is created.",
+					"vm": "This belongs in position 5. The virtual machine consumes the key through the disk encryption set, so it is created after the vault, key, role assignment and disk encryption set exist; on the Disks pane Encryption at host is turned on and the customer-managed key is chosen under Key management, which protects caches with that key while temporary disks and the compute-to-storage path stay protected as well."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-enable-host-based-encryption-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disk-encryption-overview"
+				}
+			],
+			"subtopics": [
+				"customer-managed-keys",
+				"deployment-sequence"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R6JE8MCDD4XPVC2JWS8JC9",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are reviewing the disk protection setup of five virtual machine workloads in the Contoso-Prod subscription. The capability registration for the subscription is already complete, and a Key Vault holding a key that your organization controls is available for the workloads that need one. The constraints for each workload are listed in the exhibit. Match each workload to the disk protection configuration that satisfies its constraints.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Workload",
+						"Constraints"
+					],
+					"rows": [
+						[
+							"vm-hr-01",
+							"Windows 11, size D2s v5. The temporary disk and the cached data must be encrypted by the physical machine that runs the virtual machine. No software may be installed inside the guest, and no key is to be managed by your organization."
+						],
+						[
+							"vm-fin-02",
+							"Linux, size D4s v5. The cached data of the operating system disk and of the data disks must be encrypted with the key held in Key Vault. The temporary disk and the path between compute and storage must also be encrypted, and no software may be installed inside the guest."
+						],
+						[
+							"vm-legal-03",
+							"Windows 2022, size D8s v5. The operating system disk and the data disks must be encrypted from inside the guest operating system. The keys stay in Key Vault and may be wrapped by a key encryption key."
+						],
+						[
+							"vm-rd-04",
+							"Linux, size D8s v5. The disk keys must be bound to the trusted platform module of the virtual machine, and the protected content must not be readable on any other machine."
+						],
+						[
+							"vm-ops-05",
+							"Linux, size D2s v5. Only the data once it has been written to the storage clusters is to be encrypted, using the key held in Key Vault. The temporary disk and the cached data must stay unencrypted."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Azure Disk Encryption with a key encryption key"
+					},
+					{
+						"id": "i2",
+						"text": "Server-side encryption with a disk encryption set"
+					},
+					{
+						"id": "i3",
+						"text": "Confidential disk encryption with a disk encryption set"
+					},
+					{
+						"id": "i4",
+						"text": "Encryption at host with a customer-managed key"
+					},
+					{
+						"id": "i5",
+						"text": "Encryption at host with platform-managed keys"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "vm-hr-01"
+					},
+					{
+						"id": "s2",
+						"label": "vm-fin-02"
+					},
+					{
+						"id": "s3",
+						"label": "vm-legal-03"
+					},
+					{
+						"id": "s4",
+						"label": "vm-rd-04"
+					},
+					{
+						"id": "s5",
+						"label": "vm-ops-05"
+					}
+				]
+			},
+			"key": {
+				"s1": "i5",
+				"s2": "i4",
+				"s3": "i1",
+				"s4": "i3",
+				"s5": "i2"
+			},
+			"explanation": {
+				"correct": "Each workload maps to exactly one configuration: vm-hr-01 to encryption at host with platform-managed keys (the temporary disk, the caches and the compute-to-storage path are encrypted by the machine running the VM, nothing is installed in the guest, and the keys are platform-managed); vm-fin-02 to encryption at host with a customer-managed key (the same platform-level protection with no guest software, and because the disks are encrypted with the Key Vault key through a disk encryption set, the disk caches are encrypted with that key too); vm-legal-03 to Azure Disk Encryption with a key encryption key (the only option that encrypts the operating system and data disks from inside the guest operating system, keeps the keys in Key Vault and can wrap them with a key encryption key); vm-rd-04 to confidential disk encryption with a disk encryption set (it binds the disk encryption key to the virtual machine's TPM so the protected content is readable only on that machine); vm-ops-05 to server-side encryption with a disk encryption set (it protects the disks once the data is persisted in the storage clusters and can use the Key Vault key through a disk encryption set, while the temporary disk and the disk caches stay unencrypted).",
+				"perChoice": {
+					"i1": "Belongs with vm-legal-03. It is the only configuration that encrypts the operating system disk and the data disks from inside the guest operating system, keeps the keys in Key Vault and can wrap them with a key encryption key. It also consumes virtual machine CPU and cannot be combined with the platform-level host option.",
+					"i2": "Belongs with vm-ops-05. It encrypts the disks once the data is persisted in the storage clusters and can use the Key Vault key through a disk encryption set, but it leaves the temporary disk and the disk caches unencrypted, which is exactly what that workload asks for.",
+					"i3": "Belongs with vm-rd-04. It binds the disk encryption key to the trusted platform module of the virtual machine, so the protected content can be read only on that machine, and it takes its customer-managed key from a disk encryption set.",
+					"i4": "Belongs with vm-fin-02. It encrypts the temporary disk, the disk caches and the path between compute and storage with nothing installed in the guest, and because the disks use the Key Vault key through a disk encryption set, the operating system and data disk caches are encrypted with that same customer-managed key. The temporary disk itself stays on platform-managed keys even in this configuration.",
+					"i5": "Belongs with vm-hr-01. It encrypts the temporary disk, the disk caches and the path between compute and storage at the level of the machine running the virtual machine, with no software installed in the guest, and the keys are platform-managed, so the workload manages no key of its own."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disk-encryption-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-enable-host-based-encryption-portal"
+				}
+			],
+			"subtopics": [
+				"disk-encryption-comparison",
+				"encryption-at-host",
+				"customer-managed-keys"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R6TF1BNK9JHD2H7YNC2PZK",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are the platform engineer for the Contoso-Prod subscription, where six problems have been reported by the teams that run virtual machines there. Each case below concerns the extra layer of coverage that your team applies to virtual machines, or the resources that hold the keys used with it. You need to match each reported symptom to the corrective action that resolves it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Case",
+						"Resource involved",
+						"Region / Subscription"
+					],
+					"rows": [
+						[
+							"C1",
+							"New virtual machine request",
+							"East US 2 / Contoso-Prod"
+						],
+						[
+							"C2",
+							"vm-hr-02",
+							"East US 2 / Contoso-Prod"
+						],
+						[
+							"C3",
+							"kv-finance",
+							"East US 2 / Contoso-Prod"
+						],
+						[
+							"C4",
+							"key-hr-01 in kv-finance",
+							"East US 2 / Contoso-Prod"
+						],
+						[
+							"C5",
+							"des-finance",
+							"East US 2 / Contoso-Prod"
+						],
+						[
+							"C6",
+							"des-orders",
+							"East US 2 / Contoso-Prod"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Register the EncryptionAtHost feature under Microsoft.Compute for the subscription and wait until the capability check reports Registered."
+					},
+					{
+						"id": "i2",
+						"text": "Deallocate the instance first, switch the platform-level option to No on the Disks pane, and start it again."
+					},
+					{
+						"id": "i3",
+						"text": "Turn on soft delete and purge protection in the vault before any key is used with managed disks."
+					},
+					{
+						"id": "i4",
+						"text": "Generate the key inside the vault with key type RSA and RSA key size 2048."
+					},
+					{
+						"id": "i5",
+						"text": "Create a new disk encryption set with the encryption type Encryption at-rest with a customer-managed key, because that mode cannot be changed after the set is created."
+					},
+					{
+						"id": "i6",
+						"text": "Open the disk encryption set after deployment and select the alert it displays so the vault is granted the needed access."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "C1 – A brand-new instance cannot be created with the extra layer switched on, because the one-time setup that the account requires was never carried out."
+					},
+					{
+						"id": "s2",
+						"label": "C2 – The workload is still powered on, the extra layer has to be taken away, and the change is refused while the machine keeps running."
+					},
+					{
+						"id": "s3",
+						"label": "C3 – The vault that holds the organization's key was set up for managed disks, but the service rejects it because the safeguards against losing the key were never activated."
+					},
+					{
+						"id": "s4",
+						"label": "C4 – The key stored in the vault is a 256-bit elliptic-curve key, while the standard for keys used by managed disks calls for a particular algorithm and length."
+					},
+					{
+						"id": "s5",
+						"label": "C5 – The disk encryption set that the workloads point to was built so that the platform manages the key, and the team now needs the organization to control it, but they want to reconfigure the same object."
+					},
+					{
+						"id": "s6",
+						"label": "C6 – The disk encryption set went live last week, the notice it raised was dismissed, and the caches that rely on the organization's key no longer work."
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5",
+				"s6": "i6"
+			},
+			"explanation": {
+				"correct": "Each symptom points at one documented prerequisite or limit of the platform-level disk protection. C1: the capability must be registered per subscription and report Registered before the setting can be applied to a new virtual machine. C2: the setting cannot be changed while the machine runs, so it must be deallocated first, changed to No and started again. C3: a vault used with managed disks needs soft delete and purge protection both activated, since both are mandatory settings for that use. C4: keys used with managed disks are created with key type RSA and RSA key size 2048. C5: the encryption type of a disk encryption set is permanent, so the organization-controlled variant requires a brand-new set instead of reconfiguring the existing one. C6: the alert shown on a deployed disk encryption set must be acted on so that the key vault is granted the rights to the key, otherwise the caches protected by that key fail.",
+				"perChoice": {
+					"i1": "Belongs to C1. The registration is a per-subscription prerequisite that takes several minutes and must report Registered before the setting can be ticked for a new virtual machine or scale set.",
+					"i2": "Belongs to C2. The setting cannot be disabled on a running virtual machine, so the instance has to be deallocated, the value changed to No on the Disks pane, and then started again.",
+					"i3": "Belongs to C3. Soft delete and purge protection are both mandatory on a vault that encrypts managed disks: soft delete retains a removed key for the retention period and purge protection blocks permanent deletion until that period lapses.",
+					"i4": "Belongs to C4. Keys that protect managed disks are created with key type RSA and RSA key size 2048; a 256-bit elliptic-curve key does not meet that requirement.",
+					"i5": "Belongs to C5. The encryption type of a disk encryption set is fixed at creation, so moving to the organization-controlled variant means deploying a new set with encryption type Encryption at-rest with a customer-managed key.",
+					"i6": "Belongs to C6. After a disk encryption set is deployed it displays an alert that must be selected so the key vault is granted permission to use the key; dismissing it leaves the set without rights to the key."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-enable-host-based-encryption-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disk-encryption-overview"
+				}
+			],
+			"subtopics": [
+				"encryption-at-host-prerequisites",
+				"customer-managed-keys",
+				"disk-encryption-troubleshooting"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R6ZX0X6N5AENP75446E648",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are standing up key-based disk protection for the virtual machines in the Contoso-Sec subscription, and the security team has handed you a checklist of controls that the setup must satisfy. Your team has prepared the setup steps listed below, and each step answers one control on that checklist. You need to tie every step to the control it satisfies. Match each setup step to its control.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Resource",
+						"Detail"
+					],
+					"rows": [
+						[
+							"Subscription",
+							"Contoso-Sec"
+						],
+						[
+							"Key Vault",
+							"kv-ledger-prod, resource group rg-disk-protect, UK South"
+						],
+						[
+							"Key",
+							"to be created in kv-ledger-prod"
+						],
+						[
+							"Azure RBAC role assignment",
+							"to be created at the kv-ledger-prod scope"
+						],
+						[
+							"Disk encryption set",
+							"to be created in rg-disk-protect, UK South"
+						],
+						[
+							"Target virtual machine",
+							"vm-ledger-11, UK South, Contoso-Sec"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Enable soft delete on the key vault"
+					},
+					{
+						"id": "i2",
+						"text": "Enable purge protection on the key vault"
+					},
+					{
+						"id": "i3",
+						"text": "Grant the Key Vault Administrator role at the vault scope"
+					},
+					{
+						"id": "i4",
+						"text": "Create the disk encryption set with the encryption type Encryption at-rest with a customer-managed key"
+					},
+					{
+						"id": "i5",
+						"text": "Enable auto key rotation on the disk encryption set"
+					},
+					{
+						"id": "d1",
+						"text": "Grant the Key Vault Reader role at the vault scope"
+					},
+					{
+						"id": "d2",
+						"text": "Enable auto key rotation on the key inside the key vault"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "A key removed by mistake must stay recoverable for a retention window of days"
+					},
+					{
+						"id": "s2",
+						"label": "Permanent erasure of the key must stay impossible until the retention period has elapsed"
+					},
+					{
+						"id": "s3",
+						"label": "The disk encryption set must be authorized to use the key material held in the vault"
+					},
+					{
+						"id": "s4",
+						"label": "The disks must be tied to a key that the organization owns and keeps control of"
+					},
+					{
+						"id": "s5",
+						"label": "The disks must move to the newest version of the key without anyone editing them by hand"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "Soft delete and purge protection are the two vault settings that must be enabled before a Key Vault can be used to encrypt managed disks: soft delete keeps a removed key recoverable for the retention period (90 days by default), while purge protection blocks permanent deletion until that retention period has lapses. The disk encryption set needs rights on the vault, which the documentation obtains by assigning the Key Vault Administrator, Owner, or Contributor role at the vault. Because the encryption type of a disk encryption set cannot be changed after it is created, a set that must rely on the organization's own key has to be created with the Encryption at-rest with a customer-managed key type, and automatic rotation of that customer-managed key is enabled on the disk encryption set so the disks follow the newest key version without manual edits.",
+				"perChoice": {
+					"i1": "Belongs with the control about a removed key staying recoverable during a retention window: soft delete makes the vault hold a deleted key for a retention period (90 days by default).",
+					"i2": "Belongs with the control about permanent erasure being blocked: purge protection stops a deleted key from being permanently deleted until the retention period has elapsed.",
+					"i3": "Belongs with the control about the disk encryption set being authorized on the key: the documentation assigns the Key Vault Administrator, Owner, or Contributor role on the vault so the set can use the key.",
+					"i4": "Belongs with the control about the disks being tied to a key the organization owns: this is the disk encryption set encryption type for customer-managed keys, and the type is fixed when the set is created, so it must be chosen up front.",
+					"i5": "Belongs with the control about following the newest key version without hand edits: auto key rotation is the disk encryption set option that rotates the customer-managed key for the disks automatically.",
+					"d1": "Fits no control: the vault roles named for letting a disk encryption set use the key are Key Vault Administrator, Owner, and Contributor; the read-only Reader role is not one of them, so the set would still have no rights on the key.",
+					"d2": "Fits no control: automatic rotation of the customer-managed key for these disks is a setting of the disk encryption set, not a setting of the key held inside the vault."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-enable-host-based-encryption-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disk-encryption-overview"
+				}
+			],
+			"subtopics": [
+				"key-vault-requirements",
+				"disk-encryption-set",
+				"customer-managed-keys"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RRKN8VEH43R40C4WS5DZ2M",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Linux virtual machine vm-logs-01 in the East US 2 subscription Contoso-Prod. The provider feature registration for the subscription is already complete, and data disk disk-logs is currently attached to the virtual machine. The security team wants this virtual machine to run with encryption at host switched on, so that the temporary disk, the disk cache and the traffic between compute and storage are all protected. The existing content of disk-logs must be preserved, and the virtual machine has to stay available for its workloads. The configuration collected by the platform team is shown below.\n\nWhat should you do?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Subscription              : Contoso-Prod\nRegion                   : East US 2\nVirtual machine          : vm-logs-01 (Linux)\nProvider feature registration : Registered\nEncryption at host       : Disabled\nAttached data disk       : disk-logs\nData disk type           : Ultra Disk\nData disk sector size    : 512e\nData disk creation date  : April 20, 2023"
+				},
+				"statement": "To meet the security requirement, you should {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Snapshot disk-logs and create a new disk using the snapshot, then attach the new disk to vm-logs-01"
+							},
+							{
+								"id": "b",
+								"text": "Snapshot disk-logs and attach the snapshot to vm-logs-01 as a data disk"
+							},
+							{
+								"id": "c",
+								"text": "Create a new Ultra Disk of the same size in the same resource group and attach it to vm-logs-01"
+							},
+							{
+								"id": "d",
+								"text": "Snapshot disk-logs and create a new disk using the snapshot, but leave disk-logs attached to vm-logs-01"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "Ultra Disks and Premium SSD v2 carry an extra restriction: a disk that uses a 512e sector size must have been created after 5/13/2023, and a disk created earlier has to be snapshotted so that a new disk can be created using that snapshot. disk-logs is an Ultra Disk with a 512e sector size that was created on April 20, 2023, so as it stands it cannot be used on a virtual machine that has encryption at host switched on. Snapshotting disk-logs and creating a new disk using that snapshot produces a disk with a creation date after the cutoff while keeping the existing content, and attaching that new disk instead of the original lets encryption at host be switched on.",
+				"perChoice": {
+					"action:b": "A snapshot is a point-in-time copy of a disk and cannot be attached to a virtual machine as a data disk; a managed disk has to be created using the snapshot, and it is that new disk that satisfies the creation-date restriction.",
+					"action:c": "A brand-new empty Ultra Disk of the same size throws away the existing content of disk-logs, and the ineligible disk-logs would still be attached to the virtual machine, so the protection requirement would not be met. The existing content is preserved by snapshotting disk-logs and creating the new disk using that snapshot.",
+					"action:d": "The new disk created using the snapshot is eligible, but leaving disk-logs attached keeps a 512e disk that was created before 5/13/2023 on the virtual machine, and the option cannot be switched on while such a disk is attached. disk-logs has to be detached and replaced by the new disk."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-enable-host-based-encryption-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disk-encryption-overview"
+				}
+			],
+			"subtopics": [
+				"encryption-at-host",
+				"ultra-disk-requirements",
+				"disk-snapshot-workflow"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RRR30THQ9KRTRN6KWDFK27",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You look after the virtual machines in the Contoso-Prod subscription, and the security team requires that the temporary disk, the disk cache and the traffic between compute and storage of every machine be protected at the platform level, with nothing installed inside the guest operating system. The current state of virtual machine vm-legacy-03 is shown below. Which plan should you follow?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Subscription: Contoso-Prod\nRegion: East US 2\nVirtual machine: vm-legacy-03 (Linux)\nProvider feature registration (Microsoft.Compute / EncryptionAtHost): Registered\nEncryption at host on the virtual machine: Not enabled\nAzure Disk Encryption on the virtual machine: Enabled in 2021 and never removed\nAttached data disk: disk-legacy-03 (Ultra Disk, 512e sector size, created 2022-03-09)\nContents of the attached disk: Billing records that must be preserved"
+				},
+				"statement": "The plan consists of {{vmPlan}} and {{diskPlan}}.",
+				"slots": [
+					{
+						"id": "vmPlan",
+						"options": [
+							{
+								"id": "a",
+								"text": "build a replacement virtual machine, turn the disk protection option on, and move the workload onto it"
+							},
+							{
+								"id": "b",
+								"text": "turn the disk protection option on for the existing virtual machine and keep the workload there"
+							},
+							{
+								"id": "c",
+								"text": "reinstall the guest operating system on the existing virtual machine and turn the option on for it"
+							},
+							{
+								"id": "d",
+								"text": "add the Azure Disk Encryption extension to the existing virtual machine and leave the workload running"
+							}
+						]
+					},
+					{
+						"id": "diskPlan",
+						"options": [
+							{
+								"id": "a",
+								"text": "take a snapshot of disk-legacy-03 and create a disk based on that snapshot for the new machine"
+							},
+							{
+								"id": "b",
+								"text": "attach disk-legacy-03 to the new machine unchanged"
+							},
+							{
+								"id": "c",
+								"text": "convert disk-legacy-03 to a different disk type and attach the converted disk to the new machine"
+							},
+							{
+								"id": "d",
+								"text": "replace disk-legacy-03 with an empty disk of the same size for the new machine"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"diskPlan": "a",
+				"vmPlan": "a"
+			},
+			"explanation": {
+				"correct": "Two independent blockers apply to vm-legacy-03. First, the machine has had Azure Disk Encryption enabled since 2021 and never removed, and the conflict with the platform-level disk protection option is permanent: a virtual machine that ever had Azure Disk Encryption enabled can never have encryption at host switched on. The workload therefore has to be moved onto a different virtual machine, where the option can be turned on. Second, the attached disk is an Ultra Disk that uses a 512e sector size and was created on 2022-03-09, which is before the 5/13/2023 cut-off, so it cannot be used as it is once encryption at host is enabled. The documented way forward is to take a snapshot of disk-legacy-03 and create a disk from that snapshot, which keeps the billing records intact and produces a disk that satisfies the rule, and that new disk is then attached to the replacement machine.",
+				"perChoice": {
+					"diskPlan:b": "A 512e sector size disk created before 5/13/2023 cannot be used as it is once encryption at host is enabled, so disk-legacy-03 cannot simply be attached unchanged.",
+					"diskPlan:c": "Changing the disk type does not change the creation date, and a 512e disk created before 5/13/2023 still has to be replaced by a disk produced from a snapshot of it.",
+					"diskPlan:d": "An empty disk of the same size would discard the billing records that must be preserved; the disk has to be reproduced from a snapshot of disk-legacy-03 instead.",
+					"vmPlan:b": "Switching the option on for the existing virtual machine is not possible: the exclusion applies to any machine that has ever had Azure Disk Encryption enabled, so vm-legacy-03 has to be replaced rather than reconfigured.",
+					"vmPlan:c": "Reinstalling the guest operating system does not clear the historical Azure Disk Encryption association recorded for the virtual machine, so the option still cannot be enabled for it.",
+					"vmPlan:d": "Installing the Azure Disk Encryption extension keeps the workload in the category that is excluded from the platform-level option, and it also contradicts the requirement to install nothing inside the guest operating system."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-enable-host-based-encryption-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disk-encryption-overview"
+				}
+			],
+			"subtopics": [
+				"encryption-at-host-migration",
+				"ade-conflict",
+				"ultra-disk-requirements"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RRV161YMRTFBHGKEDRAJA8",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You operate the Linux virtual machine vm-erp-05 in the East US 2 subscription Contoso-Prod. The platform team deployed it with the host-level disk protection in place, and both of its managed disks are bound to a disk encryption set that points at a customer-managed key in Azure Key Vault. The audit team now wants a written statement of which parts of that machine are still covered by keys that Microsoft manages instead of by the customer-managed key. The configuration collected by the platform team is shown below.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Virtual machine",
+							"vm-erp-05 (Linux), running"
+						],
+						[
+							"Subscription / region",
+							"Contoso-Prod / East US 2"
+						],
+						[
+							"Encryption at host",
+							"Enabled"
+						],
+						[
+							"Operating system disk",
+							"disk-erp-os (Premium SSD)"
+						],
+						[
+							"Data disk",
+							"disk-erp-data (Premium SSD)"
+						],
+						[
+							"Disk encryption set",
+							"des-erp, encryption type: Encryption at-rest with a customer-managed key"
+						],
+						[
+							"Key referenced by des-erp",
+							"key-erp in Azure Key Vault kv-erp (East US 2)"
+						],
+						[
+							"Subscription feature registration",
+							"EncryptionAtHost - Registered"
+						]
+					]
+				},
+				"statement": "The parts of vm-erp-05 that stay protected with platform-managed keys rather than with key-erp are {{slot1}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "The temporary disk and the ephemeral operating system disk"
+							},
+							{
+								"id": "b",
+								"text": "The cache of the operating system disk and of the data disk"
+							},
+							{
+								"id": "c",
+								"text": "The ephemeral operating system disk and the cache of the data disk"
+							},
+							{
+								"id": "d",
+								"text": "The operating system disk and the data disk at rest"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a"
+			},
+			"explanation": {
+				"correct": "With host-level encryption switched on, temporary disks and ephemeral operating system disks are always encrypted at rest with platform-managed keys, while the caches of the operating system disk and the data disk follow the encryption type of the disk itself. Here both disks sit behind des-erp, whose encryption type is at-rest with a customer-managed key, so those two caches are protected with key-erp rather than with platform-managed keys. That leaves the temporary disk and the ephemeral operating system disk as the components covered by platform-managed keys.",
+				"perChoice": {
+					"slot1:b": "The cache of the operating system disk and of the data disk follows the encryption type of the disk itself, and both disks here use a disk encryption set with key-erp, so these caches are protected with the customer-managed key, not with platform-managed keys.",
+					"slot1:c": "The ephemeral operating system disk is indeed encrypted at rest with platform-managed keys, but the data disk cache follows the data disk's encryption type, which is key-erp in this configuration, so this combination is only partly correct.",
+					"slot1:d": "The operating system disk and the data disk at rest are protected with the customer-managed key through des-erp, so they are not covered by platform-managed keys."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disk-encryption-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-enable-host-based-encryption-portal"
+				}
+			],
+			"subtopics": [
+				"encryption-at-host",
+				"customer-managed-keys",
+				"managed-disks"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RRZ8X6RMMCE28PN89CQZB3",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Windows virtual machine vm-sql-04 in the East US 2 subscription Contoso-Prod that runs a SQL database on an Ultra disk. The security team wants the temporary disk, the disk cache and the traffic between compute and storage to be protected by the platform itself, and the database files stored on data disk disk-sql-data must still be there after the change. The provider feature registration for the subscription is already complete, and the current configuration of the machine is shown below. What should you do?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Property                                     Value\n------------------------------------------  ----------------------------------\nVirtual machine                              vm-sql-04\nSubscription                                  Contoso-Prod\nRegion                                       East US 2\nOperating system                             Windows Server 2022 Datacenter\nPower state                                  Running\nData disk                                    disk-sql-data\nDisk SKU                                     Ultra (P10)\nDisk sector size                             512e\nDisk creation date                           2023-03-14\nDisk encryption at rest                      Platform-managed key\nEncryption at host                           Disabled\nProvider feature registration (Microsoft.Compute)  Registered"
+				},
+				"statement": "You should {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "snapshot the attached disk and build a new disk from the snapshot, attach the new disk to the virtual machine, then turn on encryption at host for the virtual machine"
+							},
+							{
+								"id": "b",
+								"text": "turn on encryption at host for the virtual machine while the data disk stays in place, because the platform option covers every disk of the machine"
+							},
+							{
+								"id": "c",
+								"text": "create a brand-new empty disk of the same SKU and size, attach it in place of the old one, then turn on encryption at host for the virtual machine"
+							},
+							{
+								"id": "d",
+								"text": "enable Azure Disk Encryption on the virtual machine for the data disk first, then turn on encryption at host for the virtual machine"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "The data disk disk-sql-data is an Ultra disk that uses the 512e sector size and was created on 2023-03-14, so it predates the 2023-05-13 cutoff that applies to 512e disks eligible for this host-level protection (only Ultra Disks and Premium SSD v2 qualify). The documented remedy for such an older disk is to take a copy of it and create a new disk from that copy, which carries the database files over onto a disk that meets the requirement; that new disk is then attached and the host-level option is switched on for the virtual machine. The provider feature registration already reads Registered, so registration is not the blocker here.",
+				"perChoice": {
+					"action:b": "Switching the host-level option on does not pull a disk that fails the disk requirement into scope, and Azure does not migrate or re-encrypt an existing disk in place. disk-sql-data uses the 512e sector size and was created before 2023-05-13, so it has to be replaced by a disk created after that date before the virtual machine can run with this option enabled.",
+					"action:c": "A brand-new empty disk carries none of the database files, so the requirement that the existing content survives the change is not met. The supported way to keep the data is to base the new disk on a copy of the existing one.",
+					"action:d": "Azure Disk Encryption and encryption at host are mutually exclusive on the same virtual machine: encryption at host can never be enabled on a machine that has Azure Disk Encryption, and Azure Disk Encryption also works from inside the guest operating system, consumes VM CPU and retires on September 15, 2028."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-enable-host-based-encryption-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disk-encryption-overview"
+				}
+			],
+			"subtopics": [
+				"encryption-at-host",
+				"ultra-disks",
+				"managed-disk-requirements"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RS7H8PKHFPY5M51A8K97F8",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a new Windows virtual machine vm-hr-09 to deploy in the East US 2 region of the Contoso-Prod subscription. You need the operating system disk and the data disk caches of that machine to be protected by the customer-managed key key-orders that is held in Azure Key Vault kv-prod, and you need encryption at host switched on so that the temporary disk, the disk cache and the traffic between compute and storage are protected. The provider feature registration for the subscription is already complete, and the resources that are in place are listed below. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Resource",
+						"State"
+					],
+					"rows": [
+						[
+							"Provider feature registration (encryption at host)",
+							"Registered"
+						],
+						[
+							"Key vault kv-prod",
+							"East US 2 / Contoso-Prod; soft delete enabled; purge protection enabled"
+						],
+						[
+							"Key key-orders",
+							"Present in kv-prod; type RSA, size 2048"
+						],
+						[
+							"Role assignment on kv-prod",
+							"Key Vault Administrator"
+						],
+						[
+							"Disk encryption set des-1",
+							"East US 2 / Contoso-Prod; encryption type: Encryption at-rest with a platform-managed key"
+						],
+						[
+							"Virtual machine vm-hr-09",
+							"Not deployed yet"
+						]
+					]
+				},
+				"statement": "Given these facts, the action to take is {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Update the encryption type of disk encryption set des-1 on the new virtual machine to a customer-managed key."
+							},
+							{
+								"id": "b",
+								"text": "Provision a second disk encryption set for a customer-managed key encryption type on the new virtual machine."
+							},
+							{
+								"id": "c",
+								"text": "Attach a key vault access policy to disk encryption set des-1 on the new virtual machine."
+							},
+							{
+								"id": "d",
+								"text": "Turn on auto key rotation for disk encryption set des-1 on the new virtual machine."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "b"
+			},
+			"explanation": {
+				"correct": "The encryption type of a disk encryption set is fixed when the set is created and cannot be edited later, so des-1, which uses a platform-managed key, will never protect the operating system disk or data disk caches with key-orders. To satisfy the policy for vm-hr-09 you have to provision a brand-new disk encryption set whose encryption type is Encryption at-rest with a customer-managed key, and use that set for the disks of the new virtual machine. All other prerequisites are already met: the provider feature registration shows Registered, the key vault kv-prod has soft delete and purge protection enabled, the key key-orders exists in it, and the Key Vault Administrator role assignment is in place at the vault scope.",
+				"perChoice": {
+					"action:a": "The encryption type of a disk encryption set is permanent, so des-1 cannot be edited to a customer-managed key encryption type; a change of type means creating a brand-new disk encryption set instead.",
+					"action:c": "A key vault access policy does not change the encryption type of a disk encryption set, and managed disk encryption relies on the Azure RBAC role assignment that is already present; des-1 would still encrypt the caches with a platform-managed key.",
+					"action:d": "Auto key rotation only rotates a customer-managed key that the disk encryption set already uses; it cannot turn the platform-managed encryption type of des-1 into a customer-managed key type, so key-orders still would not protect the caches."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-enable-host-based-encryption-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disk-encryption-overview"
+				}
+			],
+			"subtopics": [
+				"disk-encryption-set",
+				"customer-managed-keys",
+				"encryption-at-host"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RSAZDS9087FJBM66RBRPH2",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are preparing to encrypt the managed disks of a new virtual machine vm-orders-05 in the Contoso-Prod subscription with a customer-managed key that your organization controls. The key vault kv-keys-contoso and the key key-orders already exist, but no disk encryption set has been created yet, and nobody has yet confirmed which settings the vault itself must have before it can be used for this purpose. The resources on hand and their locations are listed below. What should you do before you deploy the virtual machine?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Resource",
+						"Subscription",
+						"Region",
+						"Status"
+					],
+					"rows": [
+						[
+							"Key vault kv-keys-contoso",
+							"Contoso-Sec",
+							"East US 2",
+							"Existing, settings not yet reviewed"
+						],
+						[
+							"Key key-orders (in kv-keys-contoso)",
+							"Contoso-Sec",
+							"East US 2",
+							"Existing, RSA 2048"
+						],
+						[
+							"Disk encryption set des-orders",
+							"Contoso-Prod",
+							"East US 2",
+							"Not created yet"
+						],
+						[
+							"Virtual machine vm-orders-05",
+							"Contoso-Prod",
+							"East US 2",
+							"Not created yet"
+						],
+						[
+							"Managed disks and snapshots",
+							"Contoso-Prod",
+							"East US 2",
+							"Not created yet"
+						]
+					]
+				},
+				"statement": "Before you deploy vm-orders-05, you must enable {{vaultSettings}} on the key vault, and you must place the disk encryption set, the virtual machine, its disks and its snapshots {{placement}}.",
+				"slots": [
+					{
+						"id": "vaultSettings",
+						"options": [
+							{
+								"id": "a",
+								"text": "soft delete and purge protection"
+							},
+							{
+								"id": "b",
+								"text": "a private endpoint and network access rules"
+							},
+							{
+								"id": "c",
+								"text": "customer-managed key rotation and automatic key expiry"
+							},
+							{
+								"id": "d",
+								"text": "resource locks and diagnostic settings"
+							}
+						]
+					},
+					{
+						"id": "placement",
+						"options": [
+							{
+								"id": "a",
+								"text": "in one region and one subscription, with the key vault allowed in a different subscription at that same region"
+							},
+							{
+								"id": "b",
+								"text": "in one subscription only, with the key vault allowed in a different subscription at that same region"
+							},
+							{
+								"id": "c",
+								"text": "in one region and one subscription, with the key vault allowed in a different region at that same subscription"
+							},
+							{
+								"id": "d",
+								"text": "in one region and one subscription, with the key vault required to be in that same subscription"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"vaultSettings": "a",
+				"placement": "a"
+			},
+			"explanation": {
+				"correct": "A key vault that is used to encrypt managed disks must have soft delete and purge protection enabled — these are mandatory settings, not optional hardening: soft delete keeps a key for a retention period and purge protection blocks permanent removal of it until that period has lapsed. Separately, the disk encryption set, the virtual machine, its disks and its snapshots must all be deployed in one region and one subscription, while the key vault may live in a different subscription as long as it sits in the same region as the disk encryption set. In the exhibit, the vault is already in East US 2 but in Contoso-Sec, so it can stay where it is, and the disk encryption set, virtual machine, disks and snapshots can all be created in East US 2 in Contoso-Prod.",
+				"perChoice": {
+					"vaultSettings:b": "A private endpoint and network access rules control how the vault is reached over the network. They are not among the settings that must be enabled before a key vault can be used to encrypt managed disks.",
+					"vaultSettings:c": "Customer-managed key rotation and automatic key expiry are conveniences for managing the keys themselves. They are not the mandatory vault settings for managed disk encryption.",
+					"vaultSettings:d": "Resource locks and diagnostic settings help with governance and monitoring of the vault, but they are not required before the vault can be used with managed disks.",
+					"placement:b": "The disk encryption set, the virtual machine, its disks and its snapshots must all share one region as well as one subscription, so placing them in one subscription only does not satisfy the requirement.",
+					"placement:c": "The key vault must be in the same region as the disk encryption set, so allowing it in a different region would break the deployment.",
+					"placement:d": "The key vault may sit in another subscription, but it must still share the region of the disk encryption set. Requiring it to be in the same subscription adds a restriction that Microsoft does not impose."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-enable-host-based-encryption-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disk-encryption-overview"
+				}
+			],
+			"subtopics": [
+				"key-vault-requirements",
+				"resource-placement-rules"
+			],
+			"reviewed": false
+		}
+	]
+}

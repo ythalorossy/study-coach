@@ -1,0 +1,1569 @@
+{
+	"skill": "storage.sas-tokens",
+	"questions": [
+		{
+			"id": "q_01M5KB9T91DM5G8D86PVKJVMGV",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have two workloads that both need delegated access to your storage resources, and the key that signs each token must fit what each workload is allowed to hold. Which pairing of SAS types is correct?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Workload",
+						"What the client must do"
+					],
+					"rows": [
+						[
+							"ContosoHR web app",
+							"Upload and download blobs. Persisting the storage key in any configuration file, secret store, or environment variable of the app is prohibited by the security team."
+						],
+						[
+							"Payroll batch job",
+							"Read and write blobs, and also read and change the service properties of the storage account it runs against."
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "ContosoHR web app: user delegation SAS. Payroll batch job: account SAS."
+					},
+					{
+						"id": "b",
+						"text": "ContosoHR web app: service SAS. Payroll batch job: user delegation SAS."
+					},
+					{
+						"id": "c",
+						"text": "ContosoHR web app: account SAS. Payroll batch job: service SAS."
+					},
+					{
+						"id": "d",
+						"text": "ContosoHR web app: user delegation SAS. Payroll batch job: service SAS."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The web app is forbidden to hold the storage key, so any SAS authorized with Shared Key (service or account) is out; the user delegation SAS is authorized against Microsoft Entra ID because it is signed with a user delegation key, and it is the recommended type when the account key must never be stored in code. The batch job needs service-level operations on the account (reading and changing its service properties), which only the account SAS offers; a service SAS stays inside a single service and a user delegation SAS does not provide those service-level operations.",
+				"perChoice": {
+					"a": "Correct choice.",
+					"b": "A service SAS is signed with the account key, which the web app may not store, so it fails the security requirement. A user delegation SAS does not grant the service-level operations (Get/Set Service Properties, Get Service Stats) that the batch job requires.",
+					"c": "Both of these types are signed with the account key, so neither satisfies the web app's rule. A service SAS also stays inside a single service and cannot read or change the service properties of the storage account.",
+					"d": "The web app choice is fine, but a service SAS is restricted to one storage service and does not support service-level operations such as Get/Set Service Properties, so the batch job could not read and change those properties."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blob-user-delegation-sas-create-cli"
+				}
+			],
+			"subtopics": [
+				"sas-types",
+				"account-sas",
+				"user-delegation-sas"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KBMQNAWWR2MYZ8N5NGD9S4",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have enabled the shared access signature (SAS) expiration policy on the storage account that hosts an Azure File Sync cloud endpoint, using the values shown in the exhibit. Within an hour, the sync agents start reporting that they cannot obtain a new signature for synchronization, and cloud recall of end-user files also fails. Out-of-policy signatures must still be refused after the fix. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"SAS expiration policy",
+							"Enabled"
+						],
+						[
+							"Upper limit for SAS expiry interval",
+							"01.00:00:00"
+						],
+						[
+							"Expiration action",
+							"Block"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Raise the upper limit for SAS expiry interval to 03.00:00:00 and leave the expiration action as it is"
+					},
+					{
+						"id": "b",
+						"text": "Change the expiration action to Log and leave the upper limit for SAS expiry interval at 01.00:00:00"
+					},
+					{
+						"id": "c",
+						"text": "Change the expiration action to Log and raise the upper limit for SAS expiry interval to 03.00:00:00"
+					},
+					{
+						"id": "d",
+						"text": "Leave the upper limit for SAS expiry interval at 01.00:00:00 and change the expiration action to Block"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Azure File Sync needs a SAS expiry of at least 3 days to renew the signature it uses for synchronization and cloud recall. With the upper limit for SAS expiry interval set to 1 day and the expiration action set to Block, the renewal requests the sync service makes fall outside policy and are rejected, which is exactly the reported symptom. Raising the upper limit to 03.00:00:00 or more lets the sync service obtain an acceptable token while the Block action keeps out-of-policy signatures refused, as required.",
+				"perChoice": {
+					"a": "This is the correct change: it satisfies the sync requirement without weakening how the policy treats requests that exceed the limit.",
+					"b": "Switching to Log stops rejecting anything, but the upper limit stays at 1 day, so the account is still configured for a lifetime the sync service cannot use and the required refusal of out-of-policy signatures is given up. The value that must move is the upper limit.",
+					"c": "The upper limit is raised correctly, but downgrading the expiration action to Log means out-of-policy requests are recorded but still served, so the requirement to keep refusing them is not met.",
+					"d": "Nothing actually changes: the expiration action is already Block and the upper limit stays at 1 day, so the renewal requests the sync agents make are still outside policy and still rejected, leaving synchronization and cloud recall broken."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/sas-expiration-policy"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				}
+			],
+			"subtopics": [
+				"sas-expiration-policy",
+				"azure-file-sync"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KBSQBCPVN19Z6KJ8WYPSHW",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an internal reporting app that must read a blob container every day for the coming month, and the app must never hold the account access key in its code or configuration. The token shown in the exhibit was provided to the app, and its downloads now fail with HTTP 403 partway through the token's signed window. Access to the container has to continue for the rest of the month. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Token type provided to the app",
+							"User delegation SAS"
+						],
+						[
+							"Signed permissions (sp)",
+							"r on container 'reports'"
+						],
+						[
+							"Signed start (st)",
+							"2026-10-15T08:00Z"
+						],
+						[
+							"Signed expiry (se)",
+							"2026-11-14T08:00Z (30 days after st)"
+						],
+						[
+							"Setting: Shared access signature (SAS) expiration policy",
+							"Enabled"
+						],
+						[
+							"Setting: Upper limit for SAS expiry interval",
+							"14 days"
+						],
+						[
+							"Setting: Expiration action",
+							"Log"
+						],
+						[
+							"Observed result for the app",
+							"HTTP 403 on every download from 2026-10-22T08:00Z"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Give the app tokens with a validity of at most 7 days and have it fetch a replacement from the issuer before the current one lapses"
+					},
+					{
+						"id": "b",
+						"text": "Raise the upper limit for the SAS expiration interval to 30 days so the current token keeps its validity"
+					},
+					{
+						"id": "c",
+						"text": "Attach the token to a stored access policy on the container so its validity can be extended or revoked later"
+					},
+					{
+						"id": "d",
+						"text": "Sign the tokens with the account access key, which carries no 7-day limit, and store that key in the app"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The token is Entra-signed, and the user delegation key that signs it carries its own lifetime of at most 7 days. That is why requests begin failing on 2026-10-22, exactly one week after the signed start, even though the token asks for 30 days and the account would still accept longer tokens. Because the app may not hold the account key, the fix is to keep the same Entra-backed approach but give each token a validity of no more than 7 days and have the app fetch a fresh one before the old one lapses. This is the recommended option when no account key may live in application code, and it keeps the delegated, revocable design.",
+				"perChoice": {
+					"b": "Raising the upper limit for the SAS expiration interval only changes what the account accepts. It does not lengthen the life of the signing key behind a user delegation SAS, so a token asking for 30 days still stops working after 7 days.",
+					"c": "Stored access policies exist only for a service SAS. A user delegation SAS is always ad hoc, so there is no stored policy to attach this token to, extend, or revoke through.",
+					"d": "Account-key-signed tokens do carry no 7-day limit, so they would survive a month, but shipping the account access key into the app breaks the stated requirement and exposes the entire account if the app is ever compromised."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blob-user-delegation-sas-create-cli"
+				}
+			],
+			"subtopics": [
+				"user-delegation-sas",
+				"sas-expiry-limits"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KBYWQ9B86P56JE76HRBCR2",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You want a partner's automation to run unattended against one of your storage resources. The automation runs on the partner's own hosts, so it has no identity in your directory, and it only ever receives finished tokens from your own issuing service. The exhibit lists every call it makes on each cycle. Which type of shared access signature (SAS) should you issue?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Call made on each cycle",
+						"Scope it applies to"
+					],
+					"rows": [
+						[
+							"Delete expired blobs and upload replacements",
+							"archive container"
+						],
+						[
+							"Read and write documents",
+							"docs file share"
+						],
+						[
+							"Update rows",
+							"ledger table"
+						],
+						[
+							"Drain and add entries",
+							"jobs queue"
+						],
+						[
+							"Read the properties of the resource, then write them back",
+							"whole resource"
+						],
+						[
+							"Download capacity figures covering everything held on it",
+							"whole resource"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "A service SAS scoped to the blob service"
+					},
+					{
+						"id": "b",
+						"text": "A user delegation SAS scoped to the blob service"
+					},
+					{
+						"id": "c",
+						"text": "An account SAS"
+					},
+					{
+						"id": "d",
+						"text": "A service SAS bound to a stored access policy on the archive container"
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "The automation spans blobs, file shares, tables and queues and also performs the resource-level calls (reading and writing properties, pulling whole-resource statistics) plus blob deletes. Per the documentation, an account SAS can span one or more services, enables service-level operations such as Get/Set Service Properties and Get Service Stats, and carries the read, write and delete permissions a service SAS cannot grant. A service SAS stays inside a single service, so it cannot reach the file share, table or queue nor the resource-level calls. A user delegation SAS is signed with a key derived from Entra credentials and is checked against Microsoft Entra ID, and it does not carry those resource-level operations; the partner's automation has no identity in your directory, so it cannot be the basis of the tokens issued to them.",
+				"perChoice": {
+					"a": "Wrong: a service SAS is authorized only inside the one service it was created for, so a blob-scoped token cannot reach the docs file share, the ledger table or the jobs queue, cannot include blob delete rights, and cannot perform the property and statistics operations on the resource as a whole.",
+					"b": "Wrong: a user delegation SAS is validated against Microsoft Entra ID because it is signed with a user delegation key derived from Entra credentials, and the partner's automation has no identity in your directory. It also carries none of the resource-level property and statistics operations the automation must run.",
+					"d": "Wrong: attaching a stored access policy only lets you manage the token's expiry and revoke it later without rotating keys; it does not widen the token beyond the single service it was created for, so the file share, table, queue and whole-resource calls still fail."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blob-user-delegation-sas-create-cli"
+				}
+			],
+			"subtopics": [
+				"sas-types",
+				"account-sas",
+				"sas-scope"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KC85551NVC3EDJJPA1Q7Q2",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a release pipeline that signs in with a managed identity in Microsoft Entra ID and hands a front-end app a short-lived link that downloads and overwrites one report blob. The account's shared key must never be available to the pipeline, and the job fails as shown in the exhibit. The front end needs its links again. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Pipeline setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Identity used to authorize the call",
+							"Managed identity, signed in with `az login --auth-mode login`"
+						],
+						[
+							"What the link must cover",
+							"Blob `quarterly.csv` in container `reports`, with read and write rights, for 6 days"
+						],
+						[
+							"Credential the pipeline is allowed to hold",
+							"Microsoft Entra credentials only; the account's shared key is out of scope"
+						],
+						[
+							"Observed result",
+							"`ERROR: This request is not authorized to perform this operation using this permission.`"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Grant an Azure RBAC role assignment that includes Microsoft.Storage/storageAccounts/blobServices/generateUserDelegationKey, scoped to the storage account."
+					},
+					{
+						"id": "b",
+						"text": "Grant an Azure RBAC role assignment that includes Microsoft.Storage/storageAccounts/listKeys/action, scoped to the storage account."
+					},
+					{
+						"id": "c",
+						"text": "Grant an Azure RBAC role assignment that includes Microsoft.Storage/storageAccounts/blobServices/containers/read, scoped to the container."
+					},
+					{
+						"id": "d",
+						"text": "Grant an Azure RBAC role assignment that includes Microsoft.Storage/storageAccounts/blobServices/containers/write, scoped to the container."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The pipeline authorizes with Microsoft Entra credentials only, so the link it produces has to be signed by a key created from those credentials rather than by the account's shared key. Asking for that shape is what fails with the authorization error shown. Producing it requires an Azure RBAC role that contains Microsoft.Storage/storageAccounts/blobServices/generateUserDelegationKey, which is the permission that lets the identity obtain the delegation key used to sign the token. The role can be assigned at the storage account, resource group, or subscription level. Microsoft recommends this shape whenever possible precisely because the account key never has to be stored in the pipeline, which matches the stated constraint.",
+				"perChoice": {
+					"b": "That action only allows the identity to read the account's keys. A key-signed service SAS or account SAS is exactly what this pipeline is designed to avoid, and it does not supply the permission needed to obtain the delegation key that signs a credential-based token.",
+					"c": "Data-plane container read access lets the pipeline list containers and read their properties and metadata. It does not let it request the delegation key, so the token creation keeps failing.",
+					"d": "Data-plane container write access lets the pipeline change container properties and permissions. It likewise grants no ability to request the delegation key, so the failing call would still be refused."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blob-user-delegation-sas-create-cli"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				}
+			],
+			"subtopics": [
+				"user-delegation-sas",
+				"rbac-permissions",
+				"cli-token-creation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KCG6ER7N41F00FX77NGXRG",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a nightly job that hands a short-lived link to a containerized exporter, which downloads one manifest blob within a minute of receiving it. Since the exporter was moved to a different region, every request it makes is refused with HTTP 403 even though the link has not reached the end of its validity period. Access has to keep working on recipient hosts whose clocks are not perfectly aligned with the account. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "# nightly job on host \"issue-01\", starts every day at 23:55 UTC\naz storage blob generate-sas --account-name contosodata \\\n  --container-name manifests --permissions r \\\n  --expiry 2026-10-23T01:55:00Z --auth-mode login --as-user\n\n# query string handed to the exporter (shortened)\nsv=2026-10-22&sr=b&srt=o&sp=r&se=2026-10-23T01%3A55%3A00Z&sig=9xK2dw%3D%3D\n\n# exporter host \"exporter-eastus-03\": clock offset reported by its\n# monitoring agent against the account's time source: -14 minutes (behind)\n# outcome of every download attempt since the host moved:\n# HTTP 403 - Request authorization failed"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Generate the token with the signed start time set at least 15 minutes in the past."
+					},
+					{
+						"id": "b",
+						"text": "Generate the token with the signed expiry time extended 15 minutes beyond the value set now."
+					},
+					{
+						"id": "c",
+						"text": "Generate the token with the signed start time set 15 minutes into the future."
+					},
+					{
+						"id": "d",
+						"text": "Raise the upper limit for SAS expiry interval on the storage account from 1 hour to 24 hours."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The command issues the token with no explicit start, so the service signs a start equal to the moment the job runs. The exporter's clock runs about 14 minutes behind, so requests arrive carrying a moment that is still inside the token's beginning, and the service refuses them with 403. Microsoft documents clock skew of up to 15 minutes in either direction and advises setting the start time at least 15 minutes in the past (or omitting it) so every recipient falls inside the window, with the same tolerance expected at the expiry.",
+				"perChoice": {
+					"b": "Lengthening the far end of the window cannot repair requests that are refused at the beginning of it, and the skew tolerance that matters here is at the start of the validity period, not past the expiry.",
+					"c": "Moving the start into the future makes the problem worse: a recipient already behind would have to catch up by a further 15 minutes before the token became usable, so requests would fail for longer, not less.",
+					"d": "The upper limit for SAS expiry interval only caps how long newly created tokens may live on the account. It does not shift the beginning of a token's validity window and it cannot influence requests already rejected for arriving outside that window."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blob-user-delegation-sas-create-cli"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/sas-expiration-policy"
+				}
+			],
+			"subtopics": [
+				"clock-skew",
+				"sas-token-lifetime",
+				"user-delegation-sas"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KCNCCVD7PP89DGVGWASGAE",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your reporting script must enumerate every blob in the reports container and then download each one using a single shared access signature (SAS) that an operator mints from an already signed-in CLI session, so the account's shared key never leaves the workstation. The link is minted as shown in the exhibit. During the run, the call that returns the container's blob list is refused with HTTP 403, while downloading a blob whose name the script already knows succeeds. Which command should mint the link instead?",
+				"exhibit": {
+					"kind": "code",
+					"language": "powershell",
+					"text": "PS> az storage blob generate-sas `\n      --account-name contosoreports `\n      --container-name reports `\n      --name manifest-2026-10.json `\n      --permissions acdrw `\n      --expiry 2026-10-28T00:00Z `\n      --auth-mode login `\n      --as-user `\n      --full-uri\n\nLink returned:\nhttps://contosoreports.blob.core.windows.net/reports/manifest-2026-10.json?se=2026-10-28T00%3A00%3A00Z&sp=acdrw&sv=2022-11-02&sr=b&sig=...\n\nScript run with the returned link:\n  Get Blob (reports/manifest-2026-10.json)  -> 200 OK\n  List Blobs (reports)                       -> 403 AuthenticationFailed"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "az storage container generate-sas --account-name contosoreports --name reports --permissions acdlrw --expiry 2026-10-28T00:00Z --auth-mode login --as-user --full-uri"
+					},
+					{
+						"id": "b",
+						"text": "az storage blob generate-sas --account-name contosoreports --container-name reports --permissions acdlrw --expiry 2026-10-28T00:00Z --auth-mode login --as-user --full-uri"
+					},
+					{
+						"id": "c",
+						"text": "az storage container generate-sas --account-name contosoreports --name reports --permissions acdrw --expiry 2026-10-28T00:00Z --auth-mode login --as-user --full-uri"
+					},
+					{
+						"id": "d",
+						"text": "az storage blob generate-sas --account-name contosoreports --container-name reports --name manifest-2026-10.json --permissions acdrw --expiry 2026-10-28T00:00Z --auth-mode login --as-user --full-uri"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The call that fails is the one that enumerates the container's blobs, and the permission set offered by the blob-scoped command has no list permission at all, so nothing the script does with that link will authorize the enumeration. az storage container generate-sas mints the signature at container scope, and the permissions accepted for a container include list, so requesting acdlrw there authorizes both the enumeration and the reads the script performs on each blob. Because --auth-mode login and --as-user are kept, the link is still signed with Microsoft Entra credentials and the account key is never involved, and the six-day expiry stays within the seven days a key created from Entra credentials can cover.",
+				"perChoice": {
+					"b": "The blob-scoped command only signs for one named blob, and the permissions it accepts are add, create, delete, read and write. There is no list permission to put into that string, and dropping the blob name does not turn it into a container-scoped signature, so the call that returns the blob list is still refused.",
+					"c": "The scope is right but the permission string is unchanged, and acdrw still has no list permission, so the script can only download names it already knows and the enumeration keeps failing with HTTP 403.",
+					"d": "This is the command already shown in the exhibit: the signature covers a single blob and carries no list permission, which is exactly why the read succeeds while the enumeration is refused."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blob-user-delegation-sas-create-cli"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				}
+			],
+			"subtopics": [
+				"sas-permissions",
+				"azure-cli",
+				"user-delegation-sas"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KCV9YG4ZHGDNDFSDSDM06H",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have given an outside team delegated access to your batches container so it can upload nightly files, and the query string that team uses is now visible in a public repository. The account access keys cannot be rotated during tonight's processing window, and two internal applications that build their own delegated access from those keys must keep working. Only the outside team's access has to end, and its token is still inside its signed validity window. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Observed on the batches container",
+						"Value"
+					],
+					"rows": [
+						[
+							"Access level",
+							"Private"
+						],
+						[
+							"Policy names defined on the container",
+							"app-ingest, app-readonly, partner-nightly"
+						],
+						[
+							"Query string held by the outside team",
+							"sv=2022-11-02&sr=c&sp=racwd&se=2027-01-15T00:00:00Z&si=partner-nightly&sig=7b1e4c9d0a2f8e63b5d1c4a90ff2e718c0d5aa6b1e93f0427c8b6ad3f5e91c72"
+						],
+						[
+							"Policies in use by the internal applications",
+							"app-ingest, app-readonly"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Rotate the account access keys used by the batches container"
+					},
+					{
+						"id": "b",
+						"text": "Delete the stored access policy on the batches container"
+					},
+					{
+						"id": "c",
+						"text": "Revoke the user delegation keys used by the batches container"
+					},
+					{
+						"id": "d",
+						"text": "Set the shared access signature expiration policy action to Block on the batches container"
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "The team's query string carries sr=c and names one of the container's policies in si=partner-nightly, which is how a service SAS that inherits its validity window and permissions from a saved set of constraints looks. Deleting that stored access policy is the only handle that ends this signature without touching the account keys: once the policy it names no longer exists, every token built on it stops being accepted, while app-ingest and app-readonly remain in place so both internal applications keep working. It also scopes the cut-off to just the outside team. One practical limit to remember: a single container may hold at most five stored access policies, so re-creating the third one later keeps you under the cap.",
+				"perChoice": {
+					"a": "Rotation would in fact stop this token, because a service SAS is signed with the account key and is checked against Shared Key. But the same keys sign the tokens the two internal applications mint, so rotating them violates the requirement that those applications keep working, and the scenario rules it out for tonight's processing window.",
+					"c": "User delegation keys only sign tokens issued through Microsoft Entra ID. The team's string is checked against Shared Key, so revoking delegation keys leaves it valid right up to its se date of 2027-01-15.",
+					"d": "The expiration action only governs how requests that fall outside the signed validity window are treated, logged or refused. It does not apply to a service SAS backed by a stored access policy, and switching to Block never invalidates a token that is still inside its own window, so the team's uploads would keep succeeding until the se date passes."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blob-user-delegation-sas-create-cli"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/sas-expiration-policy"
+				}
+			],
+			"subtopics": [
+				"stored-access-policy",
+				"service-sas",
+				"revoking-sas"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KD2A30RWV4WNVFNZKNHSNJ",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a storage platform that hands short-lived access links to several client groups, and the security auditor has asked for a one-page summary stating, for each kind of token, which credential validates it when a request arrives and how the operations team can end access before the token's signed window closes. Drag each shared access signature (SAS) type into the matching description.",
+				"items": [
+					{
+						"id": "i_user",
+						"text": "User delegation SAS"
+					},
+					{
+						"id": "i_service",
+						"text": "Service SAS"
+					},
+					{
+						"id": "i_account",
+						"text": "Account SAS"
+					}
+				],
+				"slots": [
+					{
+						"id": "s_entra",
+						"label": "Validated with Microsoft Entra ID; revoking the signing keys invalidates every outstanding token"
+					},
+					{
+						"id": "s_key_single",
+						"label": "Validated with the Shared Key; confined to one kind of resource, and ending it early means deleting a stored access policy"
+					},
+					{
+						"id": "s_key_multi",
+						"label": "Validated with the Shared Key; reaches several kinds of resource at once and adds read, write and delete rights that a narrower token lacks"
+					}
+				]
+			},
+			"key": {
+				"s_entra": "i_user",
+				"s_key_single": "i_service",
+				"s_key_multi": "i_account"
+			},
+			"explanation": {
+				"correct": "What validates a token is decided by the material that signed it. A user delegation SAS is signed with a user delegation key derived from the signer's Microsoft Entra credentials, so the storage resource checks it against Microsoft Entra ID, and running `az storage account revoke-delegation-keys` invalidates every delegation key on the account and therefore every token signed with them (allowing for the short caching gap). Service and account SASs are signed with the account key and are checked against the Shared Key. Of those two, only the service SAS can be bound to a stored access policy on a container, queue, table or file share, so deleting that policy is what ends outstanding copies before the signed expiry; an account SAS is always ad hoc and therefore relies on a short validity. The account SAS is also the one that can span more than one storage service and add read, write and delete plus service-level operations such as Get/Set Service Properties and Get Service Stats, which a service SAS cannot do.",
+				"perChoice": {
+					"i_user": "Fits the first slot: its signature is produced with a user delegation key derived from Microsoft Entra credentials, so it is authorized against Microsoft Entra ID rather than the account key, and revoking the account's delegation keys kills every token they signed.",
+					"i_service": "Fits the second slot: it is signed with the Shared Key and stays inside a single storage service, and it is the only SAS type that can reference a stored access policy, so deleting that policy ends access without rotating keys.",
+					"i_account": "Fits the third slot: it is signed with the Shared Key, it can span one or more storage services, and it carries read, write and delete rights plus service-level operations (Get/Set Service Properties, Get Service Stats) that the narrower token does not. It cannot use a stored access policy, so only a short signed expiry bounds it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blob-user-delegation-sas-create-cli"
+				}
+			],
+			"subtopics": [
+				"sas-types",
+				"sas-authorization",
+				"sas-revocation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KD7X0T27WPSA27JHK823V6",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You manage a storage account and have switched on its shared access signature (SAS) expiration policy, set the upper limit for SAS expiry interval to 1 hour, and set the expiration action to Block. The four clients in the exhibit are now presenting the credentials shown, all against the reports container. Drag each client into the outcome that requests carrying its credential receive.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Client",
+						"Credential presented",
+						"Signed start (st)",
+						"Signed expiry (se)",
+						"Endpoint type"
+					],
+					"rows": [
+						[
+							"Contoso reporting app",
+							"user delegation SAS",
+							"08:00",
+							"12:00",
+							"dfs (Data Lake Storage)"
+						],
+						[
+							"Fabrikam log shipper",
+							"account SAS",
+							"not present",
+							"09:30",
+							"blob"
+						],
+						[
+							"Northwind dashboard",
+							"account SAS",
+							"09:00",
+							"09:45",
+							"blob"
+						],
+						[
+							"Adventure Works batch uploader",
+							"user delegation SAS",
+							"08:00",
+							"10:00",
+							"blob"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Contoso reporting app"
+					},
+					{
+						"id": "b",
+						"text": "Fabrikam log shipper"
+					},
+					{
+						"id": "c",
+						"text": "Northwind dashboard"
+					},
+					{
+						"id": "d",
+						"text": "Adventure Works batch uploader"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Refused: the permitted duration was exceeded"
+					},
+					{
+						"id": "s2",
+						"label": "Refused: a required value was left out"
+					},
+					{
+						"id": "s3",
+						"label": "Served normally: the expiration action does not apply to it"
+					},
+					{
+						"id": "s4",
+						"label": "Served normally: it stays inside the permitted duration"
+					}
+				]
+			},
+			"key": {
+				"s1": "d",
+				"s2": "b",
+				"s3": "a",
+				"s4": "c"
+			},
+			"explanation": {
+				"correct": "The policy measures validity as the signed expiry minus the signed start, compares it with the one-hour limit, and the Block action rejects anything outside it. Adventure Works' user delegation SAS spans 08:00–10:00 (two hours) against the blob endpoint, so it is refused. Fabrikam's account SAS has no signed start, and once the policy is enabled a SAS with no signed start is automatically out of policy, so it is refused. Northwind's account SAS spans 09:00–09:45 (45 minutes), inside the limit, so it is served. Contoso's user delegation SAS spans 08:00–12:00 (four hours), but it is issued against the dfs (HDFS) endpoint and the expiration action does not apply to a user delegation SAS over HDFS, so it is served.",
+				"perChoice": {
+					"a": "Contoso reporting app: its user delegation SAS runs 08:00–12:00, longer than the one-hour limit, but it targets the dfs (HDFS) endpoint, and the expiration action does not apply to a user delegation SAS over HDFS, so the request is served.",
+					"b": "Fabrikam log shipper: once the expiration policy is enabled the signed start is mandatory on every SAS, and a SAS presented without one is automatically out of policy, so the Block action rejects it even though it carries an expiry value.",
+					"c": "Northwind dashboard: its account SAS covers 09:00–09:45, 45 minutes, which is within the one-hour limit, so it is served normally.",
+					"d": "Adventure Works batch uploader: its user delegation SAS covers 08:00–10:00, two hours, which is above the one-hour limit, and nothing exempts it (blob endpoint, not backed by a stored access policy), so the Block action rejects it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/sas-expiration-policy"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				}
+			],
+			"subtopics": [
+				"sas-expiration-policy",
+				"sas-types"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KDEJSSQPAQ64G8Y9PY0R46",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have three client requests against your Azure Storage resources, listed in the exhibit. Each request can be met by only one kind of shared access signature (SAS), and each kind is used once. Drag each SAS type to the client whose request it can satisfy.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Client",
+						"How it authenticates",
+						"What has to work"
+					],
+					"rows": [
+						[
+							"Reports web front end",
+							"Signs in to Microsoft Entra ID with a managed identity and hands short-lived links to browsers",
+							"No key that can sign storage requests may appear in its code or configuration"
+						],
+						[
+							"Nightly batch job",
+							"Runs on your own build host that holds a storage access key",
+							"A single token must let it read blobs, write to a queue, and also read and change properties of the storage resource itself"
+						],
+						[
+							"Vendor upload portal",
+							"Runs on your own operations host that holds a storage access key",
+							"Operations must cut off that one vendor's access before its token reaches the signed end time, and no key that can sign storage requests can be rotated during tonight's processing window"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "user-delegation",
+						"text": "User delegation SAS"
+					},
+					{
+						"id": "service",
+						"text": "Service SAS"
+					},
+					{
+						"id": "account",
+						"text": "Account SAS"
+					}
+				],
+				"slots": [
+					{
+						"id": "front-end",
+						"label": "Reports web front end"
+					},
+					{
+						"id": "batch-job",
+						"label": "Nightly batch job"
+					},
+					{
+						"id": "vendor-portal",
+						"label": "Vendor upload portal"
+					}
+				]
+			},
+			"key": {
+				"front-end": "user-delegation",
+				"batch-job": "account",
+				"vendor-portal": "service"
+			},
+			"explanation": {
+				"correct": "The front end signs in with a managed identity and may never hold a key that signs storage requests, so it can only be served a user delegation SAS, which is validated against Microsoft Entra ID because its signing key comes from Entra credentials rather than from a shared key. The batch job needs one token that crosses from blob storage to queue storage and that can also read and change properties of the resource itself, which only an account SAS supports, since a service SAS is confined to a single storage service and cannot perform those service-level operations. The vendor portal must be able to end exactly that vendor's access before the signed window closes while no signing key is rotated, which is only possible by binding the token to a stored access policy, and stored access policies are offered only for a service SAS.",
+				"perChoice": {
+					"user-delegation": "Belongs with the Reports web front end. This is the only kind validated against Microsoft Entra ID rather than a shared key, so the app can issue links from its own managed identity without any key that signs storage requests existing in its code or configuration.",
+					"service": "Belongs with the Vendor upload portal. Ending one recipient's access early without rotating the signing keys depends on binding the token to a stored access policy, and that option exists only for this kind; the other two kinds are always ad hoc, and an account-wide key revocation would also cut off every other client.",
+					"account": "Belongs with the Nightly batch job. Only this kind can reach more than one storage service in a single token and carry the extra read, write, and delete rights plus service-level operations such as reading and changing properties of the storage resource."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blob-user-delegation-sas-create-cli"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/sas-expiration-policy"
+				}
+			],
+			"subtopics": [
+				"sas-types",
+				"stored-access-policies",
+				"user-delegation-sas"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KDVHPEJN67MSCEBBPPCCJK",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have three integrations that hand clients delegated access to your storage account, and the exhibit shows how each one issues its links. Security has asked for one runbook line per integration: the single action the operations team takes to end that integration's delegated access immediately, instead of waiting for outstanding links to reach the end of their signed time. Drag each integration into the action that ends its access.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Integration",
+						"How the links are issued",
+						"What the links reach",
+						"Notes"
+					],
+					"rows": [
+						[
+							"Exporter",
+							"A small service signs in with a managed identity and generates the links",
+							"Blob Storage",
+							"Dozens of links may be outstanding at the same time; one action has to end all of them together"
+						],
+						[
+							"Partner portal",
+							"An app keeps one of the account keys and generates links that name a policy held on the container",
+							"Blob Storage",
+							"No other link names that policy, and links built by the other apps from the same keys must keep working"
+						],
+						[
+							"Partner integration",
+							"Back-office tooling keeps one of the account keys and generates links that name no policy on the container",
+							"A blob container, a queue, and service properties such as Get Service Stats",
+							"The partner's contract ends next month, so its links have to stop working before their signed time passes"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Exporter — a managed identity signs the links"
+					},
+					{
+						"id": "b",
+						"text": "Partner portal — an app holds an account key and its links name a policy on the container"
+					},
+					{
+						"id": "c",
+						"text": "Partner integration — tooling holds an account key and its links name no policy on the container"
+					}
+				],
+				"slots": [
+					{
+						"id": "m1",
+						"label": "Run az storage account revoke-delegation-keys"
+					},
+					{
+						"id": "m2",
+						"label": "Delete the policy defined on the container"
+					},
+					{
+						"id": "m3",
+						"label": "Rotate the account keys on the storage account"
+					}
+				]
+			},
+			"key": {
+				"m1": "a",
+				"m2": "b",
+				"m3": "c"
+			},
+			"explanation": {
+				"correct": "The Exporter's links are signed with a user delegation key derived from Microsoft Entra ID credentials, so the lever that ends them is az storage account revoke-delegation-keys, which invalidates every user delegation key on the account and every SAS those keys signed. The Partner portal's links come from an app holding an account key and they name a stored access policy on the container, which makes them a service SAS; deleting that policy is the only way to end them without rotating account keys, so the other apps' links keep working. The Partner integration's links span more than one service and include Get Service Stats, which only an account SAS does; an account SAS is always ad hoc and can never name a stored access policy, and revoking delegation keys affects only tokens signed with user delegation keys, so rotating the account keys is the remaining way to cut that access off early.",
+				"perChoice": {
+					"a": "Fits the slot 'Run az storage account revoke-delegation-keys'. A managed identity can only sign delegated access with a user delegation key obtained from Microsoft Entra ID, and revoking every delegation key on the account kills all of the links that key signed in one step; rotating the shared key or deleting a container policy would not touch them.",
+					"b": "Fits the slot 'Delete the policy defined on the container'. Links minted from an account key that name a policy held on the container are a service SAS bound to a stored access policy, and a stored access policy is the only mechanism that ends such a token without rotating the account keys, which is what the other apps depend on.",
+					"c": "Fits the slot 'Rotate the account keys on the storage account'. Reaching a blob container and a queue plus service-level calls such as Get Service Stats requires an account SAS. That kind of token is always ad hoc, cannot use a stored access policy, and is not signed by a delegation key, so changing the account keys is the only listed way to end it before its signed time passes."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blob-user-delegation-sas-create-cli"
+				}
+			],
+			"subtopics": [
+				"sas-revocation",
+				"sas-types",
+				"stored-access-policy"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KE6V9HAWYDDY0V7ETDPNBY",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are choosing the access pattern for three separate features that run on your storage account. Each feature below states what the business needs and the volume it has to absorb. Drag each feature into the approach that satisfies it.",
+				"items": [
+					{
+						"id": "g1",
+						"text": "An image library on a marketing site must serve every stored object to visitors who arrive with no sign-in step and no key material"
+					},
+					{
+						"id": "g2",
+						"text": "A customer portal must apply its own business rules to each upload before it is written, while the workload spikes to tens of thousands of requests per second"
+					},
+					{
+						"id": "g3",
+						"text": "A partner app must reach storage directly using short-lived credentials it receives from your team, and the minting side must not relay the traffic"
+					}
+				],
+				"slots": [
+					{
+						"id": "s_public",
+						"label": "Set the resource's public access level to Public and distribute nothing to callers"
+					},
+					{
+						"id": "s_proxy",
+						"label": "Front-end proxy service that authenticates callers and validates content against company policy"
+					},
+					{
+						"id": "s_issuer",
+						"label": "SAS provider service that hands out tokens and then gets out of the path"
+					}
+				]
+			},
+			"key": {
+				"s_public": "g1",
+				"s_proxy": "g2",
+				"s_issuer": "g3"
+			},
+			"explanation": {
+				"correct": "Each feature maps to a different documented access pattern: anonymous read access to every object in a container is handled by the container's public access level rather than by handing out credentials; a workload that must apply its own rules to each object before the write needs the front-end proxy service, which authenticates and validates every request even though it must scale to high traffic; and a workload whose clients should call storage directly, with the minting side carrying no traffic, is served by the lightweight SAS provider service, which authenticates as needed, issues a SAS, and then gets out of the path.",
+				"perChoice": {
+					"g1": "Every object in one location has to be readable with no sign-in and no credentials. For that goal the guidance is to make the location anonymously readable through its public access level instead of issuing a SAS for each object, so this belongs with the public access level.",
+					"g2": "The business rules have to be applied to each object before it is written, and only the front-end proxy service sits in a position to authenticate and validate content on every request. A service that only issues tokens cannot apply those rules, even though the proxy pattern has to be built to scale for high request volumes.",
+					"g3": "The clients are expected to call storage themselves and the credential-issuing side must carry no traffic, which is the lightweight SAS provider service pattern: it authenticates and generates a SAS, and the clients then access the storage resources directly."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				}
+			],
+			"subtopics": [
+				"sas-design-patterns",
+				"delegated-access"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KEES9NPQDVXDB0NAE6A5TE",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You hand delegated access to four integrations that were built by separate teams, and all four are now failing exactly as the exhibit shows. Each fix has to be made inside the integration that is broken. Drag each integration into the single change that resolves its failure.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Integration",
+						"How its delegated access is produced",
+						"What is observed"
+					],
+					"rows": [
+						[
+							"Reporting export",
+							"A scheduled AzCopy run receives delegated access for the finance container and appends it plus a schedule expression to each destination path",
+							"Every object copy fails, and AzCopy reports that the expression it was given is not valid"
+						],
+						[
+							"Partner portal",
+							"A backend function signs in with an operator's Microsoft Entra identity and runs az storage blob generate-sas with --as-user, setting the validity window to about a month",
+							"Partners can download their files for about a week, and every request after that is refused"
+						],
+						[
+							"Web front end",
+							"An API emits the signature on its own line, and the page concatenates it directly onto the blob address",
+							"Every download fails with HTTP 403 seconds after the signature is produced"
+						],
+						[
+							"Batch analytics",
+							"The integration issues delegated access carrying an expiry and nothing else",
+							"Every request is refused, and StorageBlobLogs shows SasExpiryStatus = 'Policy violated'"
+						],
+						[
+							"Storage account setting",
+							"Shared access signature (SAS) expiration policy: Enabled; Expiration action: Block; Upper limit for SAS expiry interval: 720 hours",
+							"Applies to every request sent to this account"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Reporting export — the scheduled AzCopy run fails on every object, and the tool rejects the schedule expression it is given."
+					},
+					{
+						"id": "b",
+						"text": "Partner portal — the links partners receive keep working for about a week, and every later download is refused."
+					},
+					{
+						"id": "c",
+						"text": "Web front end — every download fails with HTTP 403 immediately, even though the signature was produced seconds earlier."
+					},
+					{
+						"id": "d",
+						"text": "Batch analytics — every request is refused and StorageBlobLogs shows SasExpiryStatus = 'Policy violated'."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Add the signed start parameter to every link that is handed out."
+					},
+					{
+						"id": "s2",
+						"label": "Write the value in the +%Y-%m-%dT%H:%M:%SZ form so that seconds are included."
+					},
+					{
+						"id": "s3",
+						"label": "Cap the lifetime at seven days and issue a fresh one before the old one lapses."
+					},
+					{
+						"id": "s4",
+						"label": "Insert the ? character between the resource URL and the value returned by the service."
+					}
+				]
+			},
+			"key": {
+				"s1": "d",
+				"s2": "a",
+				"s3": "b",
+				"s4": "c"
+			},
+			"explanation": {
+				"correct": "Each integration fails for a different documented reason, so each lands in its own change. The reporting export feeds AzCopy an expression that lacks the seconds it requires, so the copy fails before any object moves (slot about +%Y-%m-%dT%H:%M:%SZ). The partner portal mints a user delegation SAS whose signing key only lives for seven days, so access ends after about a week no matter what window the request asked for (slot capping the lifetime at seven days). The web front end concatenates the signature onto the blob address without the leading ? delimiter, so the service answers with HTTP 403 (slot about inserting the ? character). Batch analytics issues access carrying an expiry and no start value; once the account's expiration policy is enabled the start value is mandatory, the signature is treated as out of policy, and the Block action refuses every request while StorageBlobLogs logs the SasExpiryStatus violation (slot about adding the signed start parameter).",
+				"perChoice": {
+					"a": "Belongs with the slot that writes the value in the +%Y-%m-%dT%H:%M:%SZ form with seconds included. Utilities such as AzCopy expect date and time values in exactly that pattern, so a schedule expression without seconds is rejected before the first object is copied.",
+					"b": "Belongs with the slot that caps the lifetime at seven days. This integration signs with a user delegation key, and such a signature stops working after seven days because that key expires first, regardless of the longer window requested or of the account's expiration policy settings.",
+					"c": "Belongs with the slot that inserts the ? character. The signature text handed back carries no leading delimiter, so joining it straight onto the blob address produces a request the service rejects with HTTP 403 even though the signature was minted moments earlier.",
+					"d": "Belongs with the slot that adds the signed start parameter. Once the account's expiration policy is enabled the signed start becomes mandatory, and a signature carrying only an expiry counts as out of policy, so with the expiration action set to Block every request is refused and the SasExpiryStatus entry records the violation."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blob-user-delegation-sas-create-cli"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/sas-expiration-policy"
+				}
+			],
+			"subtopics": [
+				"sas-expiry-policy",
+				"user-delegation-sas",
+				"sas-token-troubleshooting"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5M8X8Q46A9HE6ZA5EJ62AY1",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a storage account whose delegated links must never be served beyond your company's maximum validity, and you find that the console page enforcing that ceiling is greyed out while the equivalent command returns an error. The account's current key metadata is shown in the exhibit. Which action should you take first?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Access key",
+						"keyCreationTime",
+						"Permissions"
+					],
+					"rows": [
+						[
+							"key1",
+							"",
+							"FULL"
+						],
+						[
+							"key2",
+							"2026-09-30T08:12:04Z",
+							"FULL"
+						]
+					]
+				},
+				"statement": "The first action to take is to {{fix}}.",
+				"slots": [
+					{
+						"id": "fix",
+						"options": [
+							{
+								"id": "a",
+								"text": "Regenerate the account access keys"
+							},
+							{
+								"id": "b",
+								"text": "Create a stored access policy on each container"
+							},
+							{
+								"id": "c",
+								"text": "Revoke the user delegation keys"
+							},
+							{
+								"id": "d",
+								"text": "Upgrade the installed Azure CLI"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"fix": "a"
+			},
+			"explanation": {
+				"correct": "key1 reports a null keyCreationTime in the exhibit, and the shared access signature (SAS) expiration policy cannot be configured while keyCreationTime is null for key1 or key2 — that is why the portal control is greyed out and the command errors. Regenerating the account access keys gives both keys a creation time, after which you can switch the expiration policy on and set the upper limit for SAS expiry interval and the Log or Block action.",
+				"perChoice": {
+					"fix:b": "Stored access policies only supply start time, expiry, and permissions for a service SAS on a container, table, queue, or file share; they do not populate a missing key creation time, so the setting stays unavailable.",
+					"fix:c": "Revoking user delegation keys ends the user delegation keys and every token they signed, but it leaves key1's creation time empty, so configuring the policy still fails.",
+					"fix:d": "The Azure CLI version influences which commands and parameters exist (generating a user delegation SAS needs 2.0.78 or later); it cannot change what the account reports for its own keys."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/sas-expiration-policy"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				}
+			],
+			"subtopics": [
+				"sas-expiration-policy",
+				"storage-account-keys",
+				"azure-cli"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5M8ZQV5Y4Z2A4MRP1HPCW7G",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "A vendor's monitoring agent runs on the vendor's own hosts and has no identity in your directory. The exhibit lists every call it makes on each cycle, and you want it to hold one delegated credential that covers all of them. Separately, no token issued on this account may stay usable for longer than 12 hours, and a request that presents a longer-lived one must stop being served. Which type of shared access signature (SAS) should the agent receive, and which change should you make on the account's configuration settings page?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Call the agent makes on each cycle",
+						"Where it runs"
+					],
+					"rows": [
+						[
+							"Read and overwrite reports/2026-q3.csv",
+							"Blob Storage, reports container"
+						],
+						[
+							"Read and delete queued messages",
+							"Queue Storage, events queue"
+						],
+						[
+							"Read the current service properties and request the latest service statistics",
+							"The storage resource as a whole"
+						]
+					]
+				},
+				"statement": "The agent should be handed a {{tokenType}}, and on the configuration settings page you should {{policy}}.",
+				"slots": [
+					{
+						"id": "tokenType",
+						"options": [
+							{
+								"id": "a",
+								"text": "user delegation SAS"
+							},
+							{
+								"id": "b",
+								"text": "service SAS"
+							},
+							{
+								"id": "c",
+								"text": "account SAS"
+							},
+							{
+								"id": "d",
+								"text": "account SAS bound to a stored access policy"
+							}
+						]
+					},
+					{
+						"id": "policy",
+						"options": [
+							{
+								"id": "a",
+								"text": "set upper limit for SAS expiry interval to 12 hours and expiration action to Log"
+							},
+							{
+								"id": "b",
+								"text": "set upper limit for SAS expiry interval to 7 days and expiration action to Block"
+							},
+							{
+								"id": "c",
+								"text": "set upper limit for SAS expiry interval to 12 hours and expiration action to Block"
+							},
+							{
+								"id": "d",
+								"text": "set upper limit for SAS expiry interval to 1 day and expiration action to Block"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"tokenType": "c",
+				"policy": "c"
+			},
+			"explanation": {
+				"correct": "The agent's list spans Blob Storage and Queue Storage and includes service-level work, so it needs the broad kind of signature: only an account SAS can span more than one service, carry the extra read, write and delete rights, and enable Get/Set Service Properties and Get Service Stats. The agent has no directory identity, so a user delegation SAS is impossible as well. For the lifetime rule, the upper limit for SAS expiry interval caps every new SAS created on the account, so setting it to 12 hours enforces the ceiling, and choosing the Block action makes the service reject out-of-policy requests instead of serving them and only writing them to logs.",
+				"perChoice": {
+					"tokenType:a": "A user delegation SAS is authorized against Microsoft Entra ID because it is signed with a user delegation key derived from Entra credentials, and the agent has no identity in your directory, so no such key can be obtained for it. Such a signature also tops out at 7 days.",
+					"tokenType:b": "A service SAS stays inside a single storage service, so it cannot cover the blob container and the queue in one token, and it cannot perform the service-level operations the agent needs at the resource level.",
+					"tokenType:d": "Stored access policies can only be attached to a service SAS; an account SAS must always be ad hoc, so this combination does not exist.",
+					"policy:a": "The ceiling matches the requirement, but the Log action lets out-of-policy requests succeed and merely records them, so longer-lived tokens would keep working.",
+					"policy:b": "Block does reject out-of-policy requests, but a 7-day upper limit allows tokens that stay valid far longer than the 12 hours the team allows.",
+					"policy:d": "Block rejects out-of-policy requests, but a 1-day upper limit still permits 24-hour tokens, which exceeds the stated 12-hour ceiling."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/sas-expiration-policy"
+				}
+			],
+			"subtopics": [
+				"sas-account-service",
+				"sas-expiration-policy"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5M9243JD2KK93ACVN0B78R7",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You run a marketing site that links straight to every image file in the assets container of your storage account. The page will stay online for years and nobody on your side will refresh anything, so any visitor, signed in or not, must be able to fetch those images. The invoices container on the same account must keep refusing anyone who presents nothing. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Container",
+						"Who can fetch its files today",
+						"Stored access policies on it",
+						"What it holds"
+					],
+					"rows": [
+						[
+							"assets",
+							"Holders of a valid token",
+							"0",
+							"Product and campaign images"
+						],
+						[
+							"invoices",
+							"Holders of a valid token",
+							"2",
+							"Customer PDF invoices"
+						]
+					]
+				},
+				"statement": "On this storage account, you should {{change}}.",
+				"slots": [
+					{
+						"id": "change",
+						"options": [
+							{
+								"id": "a",
+								"text": "Set the assets container's access level to Public"
+							},
+							{
+								"id": "b",
+								"text": "Set the invoices container's access level to Public"
+							},
+							{
+								"id": "c",
+								"text": "Issue one read-only service SAS and embed its query string in the page"
+							},
+							{
+								"id": "d",
+								"text": "Add a read-only stored access policy to the assets container and embed its link in the page"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"change": "a"
+			},
+			"explanation": {
+				"correct": "When the goal is simply to let every visitor read every file in one container, the documented approach is to set that container to Public rather than to hand out tokens. A container set to Public keeps serving those images indefinitely with no signing key, no expiry and nobody having to renew anything, and because the change is scoped to a single container the rest of the account, including the invoices container, still refuses requests that carry no credential.",
+				"perChoice": {
+					"change:b": "This opens the wrong container. Customer PDF invoices would become readable by anyone who guesses the name, which is exactly the resource that must stay closed.",
+					"change:c": "A service SAS is a temporary token: its permissions and validity live in the token itself, so it stops working at the end of its signed window and someone has to mint a replacement. That does not give long-lived anonymous reads with nobody refreshing links, and it also means publishing a bearer query string on a web page.",
+					"change:d": "A stored access policy is not a link in itself. It only supplies the permission and expiry constraints that a service SAS inherits, so any token built on it still stops being served at the end of its signed validity and must be reissued."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				}
+			],
+			"subtopics": [
+				"container-public-access",
+				"service-sas",
+				"stored-access-policy"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5M944YSZRVACXR1S8A0XP4F",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a nightly replication job that copies the day's export folder into the archive container of your storage account with AzCopy. The job builds the shared access signature (SAS) itself in code, appends it to the destination URL, and since the code was rewritten every run aborts before a single object is transferred, as the log shows. The container, the account key used to sign the token, the granted permissions and the resource path are all unchanged, and the scheduler's clock is correct. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "# nightly replication job  (AzCopy 10.24.0 on Linux)\ntoken=\"sv=2022-11-02&ss=b&srt=sco&sp=racw&sr=c&st=2026-10-22T01:00&se=2026-10-22T05:00&sig=REDACTED\"\nazcopy copy \"./exports/*\" \"https://archstore.blob.core.windows.net/archive?${token}\"\n\n# job log\nFATAL: job failed, 0 files transferred\n       the access token was rejected: the signed start or expiry value could not be read"
+				},
+				"statement": "To make the replication job transfer files again, {{fix}}.",
+				"slots": [
+					{
+						"id": "fix",
+						"options": [
+							{
+								"id": "a",
+								"text": "write the st and se values of the shared access signature as +%Y-%m-%dT%H:%M:%SZ, with the seconds included"
+							},
+							{
+								"id": "b",
+								"text": "write the st and se values of the shared access signature as +%Y-%m-%dT%H:%M:%S, with the Z suffix left out"
+							},
+							{
+								"id": "c",
+								"text": "write the st and se values of the shared access signature as %Y-%m-%dT%H:%M:%SZ, with the leading + left out"
+							},
+							{
+								"id": "d",
+								"text": "write the st and se values of the shared access signature as +%Y-%m-%dT%H:%MZ, with the seconds left out"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"fix": "a"
+			},
+			"explanation": {
+				"correct": "Utilities such as AzCopy require the signed start and expiry of a shared access signature to be written as +%Y-%m-%dT%H:%M:%SZ, seconds included. The job writes both time values without the leading + and without seconds, so the utility cannot read them and aborts before any transfer. Rewriting the st and se values in that exact layout, seconds included, resolves the failure while leaving permissions, scope and signing key untouched.",
+				"perChoice": {
+					"fix:b": "The value still lacks the UTC Z designator that the expected layout includes, so the expiry cannot be read and the job still stops before copying.",
+					"fix:c": "Keeping the trailing Z but dropping the leading + leaves the value in a layout the utility does not read; seconds and the UTC designator alone are not enough.",
+					"fix:d": "Omitting the seconds truncates the time to whole minutes in a layout that expects seconds, so the utility again rejects the token and nothing is transferred."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blob-user-delegation-sas-create-cli"
+				}
+			],
+			"subtopics": [
+				"sas-token-format",
+				"azcopy",
+				"sas-validity"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5M977WVE59X3SHJXSTXVKN1",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your organization has decided that the account access keys must never appear in a developer's session or script, so every team now mints its own short-lived delegated links from an identity that is already signed in. One developer runs the command below from such a terminal and it fails. You need this command to succeed for that developer, and you are not allowed to hand them the account access keys. Which permission should you add to the developer's role assignments?",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "$ az storage container generate-sas --account-name contosoreports \\\n    --name reports --permissions acdlrw \\\n    --expiry 2026-11-01T00:00:00Z \\\n    --auth-mode login --as-user\nERROR: (Forbidden) This identity is not authorized to perform this operation."
+				},
+				"statement": "The developer must be granted an Azure RBAC role that includes {{permission}}.",
+				"slots": [
+					{
+						"id": "permission",
+						"options": [
+							{
+								"id": "a",
+								"text": "Microsoft.Storage/storageAccounts/blobServices/generateUserDelegationKey"
+							},
+							{
+								"id": "b",
+								"text": "Microsoft.Storage/storageAccounts/listkeys/action"
+							},
+							{
+								"id": "c",
+								"text": "Microsoft.Storage/storageAccounts/listServiceSas/action"
+							},
+							{
+								"id": "d",
+								"text": "Microsoft.Storage/storageAccounts/regenerateKey/action"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"permission": "a"
+			},
+			"explanation": {
+				"correct": "The token is signed with a user delegation key derived from the signed-in identity's Microsoft Entra credentials, and creating that key requires an Azure RBAC role that contains Microsoft.Storage/storageAccounts/blobServices/generateUserDelegationKey. With --auth-mode login and --as-user the command calls exactly that action on behalf of the signed-in developer, which is why a data-plane role scoped to the reports container is not enough and the call is refused. Granting a role that includes generateUserDelegationKey lets the developer produce the link while the account access key stays out of their hands.",
+				"perChoice": {
+					"permission:b": "listkeys/action returns the account access keys, which is exactly the credential this design forbids. It is what a caller needs in order to sign a service or account SAS with the shared key, and it does not satisfy the delegation-key requirement behind this command.",
+					"permission:c": "listServiceSas/action lets an identity list the SAS credentials already stored on the account. It only reads existing tokens, it cannot create a delegation key, so the command would still be refused.",
+					"permission:d": "regenerateKey/action rotates the account access keys. It does not create a delegation key, so it does not make this command succeed, and rotating keys would disrupt every other integration on the account."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blob-user-delegation-sas-create-cli"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				}
+			],
+			"subtopics": [
+				"user-delegation-sas",
+				"rbac-permissions",
+				"azure-cli"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5M9J0GJSPE02VAJVRQYD25X",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You govern a storage account on which no delegated credential may stay usable for longer than six hours. You already switched on the account's shared access signature (SAS) expiration policy, set its upper limit to six hours and its action to refuse anything longer; those values are correct and must stay as they are. Six weeks later, a compliance scan reports that one producer's clients are still working with a credential that stays valid for a full month, and every request made with it is served. That producer and its consumers must keep running, and the credential it hands out must never outlive six hours; the other two producers must keep the credentials they already hold. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Shared access signature (SAS) expiration policy",
+							"Enabled"
+						],
+						[
+							"Upper limit for SAS expiry interval",
+							"6 hours"
+						],
+						[
+							"SAS expiration action",
+							"Block"
+						],
+						[
+							"Producer A - vendor mobile app",
+							"sv=2019-02-02&sr=b&sp=r&st=2026-09-01T08:00:00Z&se=2026-09-01T09:00:00Z&sig=..."
+						],
+						[
+							"Producer B - partner batch uploader",
+							"sv=2019-02-02&sr=c&sp=racw&si=monthly-batch&sig=..."
+						],
+						[
+							"Producer C - back-office export job",
+							"sv=2019-02-02&sr=c&sp=rw&st=2026-10-20T00:00:00Z&se=2026-10-20T01:00:00Z&sig=..."
+						]
+					]
+				},
+				"statement": "Because that producer and its consumers have to keep working while nothing they hold may last beyond six hours, you should {{fix}}.",
+				"slots": [
+					{
+						"id": "fix",
+						"options": [
+							{
+								"id": "a",
+								"text": "Shorten the lifetime of the stored access policy that its token names, then reissue the tokens"
+							},
+							{
+								"id": "b",
+								"text": "Rotate the account access keys and delete the stored access policy that its token names, then reissue the tokens"
+							},
+							{
+								"id": "c",
+								"text": "Shorten the upper limit of the account's SAS expiration policy to 1 hour, then reissue the tokens"
+							},
+							{
+								"id": "d",
+								"text": "Shorten the lifetime of the account access key that signs its tokens, then reissue the tokens"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"fix": "a"
+			},
+			"explanation": {
+				"correct": "Producer B's query string names a container-level stored access policy (si=monthly-batch) and carries no signed start or signed expiry of its own, so that token inherits its start time, expiry and permissions from that stored access policy. The account's expiration action is not supported for a service SAS associated with a stored access policy, which is why a month-long credential is still served even though the account ceiling is six hours and the action is Block. Shortening the lifetime recorded in that stored access policy and reissuing the tokens therefore both caps producer B at six hours and leaves producers A and C, whose tokens carry their own signed start and expiry, untouched.",
+				"perChoice": {
+					"fix:b": "Rotating the account access keys would invalidate every token signed with them, which breaks producers A and C that must keep the credentials they already hold, and deleting the stored access policy would stop producer B's requests from being authorized at all rather than capping them, because its tokens keep naming that policy. The stored access policy itself is the right lever: it is where the constraints inherited by producer B's tokens live.",
+					"fix:c": "The account's upper limit and expiration action are not applied to a service SAS that references a stored access policy, so lowering the ceiling to 1 hour leaves producer B's month-long credential working exactly as before. The account setting also may not be changed in this scenario.",
+					"fix:d": "The account access key is the credential that signs new tokens, not something that shortens the validity of tokens already handed out. Producer B's window comes from the named stored access policy, so changing the key does not cap it and would force every producer to rebuild its tokens."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/sas-expiration-policy"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				}
+			],
+			"subtopics": [
+				"expiration-policy",
+				"stored-access-policy",
+				"service-sas"
+			],
+			"reviewed": false
+		}
+	]
+}

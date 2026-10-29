@@ -1,0 +1,1659 @@
+{
+	"skill": "compute.app-service-slots",
+	"questions": [
+		{
+			"id": "q_01M5V46V4R86T7JSFR92D8A1BQ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an App Service web app with the configuration shown in the exhibit. A validated build is sitting in the staging slot, and the promotion is carried out by hand after the smoke tests pass. When the staged build is promoted, the app becomes unresponsive and requests time out until the promotion completes. Which swap option should the release engineer select?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"App",
+							"Contoso-Portal (web app on Windows)"
+						],
+						[
+							"App Service plan tier",
+							"Premium V3"
+						],
+						[
+							"Deployment slots",
+							"production, staging"
+						],
+						[
+							"Release process",
+							"The build is deployed to the staging slot and smoke-tested before a release engineer promotes it"
+						],
+						[
+							"Database dependency",
+							"The app opens a SQL connection at startup and keeps it open for the life of the process"
+						],
+						[
+							"Swap option currently selected",
+							"Swap with warm up"
+						],
+						[
+							"Observed on promotion",
+							"The app becomes unresponsive and requests time out while its configuration is replaced underneath the running process"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Swap with warm up"
+					},
+					{
+						"id": "b",
+						"text": "Stop/Reset during swap"
+					},
+					{
+						"id": "c",
+						"text": "Auto swap with warm up"
+					},
+					{
+						"id": "d",
+						"text": "Deploy the validated build to the production slot directly and leave the staging slot unchanged"
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "The app hangs precisely because its configuration is replaced underneath a running process that holds a SQL connection for its whole lifetime. Stop/Reset during swap is the documented option for apps that become unresponsive when settings change, including apps with database connections: the source slot is stopped and restarted so the configuration change applies to a fresh process. The trade-off is a slower cold start and greater downtime risk, which is acceptable here because the app is unresponsive during the promotion anyway. The promotion also stays a manual step, so the release engineer still approves the release after the smoke tests.",
+				"perChoice": {
+					"a": "Swap with warm up is the default behavior: it prepares and warms the source instances before traffic is redirected so no requests are dropped during the transition. It does not shut the source slot down, so the configuration is still replaced underneath the running process and the app stays unresponsive — it does not address the symptom in the exhibit.",
+					"c": "Auto swap promotes the staged build automatically as soon as a deployment occurs, which removes the manual approval gate that the release process depends on. Warm up also leaves the source slot running, so the same hang would occur during the automatic promotion.",
+					"d": "Deploying straight to the production slot removes the staged copy of the release from the promotion path, so there is no validated environment to exchange with production and no quick way to promote or roll back by exchanging slots. It also contradicts the team's deploy-validate-promote process."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-staging-slots"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-best-practices"
+				}
+			],
+			"subtopics": [
+				"deployment-slot-swap",
+				"swap-options"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V49DHGEMF596BZ4WETSPZD",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have the App Service plan shown in the exhibit, and a request to move the app to the Standard tier to reduce cost. You need to determine the sequence of changes that lets the tier change succeed while the app keeps serving its current environments. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"App Service plan",
+							"contoso-web-plan"
+						],
+						[
+							"App in this plan",
+							"contoso-web"
+						],
+						[
+							"Current pricing tier",
+							"Premium V3"
+						],
+						[
+							"Requested pricing tier",
+							"Standard"
+						],
+						[
+							"Deployment slots",
+							"staging, qa, dev, test, hotfix, loadtest, demo"
+						],
+						[
+							"Content in each slot",
+							"Deployed build present in all listed slots"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Delete two of the seven slots, then scale the plan down to Standard"
+					},
+					{
+						"id": "b",
+						"text": "Scale the plan down to Standard, then delete any slots the plan no longer supports"
+					},
+					{
+						"id": "c",
+						"text": "Scale the plan down to Standard and keep all seven slots, because deployment slots are not billed separately"
+					},
+					{
+						"id": "d",
+						"text": "Move the app to a new Standard-tier plan that carries all seven slots, because a new plan applies its allowance from scratch"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The Standard tier permits at most five deployment slots, and a plan can only be moved to a tier that accommodates the app's current slot count. The app here uses seven slots, so the plan cannot be scaled down to Standard while all seven exist; the slot count must first be reduced to what Standard allows. Deleting two of the slots and then scaling the plan down is therefore the sequence that works. The fact that slots carry no separate charge does not remove the tier's slot quota, and the no-extra-charge rule doesn't remove the quota when scaling.",
+				"perChoice": {
+					"b": "The order is reversed. While the app still holds more slots than the target tier allows, the scale-down to Standard is blocked, so the scale-down has to come after the surplus slots are removed rather than before.",
+					"c": "Slots have no separate charge, but each tier still caps how many slots an app may use. Keeping all seven slots in place therefore prevents the plan from being scaled down to Standard.",
+					"d": "The slot count belongs to the app and travels with it when the app is moved to another plan, so a fresh Standard-tier plan doesn't reset the allowance. Moving the app with seven slots to Standard would still fail, because Standard permits at most five slots."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-staging-slots"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-best-practices"
+				}
+			],
+			"subtopics": [
+				"slot-tier-limits",
+				"plan-tier-changes"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V4E9SA77S65A8W14K1A0WZ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have the App Service web app and its deployment slots configured as shown in the exhibit. The team promotes a validated release by swapping the staging slot with the production slot. You need to know exactly what the production slot will be running and which configuration values it will use after the promotion. Which statement is correct?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Slot",
+						"Item",
+						"Value",
+						"Marked as slot setting"
+					],
+					"rows": [
+						[
+							"production",
+							"Deployed build",
+							"2026.10.01",
+							"n/a"
+						],
+						[
+							"staging",
+							"Deployed build",
+							"2026.10.25",
+							"n/a"
+						],
+						[
+							"production",
+							"App setting FEATURE_NEW_CHECKOUT",
+							"false",
+							"No"
+						],
+						[
+							"staging",
+							"App setting FEATURE_NEW_CHECKOUT",
+							"true",
+							"No"
+						],
+						[
+							"production",
+							"Connection string SqlDatabase",
+							"Server=prod-sql.database.windows.net",
+							"Yes"
+						],
+						[
+							"staging",
+							"Connection string SqlDatabase",
+							"Server=stg-sql.database.windows.net",
+							"Yes"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "After the swap, the production slot runs build 2026.10.25 with FEATURE_NEW_CHECKOUT = true, and its SqlDatabase connection string still points at prod-sql."
+					},
+					{
+						"id": "b",
+						"text": "After the swap, the production slot runs build 2026.10.25 with FEATURE_NEW_CHECKOUT = true, and its SqlDatabase connection string now points at stg-sql."
+					},
+					{
+						"id": "c",
+						"text": "After the swap, the production slot runs build 2026.10.01 with FEATURE_NEW_CHECKOUT = false, and its SqlDatabase connection string still points at prod-sql."
+					},
+					{
+						"id": "d",
+						"text": "After the swap, the production slot runs build 2026.10.01 with FEATURE_NEW_CHECKOUT = false, and its SqlDatabase connection string now points at stg-sql."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A swap exchanges the application content and the eligible configuration between the two slots. The staged build 2026.10.25 therefore becomes the production build, and FEATURE_NEW_CHECKOUT, which is not flagged as a slot setting, travels with the app, so production runs it as true. Items flagged as slot settings (sticky settings) are the exceptions: they remain with the slot they belong to, and slot-specific connection strings are not exchanged by a swap. SqlDatabase is flagged that way, so production keeps its own value, Server=prod-sql.database.windows.net.",
+				"perChoice": {
+					"b": "The build and the app setting are right, but the connection string is not. SqlDatabase is flagged as a slot setting, so it stays with the slot it was defined in: production keeps prod-sql and the staged stg-sql value does not move across during the swap.",
+					"c": "The connection string is right, but the build and the app setting are not. The application content and the eligible configuration are exchanged between the slots during a swap, so production ends up running the staged build 2026.10.25 with FEATURE_NEW_CHECKOUT = true.",
+					"d": "Both parts are wrong. The staged build and the app setting that is not flagged as a slot setting are exchanged with production during the swap, while the SqlDatabase connection string, being a slot setting, stays with its own slot instead of moving to production."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-staging-slots"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-best-practices"
+				}
+			],
+			"subtopics": [
+				"deployment-slots",
+				"swap-configuration",
+				"slot-settings"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V4H0W2GESTCHVQG4DNV335",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an App Service web app and the release pipeline shown in the exhibit. You need each new build deployed to the staging environment to reach production on its own as soon as the deployment finishes, because this app has no pre-release validation gate. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"app\": \"contosowebapp\",\n  \"plan\": { \"tier\": \"Standard\", \"slotsInUse\": 2 },\n  \"slots\": [\n    {\n      \"name\": \"production\",\n      \"trafficPercentage\": 100,\n      \"hostname\": \"contosowebapp.azurewebsites.net\"\n    },\n    {\n      \"name\": \"staging\",\n      \"trafficPercentage\": 0,\n      \"hostname\": \"contosowebapp-staging.azurewebsites.net\"\n    }\n  ],\n  \"pipeline\": {\n    \"repository\": \"Azure Repos\",\n    \"sourceBranch\": \"main\",\n    \"deploymentTarget\": \"staging\",\n    \"manualApprovalRequired\": false\n  }\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Enable auto swap for the staging slot so each deployment to that slot is promoted to the production slot"
+					},
+					{
+						"id": "b",
+						"text": "Perform a manual swap of the staging slot with the production slot after every deployment"
+					},
+					{
+						"id": "c",
+						"text": "Set the traffic percentage of the staging slot to 100 and the production slot to 0 so that requests reach the new build"
+					},
+					{
+						"id": "d",
+						"text": "Point the continuous deployment of the main branch at the production slot so that every commit is deployed there"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The requirement is that each build delivered to the staging slot reaches production by itself once the deployment finishes, with no human step and no validation gate. Auto swap on the staging slot does exactly this: the pipeline deploys to the slot and the platform promotes that content and its eligible configuration to production. The plan tier (Standard) already allows slots, so no tier change is needed.",
+				"perChoice": {
+					"b": "A hand-run swap still needs an engineer to trigger it after each deployment, so builds would not reach production on their own. Manual swapping is the right pattern only when a candidate build must be reviewed and smoke-tested before it goes live.",
+					"c": "Traffic percentage only divides incoming requests among slots that are already running; it does not move a newly deployed build into production. Sending 100% of traffic to staging would expose users to an unvalidated build while the old build stayed in production.",
+					"d": "Deploying the main branch straight to the production slot removes the staging environment from the release path and skips the review of a candidate build, which is the opposite of the recommended pattern of deploying to a nonproduction slot and then promoting the accepted build."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-staging-slots"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-best-practices"
+				}
+			],
+			"subtopics": [
+				"auto-swap",
+				"deployment-slots",
+				"release-promotion"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V4MZ9CMRSF75WC0CFKAJPV",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an App Service web app on the Premium tier whose configuration was copied into a new staging slot. A build deployed to that slot fails because the internal API host cannot be resolved, and the team wants the staging slot to reach that API exactly as production does. Which action should you take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"app\": \"contoso-portal (Linux)\",\n  \"planTier\": \"Premium V3\",\n  \"slots\": [\"production\", \"staging\"],\n  \"stagingSlotCreation\": \"Configuration copied from production: Yes\",\n  \"itemsCopied\": [\"App settings\", \"Connection strings\", \"Language framework version\", \"HTTP version\", \"WebSockets\", \"Platform bitness\"],\n  \"privateEndpointForStaging\": \"Not present\",\n  \"privateEndpointForProduction\": \"1, fronts the VNet-internal API\",\n  \"internalApiHost\": \"api.internal.contoso.com, resolvable only through the private DNS zone\",\n  \"latestDeploymentToStaging\": \"FAILED - DNS resolution failed for api.internal.contoso.com\"\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add a private endpoint for the staging slot and add a DNS name for the slot's hostname."
+					},
+					{
+						"id": "b",
+						"text": "Copy the production configuration to the staging slot again so that the private endpoint and its DNS name come with it."
+					},
+					{
+						"id": "c",
+						"text": "Mark the private endpoint and DNS name as a slot setting on the staging slot so they are not exchanged during a swap."
+					},
+					{
+						"id": "d",
+						"text": "Enable auto swap with warm up on the staging slot so the private endpoint and DNS name move to production on their own."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Cloning configuration from one slot copies app settings, connection strings, language and framework versions, WebSockets, HTTP version and platform bitness, but a private endpoint is not cloned between slots. The staging slot therefore has no private endpoint, so the internal API host cannot resolve inside that environment and the deployment fails. You must set up the private endpoint for the staging slot yourself, together with the DNS name that resolves the slot's hostname in the private zone, so the staging slot reaches the API the same way production does.",
+				"perChoice": {
+					"b": "Repeating the configuration copy does not help: private endpoints are excluded from cloned configuration, so the staging slot would still have no private endpoint and the same DNS resolution failure would occur.",
+					"c": "Slot settings (sticky settings) only decide whether configuration values are exchanged when slots are swapped. They do not create networking resources, so marking the endpoint and DNS name this way leaves the staging slot without a private endpoint.",
+					"d": "Auto swap promotes content and eligible configuration from a slot into production; it neither creates nor transfers private endpoints. The failure happens in the staging slot before any promotion, and swapping would not give that slot a private endpoint."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-staging-slots"
+				}
+			],
+			"subtopics": [
+				"deployment-slots",
+				"slot-configuration",
+				"private-endpoints"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V4VMQJ49BVYSE1AK7EKBTT",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an App Service web app that runs a container image, and the release pipeline that moves builds into its deployment slots is shown in the exhibit. The team must be able to trace any customer report back to the exact build that was running at that moment, and the pipeline currently reuses one changeable label for every release. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "release_to_slot:\n  build:  docker build -t contoso/web:latest .\n  push:   docker push contoso/web:latest\n  slots:\n    staging:\n      image: contoso/web:latest\n    production:\n      image: contoso/web:latest\n"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Tag the image with a traceable value that identifies the exact build, push it to the registry, then write the tag into the target slot"
+					},
+					{
+						"id": "b",
+						"text": "Tag the image with the same changeable label for every release, push it to the registry, then write the tag into the target slot"
+					},
+					{
+						"id": "c",
+						"text": "Tag the image with a traceable value that identifies the exact build, push it to the registry, then write the tag into the App Service plan"
+					},
+					{
+						"id": "d",
+						"text": "Tag the image with a traceable value that identifies the exact build, push it to the registry, then leave the target slot pointing at its current image"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Each release needs its own tag that ties the image to one specific build (for example the git commit ID or a timestamp). A label that changes from release to release makes it impossible to tell which code is actually running, which is exactly the debugging problem the guidance warns about. The container release flow for a slot has three steps: build and tag the image, push the tagged image to the container registry, and then write that tag into the target slot so the slot pulls the new image. The correct option performs all three in that order.",
+				"perChoice": {
+					"b": "Reusing one changeable label for every release is the pattern to avoid: because the label moves on, nothing in the registry or the slot points back to the code that was running when the report was filed, so the exact build cannot be determined.",
+					"c": "The new image tag belongs to the configuration of the target slot, which is what makes that slot restart and pull the image. Writing the tag into the App Service plan instead leaves the slot with no indication of which image to run.",
+					"d": "The slot must be updated with the new tag so it restarts and pulls the newly tagged image. Leaving the slot pointing at its current image means the new build never reaches that environment at all."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-best-practices"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-staging-slots"
+				}
+			],
+			"subtopics": [
+				"container-image-tagging",
+				"deployment-slots"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V4Z70Y74QPNATVV7GDBTMD",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have the App Service web app and its deployment slots shown in the exhibit. Forty minutes ago the team promoted a new release to customers, and since then the production slot has been returning failed checkouts and elevated error rates. You need customers to be served the previous release again, and the team must not rebuild or redeploy the code. Which action should the release engineer take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Slot        Content currently running   Deployment history\nproduction  Release 2026.10.2            Promoted 40 minutes ago\nstaging     Release 2026.10.1            Content that production was running before the promotion"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Swap the production slot with the staging slot so that the production slot is running the previous release again."
+					},
+					{
+						"id": "b",
+						"text": "Redeploy the previous release artifact from the build pipeline to the production slot so that the production slot is running the previous code again."
+					},
+					{
+						"id": "c",
+						"text": "Stop the production slot, copy the files from the staging slot into the production wwwroot folder, and restart the instances."
+					},
+					{
+						"id": "d",
+						"text": "Set the traffic percentage of the production slot to 0 and of the staging slot to 100, so that the staging slot is running the previous release for all customer requests."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "An exchange between two slots is reversible. The promotion 40 minutes ago moved the content that production was running into the staging slot, so the staging slot still holds the last release that worked. Performing the same exchange again puts that release back into the production slot and moves the failed release into the staging slot, so customers return to the previous release with no rebuild, no new deployment, and a fast turnaround.",
+				"perChoice": {
+					"b": "This is excluded by the stated requirement that the code must not be rebuilt or redeployed, and it also adds pipeline time and risk. The documentation describes the exchange between slots as reversible, so the last-known-good release can be restored without pushing artifacts again.",
+					"c": "Copying files by hand is not an exchange between slots: the configuration that travels with the app does not move with the copied files, and the two slot environments are left inconsistent with each other. The supported way to bring the previous release back into production is to exchange the two slots.",
+					"d": "Changing the traffic percentages only changes where requests are sent; the failed release stays deployed in the production slot and keeps running there, and the slot that holds the previous release is a separate environment with its own hostname and configuration. The documented recovery from a bad promotion is another exchange of the slots."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-staging-slots"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-best-practices"
+				}
+			],
+			"subtopics": [
+				"deployment-slots",
+				"swap-rollback"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V50ZBCCF92793VM5JJEFAA",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an App Service web app whose release pipeline uploads a Node.js package that was already built by a separate build service to the staging deployment slot. The deployment fails because Kudu attempts to run npm install without access to the private package registry. You need the uploaded package to be deployed as supplied. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Deployment slot",
+						"App setting",
+						"Current value"
+					],
+					"rows": [
+						[
+							"staging",
+							"SCM_DO_BUILD_DURING_DEPLOYMENT",
+							"true"
+						],
+						[
+							"production",
+							"SCM_DO_BUILD_DURING_DEPLOYMENT",
+							"true"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set SCM_DO_BUILD_DURING_DEPLOYMENT to false in the staging slot."
+					},
+					{
+						"id": "b",
+						"text": "Set SCM_DO_BUILD_DURING_DEPLOYMENT to true in the staging slot."
+					},
+					{
+						"id": "c",
+						"text": "Set SCM_DO_BUILD_DURING_DEPLOYMENT to false in the production slot."
+					},
+					{
+						"id": "d",
+						"text": "Remove SCM_DO_BUILD_DURING_DEPLOYMENT from the staging slot."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The pipeline uploads an artifact that was already compiled by an external build service, so Kudu should not build it again. Setting SCM_DO_BUILD_DURING_DEPLOYMENT to false in the staging slot, which is where the pipeline deploys and where the failure occurs, stops Kudu from running npm install during deployment and lets the supplied package be used as-is.",
+				"perChoice": {
+					"b": "This keeps the build-during-deployment behavior that is already causing the failure, so Kudu continues to run npm install during the deployment to the staging slot.",
+					"c": "The pipeline deploys to the staging slot, and each slot keeps its own configuration. Changing this setting only in the production slot leaves the failing staging deployment unchanged.",
+					"d": "Deleting the setting does not disable the build step; it reverts the slot to the default behavior in which Kudu runs npm install for a Node.js deployment."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-best-practices"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-staging-slots"
+				}
+			],
+			"subtopics": [
+				"slot-app-settings",
+				"deployment-build-settings"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V58JM7RP91F778TXKT6FHG",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have an App Service web app that runs a custom container, with the details shown in the exhibit. The operations team performs the four actions below as part of their regular work. Drag each action to the effect it produces.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"App",
+							"contoso-web (Linux, custom container)"
+						],
+						[
+							"Service plan tier",
+							"Premium v3"
+						],
+						[
+							"Deployment slots",
+							"production, staging"
+						],
+						[
+							"Container image in production",
+							"contoso/web:2.4.1"
+						],
+						[
+							"Container image in staging",
+							"contoso/web:2.5.0"
+						],
+						[
+							"Private endpoint",
+							"Attached to the production slot only"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Add another deployment slot to the app"
+					},
+					{
+						"id": "i2",
+						"text": "Exchange the content and eligible configuration between the staging and production slots"
+					},
+					{
+						"id": "i3",
+						"text": "Change the container image tag used by a slot"
+					},
+					{
+						"id": "i4",
+						"text": "Duplicate the settings and connection strings from a slot onto a second slot"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "The extra slot receives no customer traffic while it is being prepared"
+					},
+					{
+						"id": "s2",
+						"label": "The previously shipped build stays parked in the other slot, ready to be brought back at once"
+					},
+					{
+						"id": "s3",
+						"label": "The site is restarted and pulls down the artifact it now points to"
+					},
+					{
+						"id": "s4",
+						"label": "Most values are carried over when a new slot is created by copying an existing one, but the private network link is not"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Each action maps to the effect documented for it: creating a slot adds an environment whose initial traffic percentage is 0, so the live site keeps serving every customer request; swapping two slots is reversible, because the slot that received the previous content holds it and an immediate second swap brings it back; changing a slot's container image tag restarts the site and makes it retrieve the image it now points to; and copying configuration into a newly created slot carries app settings, connection strings and similar values across but leaves the private endpoint behind, so that piece has to be handled separately.",
+				"perChoice": {
+					"i1": "Matches the first target. A newly created slot starts with its traffic percentage at 0, which leaves all customer traffic on the live environment while the extra slot is being prepared and reviewed.",
+					"i2": "Matches the second target. A swap is reversible: the slot that was swapped receives the app that was previously live, so the previously shipped build remains parked there and one more immediate swap restores it for customers.",
+					"i3": "Matches the third target. Updating the container image tag for a slot restarts the site, and the restarted site then retrieves the image that the slot now points to.",
+					"i4": "Matches the fourth target. Cloning a slot can copy app settings, connection strings, framework versions, WebSockets, HTTP version and platform bitness, but a private endpoint is never cloned, so the private network link of the source environment does not travel with the copy."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-staging-slots"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-best-practices"
+				}
+			],
+			"subtopics": [
+				"deployment-slots",
+				"swap-behavior",
+				"slot-configuration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5WA2SDW5X6PA43FRHZ91BAR",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have an Azure App Service web app that runs on a plan supporting several environments, with the details shown in the exhibit. A second environment was created by copying the existing configuration, and the release team promotes builds by exchanging the two environments regularly. Because the two environments must behave predictably for customers and for the internal consumers of the app, you need to know exactly which parts of the configuration travel with a promoted build, which parts stay where they are, and which part the copy did not bring along. Match each configuration element to the category that describes it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Plan tier",
+							"PremiumV3"
+						],
+						[
+							"Environments",
+							"production, staging, qa"
+						],
+						[
+							"Production traffic share",
+							"100%"
+						],
+						[
+							"Staging traffic share",
+							"0%"
+						],
+						[
+							"staging created by",
+							"copying configuration from production"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "WebSockets setting"
+					},
+					{
+						"id": "i2",
+						"text": "HTTP version setting"
+					},
+					{
+						"id": "i3",
+						"text": "Language framework version"
+					},
+					{
+						"id": "i4",
+						"text": "App setting StagingApiUrl"
+					},
+					{
+						"id": "i5",
+						"text": "Connection string StagingDb"
+					},
+					{
+						"id": "i6",
+						"text": "Private endpoint contoso-internal-pe"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Carried along with the app when the two environments are exchanged"
+					},
+					{
+						"id": "s2",
+						"label": "Remains with the environment that holds it when the two environments are exchanged"
+					},
+					{
+						"id": "s3",
+						"label": "Left out when configuration is copied to create the staging environment"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i4",
+				"s3": "i6"
+			},
+			"explanation": {
+				"correct": "A swap moves the application content and the eligible configuration with it, so the WebSockets setting, the HTTP version setting, and the language framework version end up in the other environment after the exchange. Configuration that is defined per environment, such as the StagingApiUrl app setting and the StagingDb connection string, is not exchanged and stays with the environment that holds it. A private endpoint is not part of copied configuration, so contoso-internal-pe was never brought into the staging environment and must be handled separately.",
+				"perChoice": {
+					"i1": "The WebSockets setting is ordinary app configuration that is copied between environments and is carried along with the app during a swap, so it belongs with the configuration that travels with the app.",
+					"i2": "The HTTP version setting is copied app configuration and is not tied to one environment, so it moves with the app when the environments are exchanged.",
+					"i3": "The language framework version is included in copied configuration and travels with the application content during a swap.",
+					"i4": "The StagingApiUrl app setting is a per-environment value; app settings that belong to one environment are not exchanged by a swap, so it stays where it is.",
+					"i5": "The StagingDb connection string stays with its environment during a swap, even though a connection string can be copied when a new environment is created.",
+					"i6": "A private endpoint is not included in copied configuration, so it was not carried into the staging environment; it has to be created or linked separately."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-staging-slots"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-best-practices"
+				}
+			],
+			"subtopics": [
+				"deployment-slots",
+				"slot-swapping",
+				"slot-settings"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5WA7D06AYNXJR8P26371A7C",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have an App Service web app with the plan and deployment slot setup shown in the exhibit. The operations team has lined up a set of planned actions for the next maintenance window. Match each planned action to the outcome the team should expect.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Plan tier",
+							"Standard"
+						],
+						[
+							"Deployment slots in use",
+							"5 (production, staging, qa, loadtest, review)"
+						],
+						[
+							"Instance count",
+							"2"
+						],
+						[
+							"Customer traffic share of the staging slot",
+							"0%"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Add one more deployment slot for the QA branch"
+					},
+					{
+						"id": "i2",
+						"text": "Promote the build validated in the staging slot by exchanging it with the slot that serves customers"
+					},
+					{
+						"id": "i3",
+						"text": "Move the app onto the Basic tier to reduce the monthly cost"
+					},
+					{
+						"id": "i4",
+						"text": "Temporarily raise the instance count while a deployment runs at 92% CPU, then return to the previous count"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Allowed as described"
+					},
+					{
+						"id": "s2",
+						"label": "Allowed once extra capacity is added for the duration of the operation"
+					},
+					{
+						"id": "s3",
+						"label": "Not possible without first changing the plan tier"
+					},
+					{
+						"id": "s4",
+						"label": "Not possible while any extra slot is kept"
+					}
+				]
+			},
+			"key": {
+				"s1": "i2",
+				"s2": "i4",
+				"s3": "i1",
+				"s4": "i3"
+			},
+			"explanation": {
+				"correct": "The app runs on the Standard tier with the maximum of five slots already in use, so a sixth slot requires moving to a tier with a larger allowance; promoting a validated build by exchanging slots is a standard operation; the Basic tier does not support deployment slots, so it can only be adopted once the extra slots are gone; and a deployment on a plan already consuming more than 90% of CPU is helped by temporarily adding instances, returning to the previous count afterwards.",
+				"perChoice": {
+					"i1": "The Standard tier allows at most five slots, and the app already uses all five, so the additional QA slot cannot be created until the plan is moved to a tier with a larger allowance.",
+					"i2": "Exchanging the content of two slots to promote an already validated build is the normal way to release to customers, and it is supported on the current plan; the staging slot simply receives the previously live build afterward.",
+					"i3": "Deployment slots require the Standard, Premium, or Isolated tier, so the app cannot be moved onto the Basic tier while any of its five slots still exist; they would have to be removed first.",
+					"i4": "A deployment can struggle when the plan is already consuming more than 90% of CPU or memory; adding instances temporarily, then returning to the previous count, lets the deployment finish."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-staging-slots"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-best-practices"
+				}
+			],
+			"subtopics": [
+				"deployment-slots",
+				"app-service-plan-tiers",
+				"slot-swap-behavior"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5WAA5MADJJPGVJ83GAA462H",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have an App Service web app with the plan and deployment slot setup shown in the exhibit. The release team has listed five needs that describe how builds should reach customers and how the two environments should behave during and after a promotion. Drag each need to the deployment slot capability that delivers it.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "App Service name: contoso-webapp\nPlan tier: PremiumV3\nDeployment slots: staging, qa\nTraffic % on staging: 0\nTraffic % on qa: 20\nBACKEND_URL on staging: https://staging-api.contoso.internal\nBACKEND_URL on production: https://prod-api.contoso.internal"
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "The team wants the newly released build to start serving customers without an obvious interruption."
+					},
+					{
+						"id": "i2",
+						"text": "The team wants the new build to reach customers automatically as soon as the deployment finishes."
+					},
+					{
+						"id": "i3",
+						"text": "The team needs a database connection string to keep pointing at the production database while a build sits in the staging environment."
+					},
+					{
+						"id": "i4",
+						"text": "The team wants only a small part of live customer traffic to reach the staging environment."
+					},
+					{
+						"id": "i5",
+						"text": "The team wants to know the hostname of the staging environment so testers can reach it directly."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Prepares the source instances before customer requests are redirected there"
+					},
+					{
+						"id": "s2",
+						"label": "Promotes the build to customers without a person acting"
+					},
+					{
+						"id": "s3",
+						"label": "Configuration that remains attached to a single environment instead of moving with the build"
+					},
+					{
+						"id": "s4",
+						"label": "A percentage value that determines how much load an environment gets"
+					},
+					{
+						"id": "s5",
+						"label": "The separate web address that each environment answers on"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "The five needs map one-to-one to the deployment slot capabilities: Swap with warm up satisfies the need for an uninterrupted start (it warms the source slot's instances to production scale before traffic is redirected, and it is the default swap behavior); auto swap satisfies the need for a build to reach customers with no manual step once a deployment completes; slot settings (sticky settings) satisfy the need for a database connection string to stay with the environment where it was configured instead of being exchanged during a swap; the Traffic % value on a slot satisfies the need to route only a controlled share of live requests to the staging environment (a newly added slot starts at 0); and the slot's own hostname satisfies the need for a separate address the staging environment answers on.",
+				"perChoice": {
+					"i1": "Swap with warm up prepares the source slot's instances at production scale before traffic is redirected, so the transition is continuous without dropping requests; it is the default swap behavior.",
+					"i2": "Auto swap automatically promotes a deployment from the slot to production when the deployment finishes, which suits apps that do not need a pre-swap validation gate.",
+					"i3": "Slot settings (sticky settings) are configuration exceptions that stay with the slot they were configured on, so a slot-specific connection string is not exchanged during a swap.",
+					"i4": "Traffic % on a slot controls the share of live requests routed to that slot; a newly added slot starts at Traffic % = 0, so it receives no customer traffic until the value is changed.",
+					"i5": "Each deployment slot is a separate live App Service environment with its own hostname, listed in the portal as App Service (Slot) and as its own app in the resource group, so testers can address the staging environment directly."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-staging-slots"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-best-practices"
+				}
+			],
+			"subtopics": [
+				"deployment-slots",
+				"slot-swapping",
+				"slot-settings"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5WADCTQW7C6CT2MFW1Z0TF0",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have the App Service web app shown in the exhibit. The operations team wants to document the characteristics of the extra live environments that run alongside the primary one, so that platform engineers can plan future releases. Match each observation to the characteristic it describes.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"App name",
+							"orders-web"
+						],
+						[
+							"Plan tier",
+							"Premium"
+						],
+						[
+							"Live environments on the plan",
+							"production, staging"
+						],
+						[
+							"Number of live environments",
+							"2"
+						],
+						[
+							"Plan instances",
+							"3"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Adding a deployment slot to an app whose plan sits below the Standard tier is refused."
+					},
+					{
+						"id": "i2",
+						"text": "An app that already holds more than five deployment slots cannot have its plan moved to the Standard tier."
+					},
+					{
+						"id": "i3",
+						"text": "Creating an additional deployment slot does not by itself increase the subscription cost."
+					},
+					{
+						"id": "i4",
+						"text": "The percentage of incoming calls routed to a deployment slot can be changed after the slot is created."
+					},
+					{
+						"id": "i5",
+						"text": "Each deployment slot behaves as a fully separate instance of the app: it can hold different settings and it is listed as another item in the resource group."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Requires a qualifying hosting plan"
+					},
+					{
+						"id": "s2",
+						"label": "Has a fixed maximum count per plan tier"
+					},
+					{
+						"id": "s3",
+						"label": "Comes at no extra price"
+					},
+					{
+						"id": "s4",
+						"label": "Carries a tunable part of visitor traffic"
+					},
+					{
+						"id": "s5",
+						"label": "Is a distinct site from the production one"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "The five observations map one-to-one onto the five characteristics. A deployment slot can only be created on the Standard, Premium, or Isolated tiers, so an app on a lower tier cannot have one added. The number of slots is capped per tier, and the Standard tier permits at most five, which is why an app holding more than five cannot be moved to Standard. Slots carry no separate charge, so adding one does not by itself increase the subscription cost. Each slot has a traffic percentage that can be changed after creation and starts at 0, and each slot is a separate live environment with its own hostname, management page, and resource group entry labeled App Service (Slot).",
+				"perChoice": {
+					"i1": "Slot creation is only offered on the Standard, Premium, and Isolated tiers; on a lower tier the portal asks you to upgrade first, so this observation describes a prerequisite tied to the hosting plan tier.",
+					"i2": "This is a quantity constraint per tier rather than a prerequisite: the Standard tier allows at most five slots, so an app with more than five cannot be scaled down to Standard.",
+					"i3": "Slots are not billed separately; the hosting plan tier governs both the cost and how many slots an app may use.",
+					"i4": "The traffic percentage of a slot can be changed at any time after creation, and it starts at 0 so all visitor requests continue to reach the primary environment.",
+					"i5": "A slot is a full separate environment with its own hostname and configuration pages, and the portal lists it in the resource group as a separate app called App Service (Slot)."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-staging-slots"
+				}
+			],
+			"subtopics": [
+				"deployment-slots",
+				"plan-tiers",
+				"traffic-routing"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5WAG6MEYNV6PXG5G5HR22QM",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have an Azure App Service web app that runs a container image, with the details shown in the exhibit. Before the next release window the platform team has lined up four tasks. Match each task to the result the platform team should expect.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Plan tier: Premium V3\nDeployment slots: production, staging\nInstances on the plan: 6\nCPU consumption during the last release: 94%\nContent delivery: static assets served from the site's local cache\nApplication package: custom container image in Azure Container Registry\nCurrent release handling: an engineer deploys the image to the staging slot, then promotes it by hand"
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Temporarily raise the number of instances on the plan, because CPU and memory consumption on that plan have been running above ninety percent."
+					},
+					{
+						"id": "i2",
+						"text": "Keep serving pages from the site's local cache while a new build is being promoted to customers."
+					},
+					{
+						"id": "i3",
+						"text": "Create a continuous delivery pipeline that builds the container image, tags it, and deploys every new commit to a chosen environment."
+					},
+					{
+						"id": "i4",
+						"text": "Limit who can reach the hostname of the second environment."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Deployments complete under heavy load"
+					},
+					{
+						"id": "s2",
+						"label": "Helps prevent downtime caused by the deployment"
+					},
+					{
+						"id": "s3",
+						"label": "Automating releases to a target environment"
+					},
+					{
+						"id": "s4",
+						"label": "Shielding the nonproduction endpoint from the public internet"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "The plan is already above ninety percent CPU utilization, so a deployment may struggle; temporarily adding instances lets the deployment complete, after which the team returns to the previous count. The app serves its static assets from a local cache, which is recommended to be paired with deployment slots so that downtime from the deployment is prevented. The Deployment Center can create a continuous delivery pipeline for a container repository and branch that builds, tags and deploys each new commit to the selected slot, which automates releases to a chosen environment. Finally, the second environment has its own hostname, and because that hostname is a separate exposure, applying App Service access restrictions keeps it off the public internet.",
+				"perChoice": {
+					"i1": "Correct for the slot about completing deployments under heavy load: when CPU or memory consumption exceeds ninety percent, temporarily increasing the instance count can help the deployment complete, and the count should be restored afterward.",
+					"i2": "Correct for the slot about preventing downtime: when local cache is used, pairing it with deployment slots prevents downtime from the deployment.",
+					"i3": "Correct for the slot about automating releases: the Deployment Center can create a continuous delivery pipeline for a container repository and branch that automatically builds, tags and deploys each new commit to the selected slot.",
+					"i4": "Correct for the slot about shielding the nonproduction endpoint: a slot has its own hostname, and that separate hostname should be guarded with App Service access restrictions when it must not be publicly accessible."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-best-practices"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-staging-slots"
+				}
+			],
+			"subtopics": [
+				"deployment-slots",
+				"release-pipeline",
+				"slot-hostnames"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5WAHDWEZXV7XBNFKKNDG01X",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an Azure App Service web app running on the plan shown in the exhibit. You need to add a separate live environment beside production so a candidate release can be tested before customers receive it, and the hosting cost of the change must stay as low as possible. Which pricing tier should the release engineer move the app to, and how many deployment slots can that plan support?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Plan property",
+						"Current value"
+					],
+					"rows": [
+						[
+							"App name",
+							"contoso-web"
+						],
+						[
+							"Current pricing tier",
+							"Basic"
+						],
+						[
+							"Additional deployment slots defined",
+							"0"
+						],
+						[
+							"Region",
+							"West Europe"
+						]
+					]
+				},
+				"statement": "The release engineer should {{s1}}, and on that plan the app can use {{s2}}.",
+				"slots": [
+					{
+						"id": "s1",
+						"options": [
+							{
+								"id": "a",
+								"text": "change the plan to the Standard pricing tier"
+							},
+							{
+								"id": "b",
+								"text": "change the plan to the Premium pricing tier"
+							},
+							{
+								"id": "c",
+								"text": "change the plan to the Isolated pricing tier"
+							}
+						]
+					},
+					{
+						"id": "s2",
+						"options": [
+							{
+								"id": "a",
+								"text": "a single deployment slot"
+							},
+							{
+								"id": "b",
+								"text": "up to five deployment slots"
+							},
+							{
+								"id": "c",
+								"text": "up to twenty deployment slots"
+							},
+							{
+								"id": "d",
+								"text": "an unlimited number of deployment slots"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b"
+			},
+			"explanation": {
+				"correct": "Adding a deployment slot requires the plan to be on the Standard, Premium, or Isolated tier; the app's current Basic plan does not allow extra environments, and the portal prompts for an upgrade. Of the tiers that permit slots, Standard is the least expensive, so it satisfies the lowest-cost requirement, and the Standard tier permits at most five slots, meaning the app can use up to five deployment slots.",
+				"perChoice": {
+					"s1:b": "Premium does permit deployment slots, but it is a more expensive tier than Standard, so choosing it does not meet the requirement to keep hosting cost as low as possible.",
+					"s1:c": "Isolated also supports deployment slots and adds network isolation, but it is the most expensive of the tiers that allow slots, so it does not satisfy the lowest-cost requirement.",
+					"s2:a": "The Standard tier allows more than one slot - it permits at most five - so the plan is not limited to a single deployment slot.",
+					"s2:c": "Twenty slots are not available on this tier; the Standard tier caps the number of slots at five.",
+					"s2:d": "The number of slots is bounded by the pricing tier, and the Standard tier allows at most five, so the count is not unlimited."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-staging-slots"
+				}
+			],
+			"subtopics": [
+				"deployment-slot-plan-tier",
+				"slot-count-limits"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5WBQH3RPSSC6VYVP0G3B9NW",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an App Service web app that the release team promotes through a separate deployment slot, with the configuration shown in the exhibit. The security team has determined that the slot's own hostname must not be reachable by general internet traffic, because that hostname exposes a surface the production hostname does not. The validation team still needs to reach the slot over its own hostname from its corporate network. Which feature should the release engineer configure on the slot?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Plan tier",
+							"Premium V3"
+						],
+						[
+							"Deployment slots",
+							"staging"
+						],
+						[
+							"Production hostname",
+							"contoso-app.azurewebsites.net"
+						],
+						[
+							"Slot hostname",
+							"contoso-app-staging.azurewebsites.net"
+						],
+						[
+							"Slot traffic percentage",
+							"0"
+						],
+						[
+							"Production traffic percentage",
+							"100"
+						]
+					]
+				},
+				"statement": "The release engineer should configure {{feature}} on the deployment slot so that only the validation team's network addresses can reach the slot's hostname.",
+				"slots": [
+					{
+						"id": "feature",
+						"options": [
+							{
+								"id": "a",
+								"text": "App Service access restrictions"
+							},
+							{
+								"id": "b",
+								"text": "App Service private endpoint"
+							},
+							{
+								"id": "c",
+								"text": "Auto swap for the deployment slot"
+							},
+							{
+								"id": "d",
+								"text": "Local cache for the deployment slot"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"feature": "a"
+			},
+			"explanation": {
+				"correct": "A deployment slot is a separate, live App Service environment with its own hostname, so it is reachable independently of the production hostname. Because the slot hostname must not be open to the general internet, the release engineer should apply App Service access restrictions on the slot so that only the validation team's addresses can reach it. Access restrictions are the documented way to keep a slot's hostname from being publicly accessible while still allowing approved callers.",
+				"perChoice": {
+					"feature:b": "A private endpoint gives the slot a private IP for private-link traffic; it does not by itself keep internet callers from reaching the slot's own public hostname, so it does not satisfy the requirement to restrict who can reach that hostname.",
+					"feature:c": "Auto swap controls whether a new deployment in the slot is promoted to production automatically. It has no effect on who can reach the slot's hostname.",
+					"feature:d": "Local cache improves response times for cached content and is recommended to be paired with deployment slots to avoid deployment downtime; it does not restrict network callers to the slot."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-staging-slots"
+				}
+			],
+			"subtopics": [
+				"deployment-slots",
+				"slot-hostname-exposure"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5WC1C371HGBMX0YR5DCZ5CC",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an App Service web app with a production slot and a staging slot on the same plan, as shown in the exhibit. The release team has deployed the next release candidate to the staging slot and wants that build to be judged against live customer traffic before it is promoted to everyone, while the live app keeps serving customers during the comparison. Which action should the release engineer take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Slot         Traffic %   Auto swap   Swap with warm up\nproduction       100         Off        Enabled\nstaging           0         Off        Enabled"
+				},
+				"statement": "The release engineer should {{slot1}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "set the Traffic % of the staging slot to 25."
+							},
+							{
+								"id": "b",
+								"text": "set the Traffic % of the production slot to 25 and leave the staging slot at 0."
+							},
+							{
+								"id": "c",
+								"text": "set the Traffic % of the staging slot to 100."
+							},
+							{
+								"id": "d",
+								"text": "set the Traffic % of the staging slot to 0."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a"
+			},
+			"explanation": {
+				"correct": "A slot that has just been added starts with Traffic % set to 0, which is why all customer traffic currently reaches the production slot and the release candidate in the staging slot sees no live traffic. The Traffic % value of the staging slot is the control that decides how much of the customer traffic is routed to it, so raising it to an intermediate value sends live traffic to the staging slot for the comparison while the production slot continues to serve the remainder. Among the options, only raising the staging slot to an intermediate value (25) satisfies both requirements: the staging build meets live traffic and production keeps serving customers.",
+				"perChoice": {
+					"slot1:b": "Lowering the Traffic % on the production slot does not send anything to the staging slot; the staging slot would stay at 0 and keep receiving no customer traffic, so the release candidate would still never be evaluated under live load.",
+					"slot1:c": "Setting the staging slot to 100 routes every customer request to the staging slot and takes the production slot out of the traffic path, so there would be no live production traffic left to compare the release candidate against, and the candidate would effectively already be promoted.",
+					"slot1:d": "Setting the staging slot to 0 is the state it already has: all customer traffic continues to go to the production slot and the release candidate in the staging slot never receives live traffic, so the intended comparison cannot happen."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-staging-slots"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-best-practices"
+				}
+			],
+			"subtopics": [
+				"deployment-slots",
+				"traffic-routing"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5WC49YJ44FJYK3XDAX8M4BZ",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an App Service web app on the plan shown in the exhibit. Releases reach customers by exchanging the staging slot with the production slot, and the last three attempts failed partway through. You need the next promotion to succeed, and the plan must keep the same footprint and monthly cost once the release is live. Which action should the release engineer take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Plan property",
+						"Value"
+					],
+					"rows": [
+						[
+							"App Service plan tier",
+							"Standard"
+						],
+						[
+							"Deployment slots in use",
+							"production, staging"
+						],
+						[
+							"Average CPU utilization, last hour",
+							"94%"
+						],
+						[
+							"Average memory utilization, last hour",
+							"91%"
+						],
+						[
+							"Outcome of the last three promotions",
+							"Each failed before the traffic switch completed"
+						]
+					]
+				},
+				"statement": "The release engineer should {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Temporarily increase the instance count, then return the plan to its earlier count after the promotion completes"
+							},
+							{
+								"id": "b",
+								"text": "Switch the promotion to Stop/Reset during swap so the source slot restarts before it takes traffic"
+							},
+							{
+								"id": "c",
+								"text": "Enable auto swap on the staging slot so each build reaches production without a manual promotion"
+							},
+							{
+								"id": "d",
+								"text": "Move the app to the Premium tier so the promotion runs on a higher-capacity plan"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "The plan is running at 94% CPU and 91% memory, above the 90% level at which deployments may struggle to finish. The recommended remedy is to add instances to the plan temporarily so the deployment can complete, and then go back to the count the plan had before the release, which leaves the plan's footprint and monthly cost unchanged once the release is live.",
+				"perChoice": {
+					"action:b": "Stop/Reset during swap is meant for apps that stop responding when their settings change. It stops and restarts the source slot, which introduces a slower cold start and greater downtime, and it does nothing to relieve the CPU and memory pressure on the plan.",
+					"action:c": "Auto swap only removes the manual promotion step. The promotion still runs on the same plan that is already at its resource limits, so it does not address why the promotions are failing.",
+					"action:d": "Moving the app to the Premium tier changes the plan's tier and its ongoing cost permanently, which conflicts with the requirement that the plan keep its current footprint and monthly cost once the release is live."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-best-practices"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-staging-slots"
+				}
+			],
+			"subtopics": [
+				"deployment-slot-promotion",
+				"app-service-plan-capacity",
+				"release-deployment-troubleshooting"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5WC8Y0KT497EE0V40ZE8EDS",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an App Service web app with the configuration shown in the exhibit. The release team has asked you to advise on the caching configuration that suits this particular type of application, and on how builds should reach customers, because the app is a content-management site rather than a code-only web app. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"App Service plan tier",
+							"PremiumV3"
+						],
+						[
+							"Application type",
+							"WordPress-based content site"
+						],
+						[
+							"Local cache setting",
+							"Enabled"
+						],
+						[
+							"Instance count",
+							"3"
+						]
+					]
+				},
+				"statement": "The release engineer should {{cache}} and should {{release}}.",
+				"slots": [
+					{
+						"id": "cache",
+						"options": [
+							{
+								"id": "a",
+								"text": "Disable local cache in the application configuration"
+							},
+							{
+								"id": "b",
+								"text": "Keep local cache in the application configuration and add a nonproduction slot"
+							},
+							{
+								"id": "c",
+								"text": "Keep local cache in the application configuration and add instances to the plan"
+							},
+							{
+								"id": "d",
+								"text": "Keep local cache in the application configuration and swap releases from a nonproduction slot"
+							}
+						]
+					},
+					{
+						"id": "release",
+						"options": [
+							{
+								"id": "a",
+								"text": "Deploy each build to a nonproduction slot and promote it by swapping"
+							},
+							{
+								"id": "b",
+								"text": "Deploy each build straight to the production slot continuously"
+							},
+							{
+								"id": "c",
+								"text": "Deploy each build to a nonproduction slot and let it reach production automatically"
+							},
+							{
+								"id": "d",
+								"text": "Deploy each build to the production slot during a maintenance window"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"cache": "a",
+				"release": "a"
+			},
+			"explanation": {
+				"correct": "Local cache is not a recommended choice for content-management sites such as WordPress, and the app in the exhibit is a WordPress-based content site, so local cache should be turned off in the application's configuration. Independently of the cache, the recommended release pattern for an App Service is to deploy to a nonproduction slot, validate the build, and then promote it by swapping, rather than continuously deploying to the production slot.",
+				"perChoice": {
+					"cache:b": "Pairing local cache with deployment slots avoids deployment downtime for applications suited to local cache, but it does not make local cache appropriate for this content-management application, so the cache setting still needs to change.",
+					"cache:c": "Adding instances reduces load per instance but leaves the unsuitable caching configuration in place, so it does not resolve the guidance that local cache is not recommended for content-management sites.",
+					"cache:d": "Swapping releases from a nonproduction slot is the right release pattern for apps that use local cache, but keeping local cache enabled on a content-management site such as WordPress is not recommended, so the cache setting should be turned off.",
+					"release:b": "Continuously deploying to the production slot bypasses the validation gate and the quick swap-back rollback that a nonproduction slot provides.",
+					"release:c": "Automatic promotion without any pre-swap validation is appropriate only when no validation is required; this team needs to validate a candidate release before customers receive it.",
+					"release:d": "Deploying during a maintenance window still exposes customers to the release with no staging environment to validate it, and it does not provide the quick rollback that exchanging environments gives."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-best-practices"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-staging-slots"
+				}
+			],
+			"subtopics": [
+				"deployment-slots",
+				"local-cache"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5WCXZA3GN0Z3RSYV89MRZZH",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an App Service web app that runs a container image pulled from an Azure Container Registry, with the release setup shown in the exhibit. The release team wants every new commit pushed to the main branch to be compiled into an image, given a traceable label, and deployed into the staging slot automatically, so that no one has to run a deployment step by hand. Which feature should the release engineer configure?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"App name",
+							"contoso-shop-web"
+						],
+						[
+							"Deployment method",
+							"Container image"
+						],
+						[
+							"Image source",
+							"Azure Container Registry (crcontoso.azurecr.io)"
+						],
+						[
+							"Repository branch",
+							"main"
+						],
+						[
+							"Plan tier",
+							"Premium v3 (P0v3)"
+						],
+						[
+							"Slots in use",
+							"staging"
+						],
+						[
+							"Current release process",
+							"Engineer builds the image, pushes it to the registry, and sets the image tag on the staging slot by hand"
+						]
+					]
+				},
+				"statement": "The release engineer should configure {{slot1}} so that each new commit on the main branch is built, tagged, and deployed into the staging slot automatically.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "Deployment Center"
+							},
+							{
+								"id": "b",
+								"text": "Deployment slots"
+							},
+							{
+								"id": "c",
+								"text": "Kudu"
+							},
+							{
+								"id": "d",
+								"text": "App Service Environment"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a"
+			},
+			"explanation": {
+				"correct": "The Deployment Center can create a continuous-delivery pipeline for a container repository and a branch, automatically building, tagging, and deploying each new commit to the selected slot. Because this app runs a container image from Azure Container Registry and the team wants commits on main to land in the staging slot without manual steps, configuring the Deployment Center is the right action.",
+				"perChoice": {
+					"slot1:b": "Deployment slots provide the separate live environments that receive the builds, but they do not build, tag, or deploy repository commits by themselves; they are the destination of the pipeline, not the place where the pipeline is defined.",
+					"slot1:c": "Kudu supplies HTTP deployment endpoints such as zipdeploy/ and processes incoming deployments, but it is the underlying deployment engine rather than the place where a container repository and branch are wired into an automated build-and-deploy workflow.",
+					"slot1:d": "An App Service Environment provisions and isolates a set of App Service resources for an organization; it is not the feature that builds, tags, and deploys each commit to a chosen slot."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-best-practices"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-staging-slots"
+				}
+			],
+			"subtopics": [
+				"deployment-slots",
+				"container-deployment",
+				"continuous-delivery"
+			],
+			"reviewed": false
+		}
+	]
+}

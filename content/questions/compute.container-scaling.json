@@ -1,0 +1,1655 @@
+{
+	"skill": "compute.container-scaling",
+	"questions": [
+		{
+			"id": "q_01M5RSVPW8X62RVPQ3E2NJ1MFK",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a container app named orders-worker on the Consumption workload profile that today reacts only to inbound HTTP requests. You need it to grow and shrink with the number of messages waiting in an Azure Service Bus queue, and you need at least one instance running at all times so a consumer is never cold. Which change should you apply to the app?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"name\": \"orders-worker\",\n  \"properties\": {\n    \"configuration\": {\n      \"ingress\": {\n        \"external\": true\n      },\n      \"minReplicas\": 0,\n      \"maxReplicas\": 10,\n      \"scaleRules\": [\n        {\n          \"name\": \"http-scale\",\n          \"http\": {\n            \"metadata\": {\n              \"concurrentRequests\": \"10\"\n            }\n          }\n        }\n      ]\n    }\n  }\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add a custom scale rule that uses a KEDA ScaledObject targeting the Service Bus queue, and set minReplicas to 1."
+					},
+					{
+						"id": "b",
+						"text": "Add an HTTP scale rule with concurrentRequests set to 10, and set minReplicas to 1."
+					},
+					{
+						"id": "c",
+						"text": "Add a custom scale rule that uses a KEDA ScaledObject targeting the Service Bus queue, and set minReplicas to 0."
+					},
+					{
+						"id": "d",
+						"text": "Add a TCP scale rule with concurrentConnections set to 10, and set minReplicas to 1."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The autoscaling engine behind Azure Container Apps is KEDA, and custom scale rules built on a KEDA ScaledObject are the rule type used for event sources such as Azure Service Bus, so the app reacts to how many messages are queued rather than to request or connection counts. Setting minReplicas to 1 keeps one instance of the revision running at all times, so the app is never allowed to drop to zero replicas and a consumer stays warm. The ScaledObject-based rule combined with minReplicas of 1 therefore satisfies both parts of the requirement.",
+				"perChoice": {
+					"b": "The rule type does not meet the requirement: an HTTP rule adds or removes replicas based on the number of concurrent inbound requests, which says nothing about the message backlog in the queue. Queue-driven sources such as Azure Service Bus need a custom rule based on a KEDA ScaledObject. The minReplicas value of 1 is appropriate, but on its own it does not deliver queue-based scaling.",
+					"c": "The rule type is right for a queue-driven workload, but minReplicas of 0 still permits the app to scale down to zero replicas whenever the metric falls away, which violates the requirement that an instance is always running. Keeping minReplicas at 1 is what guarantees a permanently available consumer.",
+					"d": "A TCP rule reacts to the number of concurrent connections to the app, not to the number of messages waiting in an Azure Service Bus queue, so the app would not scale out during a backlog. Event sources such as Service Bus require a custom rule based on a KEDA ScaledObject; the minReplicas value of 1 is correct but the rule type is not."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/scale-app"
+				}
+			],
+			"subtopics": [
+				"container-apps-scale-rules",
+				"min-and-max-replicas"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RSYR4R364SQEEAY9QJY4FQ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Container Apps job that drains records arriving in an Azure Event Hubs stream and then stops. The team tried to make the job grow with the number of incoming records by adding an HTTP scale rule to the job definition, but every deployment of the job fails validation and the job never starts extra executions while a backlog builds up. You need the job to launch additional executions as records accumulate in the stream. Which change should you make to the job's configuration?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"properties\": {\n    \"configuration\": {\n      \"triggerType\": \"Event\",\n      \"scale\": {\n        \"rules\": [\n          {\n            \"name\": \"ingress-http-rule\",\n            \"type\": \"http\",\n            \"http\": {\n              \"metadata\": { \"concurrentRequests\": \"10\" }\n            }\n          }\n        ]\n      }\n    },\n    \"template\": {\n      \"containers\": [\n        {\n          \"name\": \"drainer\",\n          \"image\": \"contoso.azurecr.io/event-drainer:2.4.1\"\n        }\n      ]\n    }\n  }\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Replace the HTTP scale rule with a custom rule that uses a KEDA ScaledJob scaler."
+					},
+					{
+						"id": "b",
+						"text": "Replace the HTTP scale rule with a TCP scale rule that counts concurrent connections."
+					},
+					{
+						"id": "c",
+						"text": "Replace the HTTP scale rule with a custom rule that uses a KEDA ScaledObject scaler."
+					},
+					{
+						"id": "d",
+						"text": "Remove the HTTP scale rule and set the minimum number of replicas to 1 so a single instance is always kept running."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Container Apps jobs do not support HTTP or TCP scale rules, which is why the job definition shown here fails validation. Event-driven jobs build their scaling rules from KEDA ScaledJob scalers: replacing the HTTP rule with a custom rule based on a ScaledJob scaler (for example an Event Hubs scaler) makes the job start additional executions as records accumulate in the stream.",
+				"perChoice": {
+					"b": "TCP scale rules are unsupported on Container Apps jobs as well, so swapping the HTTP rule for a TCP rule would still fail validation. TCP rules fit long-running apps whose load is driven by concurrent connections, not jobs that run one execution per event.",
+					"c": "ScaledObject-based custom rules are the pattern for long-running services that continuously consume events. Jobs run one execution per event and therefore use ScaledJob-based scalers, so a ScaledObject rule is the wrong building block here and would not drive extra job executions.",
+					"d": "Removing the HTTP rule clears the validation failure, but the minimum number of replicas only keeps a single instance warm; it does not tie the number of executions to the backlog in the event source, so the job still would not start extra executions as records arrive."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/scale-app"
+				}
+			],
+			"subtopics": [
+				"container-apps-jobs",
+				"scale-rules",
+				"keda-scalers"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RT1RW7CP3PHKQM4ZY723VA",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a web API deployed as an Azure Container App that grows and shrinks based on inbound HTTP concurrency. During a traffic spike you collected the configuration and telemetry values shown below. You need to know how many container instances the platform will target for this revision with these values. Which instance count should you expect?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting or metric",
+						"Value"
+					],
+					"rows": [
+						[
+							"HTTP rule concurrentRequests",
+							"20"
+						],
+						[
+							"Requests received during the last 15 seconds",
+							"55"
+						],
+						[
+							"Instances currently running for the revision",
+							"2"
+						],
+						[
+							"maxReplicas",
+							"8"
+						],
+						[
+							"minReplicas",
+							"1"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "2 replicas"
+					},
+					{
+						"id": "b",
+						"text": "3 replicas"
+					},
+					{
+						"id": "c",
+						"text": "4 replicas"
+					},
+					{
+						"id": "d",
+						"text": "8 replicas"
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "The desired count is calculated by rounding up the current metric value divided by the target metric value: ceil(55 ÷ 20) = ceil(2.75) = 3. The final target is then the smallest of the configured maximum, that desired count, and max(4, 2 × current instances): min(8, 3, max(4, 4)) = min(8, 3, 4) = 3. The configured minimum of 1 is already satisfied, so the platform targets 3 replicas.",
+				"perChoice": {
+					"a": "This is simply today's count, ignoring the request volume that drives the calculation, so it is not the value the platform will target.",
+					"c": "The value max(4, 2 × current instances) is one input to the final minimum, not a floor applied afterward; because the desired count of 3 is lower than 4, the minimum of the three inputs is 3 rather than 4.",
+					"d": "This is only the configured ceiling. The metric-derived desired count of 3 is below that ceiling, so the maximum is not what gets targeted."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/scale-app"
+				}
+			],
+			"subtopics": [
+				"http-autoscaling",
+				"replica-count-calculation",
+				"scale-limits"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RT38YBSXC8967RARQTWJCD",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Standard SKU container group deployment in Azure Container Instances that asks for 36 vCPUs and 260 GB of memory, and the deployment is rejected. The regional usage data collected for your subscription is shown below. You need this workload to run in that region as soon as possible. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"SKU selected for the container group",
+							"Standard"
+						],
+						[
+							"vCPUs asked for by the container group",
+							"36"
+						],
+						[
+							"Memory asked for by the container group",
+							"260 GB"
+						],
+						[
+							"Standard SKU cores already used in the region for this subscription",
+							"8 of 100"
+						],
+						[
+							"Standard SKU container groups already used in the region for this subscription",
+							"3 of 100"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Open an Azure support request with issue type Quota to raise the Standard SKU allowance for vCPUs and GB of memory in the region."
+					},
+					{
+						"id": "b",
+						"text": "Resize the container group request to 30 vCPUs and 220 GB of memory."
+					},
+					{
+						"id": "c",
+						"text": "Deploy the same 36 vCPUs and 260 GB of memory request as a Spot container group in East US 2."
+					},
+					{
+						"id": "d",
+						"text": "Keep the 36 vCPUs and 260 GB of memory request and retry the deployment in the same region after the capacity alert clears."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "A single Standard SKU container group deployment can use at most 31 vCPUs and 240 GB of memory, and these per-deployment ceilings can never be raised. The request for 36 vCPUs and 260 GB of memory sits above both ceilings, so it cannot be deployed as specified. Lowering the request to 30 vCPUs and 220 GB of memory keeps the same container group design inside the published maximums, and the regional quota usage in the exhibit shows plenty of subscription and regional capacity left, so no quota increase is involved.",
+				"perChoice": {
+					"a": "A support request with issue type Quota can only raise the changeable quotas, such as the Standard SKU container group and core counts per region. The per-deployment maximums of 31 vCPUs and 240 GB of memory are hard limits that no request can raise, and the usage data shows the changeable quota is not exhausted.",
+					"c": "Spot container groups support at most 4 vCPUs and 16 GB of memory, provide no virtual network support, and are available only in East US 2, West Europe and West US. A 36 vCPU and 260 GB of memory workload therefore cannot run as a Spot container group either.",
+					"d": "Regional capacity pressure can indeed cause failures for larger groups, but retrying the identical request would not help here because the requested values exceed the published per-deployment maximums for a Standard SKU container group. The deployment stays invalid regardless of how much capacity the region has."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-resource-and-quota-limits"
+				}
+			],
+			"subtopics": [
+				"aci-hard-limits",
+				"aci-quotas"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RT9HMN054X0CBHXK25DXMP",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a container app that runs an API container and a log-forwarding sidecar container on the Consumption workload profile. Every deployment of the app fails with an error about the container resource configuration. You need the deployment to succeed, the app must stay on the Consumption workload profile, and the log-forwarding sidecar must keep the CPU and memory it has today. Which change should you make to the main container?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Container",
+						"Purpose",
+						"resources.cpu",
+						"resources.memory"
+					],
+					"rows": [
+						[
+							"main",
+							"API service",
+							"1.0",
+							"1.25Gi"
+						],
+						[
+							"sidecar",
+							"log forwarder",
+							"0.5",
+							"1.0Gi"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set the main container to 0.5 vCPU and 1.0Gi of memory"
+					},
+					{
+						"id": "b",
+						"text": "Set the main container to 0.5 vCPU and 1.25Gi of memory"
+					},
+					{
+						"id": "c",
+						"text": "Set the main container to 0.75 vCPU and 1.0Gi of memory"
+					},
+					{
+						"id": "d",
+						"text": "Set the main container to 1.5 vCPU and 2.5Gi of memory"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "On the Consumption workload profile, the CPU and memory of all containers in the app are added together and that total must equal one of the supported vCPU/memory combinations (0.25 vCPU/0.5Gi, 0.5 vCPU/1.0Gi, 1.0 vCPU/2.0Gi, 2.0 vCPU/4.0Gi, 4.0 vCPU/8.0Gi). The sidecar already asks for 0.5 vCPU and 1.0Gi, so the main container has to be set to 0.5 vCPU and 1.0Gi, giving the app a total of 1.0 vCPU and 2.0Gi, which is a supported combination. With the current values the app asks for 1.5 vCPU and 2.25Gi in total, which is not one of the supported totals, so the deployment is rejected.",
+				"perChoice": {
+					"b": "Added to the sidecar's 0.5 vCPU and 1.0Gi, this would total 1.0 vCPU and 2.25Gi of memory. That total is not one of the supported vCPU/memory combinations for the Consumption workload profile, so the deployment would still fail.",
+					"c": "Added to the sidecar's 0.5 vCPU and 1.0Gi, this would total 1.25 vCPU and 2.0Gi of memory. That pairing is not one of the supported combinations, so the deployment would still fail.",
+					"d": "Added to the sidecar's 0.5 vCPU and 1.0Gi, this would total 2.0 vCPU and 3.5Gi of memory. That pairing is not one of the supported combinations, so the deployment would still fail."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/containers"
+				}
+			],
+			"subtopics": [
+				"consumption-workload-profile",
+				"container-resources",
+				"resource-sizing"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RTBBZ3Q9HMZVEW26D0A1FG",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an Azure Function deployed on Azure Container Apps that processes messages arriving in an Azure Storage queue. Its current configuration is shown below. In the portal, the control for defining your own scaling criteria is greyed out, so the app only reacts to the criteria the platform derives from the function's triggers. You want the app to also grow with the CPU load of processing those messages. Which change should you apply to the container app?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"id\": \"/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-apps/providers/Microsoft.App/containerApps/orders-func\",\n  \"properties\": {\n    \"kind\": \"functionapp,linux\",\n    \"configuration\": {\n      \"activeRevisionsMode\": \"multiple\",\n      \"scale\": {\n        \"minReplicas\": 0,\n        \"maxReplicas\": 10\n      }\n    },\n    \"template\": {\n      \"containers\": [\n        {\n          \"name\": \"queue-processor\",\n          \"image\": \"myregistry.azurecr.io/orders-func:v3\",\n          \"resources\": { \"cpu\": 0.5, \"memory\": \"1Gi\" }\n        }\n      ]\n    }\n  }\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set properties.configuration.allowScalingRuleOverride to true"
+					},
+					{
+						"id": "b",
+						"text": "Set properties.configuration.activeRevisionsMode to \"single\""
+					},
+					{
+						"id": "c",
+						"text": "Set properties.configuration.scale.minReplicas to 1"
+					},
+					{
+						"id": "d",
+						"text": "Set properties.configuration.scale.maxReplicas to 100"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A function app running on Azure Container Apps is given scaling criteria that the platform derives from the function's triggers and bindings, and the portal's control for adding your own criteria is disabled. Customer-defined criteria — such as a CPU-based rule — are only accepted when allowScalingRuleOverride is enabled in the app's configuration, so turning that setting on lets the CPU rule be added alongside the generated ones.",
+				"perChoice": {
+					"b": "activeRevisionsMode decides whether the app runs a single active revision or several revisions with traffic split between them; it has no effect on whether you are allowed to define your own scaling criteria.",
+					"c": "minReplicas sets the floor of instances kept for the revision (0 is the lowest permitted value). Raising it to 1 keeps one instance warm, but it does not unlock the ability to add customer-defined criteria.",
+					"d": "maxReplicas sets the ceiling of instances for the revision (default 10, with 1,000 as the highest configurable value). Increasing the ceiling only allows more instances once scaling happens; it does not let you define new criteria."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/scale-app"
+				}
+			],
+			"subtopics": [
+				"function-apps-scale-rules",
+				"container-apps-autoscaling"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RTGN2V4A0MGSY37SY3VFYN",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a container app named checkout-api that runs two active revisions with different image versions, and inbound HTTP requests are distributed across those revisions. Each revision has an HTTP scale rule with concurrentRequests of 10 and maxReplicas of 5. You need the app to add instances for a larger burst of simultaneous requests, so you plan to add a scale rule that uses an HTTP criterion with a higher concurrentRequests value. Which approach should you take when applying that new scale rule?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"App or revision item",
+						"Current value"
+					],
+					"rows": [
+						[
+							"properties.configuration.activeRevisionsMode",
+							"multiple"
+						],
+						[
+							"Active revision r1 (version v1.4) share of inbound traffic",
+							"70%"
+						],
+						[
+							"Active revision r2 (version v1.5) share of inbound traffic",
+							"30%"
+						],
+						[
+							"Scale rule on r1",
+							"HTTP, concurrentRequests 10, minReplicas 0, maxReplicas 5"
+						],
+						[
+							"Scale rule on r2",
+							"HTTP, concurrentRequests 10, minReplicas 0, maxReplicas 5"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add the scale rule to the app: a new revision is produced that carries the new rule, the already active revisions continue with the scale rules they were created with, and the traffic split between revisions is changed from the Revision management page."
+					},
+					{
+						"id": "b",
+						"text": "Add the scale rule to the app: a new revision is produced, and that revision automatically receives all of the traffic as soon as it becomes active, with no need to revisit the Revision management page."
+					},
+					{
+						"id": "c",
+						"text": "Add the scale rule to the app and it is applied to the already active revisions in place, so the traffic split between the existing revisions is changed from the Revision management page."
+					},
+					{
+						"id": "d",
+						"text": "Add the scale rule to the app and it is applied to the already active revisions in place, and the revision with the higher version automatically receives all of the traffic."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "In Azure Container Apps, adding or editing a scale rule produces a new revision, an immutable snapshot of the app that carries the rule you just added. Revisions that are already active are not rewritten, so each of them keeps the scale rule it was created with, and you decide how traffic is divided between revisions from the Revision management page. The correct option matches that behaviour exactly.",
+				"perChoice": {
+					"b": "A new revision does not capture the traffic on its own. Allocation across revisions is something you set yourself in the Revision management page, so the new revision starts with whatever weight you give it and receives traffic only in proportion to that weight.",
+					"c": "Existing revisions are not patched in place when a rule is added. Adding a scale rule produces a new revision, and the revisions that are already active keep the scale rules they were created with, so the new criterion applies to the newly produced revision rather than being written into the running ones.",
+					"d": "This option is wrong twice over: a rule added at the app level is not applied in place to the revisions that are already active, and a new revision does not automatically absorb all of the traffic, since you assign the weights yourself."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/scale-app"
+				}
+			],
+			"subtopics": [
+				"container-apps-revisions",
+				"container-apps-scale-rules",
+				"container-apps-traffic-splitting"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SV11ZMPY1F6TS8VDBNQW8H",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Standard SKU container group deployment in Azure Container Instances that requests the settings shown below. The service rejects the deployment and none of the containers start. Every container in the group mounts four data volumes, and the solution needs all of them mounted at run time. You need the complete solution running in that region. Which change should you apply?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Requested value"
+					],
+					"rows": [
+						[
+							"SKU",
+							"Standard"
+						],
+						[
+							"Containers in the group",
+							"6"
+						],
+						[
+							"Volumes mounted in the group",
+							"24"
+						],
+						[
+							"Ports exposed on the group's IP",
+							"3"
+						],
+						[
+							"Total vCPUs requested",
+							"12"
+						],
+						[
+							"Memory requested",
+							"32 GB"
+						],
+						[
+							"Storage requested",
+							"40 GB"
+						],
+						[
+							"Standard SKU container groups already used in the region by this subscription",
+							"12 of 100"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Split the containers and volumes across two container groups so both groups stay within the volume limit"
+					},
+					{
+						"id": "b",
+						"text": "Ask Azure support to raise the volume limit for container groups, so that more volumes can be mounted in one group"
+					},
+					{
+						"id": "c",
+						"text": "Deploy the same containers and volumes in one group by switching the group to the Spot SKU"
+					},
+					{
+						"id": "d",
+						"text": "Deploy the containers and volumes in one group into a virtual network to get a higher volume limit"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The requested 24 volumes break the per-group ceiling, which is a hard limit for a single container group (60 containers, 20 volumes and 5 ports per IP are the published hard limits). Because that ceiling cannot be moved by any support request, the only way to keep every container and every required mount is to spread the workload over more than one group. Two groups of three containers with twelve volumes each are both inside the ceiling, and the subscription already has headroom (12 of 100 Standard SKU container groups used in the region), so the deployment is accepted and the whole solution runs.",
+				"perChoice": {
+					"b": "The number of volumes that a single group may mount is a hard limit, so a request to raise it is never approved; quota requests only apply to changeable quotas such as the number of Standard SKU container groups or cores per region per subscription.",
+					"c": "The Spot SKU has far smaller maximums (4 vCPUs, 16 GB of memory, 50 GB of storage), is a preview feature offered only in East US 2, West Europe and West US, and it does not lift the per-group limit on mounted volumes, so this deployment would still be rejected.",
+					"d": "Deploying into a virtual network changes the CPU and memory maximums (31 vCPUs and 240 GB of memory, the same as a general deployment), but the per-group hard limits on containers, mounted volumes and ports per IP are unchanged, so the request is still rejected."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-resource-and-quota-limits"
+				}
+			],
+			"subtopics": [
+				"aci-resource-limits",
+				"container-group-sizing"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SVAMD3SEMS4C4RBT3QQ3PW",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have five container apps on the Consumption workload profile, and each one needs a different autoscaling behavior before it goes into production. Which configuration should each app use? Drag each configuration to the app that needs it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Container app",
+						"Role",
+						"What the app must do"
+					],
+					"rows": [
+						[
+							"storefront-web",
+							"Public storefront",
+							"Add copies when the number of requests arriving at the same time grows past what a single copy can serve"
+						],
+						[
+							"relay-gateway",
+							"Gateway for client connections",
+							"Add copies when the number of connections the app holds open grows"
+						],
+						[
+							"billing-worker",
+							"Batch worker",
+							"Add copies when processor usage inside the app is high, even though incoming traffic stays flat"
+						],
+						[
+							"ledger-api",
+							"Internal bookkeeping service",
+							"Keep exactly one copy running overnight even though nothing calls it"
+						],
+						[
+							"burst-api",
+							"Public API with spiky traffic",
+							"Never run more copies than the ceiling the team agreed on during a large spike"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "type: http"
+					},
+					{
+						"id": "b",
+						"text": "type: tcp"
+					},
+					{
+						"id": "c",
+						"text": "type: custom"
+					},
+					{
+						"id": "d",
+						"text": "minReplicas"
+					},
+					{
+						"id": "e",
+						"text": "maxReplicas"
+					}
+				],
+				"slots": [
+					{
+						"id": "storefront-web",
+						"label": "storefront-web"
+					},
+					{
+						"id": "relay-gateway",
+						"label": "relay-gateway"
+					},
+					{
+						"id": "billing-worker",
+						"label": "billing-worker"
+					},
+					{
+						"id": "ledger-api",
+						"label": "ledger-api"
+					},
+					{
+						"id": "burst-api",
+						"label": "burst-api"
+					}
+				]
+			},
+			"key": {
+				"storefront-web": "a",
+				"relay-gateway": "b",
+				"billing-worker": "c",
+				"ledger-api": "d",
+				"burst-api": "e"
+			},
+			"explanation": {
+				"correct": "The three built-in criterion types cover different signals, and the two replica limits control how many copies exist. The HTTP rule counts simultaneous inbound requests, so it is the right criterion for storefront-web. The TCP rule counts open client connections, which is what relay-gateway needs. Processor usage is not covered by the HTTP or TCP criteria, so billing-worker requires a custom rule (a KEDA-based rule that watches that metric). minReplicas is the floor of copies a revision keeps running, which is how ledger-api holds one copy overnight, and maxReplicas is the ceiling on copies per revision, which is the agreed limit burst-api must never pass.",
+				"perChoice": {
+					"a": "Fits storefront-web: an HTTP rule adds copies based on the number of simultaneous inbound requests, exactly the signal the public storefront grows on.",
+					"b": "Fits relay-gateway: a TCP rule adds copies based on the number of open client connections rather than on the number of requests.",
+					"c": "Fits billing-worker: processor load is not one of the built-in HTTP or TCP criteria, so it can only be watched by a custom rule that monitors that metric.",
+					"d": "Fits ledger-api: minReplicas sets the minimum number of copies a revision keeps running, so a copy stays available through the night with no incoming calls.",
+					"e": "Fits burst-api: maxReplicas caps how many copies a revision may create, which is the ceiling the team agreed on for the spike."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/scale-app"
+				}
+			],
+			"subtopics": [
+				"scale-rule-types",
+				"replica-limits"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SVCC1AX2FJ0H15P3CN8201",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have four Azure Container Apps whose demand each arrives in a different form, and none of them currently defines a scale rule that matches its workload. You need every app to add and remove capacity according to the signal that actually reflects its demand, so that busy apps grow and quiet apps shrink. Which scale rule should each app use? Drag each scale rule to the app that needs it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"App",
+						"What the app does",
+						"What drives its demand",
+						"Scale configuration today"
+					],
+					"rows": [
+						[
+							"shopfront",
+							"Public storefront and checkout pages",
+							"Inbound requests from browsers and mobile apps",
+							"No rule defined"
+						],
+						[
+							"relay",
+							"Device gateway that holds client sessions open and forwards each one",
+							"Number of sessions open at the same time",
+							"No rule defined"
+						],
+						[
+							"processor",
+							"Long-running service that reconciles records",
+							"Processor and memory usage while it catches up",
+							"No rule defined"
+						],
+						[
+							"importer",
+							"Task that runs from beginning to end and then exits",
+							"Number of records waiting in the queue",
+							"No rule defined"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "HTTP scale rule"
+					},
+					{
+						"id": "b",
+						"text": "TCP scale rule"
+					},
+					{
+						"id": "c",
+						"text": "Custom scale rule with a KEDA ScaledObject"
+					},
+					{
+						"id": "d",
+						"text": "Custom scale rule with a KEDA ScaledJob"
+					}
+				],
+				"slots": [
+					{
+						"id": "slot-shopfront",
+						"label": "shopfront - public web storefront"
+					},
+					{
+						"id": "slot-relay",
+						"label": "relay - device gateway with long-lived sessions"
+					},
+					{
+						"id": "slot-processor",
+						"label": "processor - long-running reconciliation service"
+					},
+					{
+						"id": "slot-importer",
+						"label": "importer - queue-fed task that runs to completion"
+					}
+				]
+			},
+			"key": {
+				"slot-shopfront": "a",
+				"slot-relay": "b",
+				"slot-processor": "c",
+				"slot-importer": "d"
+			},
+			"explanation": {
+				"correct": "Each app's scale rule must be driven by the signal that reflects its own demand. The shopfront is a request-driven web app, so it takes an HTTP rule; the relay's demand is the number of simultaneous connections, so it takes a TCP rule; the processor is a long-running service whose demand shows up as processor and memory usage, which only a custom rule can observe, and long-running services use ScaledObject-based custom rules; the importer is a Container Apps job that must start additional executions as the queue backlog grows, and event-driven jobs use ScaledJob-based custom rules.",
+				"perChoice": {
+					"a": "Belongs with shopfront: its demand arrives as inbound requests from browsers and mobile apps, and HTTP rules are the ones intended for request-driven web workloads, adding a replica once concurrent requests cross the configured threshold.",
+					"b": "Belongs with relay: what grows for this app is the number of client sessions held open at the same time, so the rule must watch concurrent connections, which is what TCP rules do for connection-count-driven workloads.",
+					"c": "Belongs with processor: processor and memory usage are only observable through a custom rule, and because this app is a long-running service that stays up, the ScaledObject form of custom rules is the right one.",
+					"d": "Belongs with importer: the app is a Container Apps job that runs to completion and exits, and such jobs cannot use HTTP or TCP rules at all; event-driven jobs are scaled with ScaledJob-based custom rules so extra executions start as records accumulate."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/scale-app"
+				}
+			],
+			"subtopics": [
+				"scale-rule-types",
+				"custom-keda-scaling",
+				"container-app-jobs"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SVFHVYEX730FYB5E44KEYJ",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Your team submits container group deployments to Azure Container Instances in the East US region, and the current regional usage for your subscription is shown below. You need to tell your operations team what happens to each of the four deployments as it is submitted. Drag each deployment to the outcome it produces.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Usage metric (East US, this subscription)",
+						"Current usage",
+						"Limit"
+					],
+					"rows": [
+						[
+							"Standard SKU container groups",
+							"92",
+							"100"
+						],
+						[
+							"Standard SKU cores",
+							"95",
+							"100"
+						],
+						[
+							"Container group creates, current hour",
+							"285",
+							"300"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Group A — Standard SKU, 12 vCPUs, 32 GB memory, 6 containers, 4 volumes, 2 ports on one IP address."
+					},
+					{
+						"id": "i2",
+						"text": "Group B — Standard SKU, 36 vCPUs, 120 GB memory, 4 containers, 2 volumes, 1 port on one IP address."
+					},
+					{
+						"id": "i3",
+						"text": "Group C — Standard SKU, 2 vCPUs, 4 GB memory, 8 containers, 3 volumes, 2 ports on one IP address."
+					},
+					{
+						"id": "i4",
+						"text": "Group D — Standard SKU, 4 vCPUs, 8 GB memory, 2 containers, image published only for linux/arm64."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Rejected until the region-level allowance is raised"
+					},
+					{
+						"id": "s2",
+						"label": "Rejected permanently, because the request is above a ceiling that no quota request can raise"
+					},
+					{
+						"id": "s3",
+						"label": "Accepted, and every container in the group starts"
+					},
+					{
+						"id": "s4",
+						"label": "The group is created, but its container never reaches a running state"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Group A stays inside every per-deployment maximum (31 vCPUs, 240 GB memory, 60 containers, 20 volumes, 5 ports per IP for a Standard SKU group), but its 12 vCPUs push the subscription's Standard SKU cores in East US from 95 to 107, above the 100-core regional allowance, so it is rejected until that allowance is raised through a support request with issue type Quota. Group B asks for 36 vCPUs, above the 31-vCPU hard maximum for a Standard SKU container group; hard limits can never be raised by a quota request, so it is rejected permanently. Group C is inside all hard limits and inside all regional quotas (cores 95+2=97, container groups 92+1=93, creates 285+1=286), so it is accepted and its containers start. Group D is within the hard limits and quotas, but its image is published only for linux/arm64 while Azure Container Instances supports only x64 (AMD64) images, so the group is created and the container fails to start.",
+				"perChoice": {
+					"i1": "Group A goes with 'Rejected until the region-level allowance is raised'. Its per-deployment numbers are all inside the Standard SKU hard limits, so the rejection comes from the subscription's regional Standard SKU cores usage (95 + 12 = 107 against a limit of 100), and that quota is eligible for an increase through an Azure support request with issue type Quota.",
+					"i2": "Group B goes with 'Rejected permanently, because the request is above a ceiling that no quota request can raise'. 36 vCPUs exceeds the 31-vCPU hard limit for a Standard SKU container group, and requests against hard limits are never approved, so reducing the request or changing SKU is the only way forward.",
+					"i3": "Group C goes with 'Accepted, and every container in the group starts'. Its 2 vCPUs, 4 GB memory, 8 containers, 3 volumes and 2 ports are all inside the hard limits, and it fits within the remaining regional quotas for cores, container groups and hourly creates.",
+					"i4": "Group D goes with 'The group is created, but its container never reaches a running state'. Only x64 (AMD64) images are supported, so deploying an ARM64-only image can leave the container unable to start even though the group itself is created."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-resource-and-quota-limits"
+				}
+			],
+			"subtopics": [
+				"aci-quota-limits",
+				"container-instance-sizing"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SVMDW795GG9Y3SSKX2CKCB",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have five container workloads running in production, and the table shows what the operations team observed for each of them. Every observation has a different root cause in that workload's configuration, and one of the details listed below matches no observation at all. You need each behavior explained so the team can correct the settings that produce it. Which configuration detail belongs to each workload? Drag each detail to the workload it explains.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Workload",
+						"Observed behavior"
+					],
+					"rows": [
+						[
+							"storefront-web (Azure Container Apps)",
+							"The instance count fell to 0 during a quiet weekend and has stayed there since, and no incoming request has brought the app back up."
+						],
+						[
+							"nightly-batch (Azure Container Apps)",
+							"After the last instance finished its work, it stayed alive for roughly five minutes before it was removed. Instances shed earlier during the same busy period went away immediately."
+						],
+						[
+							"load-probe (Azure Container Apps)",
+							"Capacity is decided by processor and memory usage rather than by inbound connections, and the instance count is recalculated only about every half minute."
+						],
+						[
+							"catalog-api (Azure Container Apps)",
+							"The app runs two revisions. A newly added rule shows up in the app's settings, but the revision that keeps taking all of the requests never changes its instance count because of it."
+						],
+						[
+							"batch-runner (Azure Container Instances)",
+							"The workload must absorb a tenfold jump in parallel jobs during the nightly window, and the team expects additional instances to appear on their own when the load rises."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Ingress is switched off, minReplicas was never set, and no custom rule is defined, so nothing can start the app back up."
+					},
+					{
+						"id": "i2",
+						"text": "The cool down period (300 seconds by default) applies only when scaling in from the final replica to zero, not to any other replica."
+					},
+					{
+						"id": "i3",
+						"text": "Custom rules based on KEDA ScaledObject are evaluated on a polling interval (30 seconds by default); HTTP and TCP rules are not affected by it."
+					},
+					{
+						"id": "i4",
+						"text": "Adding or editing a scale rule creates a new revision, so the revision already serving traffic keeps the rules it was created with."
+					},
+					{
+						"id": "i5",
+						"text": "Azure Container Instances offers no built-in autoscaling; a deployment is bounded by its own resource limits and by the per-subscription quota for the region."
+					},
+					{
+						"id": "i6",
+						"text": "maxReplicas defaults to 10 for a revision, so a burst cannot grow the app beyond that many instances."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "storefront-web"
+					},
+					{
+						"id": "s2",
+						"label": "nightly-batch"
+					},
+					{
+						"id": "s3",
+						"label": "load-probe"
+					},
+					{
+						"id": "s4",
+						"label": "catalog-api"
+					},
+					{
+						"id": "s5",
+						"label": "batch-runner"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "storefront-web is explained by i1: with ingress disabled and neither minReplicas nor a custom rule configured, the app scales to zero and nothing can start it again, so no request wakes it up. nightly-batch is explained by i2: the default 300-second cool down period only delays scaling in from the final replica to zero, which is why only the last instance lingered about five minutes while earlier replicas were removed immediately. load-probe is explained by i3: capacity driven by processor and memory comes from a custom (KEDA ScaledObject) rule, and such rules are evaluated on the default 30-second polling interval, which does not apply to HTTP or TCP rules. catalog-api is explained by i4: adding a scale rule creates a new revision, so the revision that already carries the traffic keeps the rules it was created with and ignores the newly added one. batch-runner is explained by i5: Azure Container Instances has no built-in autoscaling, so extra instances never appear on their own and capacity is limited by per-deployment resource limits and the per-subscription regional quota. Item i6 matches no workload.",
+				"perChoice": {
+					"i1": "storefront-web: the app sat at zero instances and no incoming request restarted it, which is the documented outcome when ingress is disabled and neither minReplicas nor a custom scale rule is set.",
+					"i2": "nightly-batch: only the final replica lingered for about five minutes (300 seconds) while replicas shed earlier vanished at once, matching the cool down period that applies only when scaling in from the last replica to zero.",
+					"i3": "load-probe: capacity is set by processor and memory usage, so a custom rule is in play, and the count changes about every 30 seconds, which is the default polling interval for custom rules; HTTP and TCP rules are not governed by it.",
+					"i4": "catalog-api: the newly added rule had no effect on the revision still taking all traffic because adding or editing a scale rule creates a new revision and the earlier revision keeps the rules it was created with.",
+					"i5": "batch-runner: Azure Container Instances does not scale on its own, so the expected extra instances never appear; the deployment is instead bounded by its own resource limits and by the subscription's quota in that region.",
+					"i6": "Matches no workload: the default of 10 max replicas would only explain a ceiling being hit, and none of the five observations involves running out of instances at ten; every symptom traces to a different setting."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/scale-app"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-resource-and-quota-limits"
+				}
+			],
+			"subtopics": [
+				"autoscaling-troubleshooting",
+				"scale-rules",
+				"container-instances-limits"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SVVKBFHPE0JSGH3FCAJ3FC",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have four container workloads in Azure Container Apps. Each one needs one adjustment before it goes to production so that it behaves the way its owner has requested. Which change should you apply to each workload? Drag each change to the workload it applies to.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Workload",
+						"Current configuration",
+						"Requested behavior"
+					],
+					"rows": [
+						[
+							"orders-consumer — queue-backed worker",
+							"Grows with the number of messages waiting in an Azure Service Bus queue; two revisions are active and both consume from the queue",
+							"Only the revision built for queue-driven growth should consume from the queue"
+						],
+						[
+							"audit-sweeper — Event Hubs worker",
+							"Container Apps job that reads records from an Azure Event Hubs stream and then exits; nothing currently controls how many executions run",
+							"Launch additional executions while records are waiting in the stream"
+						],
+						[
+							"stateful-orders — actor-based app",
+							"Uses Dapr actors; an HTTP rule is defined; the app drops to zero instances whenever it is idle",
+							"Remain available at all times while still adding capacity during busy periods"
+						],
+						[
+							"metric-gateway — long-running service",
+							"Responds to inbound requests today and must react to CPU utilization instead",
+							"Add capacity as CPU utilization rises"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Set activeRevisionsMode to single"
+					},
+					{
+						"id": "b",
+						"text": "Build the custom rule from a KEDA ScaledObject scaler"
+					},
+					{
+						"id": "c",
+						"text": "Build the custom rule from a KEDA ScaledJob scaler"
+					},
+					{
+						"id": "d",
+						"text": "Set minReplicas to 1"
+					},
+					{
+						"id": "e",
+						"text": "Set minReplicas to 0"
+					},
+					{
+						"id": "f",
+						"text": "Define an HTTP scale rule with concurrentRequests of 10"
+					},
+					{
+						"id": "g",
+						"text": "Set allowScalingRuleOverride to true"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "orders-consumer — queue-backed worker"
+					},
+					{
+						"id": "s2",
+						"label": "audit-sweeper — Event Hubs worker"
+					},
+					{
+						"id": "s3",
+						"label": "stateful-orders — actor-based app"
+					},
+					{
+						"id": "s4",
+						"label": "metric-gateway — long-running service"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "c",
+				"s3": "d",
+				"s4": "b"
+			},
+			"explanation": {
+				"correct": "orders-consumer already reacts to queue depth through a non-HTTP event source, so its problem is that two revisions are active at once; switching the app to single revision mode leaves only the revision intended for queue-driven growth consuming messages. audit-sweeper is an event-driven Container Apps job: jobs accept neither HTTP nor TCP criteria, and their custom rules are built from KEDA ScaledJob scalers, so the ScaledJob item is what launches extra executions as the backlog builds. stateful-orders uses Dapr actors, which cannot be scaled down to zero, so a floor of one instance keeps it reachable continuously while autoscaling can still add replicas during busy periods. metric-gateway is a long-running service that must follow CPU utilization, and CPU-driven custom rules for long-running services are built from KEDA ScaledObject scalers.",
+				"perChoice": {
+					"a": "Belongs to orders-consumer: because the app scales on a non-HTTP event source (Service Bus), single revision mode is the documented configuration that keeps only the intended revision active for queue-driven growth.",
+					"b": "Belongs to metric-gateway: a long-running service that must follow CPU utilization uses a custom rule built from the KEDA ScaledObject scaler.",
+					"c": "Belongs to audit-sweeper: an event-driven job builds its custom rule from the KEDA ScaledJob scaler, and jobs cannot use HTTP or TCP criteria, so this is what adds executions as records accumulate.",
+					"d": "Belongs to stateful-orders: Dapr actor apps cannot be scaled to zero, so a minimum of one instance keeps the app available at all times while extra replicas can still be added under load.",
+					"e": "Fits no slot: a minimum of zero permits the app to lose all instances, which the Dapr actor app cannot tolerate, and it does not provide event-driven execution growth, revision selection, or CPU-based growth for the other workloads.",
+					"f": "Fits no slot: jobs cannot use HTTP criteria, the queue worker already reacts to queue depth, the actor app needs a guaranteed instance rather than a request threshold, and the CPU-driven service needs a CPU signal.",
+					"g": "Fits no slot: allowScalingRuleOverride is relevant only when an Azure Function runs on Container Apps and the team wants to define its own scaling criteria; none of these workloads is such a function."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/scale-app"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/containers"
+				}
+			],
+			"subtopics": [
+				"container-apps-autoscaling",
+				"keda-scale-rules",
+				"revision-mode"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SW1WYWM3ZT53J7TJEVXWNE",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have four Azure Container Apps deployed in the same Container Apps environment. The table shows the configuration of each app. You need to predict what the platform does for each of them when the app has nothing to process, so that the operations team can decide which apps should remain switched on overnight and which should not. Drag each app to the behavior the platform gives it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"App",
+						"Configuration"
+					],
+					"rows": [
+						[
+							"orders-api",
+							"ingress enabled; minReplicas 0; HTTP scale rule"
+						],
+						[
+							"settlement-worker",
+							"ingress enabled; minReplicas 1; custom CPU scale rule"
+						],
+						[
+							"chat-gateway",
+							"ingress enabled; minReplicas 0; HTTP scale rule; Dapr actors enabled"
+						],
+						[
+							"telemetry-agent",
+							"ingress disabled; minReplicas not set; no scale rule defined"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "item-1",
+						"text": "orders-api"
+					},
+					{
+						"id": "item-2",
+						"text": "settlement-worker"
+					},
+					{
+						"id": "item-3",
+						"text": "chat-gateway"
+					},
+					{
+						"id": "item-4",
+						"text": "telemetry-agent"
+					}
+				],
+				"slots": [
+					{
+						"id": "slot-a",
+						"label": "Empties out while idle and can be woken by a new request"
+					},
+					{
+						"id": "slot-b",
+						"label": "Always keeps at least one instance"
+					},
+					{
+						"id": "slot-c",
+						"label": "Can never be reduced to no instances"
+					},
+					{
+						"id": "slot-d",
+						"label": "Reaches no instances and stays there with no way to restart"
+					}
+				]
+			},
+			"key": {
+				"slot-a": "item-1",
+				"slot-b": "item-2",
+				"slot-c": "item-3",
+				"slot-d": "item-4"
+			},
+			"explanation": {
+				"correct": "Each app's idle behavior follows from its own configuration. orders-api has minReplicas 0, working ingress and an HTTP scale rule, so the platform may remove every instance while there is nothing to do, and an arriving request starts it again. settlement-worker sets minReplicas to 1, which is the documented way to guarantee a revision always has a running instance. chat-gateway uses Dapr actors, and scaling to zero is not supported for apps that use Dapr actors because their in-memory state is not tied to the actor identity or lifetime, so its minReplicas of 0 cannot empty it out. telemetry-agent has ingress disabled, does not set minReplicas (which defaults to 0) and defines no scale rule, so it scales to zero and has no way to start back up.",
+				"perChoice": {
+					"item-1": "orders-api: minReplicas 0 with an HTTP scale rule and working ingress, so the platform is free to remove all instances while there is nothing to process, and a new inbound request brings the app back. It is not the app that is never allowed to empty out (that is the Dapr case) and not the app that ends up empty with no way to start again, because ingress is enabled and a rule can trigger a scale out.",
+					"item-2": "settlement-worker: minReplicas is set to 1, so a revision always has a running instance and the app never drops to no instances. It is also not the app that empties out and can be woken by a request, because the floor of one instance applies regardless of the custom CPU rule.",
+					"item-3": "chat-gateway: Dapr actors are enabled, and scaling to zero is not supported for apps using Dapr actors because their in-memory representation is not tied to the actor identity or lifetime, so the platform will never reduce this app to no instances even though minReplicas is 0.",
+					"item-4": "telemetry-agent: ingress is disabled, minReplicas is not set (it defaults to 0) and no scale rule is defined, so the app scales to zero and, with no ingress and no trigger to act on, has no way of starting back up. This differs from orders-api, whose ingress and rule allow it to be woken by a request."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/scale-app"
+				}
+			],
+			"subtopics": [
+				"scale-to-zero",
+				"min-max-replicas",
+				"dapr-actors"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SWDYY8R75873XKFMQSJ40B",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a container app named catalog-api that runs on the Consumption workload profile. Its current revision runs a single API container with 0.5 vCPU and 1.0 GiB of memory. You need the API container itself to run with 1.0 vCPU and 2.0 GiB, and inbound requests must keep being served while the change is rolled out. Which update should you apply?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"name\": \"catalog-api\",\n  \"properties\": {\n    \"configuration\": {\n      \"activeRevisionsMode\": \"single\"\n    },\n    \"template\": {\n      \"scale\": {\n        \"minReplicas\": 1,\n        \"maxReplicas\": 5\n      },\n      \"containers\": [\n        {\n          \"name\": \"api\",\n          \"image\": \"myregistry.azurecr.io/catalog-api:v3\",\n          \"resources\": {\n            \"cpu\": 0.5,\n            \"memory\": \"1Gi\"\n          }\n        }\n      ]\n    }\n  }\n}"
+				},
+				"statement": "The appropriate action is {{sizing}}.",
+				"slots": [
+					{
+						"id": "sizing",
+						"options": [
+							{
+								"id": "a",
+								"text": "Update the container CPU and memory values in the app's template so a new revision uses the updated allocation."
+							},
+							{
+								"id": "b",
+								"text": "Update the running revision's CPU and memory values in place so the new allocation applies immediately."
+							},
+							{
+								"id": "c",
+								"text": "Increase maxReplicas in the app configuration so the existing revision receives more CPU and memory."
+							},
+							{
+								"id": "d",
+								"text": "Add another container to the template with 0.5 vCPU and 1.0 GiB so the revision's total allocation increases."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"sizing": "a"
+			},
+			"explanation": {
+				"correct": "Azure Container Apps doesn't support vertical scaling, so the CPU and memory of a running revision cannot be resized in place. The container CPU and memory values live in the app's template, and any change to the template produces a new revision, so updating those values and letting the new revision take over is how the API container ends up running with 1.0 vCPU and 2.0 GiB while inbound requests keep being served. On the Consumption plan, the 1.0 vCPU / 2.0 GiB pairing is one of the supported vCPU and memory combinations.",
+				"perChoice": {
+					"sizing:b": "Vertical scaling isn't supported in Azure Container Apps, so the CPU and memory of a running revision cannot be edited in place. Those values must be changed in the template, which creates a new revision.",
+					"sizing:c": "maxReplicas controls how many replicas a revision runs, not how much CPU or memory each replica receives, so raising it does not enlarge the container.",
+					"sizing:d": "Adding a second container does not give the existing API container more CPU and memory. On the Consumption plan, all containers in an app share one fixed vCPU and memory allocation (1.0 vCPU / 2.0 GiB here) that would be divided between them, and it also changes the app's architecture."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/scale-app"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/containers"
+				}
+			],
+			"subtopics": [
+				"vertical-scaling",
+				"revision-management",
+				"consumption-plan-sizing"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TC7877FV74EMTPFGADPJTS",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a container app named vision-scorer that serves an image-classification model. Every deployment attempt fails with an error about the total size of the app's container images, so no instance of the app ever starts and inbound requests are refused. The team cannot compress the model file, replace it with a smaller format, or split it across several images, and the app must serve requests without any code change. You need the app to deploy and run in that region today. Which change should you apply?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Workload profile",
+							"Consumption"
+						],
+						[
+							"Container image",
+							"contoso.azurecr.io/vision-scorer:2026-10-20"
+						],
+						[
+							"Total size of the app's container images",
+							"9.5 GB"
+						],
+						[
+							"Container CPU and memory",
+							"1.0 vCPU / 2.0 GiB"
+						],
+						[
+							"minReplicas / maxReplicas",
+							"0 / 10"
+						]
+					]
+				},
+				"statement": "To make the deployment succeed, you should {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Assign the app to a Dedicated workload profile."
+							},
+							{
+								"id": "b",
+								"text": "Keep the app on the Consumption workload profile and lower the container's CPU and memory requests."
+							},
+							{
+								"id": "c",
+								"text": "Keep the app on the Consumption workload profile and raise the app's maxReplicas value."
+							},
+							{
+								"id": "d",
+								"text": "Keep the app on the Consumption workload profile and pull the image with the app's managed identity."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "The Consumption workload profile supports container images totaling up to 8 GB for each app or job replica, and this app ships 9.5 GB of images, so the deployment is rejected before any instance starts. A Dedicated workload profile supports larger container images, so putting the app on a Dedicated workload profile lets the 9.5 GB image deploy. Note that a Dedicated workload profile can host several apps or jobs, so the images on it share the available disk space and the size that really fits depends on what else runs there.",
+				"perChoice": {
+					"action:b": "The app is already on the Consumption workload profile, and that plan's image size ceiling is what the deployment is failing on. Lowering the container's CPU and memory requests changes the compute allocation, not the space the images occupy, so the same rejection occurs.",
+					"action:c": "maxReplicas controls how many instances of a revision the platform keeps, not how much space the images need. Each replica on the Consumption workload profile is still held to the 8 GB image total, so raising this value does not let the 9.5 GB image deploy.",
+					"action:d": "Using the app's managed identity with the acrPull role changes how the registry authenticates the pull, not how much space the images occupy. The Consumption workload profile image size ceiling still applies, so the deployment keeps failing."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/containers"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/scale-app"
+				}
+			],
+			"subtopics": [
+				"workload-profiles",
+				"image-size-limits",
+				"container-apps-sizing"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TCJZ0HMKAS6CG77Z7RG6M5",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an Azure Container App that is reached only by other services inside the environment, so its external endpoint has been turned off. The app defines no scale rule of its own, and after its last instance exited, the internal callers kept retrying but nothing came back. You need the app to keep serving those internal callers without any operator intervention. Which change should you make?",
+				"statement": "The team should {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Set minReplicas to 1."
+							},
+							{
+								"id": "b",
+								"text": "Set maxReplicas to 20."
+							},
+							{
+								"id": "c",
+								"text": "Add an HTTP scale rule with concurrentRequests of 10."
+							},
+							{
+								"id": "d",
+								"text": "Set activeRevisionsMode to single."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "When ingress is disabled and the app has neither a minimum replica count nor a custom scale rule, the platform scales it down to zero and provides no way to bring it back, which is exactly the behavior observed here. Defining a minimum of one replica keeps a running instance available at all times, so the internal callers are served without any operator action.",
+				"perChoice": {
+					"action:b": "This only raises the upper bound of the autoscaling range. The floor of the range is still zero, so the app can still drop to zero instances and stay there, and internal traffic still cannot revive it.",
+					"action:c": "An HTTP rule is driven by inbound requests that arrive through the app's endpoint, and the endpoint is turned off in this environment, so the criterion never has a value to act on and the app remains with no instances.",
+					"action:d": "This property controls which revision is active for incoming traffic. It does not establish a floor for the number of running instances, so the app still ends up with nothing serving the internal callers."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/scale-app"
+				}
+			],
+			"subtopics": [
+				"min-replicas",
+				"scale-to-zero"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TCN0WDQ9YQ6R9GRZHDW81E",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "A container app named relay-worker reads messages from an Azure Service Bus queue and processes them. It grows and shrinks using a custom scale rule that watches how many messages are waiting in that queue. The operations team reports two separate problems with this app. First, when a backlog starts to build, the app does not add any instance for about half a minute, so messages wait longer than the team wants. Second, once the queue finally empties, the app's last instance keeps running for roughly five minutes before it goes away, and the team wants that released sooner. You need the app to react faster to a growing queue and to shut down its final instance sooner once the queue drains. Which two settings should you change?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Workload profile",
+							"Consumption"
+						],
+						[
+							"Scale rule type",
+							"Custom (KEDA ScaledObject) on Azure Service Bus queue length"
+						],
+						[
+							"Target queue length per replica",
+							"5 messages"
+						],
+						[
+							"Minimum replicas",
+							"0"
+						],
+						[
+							"Maximum replicas",
+							"10"
+						],
+						[
+							"Ingress",
+							"Enabled"
+						]
+					]
+				},
+				"statement": "Set the {{slotA}} to 10 seconds so that a growing queue is noticed sooner, and set the {{slotB}} to 60 seconds so that the last instance is released sooner.",
+				"slots": [
+					{
+						"id": "slotA",
+						"options": [
+							{
+								"id": "a",
+								"text": "Cool down period"
+							},
+							{
+								"id": "b",
+								"text": "Polling interval"
+							},
+							{
+								"id": "c",
+								"text": "Scale down stabilization window"
+							},
+							{
+								"id": "d",
+								"text": "Scale up step"
+							}
+						]
+					},
+					{
+						"id": "slotB",
+						"options": [
+							{
+								"id": "a",
+								"text": "Polling interval"
+							},
+							{
+								"id": "b",
+								"text": "Scale up stabilization window"
+							},
+							{
+								"id": "c",
+								"text": "Cool down period"
+							},
+							{
+								"id": "d",
+								"text": "Scale up step"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slotA": "b",
+				"slotB": "c"
+			},
+			"explanation": {
+				"correct": "The two symptoms map to two different scale-behavior settings. For a custom (KEDA ScaledObject) rule, the polling interval is how often the platform queries the event source, and it defaults to 30 seconds — exactly the half-minute delay before the growing queue is noticed, so lowering it makes the backlog detected and acted on sooner. (This setting has no effect on HTTP or TCP rules, but this app uses a custom rule.) The cool down period is how long the platform waits after the last event before taking the app down to its minimum replica count, and it defaults to 300 seconds — exactly the five minutes the final instance lingers, so lowering it releases that instance sooner. The cool down period applies to the move from the final replica to 0, which is the case here because the minimum is 0 replicas.",
+				"perChoice": {
+					"slotA:a": "This setting governs how long the platform waits after the last event before taking the app down to zero; it does not affect how quickly a growing queue is inspected, so changing it wouldn't fix the first symptom.",
+					"slotA:c": "This setting only delays scale-down decisions once scale-down conditions are met; it has no effect on when the platform notices a growing queue or adds instances for it.",
+					"slotA:d": "This setting decides how many replicas are added once scaling out begins (1, then 4, 8, 16, 32 and onward); it does not change how often the queue is checked.",
+					"slotB:a": "This setting controls how often the queue is queried, which affects how quickly a growing backlog is noticed; it has no effect on the delay before the final instance is removed.",
+					"slotB:b": "This setting only delays scale-up decisions after the conditions are met; it does not govern how quickly the app returns to zero instances.",
+					"slotB:d": "This setting controls how many replicas are added while scaling out; it does not determine how soon the app shrinks back to its minimum replica count."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/scale-app"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/containers"
+				}
+			],
+			"subtopics": [
+				"container-apps-autoscaling",
+				"scale-behavior-settings",
+				"keda-custom-scale-rules"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TCQNZQYYG7AWJC5RGMDK5V",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a container app named session-hub that is built on Dapr virtual actors, where each actor keeps per-session data in the app's memory. To lower its monthly cost, the team changed the app so that every replica is released once no requests are arriving and no capacity is held during idle hours. Since then, callers that reach for an actor in a quiet period are refused and the data those actors held is lost, so users must start their sessions again. The workload has to remain usable throughout those idle hours, and the platform must still be free to add replicas when demand comes back. Which change should you apply to the app's configuration?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Observed value"
+					],
+					"rows": [
+						[
+							"Workload profile",
+							"Consumption"
+						],
+						[
+							"Dapr",
+							"Enabled, app ID session-hub"
+						],
+						[
+							"Actor model",
+							"Virtual actors holding per-session data in memory"
+						],
+						[
+							"Scale rules",
+							"One custom rule reacting to an Azure Event Hubs backlog"
+						],
+						[
+							"Behavior during idle hours",
+							"All replicas are released; actor calls are refused and session data is lost"
+						]
+					]
+				},
+				"statement": "To keep the actor workload usable through idle hours while leaving the platform free to add capacity when demand returns, you should {{scaling_change}}.",
+				"slots": [
+					{
+						"id": "scaling_change",
+						"options": [
+							{
+								"id": "a",
+								"text": "set minReplicas to 1"
+							},
+							{
+								"id": "b",
+								"text": "set minReplicas to 0 and shorten the cool down period"
+							},
+							{
+								"id": "c",
+								"text": "set maxReplicas to 1"
+							},
+							{
+								"id": "d",
+								"text": "set minReplicas to 0 and add a custom scale rule that reacts to Dapr actor calls"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"scaling_change": "a"
+			},
+			"explanation": {
+				"correct": "The platform cannot take a Dapr actor workload down to no replicas, because a virtual actor's in-memory representation is not bound to the actor's identity or lifetime, so actor addressability and state cannot be guaranteed once the last replica is gone. The documented way to keep the workload available is to set the minimum number of replicas per revision to 1 or higher, so `minReplicas` of 1 keeps one replica of the revision present through idle hours while the app can still scale out when demand returns.",
+				"perChoice": {
+					"scaling_change:b": "Leaving the minimum at 0 keeps the current behavior, which is exactly what breaks the actor workload: the revision is allowed to give up its last replica. Shortening the cool down period only changes how quickly the final replica is removed, and that period applies solely to scaling in from the final replica down to zero, so it does not keep the app available.",
+					"scaling_change:c": "`maxReplicas` is the upper bound on the replica count, not the lower bound. Setting it to 1 limits growth but does not create a floor, so the revision can still be reduced to zero replicas when nothing is arriving, and the actor calls keep failing.",
+					"scaling_change:d": "A custom rule that reacts to actor calls can add replicas while calls are arriving, but it does not prevent the last replica from being removed once the calls stop, and Dapr actor workloads are not supported at zero replicas in the first place. The floor has to be expressed as the minimum number of replicas instead."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/scale-app"
+				}
+			],
+			"subtopics": [
+				"scale-to-zero",
+				"dapr-actors",
+				"container-apps-scaling"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TCZZ2EHC3B6GTZ9J7VERWG",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a container app named payments-api that runs on the Consumption workload profile. Two image versions of the app are in production today, and inbound traffic is divided between the two revisions while the team validates the newer release. The team now wants the app to add instances whenever the number of messages waiting in an Azure Service Bus queue increases, because the instance count stays flat while the backlog grows. You need the app to react to the queue backlog, and the earlier image version must remain available so that the team can send traffic back to it if the new release is withdrawn. Which change should you apply to the app's configuration?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Workload profile",
+							"Consumption"
+						],
+						[
+							"Revisions receiving traffic",
+							"payments-api-v1 (70%), payments-api-v2 (30%)"
+						],
+						[
+							"Scale rules",
+							"HTTP with concurrentRequests 10"
+						],
+						[
+							"Replica limits",
+							"minReplicas 0, maxReplicas 10"
+						],
+						[
+							"Ingress",
+							"Enabled"
+						]
+					]
+				},
+				"statement": "The configuration change to apply is {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Set activeRevisionsMode to single and keep both revisions in the app."
+							},
+							{
+								"id": "b",
+								"text": "Set activeRevisionsMode to multiple and keep the current traffic split in place between both revisions."
+							},
+							{
+								"id": "c",
+								"text": "Set activeRevisionsMode to single and delete the earlier revision from the app."
+							},
+							{
+								"id": "d",
+								"text": "Set activeRevisionsMode to multiple and add an HTTP scale rule to each revision."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "A rule that counts messages waiting in an Azure Service Bus queue is a non-HTTP event scale rule, and the platform applies those rules when properties.configuration.activeRevisionsMode is set to single. Changing the mode to single lets the queue-length rule drive the active revision's instance count, while the second revision stays in the app and can be given traffic again from the Revision management page if the team needs it.",
+				"perChoice": {
+					"action:b": "Queue-depth scaling is a non-HTTP event scale rule, and those rules are applied only when activeRevisionsMode is single. Leaving the app in multiple mode keeps the revisions sharing traffic exactly as before, so the growing backlog still does not drive additional instances.",
+					"action:c": "The revisions mode is changed as required, but deleting the earlier revision removes the image version that the team needs to put back into the traffic split, so the ability to restore the previous release is lost.",
+					"action:d": "An HTTP scale rule measures inbound request concurrency rather than the number of waiting messages, so it does not address the queue backlog, and multiple mode remains the wrong setting for non-HTTP event scale rules."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/scale-app"
+				}
+			],
+			"subtopics": [
+				"container-apps-scaling",
+				"event-driven-scaling"
+			],
+			"reviewed": false
+		}
+	]
+}

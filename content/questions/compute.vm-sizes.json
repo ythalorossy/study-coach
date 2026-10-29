@@ -1,0 +1,1854 @@
+{
+	"skill": "compute.vm-sizes",
+	"questions": [
+		{
+			"id": "q_01M5R5D4YQNJX1DJ5QM09X6MZZ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a VM named app-vm-01 in resource group rg-prod that runs a line-of-business application with two attached Premium_LRS data disks. You need to relocate the workload onto the target configuration, and the data disks must travel with the workload. Which approach should you take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"vmName\": \"app-vm-01\",\n  \"resourceGroup\": \"rg-prod\",\n  \"operatingSystem\": \"Windows Server 2022\",\n  \"currentSize\": \"Standard_E4_v3\",\n  \"currentLocalTempDisk\": \"None\",\n  \"attachedDataDisks\": [\"Premium_LRS\", \"Premium_LRS\"],\n  \"targetSize\": \"Standard_D8s_v5\",\n  \"targetLocalTempDisk\": \"Present\",\n  \"targetDataDisks\": [\"Premium_LRS\", \"Premium_LRS\"]\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Snapshot app-vm-01, create a managed disk from the snapshot, and deploy a VM on the target size using the disk."
+					},
+					{
+						"id": "b",
+						"text": "Deallocate app-vm-01, resize it to the target size, and start it again."
+					},
+					{
+						"id": "c",
+						"text": "Resize the running VM in the portal, since the reboot that follows handles the local temp disk difference."
+					},
+					{
+						"id": "d",
+						"text": "Attach an extra Premium_LRS managed disk to app-vm-01 and resize the VM from its current size to the target size."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A Windows VM can only be resized between sizes that share the same local temp disk setup: local temp disk to local temp disk, or no local temp disk to no local temp disk. app-vm-01 runs Standard_E4_v3, which has no local temp disk, while the target Standard_D8s_v5 has one, so a direct resize is refused no matter the power state. The supported path is to snapshot the VM, create a managed disk from that snapshot, and deploy the VM on the target size using the disk, then attach the Premium_LRS data disks to it.",
+				"perChoice": {
+					"b": "The deallocate-resize-start sequence only works when the temp disk situation is unchanged, or when the VM runs Linux. Linux VMs can be resized across the local temp disk boundary, but a Windows VM is limited to like-for-like changes, so the resize request would be rejected.",
+					"c": "A reboot does not soften the like-for-like restriction for Windows VMs. Because the local temp disk setup differs between the current and target sizes, the size change is blocked while the VM is running and the machine keeps its present capacity.",
+					"d": "Attaching an additional managed data disk does not change whether the target size provides a local temp disk, and data disks are attached separately from the size choice. The mismatch therefore still blocks the resize."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/resize-vm"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/overview"
+				}
+			],
+			"subtopics": [
+				"resize-vm",
+				"windows-size-limits"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R5F1JFYA9YVYCFAW35Q5JP",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Linux VM named web-01 in resource group rg-web that runs a busy public web tier. It currently runs on Standard_D2s_v3 with 2 vCPUs and 8 GiB of RAM, and it is powered on. You need the workload to run with 8 vCPUs and 64 GiB of RAM. The table below lists the sizes the platform reports as valid targets for web-01 in this state. Which action should you take to put web-01 onto the configuration you need?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Size name",
+						"vCPUs",
+						"Memory (GiB)"
+					],
+					"rows": [
+						[
+							"Standard_D2s_v3",
+							"2",
+							"8"
+						],
+						[
+							"Standard_D4s_v3",
+							"4",
+							"16"
+						],
+						[
+							"Standard_D8s_v3",
+							"8",
+							"32"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Deallocate the VM, look at the size list again, then apply the new size and start it"
+					},
+					{
+						"id": "b",
+						"text": "Apply the new size with Update-AzVM while the VM is running and let the platform reboot it"
+					},
+					{
+						"id": "c",
+						"text": "Select Standard_D8s_v3, the only listed entry with 8 vCPUs, and apply it without stopping the VM"
+					},
+					{
+						"id": "d",
+						"text": "Create a replacement VM from a snapshot of the current OS disk and delete the original after cutover"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The configuration you need (8 vCPUs with 64 GiB of RAM, for example a memory-optimized size such as Standard_E8s_v3) is not among the reported targets: the only 8-vCPU entry listed, Standard_D8s_v3, offers just 32 GiB of RAM. The list produced by Get-AzVMSize contains only the sizes the VM's own hardware cluster allows, and a size that is missing while the machine runs can reappear once the VM is stopped, because a stopped machine exposes more choices. The documented order is therefore to deallocate the VM, review the size list again, apply the new size, and start it. Because deallocation releases any dynamic IP address while the OS and data disks stay untouched, plan for that and for the restart that any size change causes.",
+				"perChoice": {
+					"b": "Changing the SKU in place while the VM is running only succeeds for a target the cluster already offers, and the size you need is missing from that list. If such a request cannot be allocated, the VM model still displays the requested size while the machine keeps running on its previous one, so GET calls would report a size the VM is not actually using. A running-VM resize also forces a restart, so it is a disruptive operation for stateful workloads.",
+					"c": "Standard_D8s_v3 is indeed the only listed entry with 8 vCPUs, but it provides only 32 GiB of RAM and therefore misses the 64 GiB requirement. The list shown for a powered-on VM is itself restricted, so its contents do not prove that a suitable size does not exist.",
+					"d": "Rebuilding from a snapshot is the work-around only for changes that cannot be done in place, such as moving a Windows VM from a size with a local temp disk to one without a local temp disk. Here the new size can be applied to the existing VM after deallocation, and copying the disk neither widens the set of sizes the cluster offers nor keeps the original VM as the target of the change."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/resize-vm"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/overview"
+				}
+			],
+			"subtopics": [
+				"resize-constraints",
+				"vm-size-selection"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R5J59VG0Q336Y10531VQ6R",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Linux VM named analytics-01 in resource group rg-data that runs a big-data pipeline keeping most of its dataset in memory. Since the pipeline was moved onto this VM, it has run out of memory and throughput has dropped. You need to move the VM onto a size that can hold the working set while its disks keep using Premium_LRS. Which size should you select?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Current size",
+							"Standard_D8s_v3"
+						],
+						[
+							"vCPUs",
+							"8"
+						],
+						[
+							"Memory",
+							"32 GiB"
+						],
+						[
+							"OS disk",
+							"Premium_LRS, 128 GiB"
+						],
+						[
+							"Data disks",
+							"2 x Premium_LRS, 512 GiB each"
+						],
+						[
+							"Power state",
+							"Running"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Standard_E16s_v3"
+					},
+					{
+						"id": "b",
+						"text": "Standard_E16_v3"
+					},
+					{
+						"id": "c",
+						"text": "Standard_D16s_v3"
+					},
+					{
+						"id": "d",
+						"text": "Standard_B2ms"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The E family is the memory-optimized line, which suits big-data pipelines and workloads that keep large datasets in RAM. Its `s` variant is the one that supports Premium Storage, so `Standard_E16s_v3` satisfies both the in-memory workload and the requirement to keep the Premium_LRS disks.",
+				"perChoice": {
+					"b": "This is the memory-focused family, but without the `s` variant the size cannot be used with Premium Storage, so it conflicts with the Premium_LRS disks; a Premium Storage workload needs the `s` version (for example `Standard_E4s_v3` instead of `Standard_E4_v3`).",
+					"c": "The D line is general purpose: it spreads capacity between processor and memory and is aimed at development, test, compact databases and lightly loaded workloads rather than a RAM-heavy big-data pipeline.",
+					"d": "The B line is burstable: it meters CPU with credits and is throttled back to base performance once credits are depleted, so it does not suit a sustained, memory-heavy pipeline."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/resize-vm"
+				}
+			],
+			"subtopics": [
+				"vm-size-selection",
+				"premium-storage-skus",
+				"workload-family-fit"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R5MREKANET6750GF03SEXY",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have three virtual machines — sql-a, sql-b, and sql-c — in resource group rg-data. They belong to an availability set named aset-sql and are currently powered on with Standard_D2s_v5. You need the whole set to end up on Standard_E8s_v3, which provides 8 vCPUs and 64 GiB of RAM per instance, and all three instances must be serving traffic again once the work is finished. Which sequence should you use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Resource group",
+							"rg-data"
+						],
+						[
+							"Availability set",
+							"aset-sql"
+						],
+						[
+							"Members",
+							"sql-a, sql-b, sql-c"
+						],
+						[
+							"Current size of each member",
+							"Standard_D2s_v5 (2 vCPUs, 8 GiB)"
+						],
+						[
+							"Power state",
+							"All three members powered on"
+						],
+						[
+							"Sizes the platform reports for sql-a while it is powered on",
+							"Standard_D2s_v5, Standard_D4s_v5, Standard_D8s_v5, Standard_E2s_v3"
+						],
+						[
+							"Target configuration",
+							"Standard_E8s_v3 (8 vCPUs, 64 GiB)"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Deallocate the virtual machines in the availability set, set the required size on each member, and power the set back on."
+					},
+					{
+						"id": "b",
+						"text": "Deallocate the virtual machines in the availability set, set the required size on one member only, and power the set back on."
+					},
+					{
+						"id": "c",
+						"text": "Resize the virtual machines in the availability set one at a time while they keep running, and let the platform reboot each member after the change."
+					},
+					{
+						"id": "d",
+						"text": "Deallocate the virtual machines in the availability set, move each member to a size the platform reports today, and power the set back on."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Two facts drive the sequence. First, the target size is absent from the list the platform reports for a running instance; a size that is not offered for a powered-on VM has to be applied while the VM is deallocated, so each member must be stopped before the change. Second, an availability set requires every member to move to the new size, because resizing only one member leaves the remaining members on their previous size. The documented procedure is therefore to deallocate every VM in the set, apply the new size to each of them, and then start them all again — which is the correct option.",
+				"perChoice": {
+					"b": "Changing only one member leaves sql-b and sql-c on Standard_D2s_v5, so the set ends up with mixed sizes. Availability sets require every member to be moved to the new size, because a single resized member can leave the others on their previous size.",
+					"c": "Resizing a running virtual machine reboots it, so the instances would restart one after another, and doing it member by member leaves the set with mixed sizes. In addition, the target size is not offered for an instance that stays powered on, so it cannot be selected in this state.",
+					"d": "The sizes the platform reports today top out at Standard_D8s_v5 with 8 vCPUs but 32 GiB of RAM, and Standard_E2s_v3 with only 2 vCPUs. None of them delivers the requested 8 vCPUs with 64 GiB of RAM, so this sequence cannot produce the target configuration."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/resize-vm"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/overview"
+				}
+			],
+			"subtopics": [
+				"vm-resize",
+				"availability-set-resize"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R5QMD9QPPZZV4X9EXCH6X4",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Linux virtual machine named svc-01 in resource group rg-app that hosts a customer-facing API. You tried to move it from Standard_D2s_v5 to Standard_D4s_v5 and the operation reported an error, but the machine stayed up and kept serving traffic. The control plane and the guest now disagree: Azure describes svc-01 as Standard_D4s_v5, while monitoring inside the guest still shows 2 vCPUs and 8 GiB of RAM, and because the control plane already lists Standard_D4s_v5 as the current size, another size change is refused. The target size is one of the sizes offered by the VM's hardware cluster, so capacity is not the blocker. You need svc-01 to genuinely run with 4 vCPUs. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Observation",
+						"Value"
+					],
+					"rows": [
+						[
+							"Size reported by the control plane for svc-01",
+							"Standard_D4s_v5"
+						],
+						[
+							"Power state",
+							"Running"
+						],
+						[
+							"vCPUs measured inside the guest",
+							"2"
+						],
+						[
+							"Memory measured inside the guest",
+							"8 GiB"
+						],
+						[
+							"Outcome of the last size operation",
+							"Failed"
+						],
+						[
+							"Sizes offered by the VM's hardware cluster",
+							"Standard_D2s_v5, Standard_D4s_v5, Standard_D8s_v5, Standard_E4s_v3"
+						],
+						[
+							"Guest operating system",
+							"Linux"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Submit the resize request for svc-01 to Standard_D4s_v5 again and verify the change took effect."
+					},
+					{
+						"id": "b",
+						"text": "Update only the VM model for svc-01 so that it reads Standard_D4s_v5 (4 vCPUs), without performing another resize request against the running instance."
+					},
+					{
+						"id": "c",
+						"text": "Create a new Standard_D4s_v5 VM from a snapshot of svc-01's OS disk, move the traffic to it, and decommission the old instance."
+					},
+					{
+						"id": "d",
+						"text": "Scale out by adding more Standard_D2s_v5 instances instead of making any size change on svc-01."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "When a size change fails, Azure still records the size you asked for in the VM model, so every read of svc-01 reports Standard_D4s_v5 even though the instance keeps running on the old hardware (2 vCPUs, 8 GiB). The machine only moves to the new size when a later resize actually succeeds. Standard_D4s_v5 is listed among the sizes the VM's own hardware cluster offers, so it is a valid target and the remedy is to submit the resize again; when it completes, the instance is rebooted onto the new configuration and the reported size finally matches the hardware. Until then, the model reading alone proves nothing about the number of vCPUs the workload actually gets.",
+				"perChoice": {
+					"b": "Editing the VM model only changes what the control plane reports; it does not move the instance onto different hardware, so svc-01 would keep delivering 2 vCPUs while claiming 4 and the guest would still disagree with the reported size. The documented recovery for a failed attempt is another resize attempt, not a model write.",
+					"c": "Rebuilding from a snapshot is the workaround reserved for cases where a size change cannot be made on the instance at all, such as moving a Windows VM with no local temp disk onto a size that has one. Here the wanted size is already offered by the VM's cluster and the VM is healthy, so recreating the machine adds outage and risk without addressing the underlying cause.",
+					"d": "Adding more instances of the current size spreads the workload but leaves svc-01 on its present hardware with 2 vCPUs and 8 GiB of RAM. The requirement is that svc-01 itself runs with 4 vCPUs, which only a successful resize of that instance delivers."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/resize-vm"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/overview"
+				}
+			],
+			"subtopics": [
+				"vm-resize",
+				"vm-skus"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R5S97S9TJ3WV64HA7ZYCKQ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Windows virtual machine named fin-app-01 in resource group rg-fin that runs an in-house finance application. The team wants the application to run on the target size listed below, because that size adds local temp storage the application can use for caching. You need the application back on the target size with its operating system configuration and both attached data disks intact, and the machine serving traffic once the work is finished. Which sequence should you use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Guest operating system",
+							"Windows Server 2022, Azure Edition"
+						],
+						[
+							"Current size",
+							"Standard_D4s_v5"
+						],
+						[
+							"Local temp storage on the current size",
+							"None"
+						],
+						[
+							"Attached data disks",
+							"2 x Premium_LRS, 512 GiB each"
+						],
+						[
+							"OS disk",
+							"Premium_LRS, 128 GiB"
+						],
+						[
+							"Target size",
+							"Standard_D8ds_v5"
+						],
+						[
+							"Local temp storage on the target size",
+							"Present"
+						],
+						[
+							"Power state",
+							"Running"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Deallocate the Windows virtual machine so that the target size can be applied, resize it in place, and start it again."
+					},
+					{
+						"id": "b",
+						"text": "Snapshot the Windows virtual machine, create a disk from that snapshot, and create a new virtual machine from that disk on the target size."
+					},
+					{
+						"id": "c",
+						"text": "Resize the running Windows virtual machine from the current size to the target size; Azure restarts the instance and the attached data disks are kept."
+					},
+					{
+						"id": "d",
+						"text": "Snapshot the data disks, create a new virtual machine on the target size with those disks attached, and then deallocate the original Windows virtual machine."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "The guest is Windows, and the current size (Standard_D4s_v5) has no local temp storage while the target size (Standard_D8ds_v5) has some, so this move crosses the local temp disk boundary. Windows virtual machines are restricted to like-for-like size changes: local temp disk to local temp disk, or no local temp disk to no local temp disk. The documented way to move a Windows VM that has no local temp disk onto a size that has one is to snapshot the VM, create a disk from that snapshot, and then create the new VM from that disk. That path carries the operating system configuration onto the target size and lets the existing data disks stay with the workload, and the new machine can then be started so the application serves traffic again.",
+				"perChoice": {
+					"a": "Powering the machine off first only addresses whether the target size is offered by the current hardware cluster; it does not remove the Windows like-for-like restriction, so an in-place resize from a size with no local temp disk to a size that has one is not the supported path for a Windows guest.",
+					"c": "Resizing a running machine is allowed in general and does reboot it, but the Windows restriction still blocks this particular move because the current size has no local temp storage and the target size has it; the fact that the data disks remain attached does not make the resize valid.",
+					"d": "Copying only the data disks carries the application data but not the operating system state and configuration of fin-app-01, so the replacement machine would not come back with its operating system configuration intact. The documented path captures the virtual machine itself, creates a disk from that snapshot, and creates the new virtual machine from that disk."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/resize-vm"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/overview"
+				}
+			],
+			"subtopics": [
+				"vm-resize",
+				"temp-disk-constraints"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R5VHFGEQJPPPZ1D2FSDKF2",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Linux virtual machine named etl-01 in resource group rg-data that runs a nightly extract-transform-load job. Since the job was moved onto this machine, its runtime has tripled, and the slowdown shows up in bursts partway through each run rather than at one fixed point. You need the job to hold full processor speed for its entire six-hour window, keep the same balance of processor and memory it has today instead of buying capacity the job never uses, and keep the machine's managed disks on Premium_LRS. Which size should you select?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Virtual machine",
+							"etl-01 (Linux)"
+						],
+						[
+							"Resource group",
+							"rg-data"
+						],
+						[
+							"Current size",
+							"Standard_B2ms"
+						],
+						[
+							"Processor",
+							"2 vCPU"
+						],
+						[
+							"Memory",
+							"8 GiB"
+						],
+						[
+							"Managed disk type",
+							"Premium_LRS"
+						],
+						[
+							"Nightly job profile",
+							"Sustained processor load for roughly 6 hours"
+						],
+						[
+							"Workload resource profile",
+							"Processor and memory demand in roughly equal measure"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Standard_D2s_v5"
+					},
+					{
+						"id": "b",
+						"text": "Standard_B4ms"
+					},
+					{
+						"id": "c",
+						"text": "Standard_D2_v5"
+					},
+					{
+						"id": "d",
+						"text": "Standard_E2s_v5"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Standard_D2s_v5 is the only choice that meets all three requirements. It belongs to the D family, a general-purpose line that spreads capacity evenly between processor and memory, so it preserves the balanced profile the job has today instead of skewing it toward cores or toward RAM. It is not credit-metered, so the six-hour run keeps full processor speed for its entire window rather than being capped back to a base rate after an accumulated allowance is spent. Finally, the trailing s in the size string is what enables Premium Storage, so the Premium_LRS managed disks continue to work on it.",
+				"perChoice": {
+					"b": "Standard_B4ms stays in the B family, the only line that meters processor use with credits: it accumulates credits below a base threshold, spends them when the workload runs above it, and once they are exhausted it is limited back to base performance until they rebuild. That is the same bursty pattern already causing the slowdown, so the job would still lose speed partway through the run.",
+					"c": "Standard_D2_v5 sits in the same family and keeps the same processor-to-memory balance, but its size string lacks the s that enables Premium Storage, so the machine's Premium_LRS managed disks cannot keep running on it. The size string itself decides storage support, so this name is not interchangeable with the s variant.",
+					"d": "Standard_E2s_v5 comes from the E family, which favors memory over cores. It would add memory capacity the workload never consumes and move the machine away from the even processor-to-memory balance the job has today, so it does not match the requirement of not buying capacity that goes unused."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/resize-vm"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/overview"
+				}
+			],
+			"subtopics": [
+				"vm-size-selection",
+				"premium-storage-size-suffix",
+				"burstable-credits"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R60Q9KT9JA77Q0CP3HJTS1",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Linux virtual machine named game-01 in resource group rg-stream that hosts a cloud gaming service. Players connect from remote locations and every session is rendered on the host in real time. The characteristics of the service are listed in the exhibit. You need to add GPU acceleration to game-01, and the VM series you choose must match the service. Which series should you select?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Service characteristic",
+						"Value"
+					],
+					"rows": [
+						[
+							"Service type",
+							"Cloud gaming sessions delivered to remote players"
+						],
+						[
+							"Graphics processor vendor",
+							"AMD"
+						],
+						[
+							"Per-session rendering",
+							"Real-time 3D frames"
+						],
+						[
+							"Concurrent sessions per VM",
+							"2,000"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "NG-series"
+					},
+					{
+						"id": "b",
+						"text": "NC-series"
+					},
+					{
+						"id": "c",
+						"text": "ND-series"
+					},
+					{
+						"id": "d",
+						"text": "NV-series"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "NG-series runs AMD Radeon PRO GPUs, and Azure positions this family for cloud gaming and remote desktops. The service in the exhibit delivers cloud gaming sessions to remote players and is standardized on AMD graphics hardware, so NG-series is the family that matches game-01's workload.",
+				"perChoice": {
+					"b": "NC-series uses NVIDIA GPUs and is aimed at AI/ML training, HPC and 3D rendering workloads. That is not this service, and its GPU vendor also does not match the AMD hardware required in the exhibit.",
+					"c": "ND-series adds large GPU memory for deep learning models. This service renders live game sessions for remote players rather than training models, so ND-series is not the appropriate family.",
+					"d": "NV-series covers VDI, rendering, high-resolution imaging and video streaming. Those are enterprise graphics and video workloads rather than the AMD-based cloud gaming and remote desktop service described in the exhibit."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/overview"
+				}
+			],
+			"subtopics": [
+				"gpu-vm-series",
+				"vm-size-selection"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R64GXDD7PJ4Z727VCAPZHJ",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have five workloads to place on new Azure virtual machines and six candidate size names from your catalogue. You need every workload to run on a size whose processor, memory, storage and accelerator characteristics match what the workload actually does, and you expect one of the candidates to remain unused. Which size should carry each workload?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Workload",
+						"Demand"
+					],
+					"rows": [
+						[
+							"Developer proof-of-concept server",
+							"Idle for most of each day, then short bursty jobs; a slowdown at the busiest moments is acceptable"
+						],
+						[
+							"Customer-facing web and application tier",
+							"Moderate traffic, fast request processing, and little need for memory beyond what the cores require"
+						],
+						[
+							"NoSQL data platform",
+							"Random reads and writes across several multi-terabyte local disks, where throughput and I/O latency dominate"
+						],
+						[
+							"In-memory analytics node",
+							"Very large working set held in memory plus heavy I/O against remote block storage"
+						],
+						[
+							"Deep-learning model training",
+							"Heavy mathematical work that has to run with NVIDIA GPU acceleration"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "sku_b2s",
+						"text": "Standard_B2s"
+					},
+					{
+						"id": "sku_f8s_v2",
+						"text": "Standard_F8s_v2"
+					},
+					{
+						"id": "sku_l8s_v3",
+						"text": "Standard_L8s_v3"
+					},
+					{
+						"id": "sku_e96bds_v5",
+						"text": "Standard_E96bds_v5"
+					},
+					{
+						"id": "sku_nc6s_v3",
+						"text": "Standard_NC6s_v3"
+					},
+					{
+						"id": "sku_dcads_v5",
+						"text": "Standard_DCads_v5"
+					}
+				],
+				"slots": [
+					{
+						"id": "slot_poc",
+						"label": "Developer proof-of-concept server"
+					},
+					{
+						"id": "slot_web",
+						"label": "Customer-facing web and application tier"
+					},
+					{
+						"id": "slot_nosql",
+						"label": "NoSQL data platform"
+					},
+					{
+						"id": "slot_analytics",
+						"label": "In-memory analytics node"
+					},
+					{
+						"id": "slot_training",
+						"label": "Deep-learning model training"
+					}
+				]
+			},
+			"key": {
+				"slot_poc": "sku_b2s",
+				"slot_web": "sku_f8s_v2",
+				"slot_nosql": "sku_l8s_v3",
+				"slot_analytics": "sku_e96bds_v5",
+				"slot_training": "sku_nc6s_v3"
+			},
+			"explanation": {
+				"correct": "Each workload is matched to the size family whose hardware emphasis matches the demand shown in the exhibit: the burstable B line for the intermittently used proof-of-concept server, the compute-optimized F line for the medium-traffic web and application tier, the storage-optimized L line for the disk-bound NoSQL platform, the memory-optimized Eb line with high remote storage performance for the in-memory analytics node, and the GPU-accelerated NC line for model training. Standard_DCads_v5 is left unused because no listed workload calls for confidential computing.",
+				"perChoice": {
+					"sku_b2s": "Belongs on the developer proof-of-concept server. The B line is the only Azure size type that meters processor consumption with credits: it banks credits while the workload is below the base processor threshold, spends them during bursts, and is throttled back to base performance once the credits are gone. That matches a server that idles most of the day and can tolerate slowing during its busiest minutes.",
+					"sku_f8s_v2": "Belongs on the customer-facing web and application tier. The F line is compute optimized, offering a high processor-to-memory ratio that suits medium-traffic web servers, application servers and analytics work that needs fast processing rather than a large memory footprint.",
+					"sku_l8s_v3": "Belongs on the NoSQL data platform. The L line is storage optimized, pairing large local disk capacity with high disk throughput and I/O, which suits very chatty transactional stores and big data workloads whose performance depends on disk speed and latency.",
+					"sku_e96bds_v5": "Belongs on the in-memory analytics node. The Eb line stays in the memory-optimized category while adding high remote storage performance, so it suits a workload that must hold a very large working set in RAM and also push heavy I/O against remote block storage.",
+					"sku_nc6s_v3": "Belongs on the deep-learning model training run. The NC line is GPU optimized with NVIDIA GPUs aimed at compute-intensive work such as AI and machine learning model training, high-performance computing and 3D rendering.",
+					"sku_dcads_v5": "Fits none of the listed workloads. The DC line is a general purpose line for confidential computing, using hardware-based Trusted Execution Environments for sensitive data. None of the five workloads described in the exhibit needs that isolation, so this candidate stays unused."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/overview"
+				}
+			],
+			"subtopics": [
+				"vm-size-selection",
+				"vm-series-workload-fit"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R6DSMQWADH1ZZG07E7VPSC",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have four shortlisted virtual machine size names for new deployments, and the table below shows each planned deployment and the disk tier it needs. You need to work out, from each name alone, the processor vendor, the workload family and whether the name can deliver the required disk tier, so that every name is paired with the correct description. Which description should you drag with each size name?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Shortlisted size name",
+						"Planned deployment",
+						"Required disk tier"
+					],
+					"rows": [
+						[
+							"Standard_D2s_v5",
+							"Line-of-business application and web tier",
+							"Premium_LRS"
+						],
+						[
+							"Standard_E4as_v5",
+							"Reporting server that keeps a large working set in memory",
+							"Premium_LRS"
+						],
+						[
+							"Standard_B2ps_v3",
+							"Developer sandbox with occasional bursts of load",
+							"Standard_LRS"
+						],
+						[
+							"Standard_NC6s_v3",
+							"Deep-learning model training",
+							"Premium_LRS"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "d2s",
+						"text": "Standard_D2s_v5"
+					},
+					{
+						"id": "e4as",
+						"text": "Standard_E4as_v5"
+					},
+					{
+						"id": "b2ps",
+						"text": "Standard_B2ps_v3"
+					},
+					{
+						"id": "nc6s",
+						"text": "Standard_NC6s_v3"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Intel x86-64 processor; general-purpose line; Premium Storage capable"
+					},
+					{
+						"id": "s2",
+						"label": "AMD processor; memory-optimized line; Premium Storage capable"
+					},
+					{
+						"id": "s3",
+						"label": "ARM processor; burstable line with CPU credits; no Premium Storage support"
+					},
+					{
+						"id": "s4",
+						"label": "Intel x86-64 processor; NVIDIA GPU line for model training; Premium Storage capable"
+					}
+				]
+			},
+			"key": {
+				"s1": "d2s",
+				"s2": "e4as",
+				"s3": "b2ps",
+				"s4": "nc6s"
+			},
+			"explanation": {
+				"correct": "Each name is read in parts: the family letters give the workload profile, the processor vendor letter gives the CPU (no letter means Intel x86-64, 'a' means AMD, 'p' means ARM such as Microsoft Cobalt or Ampere Altra), and the 's' marker in the size name is what enables Premium Storage support. Standard_D2s_v5 carries no vendor letter, so it is an Intel general-purpose size (D family) with Premium Storage; Standard_E4as_v5 shows 'a' for AMD and the E family is the memory-optimized line, with 's' giving Premium Storage; Standard_B2ps_v3 shows 'p' for ARM and the B family is the burstable, credit-metered line, and with no 's' it does not provide Premium Storage; Standard_NC6s_v3 uses the two-letter GPU family NC with NVIDIA GPUs aimed at AI and machine-learning model training, carries no vendor letter (Intel x86-64) and includes 's' for Premium Storage.",
+				"perChoice": {
+					"d2s": "Slot 'Intel x86-64 processor; general-purpose line; Premium Storage capable'. The D family is a general-purpose line used for enterprise applications, web and application servers and batch work; the name contains no processor vendor letter, so it runs on Intel x86-64, and the 's' in the name enables Premium Storage support, which matches the Premium_LRS requirement in the table.",
+					"e4as": "Slot 'AMD processor; memory-optimized line; Premium Storage capable'. The 'a' in the size name marks an AMD processor, the E family is the memory-optimized line for relational database servers, large caches and in-memory analytics, and the 's' in the name enables Premium Storage support, matching the Premium_LRS requirement.",
+					"b2ps": "Slot 'ARM processor; burstable line with CPU credits; no Premium Storage support'. The 'p' in the size name marks an ARM processor such as Microsoft Cobalt or Ampere Altra, the B family is the only line that meters processor use with CPU credits, and because the name has no 's' marker it does not provide Premium Storage support, which is consistent with the Standard_LRS requirement.",
+					"nc6s": "Slot 'Intel x86-64 processor; NVIDIA GPU line for model training; Premium Storage capable'. NC is one of the two-letter GPU families and is equipped with NVIDIA GPUs for AI and machine-learning model training, HPC and 3D rendering; the name carries no processor vendor letter, so it runs on Intel x86-64, and the 's' enables Premium Storage support, matching the Premium_LRS requirement."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/resize-vm"
+				}
+			],
+			"subtopics": [
+				"vm-size-naming",
+				"size-families",
+				"processor-vendors"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R6M28PKBZD7RFNWER34A5Y",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are moving six workloads onto new Azure virtual machines, and the listing below shows the size names your catalogue offers. The draggable statements describe what each workload depends on. You need every workload placed on the size that delivers the capability it depends on, and the size names are the only clue you have about the hardware behind them. Which size name should you pair with each requirement?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Candidate size    vCPUs   Memory (GiB)\nStandard_NP10s    10      112\nStandard_HB176rs  176     256\nStandard_HX176rs  176     884\nStandard_NC6s_v3  6       112\nStandard_L80s_v3  80      640\nStandard_B2ms     2       8"
+				},
+				"items": [
+					{
+						"id": "r1",
+						"text": "Live video streams are transcoded on the host and each result has to come back within a few milliseconds, using acceleration logic the team writes and updates itself"
+					},
+					{
+						"id": "r2",
+						"text": "A weather simulation model runs on processor cores only, and its solver is held back by how fast the model data moves through memory"
+					},
+					{
+						"id": "r3",
+						"text": "A semiconductor design team verifies a layout and has to hold a very large amount of design data in memory at the same time"
+					},
+					{
+						"id": "r4",
+						"text": "A research team trains an image recognition network and needs GPU acceleration for the training run"
+					},
+					{
+						"id": "r5",
+						"text": "A MongoDB cluster must serve its hot shards from high-throughput disks attached directly to the machine"
+					},
+					{
+						"id": "r6",
+						"text": "A test agent idles most of the day and only needs full processor speed for a few minutes at a time, and the team wants the cost to follow real usage"
+					}
+				],
+				"slots": [
+					{
+						"id": "np",
+						"label": "Standard_NP10s"
+					},
+					{
+						"id": "hb",
+						"label": "Standard_HB176rs"
+					},
+					{
+						"id": "hx",
+						"label": "Standard_HX176rs"
+					},
+					{
+						"id": "nc",
+						"label": "Standard_NC6s_v3"
+					},
+					{
+						"id": "l",
+						"label": "Standard_L80s_v3"
+					},
+					{
+						"id": "b",
+						"label": "Standard_B2ms"
+					}
+				]
+			},
+			"key": {
+				"b": "r6",
+				"hb": "r2",
+				"hx": "r3",
+				"l": "r5",
+				"nc": "r4",
+				"np": "r1"
+			},
+			"explanation": {
+				"correct": "Each requirement names the one capability that a single size family delivers, and the size names encode that family: NP10s decodes to the NP line, HB176rs to the HB line, HX176rs to the HX line, NC6s_v3 to the NC line, L80s_v3 to the L line and B2ms to the B line. The low-latency programmable-logic transcoder goes on the NP family (Alveo U250 FPGA boards with Intel Xeon 8171M CPUs for inference, stream transcoding and other low-latency processing); the processor-only solver that is limited by memory bandwidth goes on the HB family (AMD EPYC with high memory bandwidth for CFD, FEA, weather, seismic and genomics work); the chip design verification that must hold a large amount of design data in memory goes on the HX family (large memory for EDA); the GPU-accelerated neural network training goes on the NC family (NVIDIA GPUs for AI/ML training, HPC and 3D rendering); the MongoDB cluster that must serve hot shards from attached disks goes on the L family (local disk speed, large attached disks with high throughput and I/O, with Cassandra, MongoDB, Cloudera and Redis as typical applications); and the mostly idle test agent goes on the B family, the burstable line whose processor use is metered with credits that accumulate while the machine is below its base threshold and are spent during the short bursts.",
+				"perChoice": {
+					"r1": "Belongs on Standard_NP10s. The NP family pairs AMD Xilinx Alveo U250 FPGA boards with Intel Xeon 8171M CPUs and targets inference work, stream transcoding, custom database acceleration, telecom signal handling and other low-latency processing, which is exactly the capability this requirement describes.",
+					"r2": "Belongs on Standard_HB176rs. The HB family pairs AMD EPYC with high memory bandwidth for CFD, FEA, weather, seismic and genomics work, so a processor-only solver whose bottleneck is memory bandwidth belongs on this line rather than on a GPU family.",
+					"r3": "Belongs on Standard_HX176rs. The HX family supplies large memory for EDA, which matches a semiconductor design team that must keep a very large amount of design data in memory at once.",
+					"r4": "Belongs on Standard_NC6s_v3. The NC family uses NVIDIA GPUs for AI/ML training, HPC and 3D rendering, so a training run that needs GPU acceleration fits this line.",
+					"r5": "Belongs on Standard_L80s_v3. The L family favors local disk speed, pairing large attached disks with high throughput and I/O for massive datasets, SQL or NoSQL engines, warehouse workloads and very chatty transactional stores, with MongoDB named among its typical applications.",
+					"r6": "Belongs on Standard_B2ms. The B family is burstable and is the only Azure VM type that meters processor use with credits: credits accumulate below the base processor threshold, are spent above it, and once depleted the VM is throttled back to base performance until they rebuild, so a machine that idles most of the day with short bursts is the right fit."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/resize-vm"
+				}
+			],
+			"subtopics": [
+				"vm-size-naming",
+				"workload-size-selection",
+				"specialized-size-families"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R6VF7B11SAT5QESYT72AE3",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have two automation scripts that move a Linux virtual machine onto a new configuration: one script is written for the Azure PowerShell cmdlets and the other for the Azure CLI. The exhibit lists the machine you are working on, and the commands below are everything the two scripts contain. You need every command placed in the step it carries out. Which command should you drag to each step?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Virtual machine",
+							"api-01"
+						],
+						[
+							"Resource group",
+							"rg-api"
+						],
+						[
+							"Operating system",
+							"Linux"
+						],
+						[
+							"Current configuration",
+							"Standard_D2s_v5"
+						],
+						[
+							"Target configuration",
+							"Standard_E4s_v3"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i-start",
+						"text": "az vm start --resource-group rg-api --name api-01"
+					},
+					{
+						"id": "i-check",
+						"text": "Get-AzVMSize -ResourceGroupName rg-api -VMName api-01"
+					},
+					{
+						"id": "i-resize-cli",
+						"text": "az vm resize --resource-group rg-api --name api-01 --size Standard_E4s_v3"
+					},
+					{
+						"id": "i-login",
+						"text": "Import-Module Az; Connect-AzAccount; Select-AzSubscription -SubscriptionId '<your-subscription-id>'"
+					},
+					{
+						"id": "i-dealloc",
+						"text": "az vm deallocate --resource-group rg-api --name api-01"
+					},
+					{
+						"id": "i-apply-ps",
+						"text": "Get-AzVM -ResourceGroupName rg-api -VMName api-01; $vm.HardwareProfile.VmSize = 'Standard_E4s_v3'; Update-AzVM -VM $vm -ResourceGroupName rg-api"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Prepare the workstation before any of the other commands are issued."
+					},
+					{
+						"id": "s2",
+						"label": "See which target configurations the cluster hosting this machine currently permits, using the Azure PowerShell cmdlets."
+					},
+					{
+						"id": "s3",
+						"label": "Retrieve the machine, set its configuration to the target value, and save the change, using the Azure PowerShell cmdlets."
+					},
+					{
+						"id": "s4",
+						"label": "Free the machine up so the target configuration can be applied, using the Azure CLI."
+					},
+					{
+						"id": "s5",
+						"label": "Apply the target configuration to the machine, using the Azure CLI."
+					},
+					{
+						"id": "s6",
+						"label": "Bring the machine back online, using the Azure CLI."
+					}
+				]
+			},
+			"key": {
+				"s1": "i-login",
+				"s2": "i-check",
+				"s3": "i-apply-ps",
+				"s4": "i-dealloc",
+				"s5": "i-resize-cli",
+				"s6": "i-start"
+			},
+			"explanation": {
+				"correct": "Each command is matched to the step it performs. The session commands (importing the module, signing in, selecting the subscription) prepare a local workstation before anything else runs. Get-AzVMSize reports the configurations offered by the cluster that hosts the machine, which are the valid targets. Get-AzVM, the VmSize assignment and Update-AzVM together perform the PowerShell change: fetch the machine, set the new configuration on its hardware profile, persist it. On the command line, az vm deallocate frees the machine so the target configuration can be applied, az vm resize performs the change, and az vm start returns the machine to service.",
+				"perChoice": {
+					"i-login": "Belongs with \"Prepare the workstation before any of the other commands are issued.\" Running the cmdlets locally requires importing the module, signing in and pointing the session at the intended subscription before any other command can run.",
+					"i-check": "Belongs with the step that shows which target configurations the cluster permits. Get-AzVMSize lists the configurations offered by the machine's own cluster, which are exactly the valid targets for the change.",
+					"i-resize-cli": "Belongs with \"Apply the target configuration to the machine, using the Azure CLI.\" az vm resize is the command-line command that changes the machine to the new configuration.",
+					"i-dealloc": "Belongs with \"Free the machine up so the target configuration can be applied, using the Azure CLI.\" The documented command-line order releases the machine first with az vm deallocate, which also matters when the target configuration is not offered while the machine is running.",
+					"i-apply-ps": "Belongs with the step that retrieves the machine, sets its configuration to the target value and saves the change. That is the documented PowerShell route: fetch the machine with Get-AzVM, assign the new value to $vm.HardwareProfile.VmSize, then persist it with Update-AzVM.",
+					"i-start": "Belongs with \"Bring the machine back online, using the Azure CLI.\" az vm start runs after the change so the machine serves traffic again."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/resize-vm"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/overview"
+				}
+			],
+			"subtopics": [
+				"resize-vm",
+				"powershell-cmdlets",
+				"azure-cli"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R6YB48X7F0PXWHB3S8CEHG",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Your team supports a group of Azure virtual machines, and colleagues have logged five resize outcomes that nobody can explain. The table below lists each machine with what was observed during the change. You need to pair every machine with the sizing constraint that accounts for its result, so that future size changes for this group can be planned correctly. Which constraint should you drag onto each machine?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Machine",
+						"What the team observed"
+					],
+					"rows": [
+						[
+							"vm-report-01",
+							"Its managed disks must stay on Premium_LRS. After the machine was moved to Standard_E8_v3 the disks could no longer be used with Premium_LRS, and the same move to Standard_E8s_v3 worked without complaint."
+						],
+						[
+							"win-fin-07",
+							"This Windows machine has no local temp disk, and its resize to a target size that includes a local temp disk was refused."
+						],
+						[
+							"web-08",
+							"This Linux machine was moved from a size that has a local temp disk to one that has none, and later moved back to a size that has one, with no extra steps in between."
+						],
+						[
+							"burst-09",
+							"The machine is idle most of the day and runs short bursts of work. After a few minutes at full speed it fell back to base processor performance and stayed there, then returned to full speed after a period of idle time."
+						],
+						[
+							"calc-10",
+							"Its resize to the NVMe-capable size that the machine's own cluster offered was refused."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Windows virtual machines can only be resized between sizes that both have a local temp disk or both lack one."
+					},
+					{
+						"id": "b",
+						"text": "Linux virtual machines can be resized across the local temp disk boundary, from a size that has one to a size that does not and back again."
+					},
+					{
+						"id": "c",
+						"text": "Disk tier support is decided by the size name: only the variant whose name carries the s suffix can host Premium Storage disks."
+					},
+					{
+						"id": "d",
+						"text": "Burstable sizes meter processor time with credits, so a machine that has spent its credits is throttled back to base performance until they rebuild."
+					},
+					{
+						"id": "e",
+						"text": "A size that is SCSI-based cannot be resized to a size that offers remote NVMe storage."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "vm-report-01"
+					},
+					{
+						"id": "s2",
+						"label": "win-fin-07"
+					},
+					{
+						"id": "s3",
+						"label": "web-08"
+					},
+					{
+						"id": "s4",
+						"label": "burst-09"
+					},
+					{
+						"id": "s5",
+						"label": "calc-10"
+					}
+				]
+			},
+			"key": {
+				"s1": "c",
+				"s2": "a",
+				"s3": "b",
+				"s4": "d",
+				"s5": "e"
+			},
+			"explanation": {
+				"correct": "Each machine's outcome is produced by a distinct sizing rule: the size name alone decides whether Premium Storage disks can be attached (vm-report-01), Windows only allows like-for-like moves on local temp disk (win-fin-07), Linux can cross that boundary freely (web-08), the credit-metered burstable family throttles back to base performance after its credits are spent and recovers while they rebuild (burst-09), and a SCSI-based size cannot be resized to a remote NVMe-enabled size (calc-10). Pairing each machine with the rule that explains it lets the team predict which changes are possible before attempting them.",
+				"perChoice": {
+					"a": "Belongs with win-fin-07. That machine has no local temp disk and its move to a target that includes one was refused, which matches the restriction that Windows only changes between sizes with matching local temp disk arrangements.",
+					"b": "Belongs with web-08. That Linux machine crossed the local temp disk boundary in both directions with no extra steps, which is exactly what is allowed on Linux.",
+					"c": "Belongs with vm-report-01. Its disks failed on Standard_E8_v3 and worked on Standard_E8s_v3, so the suffix in the size name is what makes the Premium_LRS disks usable.",
+					"d": "Belongs with burst-09. Running at full speed for a few minutes, dropping to base performance, and recovering after an idle gap is the credit behaviour of the credit-metered burstable family, and this machine is idle for most of the day.",
+					"e": "Belongs with calc-10. The target was offered by the machine's cluster, yet the resize was refused, because a SCSI-based size cannot be resized to a size with remote NVMe storage."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/resize-vm"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/overview"
+				}
+			],
+			"subtopics": [
+				"vm-resize-constraints",
+				"vm-size-naming",
+				"burstable-credits"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R741F1FSE7BVZ2Z11ZEYZR",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You keep your Azure virtual machines declared as code with Terraform. Two of them live in resource group rg-fin: the Linux web server web-01 runs the public web tier on Standard_D2s_v5, and the Windows machine report-01 runs the finance reporting database on Standard_E2s_v3. Both keep their managed disks on Premium_LRS. You need web-01 to end up with 4 vCPUs and 16 GiB of memory, report-01 to end up with 4 vCPUs and 32 GiB, and each machine must remain able to use Premium_LRS for its managed disks. You also want the new sizes recorded in the configuration, and the change captured in a plan that a colleague can review before it takes effect on the machines. The catalogue below lists the sizes available to you. Which line or command should you drag to each step?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Size name",
+						"vCPUs",
+						"Memory (GiB)"
+					],
+					"rows": [
+						[
+							"Standard_D4s_v5",
+							"4",
+							"16"
+						],
+						[
+							"Standard_D4_v5",
+							"4",
+							"16"
+						],
+						[
+							"Standard_E4s_v3",
+							"4",
+							"32"
+						],
+						[
+							"Standard_E4_v3",
+							"4",
+							"32"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "size = \"Standard_D4s_v5\""
+					},
+					{
+						"id": "i2",
+						"text": "size = \"Standard_E4s_v3\""
+					},
+					{
+						"id": "i3",
+						"text": "terraform plan -out main.tfplan"
+					},
+					{
+						"id": "i4",
+						"text": "terraform apply main.tfplan"
+					},
+					{
+						"id": "i5",
+						"text": "size = \"Standard_D4_v5\""
+					},
+					{
+						"id": "i6",
+						"text": "size = \"Standard_E4_v3\""
+					},
+					{
+						"id": "i7",
+						"text": "az vm resize --resource-group rg-fin --name web-01 --size Standard_D4s_v5"
+					},
+					{
+						"id": "i8",
+						"text": "terraform plan"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "The Terraform configuration line that gives web-01 its new size"
+					},
+					{
+						"id": "s2",
+						"label": "The Terraform configuration line that gives report-01 its new size"
+					},
+					{
+						"id": "s3",
+						"label": "The Terraform command that stores the pending change in a reviewable plan file"
+					},
+					{
+						"id": "s4",
+						"label": "The Terraform command that executes the stored plan file so the change takes effect"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "web-01 needs 4 vCPUs with 16 GiB and the ability to keep Premium_LRS managed disks; of the catalogue rows only Standard_D4s_v5 satisfies all three, because the other 4 vCPU / 16 GiB row, Standard_D4_v5, is the variant without premium-disk support. report-01 needs 4 vCPUs with 32 GiB, which points to the memory-forward family, and there again only Standard_E4s_v3 keeps premium-disk capability (Standard_E4_v3 does not). Because both machines are declared in Terraform, the new capacity is written into the size attribute of each resource, the pending change is written to a plan file with 'terraform plan -out main.tfplan', and that file is then executed with 'terraform apply main.tfplan'.",
+				"perChoice": {
+					"i1": "Belongs in the web-01 slot: it delivers 4 vCPUs with 16 GiB, and it is the 's' variant, which is the one that supports Premium Storage for the managed disks.",
+					"i2": "Belongs in the report-01 slot: 4 vCPUs with 32 GiB in the memory-forward family, using the 's' variant so the Premium_LRS disks remain supported.",
+					"i3": "Belongs in the plan-file slot: it previews the pending change and writes it to main.tfplan, giving the team a stored plan to review before anything happens on the machines.",
+					"i4": "Belongs in the execution slot: it applies the recorded plan file, and that is what makes the new sizes take effect on both machines.",
+					"i5": "Fits no slot: it matches the web-01 capacity, but it is the variant without premium-disk support, so it would not work with the Premium_LRS managed disks.",
+					"i6": "Fits no slot: it matches the report-01 capacity, but it is the variant without premium-disk support, so the Premium_LRS managed disks would not be usable on it.",
+					"i7": "Fits no slot: this is the Azure CLI route for resizing a machine directly; this runbook is driven by configuration, where the new size is written into the resource and then executed from the recorded plan, so this command carries out none of the four steps.",
+					"i8": "Fits no slot: it prints the pending change on screen but writes no plan file, so it cannot feed the execution step that consumes the recorded plan."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/resize-vm"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/overview"
+				}
+			],
+			"subtopics": [
+				"vm-resize-workflow",
+				"terraform-size-configuration",
+				"premium-storage-sizing"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R75Q9FVKWX1M0MVMJJAW4M",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are deploying a new Linux virtual machine, vm-api-01, for an internal API service in resource group rg-app. The service has to run on ARM-based silicon rather than on the processors your existing fleet uses, the machine must come from the fifth generation of the D line, and its managed disks must stay on Premium_LRS. The deployment brief below lists what the new machine needs, and you have four candidate size names to choose from, all giving the same vCPU and memory count. Which size should you select?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Deployment brief - vm-api-01\n----------------------------------------\nOperating system      : Linux\nProcessor             : ARM-based (Microsoft Cobalt or Ampere Altra)\nFamily and generation : D line, fifth generation\nProcessor capacity    : 2 vCPUs, 8 GiB memory\nManaged disk tier     : Premium_LRS\nCandidate size names  : four names, all with the same vCPU and memory count"
+				},
+				"statement": "The new Linux virtual machine should be created on {{size}}.",
+				"slots": [
+					{
+						"id": "size",
+						"options": [
+							{
+								"id": "a",
+								"text": "Standard_D2ps_v5"
+							},
+							{
+								"id": "b",
+								"text": "Standard_D2as_v5"
+							},
+							{
+								"id": "c",
+								"text": "Standard_D2s_v5"
+							},
+							{
+								"id": "d",
+								"text": "Standard_D2_v5"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"size": "a"
+			},
+			"explanation": {
+				"correct": "The name Standard_D2ps_v5 decodes as family D, 2 vCPUs, the letter p for an ARM-based CPU (Microsoft Cobalt or Ampere Altra), the letter s for Premium Storage support, and v5 for the fifth generation of the series, so it satisfies both the ARM processor requirement and the Premium_LRS disk requirement.",
+				"perChoice": {
+					"size:b": "The letter a in this name marks an AMD CPU, so the machine would run on AMD silicon rather than on the ARM-based processor the service requires.",
+					"size:c": "This name has no processor letter before the s, so it runs on Intel x86-64 silicon and misses the ARM-based processor requirement.",
+					"size:d": "This name carries neither a processor letter nor the s feature letter, so it runs on Intel x86-64 and, without the s variant, it cannot provide Premium Storage support for the managed disks."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/resize-vm"
+				}
+			],
+			"subtopics": [
+				"vm-size-naming",
+				"processor-vendor",
+				"premium-storage"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R7ARRXBA4EAJZJ81FTTN2J",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Linux virtual machine named warehouse-01 in resource group rg-data that runs a data warehouse over large attached disks. The queries are I/O-bound, so the team wants more disk throughput rather than extra processor headroom. You need to move the machine onto a size whose main strength is fast access to its attached disks, while its managed disks stay on Premium_LRS. The size you have in mind is not offered by the VM's current hardware cluster, so the machine has to be deallocated before the change, and customers reach the service through a dynamic public IP address today. You need to pick the size and to know what the deallocation does to the disks and the address. Which size should you select, and what should you expect?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Operating system",
+							"Linux"
+						],
+						[
+							"Managed disk tier",
+							"Premium_LRS"
+						],
+						[
+							"Public IP address",
+							"Dynamic"
+						],
+						[
+							"Target size offered by the current hardware cluster",
+							"No"
+						]
+					]
+				},
+				"statement": "Select {{target}} for warehouse-01, and expect that {{stopEffect}}.",
+				"slots": [
+					{
+						"id": "target",
+						"options": [
+							{
+								"id": "a",
+								"text": "Standard_L8s_v2"
+							},
+							{
+								"id": "b",
+								"text": "Standard_L8_v2"
+							},
+							{
+								"id": "c",
+								"text": "Standard_E8s_v3"
+							},
+							{
+								"id": "d",
+								"text": "Standard_D8s_v5"
+							}
+						]
+					},
+					{
+						"id": "stopEffect",
+						"options": [
+							{
+								"id": "a",
+								"text": "the dynamic public IP address is released, while the OS disk and the data disks are left untouched"
+							},
+							{
+								"id": "b",
+								"text": "the dynamic public IP address is retained, while the OS disk and the data disks are left untouched"
+							},
+							{
+								"id": "c",
+								"text": "the dynamic public IP address is released, while the OS disk and the data disks are replaced with new disks"
+							},
+							{
+								"id": "d",
+								"text": "the dynamic public IP address is retained, while the OS disk and the data disks are replaced with new disks"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"stopEffect": "a",
+				"target": "a"
+			},
+			"explanation": {
+				"correct": "Standard_L8s_v2 belongs to the L line, which is aimed at storage-heavy work by pairing large attached disks with high local disk throughput and I/O, so it matches the warehouse's I/O-bound demand. The s version of a size is the one that can use Premium Storage, so this choice keeps the managed disks on Premium_LRS. When a VM is deallocated, a dynamic IP address attached to it is released, while the OS disk and the data disks stay untouched. Deallocating first is also what makes a target size that the running machine's hardware cluster did not offer available for the change.",
+				"perChoice": {
+					"stopEffect:b": "The disk portion is right, but the address outcome is wrong: a dynamic IP address is released when the VM is deallocated rather than retained.",
+					"stopEffect:c": "The address outcome is right, but the disk outcome is wrong: deallocating and resizing a VM leaves the OS disk and the data disks in place rather than replacing them.",
+					"stopEffect:d": "Both parts are wrong: the dynamic address is released when the VM is deallocated, and the OS disk and data disks are preserved rather than replaced with new ones.",
+					"target:b": "Standard_L8_v2 is not the s version of the size, and the s version is the one that can use Premium Storage, so this choice fails the Premium_LRS requirement for the managed disks.",
+					"target:c": "Standard_E8s_v3 comes from the E line, which favors memory over cores for database servers, caching and analytics; it does not deliver the local-disk throughput focus that the I/O-bound warehouse needs.",
+					"target:d": "Standard_D8s_v5 comes from the general-purpose D line, which trades quicker processors and more memory per core for balanced line-of-business, web and batch work rather than optimizing local disk I/O."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/resize-vm"
+				}
+			],
+			"subtopics": [
+				"vm-size-selection",
+				"premium-storage-support",
+				"dynamic-ip-release"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R7DCMX7P967ASMSDFDBZ74",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are deploying a new virtual machine for a health insurer's claims-processing service in resource group rg-hs. The brief below lists what the platform has to deliver for this workload. Which size should you select?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Brief item",
+						"Requirement"
+					],
+					"rows": [
+						[
+							"Service",
+							"Health claims processing for a medical insurer"
+						],
+						[
+							"Data classification",
+							"Personal health data"
+						],
+						[
+							"Isolation",
+							"Records must stay unreadable outside the processor's own protected area while the service is working on them; protection implemented only inside the guest operating system was rejected by the audit"
+						],
+						[
+							"Processor vendor",
+							"AMD"
+						],
+						[
+							"Managed disk tier",
+							"Premium_LRS"
+						],
+						[
+							"Region",
+							"East US"
+						]
+					]
+				},
+				"statement": "The size that satisfies the brief is {{size}}.",
+				"slots": [
+					{
+						"id": "size",
+						"options": [
+							{
+								"id": "a",
+								"text": "Standard_DC2ads_v5"
+							},
+							{
+								"id": "b",
+								"text": "Standard_D2ads_v5"
+							},
+							{
+								"id": "c",
+								"text": "Standard_E2ads_v5"
+							},
+							{
+								"id": "d",
+								"text": "Standard_DC2s_v3"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"size": "a"
+			},
+			"explanation": {
+				"correct": "Standard_DC2ads_v5 satisfies all three conditions in the brief. The DC family is the one that adds confidential computing, where trusted execution environments run in hardware, which is what the audit demanded: the platform hardware itself keeps the records isolated while they are being processed. The 'a' character in the name marks AMD processors, and the 's' in the size marks the Premium Storage variant, so the managed disks can use Premium_LRS. The other three candidates each miss one condition.",
+				"perChoice": {
+					"size:b": "Standard_D2ads_v5 covers the AMD processor and Premium_LRS requirements, but the D line is the general-purpose family and offers no hardware-level isolation of the data being processed, so it fails the audit condition.",
+					"size:c": "Standard_E2ads_v5 is the memory-optimized line, which suits large in-memory workloads but does not add the hardware isolation the audit required (only the EC subfamily layers that on top of E), so it fails.",
+					"size:d": "Standard_DC2s_v3 provides the hardware isolation and the Premium Storage variant, but its name carries no vendor letter, and a missing vendor letter means Intel x86-64 processors, so it fails the AMD requirement."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/resize-vm"
+				}
+			],
+			"subtopics": [
+				"vm-size-naming",
+				"confidential-computing",
+				"premium-storage"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R7MRHJGXSK0SBCQZVG1RF9",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Linux virtual machine named eda-01 in resource group rg-chip that runs a licensed electronic design automation simulation suite for a semiconductor design team. Every project is dominated by a single compilation thread, and the toolchain repeatedly stalls while waiting for data it expects to find close to the processor, which has pushed several builds past the deadline their licences allow. The team wants eda-01 moved onto a configuration that suits that kind of job, and it also wants to see exactly which configurations the platform currently offers for this machine before anything is changed. Which size family should you choose, and which PowerShell command should you run to list the configurations offered for eda-01?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Operating system",
+							"Linux"
+						],
+						[
+							"Current size",
+							"Standard_D16s_v5"
+						],
+						[
+							"Workload",
+							"Licensed electronic design automation simulation"
+						],
+						[
+							"Concurrency per job",
+							"One compilation thread"
+						],
+						[
+							"Observed symptom",
+							"Builds stall on memory fetches and overrun the licensed runtime window"
+						]
+					]
+				},
+				"statement": "The size family that matches the workload is {{family}}, and the PowerShell command that reports the configurations offered for this machine is {{cmd}}.",
+				"slots": [
+					{
+						"id": "family",
+						"options": [
+							{
+								"id": "a",
+								"text": "FX-series"
+							},
+							{
+								"id": "b",
+								"text": "F-series"
+							},
+							{
+								"id": "c",
+								"text": "D-series"
+							},
+							{
+								"id": "d",
+								"text": "M-series"
+							}
+						]
+					},
+					{
+						"id": "cmd",
+						"options": [
+							{
+								"id": "a",
+								"text": "Get-AzVMSize -ResourceGroupName rg-chip -VMName eda-01"
+							},
+							{
+								"id": "b",
+								"text": "Get-AzVM -ResourceGroupName rg-chip -VMName eda-01"
+							},
+							{
+								"id": "c",
+								"text": "Update-AzVM -VM $vm -ResourceGroupName rg-chip"
+							},
+							{
+								"id": "d",
+								"text": "Get-AzVMSize -Location westeurope"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"family": "a",
+				"cmd": "a"
+			},
+			"explanation": {
+				"correct": "FX is the family that pairs fast single-core speed with a large per-core cache on Intel Ice Lake silicon, and it is the family recommended for electronic design automation work, so it fits a licensed simulation suite whose jobs are dominated by one compilation thread that stalls on memory fetches. F-series only offers a processor-heavy balance for medium-load web servers, network appliances, batch queues, application servers, analytics and gaming, D-series is the general-purpose line for line-of-business applications, relational databases, web and application tiers, queued batch work and game servers, and M-series is the ultra memory-optimized family for extreme in-memory, data warehousing and HPC needs rather than cache-sensitive single-thread speed. For the second part, Get-AzVMSize called with the VM's resource group and name lists the sizes offered by the hardware cluster where that VM is hosted, so it returns exactly the configurations that are valid targets for eda-01.",
+				"perChoice": {
+					"family:b": "F-series keeps a processor-heavy balance suited to medium-load web servers, network appliances, batch queues, application servers, analytics and gaming; it does not deliver the high single-core speed and large per-core cache that a cache-bound electronic design automation toolchain needs.",
+					"family:c": "D-series is the general-purpose line for line-of-business applications, relational databases, busy web and application tiers, queued batch work and game servers, so it is not the family targeted at single-threaded, cache-sensitive simulation jobs.",
+					"family:d": "M-series is the ultra memory-optimized family for enormous in-memory databases, data warehousing, HPC, heavy SQL Server and similar workloads; the shortfall on eda-01 is cache-sensitive single-thread performance rather than a lack of RAM capacity.",
+					"cmd:b": "Get-AzVM returns the virtual machine object and its current configuration, so it does not enumerate the sizes that the machine's host will accept as a target.",
+					"cmd:c": "Update-AzVM writes a new SKU onto the VM and therefore performs the change instead of reporting the allowed targets; it also expects a VM object whose hardware profile has already been edited.",
+					"cmd:d": "Get-AzVMSize with a location returns the sizes published for that region, which is a broader list than the configurations this particular machine can actually be moved to."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/resize-vm"
+				}
+			],
+			"subtopics": [
+				"vm-size-family-selection",
+				"valid-resize-targets"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RRMX335Y71KZPPV55WECJ2",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are helping an aerospace research group in resource group rg-sim prepare its next three-year capacity commitment. The group runs computational fluid dynamics over large meshes and high-resolution weather modelling on the family described in the exhibit, and the exhibit also lists the sales position for that family. You need a family that is still purchasable on a three-year reserved plan, that remains available for the whole commitment, and that matches the simulations the group runs. You also want to know what happens to machines that are still on the old family once its end date passes. Which family should you select, and what should you expect?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Detail"
+					],
+					"rows": [
+						[
+							"Family in use today",
+							"HC-series - Intel Xeon Scalable processors, aimed at high-density compute for finite element analysis, molecular dynamics and computational chemistry"
+						],
+						[
+							"Reserved capacity sales",
+							"Sales of 1-year and 3-year reserved instances for this family ended on 2 April 2026"
+						],
+						[
+							"End of life",
+							"Instances of this family are retired on 31 May 2027"
+						],
+						[
+							"Simulations run by the group",
+							"Computational fluid dynamics over large meshes and high-resolution weather modelling"
+						]
+					]
+				},
+				"statement": "The new virtual machines should use the {{family}} family, and the team should plan for the fact that once the end date in the exhibit passes, {{outcome}}.",
+				"slots": [
+					{
+						"id": "family",
+						"options": [
+							{
+								"id": "a",
+								"text": "HBv5-series"
+							},
+							{
+								"id": "b",
+								"text": "HC-series"
+							},
+							{
+								"id": "c",
+								"text": "HX-series"
+							},
+							{
+								"id": "d",
+								"text": "NP-series"
+							}
+						]
+					},
+					{
+						"id": "outcome",
+						"options": [
+							{
+								"id": "a",
+								"text": "they are deallocated, stop running and lose SLA and support"
+							},
+							{
+								"id": "b",
+								"text": "they are kept running at their current size until the reserved term expires"
+							},
+							{
+								"id": "c",
+								"text": "they are automatically converted to the recommended successor family at no extra cost"
+							},
+							{
+								"id": "d",
+								"text": "they keep running and remain covered by the SLA for the remainder of the reserved term"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"family": "a",
+				"outcome": "a"
+			},
+			"explanation": {
+				"correct": "The family the group runs on today can no longer be bought on a one-year or three-year reserved plan, because those sales ended on 2 April 2026, and it is retired on 31 May 2027, so it cannot anchor the new three-year commitment. Of the candidates, HBv5-series is the HPC family built on AMD EPYC processors with high memory bandwidth, aimed at computational fluid dynamics, finite element analysis, weather modelling, seismic processing and genomics, and it is still on sale, so it both matches the simulations the group runs and can carry the reserved term. Azure points new HPC deployments at the HBv5 or HX lines in place of the retiring family, and HX is aimed at large-memory electronic design automation work rather than fluid dynamics and weather. Once 31 May 2027 passes, instances still on the retiring family are deallocated, stop running and no longer have SLA or support, so the replacement has to be in place before that date.",
+				"perChoice": {
+					"family:b": "One-year and three-year reserved instance sales for this family ended on 2 April 2026, and the family is retired on 31 May 2027, so it cannot anchor a new three-year commitment; its high-density compute focus also serves finite element analysis, molecular dynamics and computational chemistry rather than the fluid dynamics and weather modelling in this scenario.",
+					"family:c": "This family supplies large memory capacity for electronic design automation workloads. It is still on sale, but the simulations described here sit in the high-memory-bandwidth HB family, not in the large-memory EDA line.",
+					"family:d": "This is the FPGA-accelerated family, pairing AMD Xilinx Alveo U250 FPGA boards with Intel Xeon 8171M CPUs for inference, video transcoding, custom database acceleration and telecom signal handling, so it does not fit the group's simulations.",
+					"outcome:b": "Nothing keeps machines running past the retirement date of 31 May 2027, so assuming the old family stays up for the rest of the reserved term is not a valid plan.",
+					"outcome:c": "Instances are not converted automatically to a successor family; moving to a new family has to be planned, deployed and tested by the team.",
+					"outcome:d": "Coverage does not carry past 31 May 2027, so machines still on the retiring family are not protected by the SLA for the remainder of the reserved term."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/overview"
+				}
+			],
+			"subtopics": [
+				"hpc-family-selection",
+				"series-retirement"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RS92HH0N1ZKWTPA1G8F026",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Linux virtual machine named batch-01 in resource group rg-batch that runs a reporting job made up of long idle stretches followed by short periods of intense work. The exhibit lists the size this machine uses and what was observed across several recent cycles. You need to explain the repeated slowdown to the operations team. Which explanation should you record?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Observation",
+						"Recorded behavior"
+					],
+					"rows": [
+						[
+							"Current size",
+							"Standard_B2ms"
+						],
+						[
+							"Workload cycle",
+							"About 30 minutes idle, then 90 minutes of intense work"
+						],
+						[
+							"During the busy window",
+							"Work completed per minute stops improving, even though the queue keeps growing"
+						],
+						[
+							"After the idle window",
+							"The earlier throughput returns"
+						],
+						[
+							"Managed disks",
+							"Premium_LRS"
+						]
+					]
+				},
+				"statement": "The recurring slowdown occurs because {{cause}}.",
+				"slots": [
+					{
+						"id": "cause",
+						"options": [
+							{
+								"id": "a",
+								"text": "CPU credits are consumed and, once exhausted, the VM is held at its base CPU performance until the credits rebuild"
+							},
+							{
+								"id": "b",
+								"text": "CPU credits are consumed and, once exhausted, the VM keeps its full CPU performance while work backs up"
+							},
+							{
+								"id": "c",
+								"text": "CPU credits are consumed and, once exhausted, the VM stays at its base CPU performance permanently"
+							},
+							{
+								"id": "d",
+								"text": "CPU credits are consumed only while the VM is stopped, so a running VM keeps its full CPU performance"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"cause": "a"
+			},
+			"explanation": {
+				"correct": "The machine in the exhibit runs a burstable size, Standard_B2ms. The B family is the only Azure VM type that meters CPU with credits: credits accumulate while the workload stays below the base CPU threshold, are spent when the workload runs above it, and once the balance is depleted the VM is throttled back to its base CPU performance until the credits rebuild during lighter use. That matches the observed cycle in the exhibit, where throughput stops improving during the busy window and the earlier rate returns after an idle stretch, so the keyed explanation is correct.",
+				"perChoice": {
+					"cause:b": "Once the credits are spent the VM does not keep its full CPU performance; it is pulled down to its base CPU level, which is why the amount of work finished per minute stops improving during the busy window.",
+					"cause:c": "The reduced performance is temporary. Credits accumulate again while the workload stays under the base CPU threshold, so the VM returns to its burst CPU performance rather than staying limited permanently.",
+					"cause:d": "Credits are consumed while the VM is running and the workload stays above the base CPU threshold; a running burstable VM does lose processing speed once its credit balance is spent."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/overview"
+				}
+			],
+			"subtopics": [
+				"burstable-credits",
+				"cpu-throttling",
+				"vm-size-families"
+			],
+			"reviewed": false
+		}
+	]
+}

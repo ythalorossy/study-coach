@@ -1,0 +1,1728 @@
+{
+	"skill": "storage.blob-soft-delete",
+	"questions": [
+		{
+			"id": "q_01M5MCZW8GJYCYHTZCN9K8S0E2",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a general-purpose v2 storage account that keeps each night's reporting data as blobs inside one container. Ten days ago a configuration mistake removed that container, and you have since run a restore. The container name is present again, but it holds none of the reporting files and they cannot be read back. You need every blob in the container to survive the next accidental container deletion. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Blob soft delete",
+							"Enabled, 3-day retention"
+						],
+						[
+							"Container soft delete",
+							"Enabled, 14-day retention"
+						],
+						[
+							"Container removed",
+							"10 days ago"
+						],
+						[
+							"Restore result",
+							"Container name present, 0 blobs listed"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Change the blob soft delete retention from 3 days to 14 days"
+					},
+					{
+						"id": "b",
+						"text": "Change the container soft delete retention from 14 days to 3 days"
+					},
+					{
+						"id": "c",
+						"text": "Change the blob soft delete retention from 3 days to 7 days"
+					},
+					{
+						"id": "d",
+						"text": "Change the container soft delete retention from 14 days to 30 days"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Blob soft delete and container soft delete have independent retention settings. Restoring a soft-deleted container also brings back its blobs, but only if those blobs are still inside their own retention window; here the blob retention (3 days) ran out long before the container retention (14 days), so by restore time the blobs were permanently deleted and no retention value can bring them back after the fact. Raising the blob soft delete retention to 14 days keeps the two windows aligned, so the next accidental container deletion returns blobs that are still recoverable. The new value only governs deletions that happen after the change.",
+				"perChoice": {
+					"b": "Shortening the container retention to 3 days shrinks the recovery window for the container itself and does not recover the already expired blobs, so it makes future accidental deletions unrecoverable sooner rather than safer. Container retention changes are also not retroactive.",
+					"c": "7 days is still shorter than the 14-day container retention, so the same mismatch can happen again: a container deleted late in its window would come back with its blobs already expired. 7 days is only the default value, not a value that satisfies the requirement here.",
+					"d": "Increasing the container retention while the blob retention stays at 3 days widens the gap: the container would still be recoverable long after its blobs became permanently undeletable, producing exactly the empty-container result you already saw."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-container-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview"
+				}
+			],
+			"subtopics": [
+				"retention-periods",
+				"container-restore",
+				"recovery-window"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MD1DV0RYGXRRE00VABGVTF",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a general-purpose v2 storage account that holds each night's reporting output as blobs in a single container. Three weeks ago a cleanup script removed that container, and last night you ran a restore. The container name is back exactly as it was, but it holds none of its reporting blobs and they cannot be brought back. You need every blob inside a container to stay recoverable for as long as the container itself can be recovered after a deletion. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Account setting",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Account kind",
+							"General-purpose v2"
+						],
+						[
+							"Hierarchical namespace",
+							"Disabled"
+						],
+						[
+							"Container soft delete",
+							"Enabled"
+						],
+						[
+							"Container soft delete retention",
+							"30 days"
+						],
+						[
+							"Blob soft delete",
+							"Enabled"
+						],
+						[
+							"Blob soft delete retention",
+							"7 days"
+						],
+						[
+							"Blob versioning",
+							"Disabled"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Raise the blob soft delete retention on the account to 30 days so it matches the container soft delete retention."
+					},
+					{
+						"id": "b",
+						"text": "Lower the container soft delete retention on the account from 30 days to 7 days so the two windows agree."
+					},
+					{
+						"id": "c",
+						"text": "Turn on blob versioning for the account and leave both soft delete retention values unchanged."
+					},
+					{
+						"id": "d",
+						"text": "Apply a delete lock to the storage account and leave both soft delete retention values unchanged."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The two windows are configured and counted independently. Restoring a soft-deleted container brings back the container together with the blobs, blob versions and snapshots that are still inside their own window; anything whose blob window has already elapsed is gone for good. With blobs kept 7 days and the container kept 30 days, a three-week-old container comes back empty, which is exactly what was observed. Setting the blob window to 30 days means a future container restore still carries its data. The new value governs only objects deleted after the change; blobs already past their window stay gone, and an object that is already soft-deleted keeps the period that was in effect when it was deleted.",
+				"perChoice": {
+					"b": "Cutting the container window from 30 days down to 7 days shortens how long a container can be recovered instead of protecting the data, and it does not return blobs that already aged out of their own window.",
+					"c": "Versioning records new writes as versions so earlier content can be read back, but it does not extend the period during which deleted blobs are held and cannot bring back blobs whose window has already ended.",
+					"d": "A delete lock protects the storage account resource itself from being deleted. It has no effect on how long deleted containers or deleted blobs are kept inside an account."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-container-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview"
+				}
+			],
+			"subtopics": [
+				"retention-period",
+				"container-restore",
+				"data-protection-settings"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MD2XMC470TJ9EGH1E71STA",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a standard general-purpose v2 storage account, contosodata, that holds application logs and has to be converted so that Data Lake Storage workloads can use it. A colleague attempted the conversion from the CLI and the request was rejected with an error saying the account is not eligible for that operation right now; the account is still running without a hierarchical namespace. You need the conversion to go through, and afterwards you still want deleted blobs and deleted containers to stay recoverable for a retention period of your choosing. Which sequence of actions should you use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Account setting",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Account kind",
+							"StorageV2 (general-purpose v2, standard)"
+						],
+						[
+							"Hierarchical namespace",
+							"Disabled"
+						],
+						[
+							"Soft delete for blobs",
+							"Enabled - 14 days"
+						],
+						[
+							"Soft delete for containers",
+							"Enabled - 7 days"
+						],
+						[
+							"Blob versioning",
+							"Disabled"
+						],
+						[
+							"Performance tier",
+							"Standard"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Turn soft delete for blobs and soft delete for containers off on contosodata, run the hns-migration command, then turn both soft delete settings back on"
+					},
+					{
+						"id": "b",
+						"text": "Turn soft delete for blobs off on contosodata, run the hns-migration command, then turn soft delete for blobs back on"
+					},
+					{
+						"id": "c",
+						"text": "Turn soft delete for containers off on contosodata, run the hns-migration command, then turn soft delete for containers back on"
+					},
+					{
+						"id": "d",
+						"text": "Run the hns-migration command on contosodata first, then turn soft delete for blobs and soft delete for containers off and back on afterwards"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Both soft delete settings on contosodata have to be turned off before the account can be converted to a hierarchical namespace: having either blob soft delete or container soft delete enabled blocks that migration, which is exactly why the CLI request was rejected. The order is therefore: disable soft delete for blobs and for containers, run the hierarchical namespace migration, and then enable the two settings again with the retention periods you want, so deleted blobs and containers remain recoverable afterwards.",
+				"perChoice": {
+					"b": "This leaves soft delete for containers enabled on the account, and container soft delete on its own is still enough to block the migration, so the conversion would be rejected again.",
+					"c": "This leaves soft delete for blobs enabled on the account, and blob soft delete on its own also blocks the migration, so the conversion would be rejected again.",
+					"d": "The migration is attempted while both soft delete settings are still enabled, so the request fails for the same reason as before; the settings must be off before the migration runs, not after."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-container-overview"
+				}
+			],
+			"subtopics": [
+				"hns-migration",
+				"soft-delete-configuration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MD4V1HRRBR9NP49FAFVABA",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You run a nightly backup job that copies every blob in the reports container of a general-purpose v2 storage account. Since the account's data recovery settings were last reviewed, the job has started failing: its enumeration step produces far more items than the container actually holds, several of them cannot be downloaded, and the job aborts on the first such item. Nothing about the live blobs has changed. You need the backup to work from the blobs that are still in use in the container, without weakening what the account protects against deletion. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "// Nightly enumerator, Azure.Storage.Blobs (v12) SDK\nvar states = BlobStates.All;\n\nawait foreach (BlobItem item in container.GetBlobsAsync(states: states))\n{\n    BlobClient bc = container.GetBlobClient(item.Name);\n    await bc.DownloadToAsync(Path.Combine(targetFolder, item.Name));\n}\n\n// Container reports/ now holds 412 blobs.\n// Job log: \"Enumerated 2,318 items. Cannot read content of 'daily-2026-10-04.csv'.\"\n// Job result: failed"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Pass BlobStates.None to GetBlobsAsync so only the active blobs are enumerated"
+					},
+					{
+						"id": "b",
+						"text": "Pass BlobStates.Versioned to GetBlobsAsync so blob versions are listed instead of the deleted items"
+					},
+					{
+						"id": "c",
+						"text": "Pass BlobStates.Deleted to GetBlobsAsync so the job enumerates only the items that were deleted"
+					},
+					{
+						"id": "d",
+						"text": "Keep BlobStates.All and wrap each download in a try/catch that skips the items that fail"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "With the v12 Azure.Storage.Blobs SDK, requesting BlobStates.All makes the blob listing hand back soft-deleted blobs as well as live ones. Those extra items have no readable content until they are restored, which is exactly what breaks the backup. Passing BlobStates.None limits the enumeration to blobs that are still active, so the job copies the current data and the account's protection is left in place.",
+				"perChoice": {
+					"b": "BlobStates.Versioned is the documented flag for listing blob versions without the soft-deleted blobs; it is meant for working with version history and still does not give the job only the blobs that are active, so it does not satisfy the requirement.",
+					"c": "BlobStates.Deleted restricts the listing to soft-deleted items, which is the opposite of what is needed: the container's live blobs would not be enumerated at all and the backup would have nothing to copy.",
+					"d": "Keeping BlobStates.All still enumerates the soft-deleted blobs, so the job keeps hitting items whose data cannot be read; catching and skipping the errors only hides the symptom and reports a partial backup as a success."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview"
+				}
+			],
+			"subtopics": [
+				"listing-soft-deleted-blobs",
+				"backup-and-restore-behavior",
+				"enumeration-flags"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MD6NPE4Z5MFQRH3TEFCMG9",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a general-purpose v2 storage account that stores each month's invoice PDFs as blobs in a single container. Ten days ago a maintenance script deleted that container by mistake. You restored it yesterday and the container name reappeared, but it is empty and the PDFs are gone for good. You need that from now on any container that gets restored brings its files back with it, for as long as the container itself can still be brought back. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Configured value"
+					],
+					"rows": [
+						[
+							"Blob soft delete",
+							"On"
+						],
+						[
+							"Blob soft delete retention",
+							"7 days"
+						],
+						[
+							"Container soft delete",
+							"On"
+						],
+						[
+							"Container soft delete retention",
+							"30 days"
+						],
+						[
+							"Blob versioning",
+							"Disabled"
+						],
+						[
+							"Delete lock on the storage account",
+							"Not configured"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Raise the blob soft delete retention so it covers the same period as the container retention"
+					},
+					{
+						"id": "b",
+						"text": "Raise the container soft delete retention so it covers a longer period"
+					},
+					{
+						"id": "c",
+						"text": "Lower the blob soft delete retention so fewer stale copies are billed"
+					},
+					{
+						"id": "d",
+						"text": "Leave both retention windows unchanged and add a delete lock on the storage account"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Blob soft delete and container soft delete use two independent retention windows, and each deleted object starts its own countdown from the moment it is deleted. Here the container was recoverable for 30 days, but the blobs inside it were only kept for 7 days, so by the time the container was restored on day 10 its PDFs had already passed their retention and were permanently deleted — which is why the restored container is empty. Raising the blob soft delete retention until it is at least as long as the container retention means that a future restored container returns with its blobs, versions and snapshots still intact for the whole time the container itself can be recovered. The files already lost cannot be brought back, because retention cannot be extended after the fact.",
+				"perChoice": {
+					"b": "This widens the mismatch rather than closing it. With blobs still kept for only 7 days and containers now recoverable for even longer, every restore attempted after day 7 will still return a container with no contents in it.",
+					"c": "Shortening the blob window to fewer than 7 days makes the problem more likely, not less: blobs would be purged sooner, so restores later in the container's 30-day window would keep coming back empty.",
+					"d": "A lock on the storage account only blocks deletion of the account resource itself. It changes neither retention window, so a container deleted and restored in the next 20 days would still return without its blobs, because those blobs expired at the end of their shorter 7-day window."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-container-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview"
+				}
+			],
+			"subtopics": [
+				"retention-periods",
+				"container-soft-delete",
+				"blob-soft-delete"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MD7HYVYK692E3QDZ6R94VW",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a general-purpose v2 storage account, contosodata, whose reports container was removed by a faulty script three days ago. A scheduled job on the virtual machine contoso-restore-vm is supposed to bring that container and everything inside it back, but it has never succeeded, and the deletion happened recently enough that the recovery window has not closed yet. You need the scheduled job to be able to perform that recovery without altering how the account protects deleted data. Which role assignment should you add?",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "$ az role assignment list --assignee contoso-restore-vm \\\n    --scope /subscriptions/…/storageAccounts/contosodata/blobServices/default/containers/reports\n[\n  { \"roleName\": \"Storage Blob Data Reader\",    \"scope\": \"…/containers/reports\" },\n  { \"roleName\": \"Storage Blob Data Delegator\", \"scope\": \"…/containers/reports\" }\n]\n\n$ az storage container restore --account-name contosodata --name reports --auth-mode login\nERROR: Restore container failed: 403 This request is not authorized to perform this operation using this permission.\nErrorCode: AuthorizationPermissionMismatch"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Storage Blob Data Contributor"
+					},
+					{
+						"id": "b",
+						"text": "Storage Blob Data Reader"
+					},
+					{
+						"id": "c",
+						"text": "Storage Blob Data Delegator"
+					},
+					{
+						"id": "d",
+						"text": "Storage Account Contributor"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The recovery of a soft-deleted container is a data-plane operation on blob content, and the least-privileged built-in role that can carry it out is Storage Blob Data Contributor. Assigning it on the reports container (or any higher scope such as the account) gives the managed identity the permissions the restore operation needs, and the account's recovery settings stay exactly as they are. Because only three days have passed, the container is still inside the retention window and can be brought back once the identity is able to perform the operation.",
+				"perChoice": {
+					"b": "Storage Blob Data Reader already exists on the container and grants read-only access to blob data, which is why the request is rejected as unauthorized. Read access alone cannot bring a soft-deleted container and its contents back; data-plane write permissions are required.",
+					"c": "Storage Blob Data Delegator lets an application obtain user delegation SAS keys for blob access. It carries no permission of its own to run the recovery operation against the container, so the job would still be rejected.",
+					"d": "Storage Account Contributor is a management-plane role for administering the storage account resource itself, such as its settings and configuration. It grants no access to blob data, so it cannot be used to recover a deleted container."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-container-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview"
+				}
+			],
+			"subtopics": [
+				"container-soft-delete",
+				"rbac-role-assignments",
+				"recovery-operations"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MDA7CH0S8X4S73FB9VJCVR",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a general-purpose v2 storage account, contosodata, where the finance group keeps the current year's workbooks in a single blob container. Yesterday a scheduled job brought the container back after it had been deleted, and the container name reappeared, but two workbooks that had been removed from it ten days earlier were not with it. From now on you need every workbook that was inside a container to still be there whenever that container is brought back, for as long as the container itself remains recoverable. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Configured value"
+					],
+					"rows": [
+						[
+							"Account kind",
+							"General-purpose v2"
+						],
+						[
+							"Hierarchical namespace",
+							"Disabled"
+						],
+						[
+							"Soft delete for blobs",
+							"Off"
+						],
+						[
+							"Soft delete for containers",
+							"On"
+						],
+						[
+							"Retention for deleted containers",
+							"30 days"
+						],
+						[
+							"Retention for deleted blobs",
+							"Not applicable, feature off"
+						],
+						[
+							"Blob versioning",
+							"Disabled"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Turn on soft delete for blobs and set its retention period to 30 days"
+					},
+					{
+						"id": "b",
+						"text": "Turn on soft delete for blobs and set its retention period to 7 days"
+					},
+					{
+						"id": "c",
+						"text": "Turn on soft delete for containers and set its retention period to 30 days"
+					},
+					{
+						"id": "d",
+						"text": "Add a lock to the contosodata resource so the account cannot be deleted, and leave soft delete for blobs turned off"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Soft delete for containers is already on and retained the deleted container for 30 days, but the container period only governs the container; a workbook deleted from a container that was still alive is governed by soft delete for blobs, which is Off, so that delete was permanent. Turning on soft delete for blobs retains each deleted blob for the configured number of days, and using the same 30 days as the container guarantees that a container brought back inside its own window still arrives with everything in it.",
+				"perChoice": {
+					"b": "7 days is shorter than the 30 days a deleted container is kept. The two retention periods are independent, and the blob period governs the blobs, so a container restored late in its window can return with workbooks whose retention has already elapsed and which are permanently gone.",
+					"c": "Soft delete for containers is already enabled with a 30-day period, so this leaves the account as it is and does nothing for a blob deleted from a live container. Lengthening the container period also applies only to containers deleted after the change, not to blobs that were already deleted.",
+					"d": "A lock on the storage account resource guards the account against deletion. It retains nothing and creates no recovery window for an individual blob removed while its container was live, so the missing workbooks would still not come back with a restored container."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-container-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview"
+				}
+			],
+			"subtopics": [
+				"retention-period-alignment",
+				"blob-soft-delete",
+				"container-soft-delete"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MDC82HQFCQD98X7NW6PVFN",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a general-purpose v2 storage account, contosodata, whose archive container was removed by a faulty script ten days ago. You brought the container back an hour ago and its name reappeared with most of its content, but three files that had been removed from it twelve days earlier are permanently lost. You need any container that gets brought back to still contain everything that was inside it, for as long as the container itself remains recoverable. Which change should you make to the account?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Account setting",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Blob soft delete",
+							"Enabled"
+						],
+						[
+							"Blob soft delete retention",
+							"7 days"
+						],
+						[
+							"Container soft delete",
+							"Enabled"
+						],
+						[
+							"Container soft delete retention",
+							"30 days"
+						],
+						[
+							"Blob versioning",
+							"Disabled"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Raise blob soft delete retention from 7 days to 30 days, leaving the container soft delete retention unchanged"
+					},
+					{
+						"id": "b",
+						"text": "Lower container soft delete retention from 30 days to 7 days, leaving the blob soft delete retention unchanged"
+					},
+					{
+						"id": "c",
+						"text": "Raise blob soft delete retention from 7 days to 14 days, leaving the container soft delete retention unchanged"
+					},
+					{
+						"id": "d",
+						"text": "Raise container soft delete retention from 30 days to 90 days, leaving the blob soft delete retention unchanged"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The two retention windows are set independently on the account. With blob soft delete at 7 days and container soft delete at 30 days, blobs removed from the container more than 7 days before the deletion are already permanently gone, so the container comes back without them while it is still recoverable for another 20 days. Setting blob soft delete retention to at least the container retention keeps a restored container complete for as long as the container itself can be brought back. The new value applies to deletions that happen after it is saved, so the three files lost twelve days ago are not recovered by the change, but future deletions are protected.",
+				"perChoice": {
+					"b": "This makes the two windows equal but shortens how long a deleted container can be brought back from 30 days to 7 days, giving up recovery time the account already had, and it still does not recover the twelve-day-old deletions.",
+					"c": "14 days is still shorter than the 30-day container window, so any blob removed 8 to 30 days before the container deletion would be permanently deleted while the container itself can still be brought back — the same gap that caused the current loss.",
+					"d": "Widening only the container window to 90 days increases the mismatch: blobs removed more than 7 days ago are still permanently deleted when the container is restored, so a restored container would remain incomplete for most of its 90-day window."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-container-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview"
+				}
+			],
+			"subtopics": [
+				"retention-period",
+				"container-recovery",
+				"data-protection"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MDEZJTNRN34Y496VM38BJQ",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a general-purpose v2 storage account, contosodata, that is configured as shown below, and no other data protection features are enabled on it. No workload on the account uses Data Lake Storage Gen2. You need to be able to tell the platform team what each of the following calls actually leaves behind in this account, so that nobody relies on recovering data the service no longer keeps. Match each call to the result it produces here.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account type",
+							"General-purpose v2"
+						],
+						[
+							"Hierarchical namespace",
+							"Disabled"
+						],
+						[
+							"Soft delete for blobs",
+							"On, 7 day retention"
+						],
+						[
+							"Soft delete for containers",
+							"Off"
+						],
+						[
+							"Blob versioning",
+							"Off"
+						],
+						[
+							"Permanent delete",
+							"Off"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Put Blob overwrites an existing blob named logs.txt."
+					},
+					{
+						"id": "i2",
+						"text": "Delete Container removes the reports container from the account."
+					},
+					{
+						"id": "i3",
+						"text": "Set Blob Tier moves q3.csv from the Cool tier to the Archive tier."
+					},
+					{
+						"id": "i4",
+						"text": "Set Blob Metadata updates the content type on an existing blob."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "The data held before the change is retained and can be brought back"
+					},
+					{
+						"id": "s2",
+						"label": "Everything inside it is lost with no way to bring any of it back"
+					},
+					{
+						"id": "s3",
+						"label": "Only the live object is relocated and no extra copy is stored"
+					},
+					{
+						"id": "s4",
+						"label": "The values written before the call are discarded and nothing is kept"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "This account has a flat namespace (hierarchical namespace disabled), blob soft delete turned on and blob versioning turned off. On a flat-namespace account with soft delete only, every overwrite silently creates a soft-deleted snapshot of the prior state, so the Put Blob overwrite is the call whose earlier data is retained and can be brought back, which is slot one. Delete Container is unaffected by blob soft delete, so with container soft delete off the blobs inside it cannot be recovered, which is slot two. Set Blob Tier moves only the base blob and creates neither a soft-deleted snapshot nor a version, so slot three is its result. Set Blob Metadata applies new values that are not protected by soft delete on their own, and versioning is off here, so the values it replaced are simply gone, which is slot four.",
+				"perChoice": {
+					"i1": "Fits the slot about the data held before the change: on a flat-namespace account with soft delete and no versioning, an overwrite leaves the previous state as a soft-deleted snapshot that an undelete operation can restore.",
+					"i2": "Fits the slot about everything inside being lost: Delete Container is not covered by blob soft delete, so the blobs it held are unrecoverable unless container soft delete was enabled before the deletion, and it is off here.",
+					"i3": "Fits the slot about relocation with no extra stored copy: Set Blob Tier moves only the base blob to the new tier and creates no soft-deleted snapshot and no version, so the former state is not stored.",
+					"i4": "Fits the slot about the replaced values being discarded: Set Blob Metadata is not protected by soft delete on its own, and with versioning disabled the service keeps no earlier set of values to bring back."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-container-overview"
+				}
+			],
+			"subtopics": [
+				"soft-delete-coverage",
+				"blob-and-container-recovery"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MDH22C9ASS7C6BFB3K0ZVP",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a general-purpose v2 storage account, contosodata, that stores business files in named groups. After an audit, the compliance team listed four recovery situations that this account has to withstand, and they want each one mapped to the single mechanism that actually delivers it. Match each situation to its mechanism.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account type",
+							"General-purpose v2"
+						],
+						[
+							"Hierarchical namespace",
+							"Disabled"
+						],
+						[
+							"Soft delete for blobs",
+							"Enabled, 7 days"
+						],
+						[
+							"Soft delete for containers",
+							"Disabled"
+						],
+						[
+							"Blob versioning",
+							"Disabled"
+						],
+						[
+							"Resource locks",
+							""
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Blob soft delete"
+					},
+					{
+						"id": "i2",
+						"text": "Container soft delete"
+					},
+					{
+						"id": "i3",
+						"text": "A canNotDelete lock"
+					},
+					{
+						"id": "i4",
+						"text": "Azure Backup"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Situation 1 - A maintenance script removed an entire named group of files with everything in it, and that group has to be recoverable exactly as it was."
+					},
+					{
+						"id": "s2",
+						"label": "Situation 2 - One file inside a group that is still running was erased or replaced by mistake, and that exact file has to come back in the state it was in before."
+					},
+					{
+						"id": "s3",
+						"label": "Situation 3 - Removing the whole resource through the portal has to be impossible until the safeguard is deliberately lifted."
+					},
+					{
+						"id": "s4",
+						"label": "Situation 4 - Ransomware that encrypts files, and loss of the entire resource, both have to be recoverable after the service's own retention windows have run out."
+					}
+				]
+			},
+			"key": {
+				"s1": "i2",
+				"s2": "i1",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Each situation is answered by a different mechanism. Situation 1 is the risk of the whole named group being removed, which is what container soft delete retains and restores together with its contents (Restore Container returns the container with its blobs, versions and snapshots). Situation 2 is the risk of an individual file being deleted or overwritten while its group keeps running, which is what blob soft delete retains and restores with Undelete Blob, snapshots and versions attached. Situation 3 is about prevention rather than recovery: neither soft delete feature blocks deletion of the storage account itself, so a lock placed on that resource is what makes the deletion fail. Situation 4 goes beyond what the storage service retains, so it needs Azure Backup, which Microsoft recommends in addition to both soft delete features for wider risks such as accidental account deletion or ransomware.",
+				"perChoice": {
+					"i1": "Situation 2. Blob soft delete is the feature for individual blobs, their snapshots and versions that are deleted or overwritten inside a group that still exists; the restored object comes back with its soft-deleted snapshots and versions.",
+					"i2": "Situation 1. Container soft delete is the feature for the case where the container itself is deleted: it keeps the container and everything inside it for the retention period, and Restore Container brings back the container together with its blobs, versions and snapshots.",
+					"i3": "Situation 3. Container soft delete does not protect against deleting the storage account itself, and neither does blob soft delete; placing a lock on the storage account resource is what blocks that deletion until the lock is removed.",
+					"i4": "Situation 4. Azure Backup is the wider protection Microsoft recommends alongside both soft delete features for risks such as accidental account deletion or ransomware, because soft delete only retains data for a bounded retention period inside the service."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-container-overview"
+				}
+			],
+			"subtopics": [
+				"blob-soft-delete",
+				"container-soft-delete",
+				"data-protection-planning"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MPBTMX5MXW22S02P95FSM2",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have four storage accounts in the contoso subscription, each configured exactly as listed below. The platform team is writing a recovery runbook and needs to know, for each account, what the service still holds once a file is deleted or replaced, and how the account behaves when the team tries to bring the files back. Drag each outcome onto the account that fits its configuration.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Account",
+						"Account type",
+						"Blob soft delete",
+						"Container soft delete",
+						"Permanent delete"
+					],
+					"rows": [
+						[
+							"contoso-alpha",
+							"General-purpose v2, flat namespace",
+							"On, 14 days",
+							"Off",
+							"Off"
+						],
+						[
+							"contoso-bravo",
+							"General-purpose v2, flat namespace",
+							"On, 30 days",
+							"On, 30 days",
+							"On"
+						],
+						[
+							"contoso-charlie",
+							"General-purpose v2 with hierarchical namespace",
+							"On, 30 days",
+							"On, 30 days",
+							"Off"
+						],
+						[
+							"contoso-delta",
+							"General-purpose v2, flat namespace",
+							"On, 14 days",
+							"On, 30 days",
+							"Off"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "An overwritten file keeps an earlier copy which can be brought back during the configured retention period, but removing the whole container leaves its files unrecoverable."
+					},
+					{
+						"id": "b",
+						"text": "A caller with the right permissions can permanently remove the retained earlier copies of a deleted file before the retention period ends."
+					},
+					{
+						"id": "c",
+						"text": "A deleted file can be brought back during the configured retention period, but overwriting the same file leaves no retained copy of the earlier contents."
+					},
+					{
+						"id": "d",
+						"text": "A container restored after the file-level retention period has elapsed can come back with its files already permanently deleted."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "contoso-alpha"
+					},
+					{
+						"id": "s2",
+						"label": "contoso-bravo"
+					},
+					{
+						"id": "s3",
+						"label": "contoso-charlie"
+					},
+					{
+						"id": "s4",
+						"label": "contoso-delta"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d"
+			},
+			"explanation": {
+				"correct": "Each outcome follows from one specific configuration. contoso-alpha is a flat-namespace account with blob soft delete on and container soft delete off: an overwrite silently leaves a recoverable copy of the earlier contents, while deleting the container leaves the blobs inside it unrecoverable. contoso-bravo is the only account with permanent delete enabled, so a caller with the right permissions can purge retained copies before the retention period ends. contoso-charlie has a hierarchical namespace, where soft delete protects deletes only and overwrites are not captured. contoso-delta has a shorter blob-level window than its container-level window, so a container restored later can come back with files that were already permanently deleted.",
+				"perChoice": {
+					"a": "Fits contoso-alpha. On a flat-namespace account with blob soft delete enabled and versioning disabled, every overwrite creates a soft-deleted snapshot of the earlier contents that can be brought back during the retention period. Because container soft delete is off on this account, removing the container itself leaves the blobs inside it unrecoverable.",
+					"b": "Fits contoso-bravo. It is the only account where the permanent delete feature is enabled, so a caller with the appropriate permissions can permanently remove soft-deleted snapshots and versions before the retention period expires. On the other accounts every retained copy survives until its window ends.",
+					"c": "Fits contoso-charlie. With a hierarchical namespace, soft delete protects deletes only: a deleted blob can be brought back during the retention period, but overwrites are not captured, so no retained copy of the earlier contents is kept. On the flat-namespace accounts an overwrite does create such a retained copy, which is why this outcome fits only contoso-charlie.",
+					"d": "Fits contoso-delta. Blob-level and container-level retention periods are independent, and here the blob-level one is shorter than the container-level one, so blobs inside a container restored later in the container window may already be permanently deleted when the container comes back. The other accounts either use equal windows or have container soft delete turned off."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-container-overview"
+				}
+			],
+			"subtopics": [
+				"blob-soft-delete",
+				"container-soft-delete",
+				"retention-period-alignment"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MPSCV2BQYQ1HXJ2W282TP6",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a general-purpose v2 storage account, contosodata, that is configured as shown below. The platform team is writing a runbook for this account and wants each of four common situations described as this service behaves, so that on-call engineers do not promise something the account cannot deliver. Match each situation to the behaviour that occurs here.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Account: contosodata\nAccount type: General-purpose v2\nHierarchical namespace: Enabled (Data Lake Storage Gen2)\nBlob soft delete: On, 14-day retention\nContainer soft delete: On, 14-day retention\nContainer layout used by the app: One container holding a nested directory structure"
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "The replaced content is not kept at all, while a deleted file can still be brought back until the window closes"
+					},
+					{
+						"id": "i2",
+						"text": "The directory and everything under it is kept, and its contents cannot be read until the directory itself is brought back"
+					},
+					{
+						"id": "i3",
+						"text": "There is no way to enumerate them; the exact original name has to be known"
+					},
+					{
+						"id": "i4",
+						"text": "The deleted files are disconnected from the directory and cannot be brought back under the new name"
+					},
+					{
+						"id": "d1",
+						"text": "A replaced file is kept as an older copy that stays available until the window closes"
+					},
+					{
+						"id": "d2",
+						"text": "The deleted directories are listed alongside the live ones, so each one can be found by name"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Overwriting an existing file with a different payload on this account"
+					},
+					{
+						"id": "s2",
+						"label": "Deleting a directory that holds subdirectories and files on this account"
+					},
+					{
+						"id": "s3",
+						"label": "Finding the containers that were deleted on this account"
+					},
+					{
+						"id": "s4",
+						"label": "Renaming a directory that had deleted files on this account"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Every item in the key belongs to a hierarchical namespace (Data Lake Storage Gen2) account, and the two unused items describe flat namespace accounts, which this account is not. On a hierarchical namespace account, soft delete protects deletes only: overwrites are not captured, so replacing a file leaves no earlier copy, while a deleted file stays in the service and can be brought back until the retention window closes (s1 = i1). Deleting a directory soft-deletes the directory together with everything inside it, and the contents stay inaccessible until the directory itself is undeleted (s2 = i2). Such an account cannot enumerate soft-deleted containers at all, so the exact original container name must be known to bring one back (s3 = i3). Renaming a directory disconnects its soft-deleted blobs from it, so files deleted inside it can no longer be brought back under the new name and the original name must be restored first (s4 = i4).",
+				"perChoice": {
+					"i1": "Correct for s1. On an account with a hierarchical namespace, soft delete protects against deletes only; overwrites are not captured as soft-deleted snapshots and can't be recovered, so the replaced content is not kept, while a file that was deleted remains in the service and can be brought back until the 14-day window closes.",
+					"i2": "Correct for s2. When a directory is deleted in an account with a hierarchical namespace, the directory and all of its contents are marked as soft-deleted, and you can only access the soft-deleted directory; the contents stay inaccessible until the directory itself is undeleted.",
+					"i3": "Correct for s3. Accounts with a hierarchical namespace don't support enumerating soft-deleted containers, so there is no way to list them; restoring one requires knowing the exact original container name.",
+					"i4": "Correct for s4. If a directory that contains soft-deleted blobs is renamed, those soft-deleted blobs become disconnected from the directory, so they can't be brought back under the new name; the directory name has to be reverted to the original name first.",
+					"d1": "Does not fit any slot here. This is the behaviour of an account with a flat namespace and versioning disabled, where overwriting a blob automatically generates a soft-deleted snapshot of the prior state that is retained until the window closes. On this account, which has a hierarchical namespace, overwrites are not captured.",
+					"d2": "Does not fit any slot here. This is the behaviour of an account with a flat namespace, where soft-deleted containers can be enumerated (for example with List Containers and include=deleted, or the Show deleted containers view in the Storage browser). On this account, which has a hierarchical namespace, soft-deleted containers can't be enumerated at all."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-container-overview"
+				}
+			],
+			"subtopics": [
+				"hierarchical-namespace",
+				"directory-operations",
+				"soft-delete-recovery"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MQ4QETYBGRP2MMYK8XQ34A",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a general-purpose v2 storage account, contosodata, that holds compliance documents for the legal department. The account's current recovery settings and four requests from the platform team are shown below. You need to match each request with the single change that satisfies it, without reducing the recovery time the account already provides. Which change should you make for each request?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Detail"
+					],
+					"rows": [
+						[
+							"Account",
+							"General-purpose v2, flat namespace"
+						],
+						[
+							"Blob soft delete",
+							"Enabled, 7-day retention"
+						],
+						[
+							"Container soft delete",
+							"Enabled, 30-day retention"
+						],
+						[
+							"Blob versioning",
+							"Disabled"
+						],
+						[
+							"Request A",
+							"A file removed from a live container must stay recoverable for the same length of time that a deleted container stays recoverable."
+						],
+						[
+							"Request B",
+							"Work out how many bytes of deleted data the account still holds, so that this amount can be reported on its own in the monthly chargeback."
+						],
+						[
+							"Request C",
+							"Stop an accidental deletion of the whole storage account."
+						],
+						[
+							"Request D",
+							"Produce a weekly list of the containers that were deleted and can still be brought back."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a1",
+						"text": "Increase the blob soft delete retention until it is no shorter than the container soft delete retention."
+					},
+					{
+						"id": "a2",
+						"text": "Run an Azure Storage blob inventory report with includeDeleted set to true and add up the Content-Length values."
+					},
+					{
+						"id": "a3",
+						"text": "Place a lock on the storage account resource."
+					},
+					{
+						"id": "a4",
+						"text": "List containers with include=deleted to find the ones that can still be brought back."
+					},
+					{
+						"id": "a5",
+						"text": "Increase the container soft delete retention to 90 days."
+					},
+					{
+						"id": "a6",
+						"text": "Decrease the container soft delete retention until it matches the blob soft delete retention."
+					},
+					{
+						"id": "a7",
+						"text": "Read the BlobCapacity metric in Azure Monitor to work out how much deleted data the account holds."
+					}
+				],
+				"slots": [
+					{
+						"id": "reqA",
+						"label": "Request A"
+					},
+					{
+						"id": "reqB",
+						"label": "Request B"
+					},
+					{
+						"id": "reqC",
+						"label": "Request C"
+					},
+					{
+						"id": "reqD",
+						"label": "Request D"
+					}
+				]
+			},
+			"key": {
+				"reqA": "a1",
+				"reqB": "a2",
+				"reqC": "a3",
+				"reqD": "a4"
+			},
+			"explanation": {
+				"correct": "Request A is satisfied by lengthening the blob soft delete retention so it is no shorter than the container soft delete retention: the two windows are independent, and when the blob window is the shorter one a restored container can come back with its blobs already permanently deleted. Request B is satisfied by the blob inventory report with includeDeleted set to true and the Content-Length values totalled, because the BlobCapacity metric mixes soft-deleted and active data and the automatically created snapshots do not show up in Azure Monitor resource logs or Storage Analytics. Request C is satisfied by a lock on the storage account resource, because neither soft delete feature protects the account itself from being deleted. Request D is satisfied by listing containers with include=deleted, because soft-deleted containers are hidden from normal listings and this account has no hierarchical namespace, so they can still be enumerated.",
+				"perChoice": {
+					"a1": "Belongs to Request A. The file window is currently 7 days against a 30-day container window, and the two windows are independent, so the file window has to be lengthened to cover the container window; this also satisfies the requirement not to shorten recovery time the account already provides.",
+					"a2": "Belongs to Request B. The blob inventory report with includeDeleted set to true is the documented way to total the bytes of data that has been deleted but is still kept, and that data does not appear in Azure Monitor resource logs or Storage Analytics.",
+					"a3": "Belongs to Request C. Container soft delete does not protect against deleting the storage account itself, so a lock on the storage account resource is what blocks that.",
+					"a4": "Belongs to Request D. Soft-deleted containers are hidden from normal listings, so adding include=deleted to the container list returns them, and because the account has no hierarchical namespace they can be enumerated.",
+					"a5": "Fits no request. Raising the container window to 90 days leaves the file window at 7 days, so a file can still expire before the container that held it, and it lengthens a window that no request asked to change.",
+					"a6": "Fits no request. Cutting the container window down to 7 days removes recovery time the account has today, and it still leaves a file that was deleted before its container with less time remaining than the container itself.",
+					"a7": "Fits no request. The BlobCapacity metric combines soft-deleted and active data, so it cannot produce the deleted-only figure that Request B asks for."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-container-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-enable"
+				}
+			],
+			"subtopics": [
+				"soft-delete-retention",
+				"storage-account-data-protection",
+				"deleted-object-enumeration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MQCFHE2MWG3FD3PQ349W20",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a general-purpose v2 storage account, contosodata, with the data protection settings shown below. The platform team is planning four changes to this account and needs to know what the service will really do in each case before it signs anything off, so that nobody promises a recovery outcome the account will not deliver. Drag each change onto the behaviour it produces.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Storage account type",
+							"General-purpose v2"
+						],
+						[
+							"Blob soft delete",
+							"On, 7 days"
+						],
+						[
+							"Container soft delete",
+							"On, 7 days"
+						],
+						[
+							"Blob versioning",
+							"On"
+						],
+						[
+							"Permanent delete",
+							"Off"
+						],
+						[
+							"Hierarchical namespace",
+							"Off"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Turn off blob soft delete on the account"
+					},
+					{
+						"id": "i2",
+						"text": "Raise the container soft delete retention period to 30 days"
+					},
+					{
+						"id": "i3",
+						"text": "Turn on permanent delete on the account"
+					},
+					{
+						"id": "i4",
+						"text": "Turn off blob versioning on the account"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Everything that was already retained keeps the expiry schedule set at the moment it was deleted, and the storage space is not released early."
+					},
+					{
+						"id": "s2",
+						"label": "Only deletions that take place after the change are held for the longer window; anything already soft-deleted keeps the window that applied at its deletion."
+					},
+					{
+						"id": "s3",
+						"label": "A caller with the right permissions can remove retained snapshots and earlier versions before their recovery window ends."
+					},
+					{
+						"id": "s4",
+						"label": "Every overwrite of a live blob once again leaves a retained copy of the previous content, and restoring the blob brings those copies back with it."
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Each change matches the behaviour that follows from the account's current configuration. Turning off blob soft delete does not free anything early: the blobs and snapshots that were already retained keep the expiry schedule that was in force when they were deleted, so their space is still billed until then. Raising the container retention period is not retroactive, so only containers deleted afterwards get the longer window, while containers already soft-deleted keep the period that applied at their deletion. Turning on permanent delete lets an authorised caller remove retained snapshots and versions ahead of their retention window, which shortens the protection the account otherwise gives. Finally, with blob versioning switched off while blob soft delete stays on, this flat-namespace account again creates a retained copy of the previous content on every overwrite, and an undelete of the blob brings those retained copies back with it.",
+				"perChoice": {
+					"i1": "Correct for s1: switching the feature off never shortens the life of data that is already retained, so the objects keep their original expiry schedule and the associated space is not released early.",
+					"i2": "Correct for s2: a change to the retention value governs only containers deleted after it is applied; containers already soft-deleted keep the window that was in effect at their deletion, and such a container can only be given a longer window by restoring it and deleting it again.",
+					"i3": "Correct for s3: with this feature enabled, a caller holding the necessary permissions can purge retained snapshots and versions before their retention window ends, which is why teams that want the full window guaranteed keep it off.",
+					"i4": "Correct for s4: on this account blob versioning is the only thing creating versions, so with it off and blob soft delete still on, each overwrite once more produces a retained copy of the previous content, and an undelete of the blob returns those copies together with it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-container-overview"
+				}
+			],
+			"subtopics": [
+				"soft-delete-retention",
+				"blob-versioning",
+				"permanent-delete"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MQJJY9Q6FAE5CFESW2S0GG",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a general-purpose v2 storage account, contosodata, where the finance group stores each month's close pack in a blob container called monthly-close. Two days ago a cleanup script took that container out of the account, and the window during which it can be brought back has not closed yet. The application has since created another container under the same name to write into, but nothing has been uploaded to it yet. Your runbook tries to bring the original container back and the request is rejected because of the name. You need the original container, together with the blobs it held when it was taken out of the account, to be restored under that same name. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Blob soft delete",
+							"On, 14-day retention"
+						],
+						[
+							"Container soft delete",
+							"On, 14-day retention"
+						],
+						[
+							"Blob versioning",
+							"Off"
+						]
+					]
+				},
+				"statement": "The change you should make is to {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Remove the container that occupies that name, then restore the original container to the same name"
+							},
+							{
+								"id": "b",
+								"text": "Extend the account's retention period, then restore the original container to the same name"
+							},
+							{
+								"id": "c",
+								"text": "Turn on blob versioning for the account, then restore the original container to the same name"
+							},
+							{
+								"id": "d",
+								"text": "Grant the runbook identity the Storage Blob Data Contributor role, then restore the original container to the same name"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "A soft-deleted container is always restored as a whole and only under its original name, and a restore cannot overwrite a live name: when the name has been reused, the restore is rejected until the live object holding that name is deleted or renamed. Here the application has taken the name monthly-close, so the container currently using it has to be removed (deleted, or its content copied elsewhere and the container deleted) before the restore is retried. Once the name is free, the original container comes back together with the blobs, blob versions and snapshots it held at the moment it was taken out of the account, and it can only come back under that same original name.",
+				"perChoice": {
+					"action:b": "Extending the retention period only changes how long a soft-deleted container stays recoverable; it does nothing about the name conflict, because the request is rejected because the name is already in use, not because the recovery window is too short. The restore would fail the same way.",
+					"action:c": "Blob versioning applies to individual blobs and their overwrites. It neither frees the container name nor changes how a soft-deleted container is brought back, so turning it on would not make the rejected restore succeed.",
+					"action:d": "The request was rejected with a name conflict rather than an authorization error, so granting the runbook identity the Storage Blob Data Contributor role, which is already the least-privileged role able to restore a soft-deleted container, would not change the outcome."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-container-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview"
+				}
+			],
+			"subtopics": [
+				"container-soft-delete",
+				"restoring-soft-deleted-containers"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MQTRQH8N6NZK43RY45MRFJ",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a general-purpose v2 storage account, contosodata, that holds each quarter's reporting data in a container named quarterly-reports. Three days ago a faulty script deleted that container, and it is still in the deleted state. Until this morning, the account kept deleted containers for 7 days; the compliance team has just asked for 30 days of protection, so you raised the retention period on the account to 30 days. The team expects quarterly-reports to be covered by the new 30 days as well, but that container will still be gone for good after 7 days counted from the moment it was deleted. You need quarterly-reports to stay recoverable for a full 30 days from now. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Storage account type",
+							"General-purpose v2"
+						],
+						[
+							"Container soft delete retention, until this morning",
+							"7 days"
+						],
+						[
+							"Container soft delete retention, current",
+							"30 days"
+						],
+						[
+							"quarterly-reports container",
+							"Deleted 3 days ago, still in the deleted state"
+						]
+					]
+				},
+				"statement": "The action you should take is to {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Undelete the container and then delete it again."
+							},
+							{
+								"id": "b",
+								"text": "Wait until the current retention period ends and then delete the container again."
+							},
+							{
+								"id": "c",
+								"text": "Change the retention period on the account again and leave the container as it is."
+							},
+							{
+								"id": "d",
+								"text": "Undelete the container and leave it in place."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "The retention period is applied at the moment a container is deleted. Raising it from 7 to 30 days therefore only affects containers deleted after the change: quarterly-reports was deleted while the 7-day setting was in effect, so it stays on that schedule and is permanently deleted when its window ends, with no way to recover it afterwards. To give that container the longer window, bring it back into the account and delete it again, so the new deletion is recorded under the current 30-day setting and the container remains recoverable for the full 30 days.",
+				"perChoice": {
+					"action:b": "Waiting cannot work, because once the existing 7-day window elapses the soft-deleted container is permanently deleted and cannot be recovered; by then there is nothing left to delete a second time under the 30-day setting.",
+					"action:c": "Retention changes are not retroactive. The new value governs only containers deleted after the update, so leaving quarterly-reports in its current deleted state keeps it on the period that applied when it was deleted.",
+					"action:d": "Bringing the container back makes it an active container again rather than a deleted one, so it sits in no retention window at all and gains no protection until it is deleted once more under the current setting."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-container-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview"
+				}
+			],
+			"subtopics": [
+				"container-soft-delete",
+				"retention-period"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MR1D2E7P1MVKRCCN57C2MK",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a general-purpose v2 storage account, contosodata, with a hierarchical namespace enabled. The account's current recovery settings and the way the platform team reclaims space are shown below. The compliance team now wants every file that this automatic cleanup removes to stay recoverable for as long as the account already keeps other removed data, and the rest of the account's recovery settings must stay exactly as they are. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"accountType\": \"General-purpose v2 with hierarchical namespace enabled\",\n  \"blobSoftDelete\": \"On, 14-day retention\",\n  \"blobVersioning\": \"Off\",\n  \"containerSoftDelete\": \"Off\",\n  \"reclaimingSpace\": \"The ingestion pipeline calls Set Blob Expiry on each file once processing finishes\"\n}"
+				},
+				"statement": "The most suitable change for this account is to {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "replace the expiry cleanup with a lifecycle management policy on the account"
+							},
+							{
+								"id": "b",
+								"text": "replace the expiry cleanup with a longer blob soft delete retention period on the account"
+							},
+							{
+								"id": "c",
+								"text": "replace the expiry cleanup with container soft delete at 30 days on the account"
+							},
+							{
+								"id": "d",
+								"text": "replace the expiry cleanup with blob versioning on the account"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "Set Blob Expiry is an ADLS-only operation, and blobs removed that way never enter the soft-deleted state, so they cannot be undeleted; expiry on an existing blob in a hierarchical namespace account does not soft-delete it either. When a lifecycle management policy deletes a blob, snapshot, or version, soft delete still applies: the object moves to the soft-deleted state and stays recoverable for the account's retention period, which here is the 14 days already configured for blob soft delete. Moving the cleanup from the expiry call to a lifecycle management policy is therefore the only change that makes automatically removed files recoverable, and it leaves the account's other recovery settings untouched.",
+				"perChoice": {
+					"action:b": "Lengthening the retention period only changes how long the service keeps objects that already went into the soft-deleted state. Files removed by Set Blob Expiry never become soft-deleted and cannot be undeleted, so no retention length makes them recoverable.",
+					"action:c": "Container soft delete covers the case where the container itself is deleted, bringing back the container together with the blobs it held. Here the container stays in place and individual files are removed by an expiry call, which never soft-deletes them, so this setting changes nothing for the cleanup job.",
+					"action:d": "Blob versioning keeps the earlier state of a blob that is overwritten as a version. The expiry operation takes the file out of the account outright and does not soft-delete it on a hierarchical namespace account, so turning versioning on does not make these removals recoverable."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-container-overview"
+				}
+			],
+			"subtopics": [
+				"blob-soft-delete",
+				"lifecycle-management",
+				"hierarchical-namespace"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MR6XQ5D277N8QZCG37EZSR",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a general-purpose v2 storage account, contosodata, with a flat namespace, and its current data protection settings are shown below. Every morning a reporting job publishes a new build by replacing the blob daily-report.csv in place, and yesterday's build turned out to contain wrong figures that finance has already corrected in downstream reports. The finance team now needs the build that was live yesterday to be the file that users see, and the account's retention settings must stay exactly as they are. The container holding the blob was never deleted, and daily-report.csv itself has only ever been replaced, never deleted. Which sequence of operations should you run?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account type",
+							"General-purpose v2, flat namespace"
+						],
+						[
+							"Blob soft delete",
+							"Enabled"
+						],
+						[
+							"Retention for soft-deleted blobs",
+							"30 days"
+						],
+						[
+							"Blob versioning",
+							"Enabled"
+						],
+						[
+							"Container soft delete",
+							"Enabled, 7-day retention"
+						]
+					]
+				},
+				"statement": "You should {{slot1}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "Undelete the blob and copy the version from yesterday over the base blob"
+							},
+							{
+								"id": "b",
+								"text": "Undelete the blob and restore only the version from yesterday in the same operation"
+							},
+							{
+								"id": "c",
+								"text": "List the versions with include=deleted and download the version from yesterday as the live blob"
+							},
+							{
+								"id": "d",
+								"text": "Restore the container that holds the blob and copy the version from yesterday over the base blob"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a"
+			},
+			"explanation": {
+				"correct": "With blob versioning enabled on this account, each replacement of daily-report.csv leaves a version behind, and the Undelete Blob operation brings back all of a blob's soft-deleted versions at once. There is no way to bring back a single version on its own, so the documented way to make one earlier state the live file is to undelete the blob first and then copy that version over the base blob, which is what the keyed option does. Because the blob itself was never deleted, the undelete call still restores the versions attached to it, and the account's retention settings are left untouched.",
+				"perChoice": {
+					"slot1:b": "The recovery call for a blob brings back every soft-deleted version attached to it at once; the service offers no option to bring back just the one version you want, so the second step in this choice cannot be performed.",
+					"slot1:c": "Data held in a soft-deleted state cannot be read or downloaded before it has been restored, so listing the versions with the deleted flag included and downloading one of them directly fails; the data has to be brought back first.",
+					"slot1:d": "The container-level recovery operation applies to a container that was deleted, and this container was never deleted, so it has nothing to bring back; container recovery also cannot pick one earlier state of a live blob."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-container-overview"
+				}
+			],
+			"subtopics": [
+				"blob-versioning",
+				"undelete-blob",
+				"soft-delete-recovery"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MRCKQS5J1X0ETTX28M2TDT",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a general-purpose v2 storage account, contosodata, that holds the legal department's case files inside a blob container. The account is configured so that a container removed by mistake can be brought back for 30 days, and the team has already confirmed that this works for a container that was deleted last month. The risk register now includes the possibility that the whole account is deleted, which would take the retained containers and every file in them with it and leave nothing that can be brought back. You need that kind of removal to be refused, and you do not want to change how long a deleted container stays recoverable. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting on contosodata",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Account type",
+							"General-purpose v2"
+						],
+						[
+							"Namespace",
+							"Flat"
+						],
+						[
+							"Blob soft delete",
+							"Enabled, 30-day retention"
+						],
+						[
+							"Container soft delete",
+							"Enabled, 30-day retention"
+						],
+						[
+							"Blob versioning",
+							"Disabled"
+						]
+					]
+				},
+				"statement": "To meet that requirement, you should {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "add a lock to the storage account resource"
+							},
+							{
+								"id": "b",
+								"text": "add a lock to the blob container resource"
+							},
+							{
+								"id": "c",
+								"text": "increase the container soft delete retention on the storage account to 365 days"
+							},
+							{
+								"id": "d",
+								"text": "grant the Storage Blob Data Contributor role to the account administrators"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "Container soft delete only preserves a deleted container while the storage account itself is still in place. If the storage account is deleted, everything it held, including soft-deleted containers and their blobs, goes with it, and no setting inside the account can prevent that removal. The documented way to stop the account itself from being deleted is to place a lock on the storage account resource, and that leaves the 30-day recovery window for deleted containers untouched.",
+				"perChoice": {
+					"action:b": "A lock applied only to an individual blob container prevents that container from being deleted, but it does not stop the storage account itself from being removed, and everything the account holds would be lost when the account goes.",
+					"action:c": "A longer retention period only governs how long the service keeps a container that was deleted while the account remained in place; it cannot preserve anything once the account itself has been deleted, and it also changes the recovery window you asked to keep as it is.",
+					"action:d": "The Storage Blob Data Contributor role grants data-plane permissions on the blobs of the account; it places no restriction on deleting the storage account resource, so the account could still be removed with everything in it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-container-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview"
+				}
+			],
+			"subtopics": [
+				"container-soft-delete",
+				"blob-soft-delete",
+				"account-deletion-protection"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5N60BBW7CDPCMPA1PS66TDE",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a general-purpose v2 storage account, contosopipe, that holds each night's pipeline output and is read by the data engineering team through Azure Data Lake Storage Gen2. A week ago you switched on the account's recovery window for removed files so that accidental removals could be undone. Since then every request through the account's dfs.core.windows.net endpoint fails with EndpointUnsupportedAccountFeatures and the pipeline has stopped, while the account still serves its other workloads normally. You need the pipeline working again and the 14-day protection for removed files to stay in force. Which change should the team make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account type",
+							"General-purpose v2 (flat namespace)"
+						],
+						[
+							"Recovery window for removed files",
+							"On, 14 days"
+						],
+						[
+							"Recovery window for removed containers",
+							"Off"
+						],
+						[
+							"Object versioning",
+							"Off"
+						],
+						[
+							"Pipeline access method",
+							"Azure Data Lake Storage Gen2 (dfs.core.windows.net)"
+						],
+						[
+							"Error returned by every pipeline request",
+							"EndpointUnsupportedAccountFeatures"
+						]
+					]
+				},
+				"statement": "The data engineering team should {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Point the pipeline at the *.blob.core.windows.net endpoint and keep the 14-day protection in place."
+							},
+							{
+								"id": "b",
+								"text": "Upgrade the account to a hierarchical namespace and keep the 14-day protection in place."
+							},
+							{
+								"id": "c",
+								"text": "Turn off the account's deleted-file protection so the *.dfs.core.windows.net endpoint works again."
+							},
+							{
+								"id": "d",
+								"text": "Grant the pipeline's identity the missing data-plane role and keep the 14-day protection in place."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "On a flat-namespace account, turning on the recovery window for removed files makes the Data Lake Storage (DFS) endpoint unusable: calls to *.dfs.core.windows.net fail with EndpointUnsupportedAccountFeatures. The documented ways out are to send the workload to the account's blob endpoint (*.blob.core.windows.net) or to move the account to a hierarchical namespace. Because the namespace upgrade is itself blocked while that recovery feature is enabled (the documented sequence is to disable it, migrate, then re-enable it), a straight upgrade would leave the 14-day protection switched off in the meantime. Routing the pipeline to *.blob.core.windows.net restores the workload immediately and keeps the 14-day protection fully in force, which satisfies both requirements.",
+				"perChoice": {
+					"action:b": "Converting the account to a hierarchical namespace is rejected while the recovery feature for removed files is turned on; the documented sequence is to disable it, run the migration, then re-enable it. That would leave the 14-day protection off during the change, so this single step does not meet the requirement as stated.",
+					"action:c": "This unblocks the Data Lake endpoint, but it removes the guard against accidental removals that the team was explicitly asked to keep for 14 days. It trades the required protection for the endpoint, so it is not the right change.",
+					"action:d": "The failure is not an authorization problem. EndpointUnsupportedAccountFeatures is returned because the account's current combination of a flat namespace and an enabled recovery window for removed files is not supported on the DFS endpoint, and a role assignment does not change which endpoints the account can serve."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-container-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-enable"
+				}
+			],
+			"subtopics": [
+				"dfs-endpoint-compatibility",
+				"flat-namespace-accounts",
+				"hierarchical-namespace-migration"
+			],
+			"reviewed": false
+		}
+	]
+}

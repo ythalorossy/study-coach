@@ -1,0 +1,1846 @@
+{
+	"skill": "compute.app-service-tls",
+	"questions": [
+		{
+			"id": "q_01M5SX1YZH8DX52J05R6ZX34QE",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an App Service app named api-prod running on a Standard S1 plan, and a corporate firewall that admits inbound traffic only to the IP addresses currently assigned to this app. The service must not drop any incoming requests while you replace its certificate. A private PFX certificate named cert-2024 is bound to the custom domain api.contoso.com and stops being valid in nine days, and you have a replacement PFX file named cert-2026 in hand. Which sequence of steps should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"App name",
+							"api-prod"
+						],
+						[
+							"App Service plan",
+							"Standard S1"
+						],
+						[
+							"Custom domain",
+							"api.contoso.com"
+						],
+						[
+							"TLS/SSL type",
+							"SNI SSL"
+						],
+						[
+							"Certificate",
+							"cert-2024 (private PFX)"
+						],
+						[
+							"Validity of cert-2024",
+							"9 days remaining"
+						],
+						[
+							"Corporate firewall rule",
+							"Inbound IP addresses currently assigned to api-prod"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Upload cert-2026, then use Update binding on the api.contoso.com SNI SSL binding so it serves cert-2026, and afterwards delete cert-2024."
+					},
+					{
+						"id": "b",
+						"text": "Upload cert-2026, then delete the api.contoso.com SNI SSL binding, add a new SNI SSL binding that serves cert-2026, and afterwards delete cert-2024."
+					},
+					{
+						"id": "c",
+						"text": "Upload cert-2026 and delete cert-2024 immediately, because App Service renews the site's certificates on its own."
+					},
+					{
+						"id": "d",
+						"text": "Import cert-2026 from Key Vault, wait for the automatic sync to finish, then delete cert-2024 and the api.contoso.com SNI SSL binding."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Two things are needed for HTTPS on a custom domain: the certificate must exist on the app, and a binding must attach it to the domain. Upload cert-2026 first so the app holds it, then switch the existing SNI SSL binding over with Update binding, which swaps the certificate served by that binding without removing the binding itself. Because the binding is never deleted, clients see no interruption and the app keeps the same inbound IP addresses that the corporate firewall admits. Once no binding references cert-2024, that certificate can be deleted from the app.",
+				"perChoice": {
+					"b": "Removing the binding before the new one is in place creates a window in which api.contoso.com has no TLS configuration, so requests fail. In addition, deleting a binding can change the app's inbound IP addresses, which would invalidate the firewall rule and break access for clients that pin those addresses. This is exactly the risk when a certificate in use is replaced by rebuilding the binding from scratch.",
+					"c": "Automatic renewal only applies to certificates that Azure issues and manages on your behalf, such as the free managed certificate or an App Service certificate. A private PFX file you upload yourself is never renewed for you, so cert-2024 must be replaced manually. Deleting it before cert-2026 is serving traffic would break TLS for the site.",
+					"d": "Import from Key Vault only works when the certificate lives in the vault, and cert-2026 was supplied to you as a PFX file. Even if the certificate came from a vault, the last step removes the binding instead of updating it, which both breaks the site and can change the app's inbound IP addresses, invalidating the firewall allowlist."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-bindings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-certificate"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-tls"
+				}
+			],
+			"subtopics": [
+				"ssl-bindings",
+				"certificate-rotation",
+				"private-certificates"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SX7A7ZD6HGT9K88DDZNFT6",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an App Service app named shop-web on a Standard S1 plan, and it must serve HTTPS for the custom domain shop.contoso.com with no certificate warnings in browsers. Your company already owns a certificate for that domain that was issued by a public CA, and you merged the certificate chain on a build host before exporting the PFX that you then tried to add to the app. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"App Service app and plan",
+							"shop-web / Standard S1"
+						],
+						[
+							"Custom domain",
+							"shop.contoso.com, mapped to the app, no certificate bound yet"
+						],
+						[
+							"Bring your own certificates (.pfx)",
+							"shop.pfx - the platform rejects the file when it is added"
+						],
+						[
+							"Tool used on the export host",
+							"OpenSSL 3.2.2"
+						],
+						[
+							"Files on the export host",
+							"server.key; server.crt (server certificate only); mergedcertificate.crt (server certificate plus intermediate and root certificates)"
+						],
+						[
+							"Protection in the exported PFX",
+							"Key bag and certificate bag: AES-256-CBC"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Re-export the PFX with OpenSSL using `-keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES -macalg SHA1`, then upload the new file."
+					},
+					{
+						"id": "b",
+						"text": "Re-export the PFX with OpenSSL using `-keypbe AES-256-CBC -certpbe AES-256-CBC -macalg SHA256`, then upload the new file."
+					},
+					{
+						"id": "c",
+						"text": "Re-export the PFX with OpenSSL from server.crt instead of mergedcertificate.crt, using `-keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES -macalg SHA1`, then upload the new file."
+					},
+					{
+						"id": "d",
+						"text": "Upload mergedcertificate.crt under Public key certificates (.cer), then add an SNI SSL binding for shop.contoso.com that uses that certificate."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "App Service accepts PFX files whose key and certificate bags are protected with the older 3DES algorithm, and OpenSSL 3 changed its default bag cipher to AES256, which the platform does not accept. The file on the export host therefore fails when it is added. Re-exporting with PBE-SHA1-3DES for both bags and SHA1 for the MAC produces a PFX that App Service can take, and because the merged chain (server certificate, intermediates and root) is the export input and the certificate was issued by a trusted CA, the resulting binding is validated by browsers and the domain shows the Secured state.",
+				"perChoice": {
+					"a": "None - this is the keyed option.",
+					"b": "These are the OpenSSL 3 defaults that produced the file in the first place, and a PFX whose bags are protected with AES256 is exactly what App Service refuses. Re-exporting this way yields another unusable file. OpenSSL v1 defaults produce an acceptable file, or the 3DES and SHA1 settings can be passed explicitly.",
+					"c": "The protection settings are right, but exporting only server.crt leaves the intermediate and root certificates out of the PFX. Such a file may be accepted by the platform, yet browsers cannot build the chain to the trusted CA and report a certificate validation error, so the domain still isn't served cleanly over HTTPS. The merged chain file has to be the input to the export.",
+					"d": "Certificates uploaded as Public key certificates (.cer) are never used to secure custom domains; they exist so that the app's own code can present a certificate when calling remote resources. A TLS binding for shop.contoso.com requires a private certificate that carries the full chain and is signed by a trusted CA, so the .cer upload cannot secure the domain."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-certificate"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-bindings"
+				}
+			],
+			"subtopics": [
+				"private-certificate-upload",
+				"pfx-export-requirements",
+				"custom-domain-tls-binding"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TD23DDFDTG5KAMHFFZVQ4N",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an App Service app named billing-api on a Premium P1V3 plan that must serve HTTPS for the custom domain billing.contoso.com. The certificate for that domain already lives in the Azure Key Vault kv-cert, and you want that vault to stay the only place where the certificate is stored, so that a renewed version reaches the app without manual work. When you configure the app to take its certificate from the vault, the operation fails with an authorization error. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"App Service plan",
+							"Premium P1V3 (Windows)"
+						],
+						[
+							"Custom domain",
+							"billing.contoso.com"
+						],
+						[
+							"Certificate source configured for the app",
+							"Key Vault kv-cert, secret billing-contoso, version 1"
+						],
+						[
+							"Existing role assignment on kv-cert",
+							"Key Vault Reader for the Microsoft.Web service principal (abfa0a7c-a6b6-4736-8310-5855508787cd, Azure Cloud)"
+						],
+						[
+							"Existing role assignment on kv-cert",
+							"Key Vault Secrets User for the system-assigned managed identity of billing-api"
+						],
+						[
+							"Result of the certificate import",
+							"Failed with an authorization error"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Assign the Key Vault Certificate User role to the Microsoft.Web service principal on kv-cert."
+					},
+					{
+						"id": "b",
+						"text": "Assign the Key Vault Certificate User role to the system-assigned managed identity of billing-api on kv-cert."
+					},
+					{
+						"id": "c",
+						"text": "Assign the Key Vault Secrets User role to the Microsoft.Web service principal on kv-cert."
+					},
+					{
+						"id": "d",
+						"text": "Assign the Key Vault Reader role to the system-assigned managed identity of billing-api on kv-cert."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The vault is the source of truth for this certificate, and App Service pulls the certificate material from Key Vault as the platform resource provider, so that provider identity needs data-plane read access to certificates. Assigning the Key Vault Certificate User role to the Microsoft.Web service principal (app/client ID abfa0a7c-a6b6-4736-8310-5855508787cd in Azure Cloud, 6a02c803-dafd-4136-b4c3-5a6f318b4714 in Government) on kv-cert authorizes the import. The client ID works with tooling such as the Azure CLI role assignment command, while ARM templates and Bicep normally use the service principal object ID of the enterprise application. With this permission in place, the app syncs a renewed certificate from the vault automatically (within about 24 hours) and updates the binding, and the permission must not be removed afterwards or the sync stops working.",
+				"perChoice": {
+					"b": "The identity that performs the vault import is the App Service resource provider (Microsoft.Web), not the app's own system-assigned managed identity. Granting the certificate role to the app identity therefore leaves the import unauthorized, because the platform is the party reading the certificate out of the vault.",
+					"c": "Key Vault Secrets User grants access to secrets, not to certificate objects. The App Service resource provider still cannot read the certificate material from kv-cert, so the import keeps failing with an authorization error.",
+					"d": "Key Vault Reader only allows management-plane metadata to be listed; it does not grant data-plane read access to certificate material, and the principal that needs it is the Microsoft.Web service provider identity rather than the app's managed identity."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-certificate"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-tls"
+				}
+			],
+			"subtopics": [
+				"key-vault-certificate-import",
+				"rbac-role-assignments",
+				"app-service-certificate-sources"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TD493KYPDBQKCV13TENNDA",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an App Service app named contoso-portal that runs on a Basic B1 plan. The custom domain contoso.com (a root domain) is mapped to the app, and an A record already points contoso.com at the app's inbound IP. You want contoso.com protected by the certificate that App Service issues for you and renews automatically at no cost, but every attempt to issue it fails and the domain still serves no certificate. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Current state"
+					],
+					"rows": [
+						[
+							"App name",
+							"contoso-portal"
+						],
+						[
+							"App Service plan tier",
+							"Basic (B1)"
+						],
+						[
+							"Custom domain mapped to the app",
+							"contoso.com (root domain)"
+						],
+						[
+							"DNS A record for contoso.com",
+							"20.60.80.120, matching the app's inbound IP"
+						],
+						[
+							"IP restrictions",
+							"Allow 203.0.113.0/24; Deny all"
+						],
+						[
+							"DNS CAA record for contoso.com",
+							"not present"
+						],
+						[
+							"TLS binding for contoso.com",
+							"not present"
+						],
+						[
+							"Latest certificate request",
+							"Failed - nothing issued for contoso.com"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Keep the IP restrictions on contoso-portal and add a DNS Certification Authority Authorization record for contoso.com with the value 0 issue digicert.com, then create the free App Service managed certificate for contoso.com and bind it to the domain."
+					},
+					{
+						"id": "b",
+						"text": "Remove the IP restrictions on contoso-portal, then create the free App Service managed certificate for contoso.com and bind it to the domain."
+					},
+					{
+						"id": "c",
+						"text": "Keep the IP restrictions on contoso-portal and scale the plan up to a Premium P1V3 tier, then create the free App Service managed certificate for contoso.com and bind it to the domain."
+					},
+					{
+						"id": "d",
+						"text": "Import a PKCS12 certificate for contoso.com from the Key Vault kv-contoso into contoso-portal and bind it to the domain, leaving the IP restrictions in place."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "For a root domain such as contoso.com, the free App Service managed certificate can only be created - and later renewed - while the app is reachable from the internet, so the app must have no IP restrictions configured. contoso-portal currently allows only 203.0.113.0/24 and denies everything else, which blocks that validation, so the IP restrictions are what must be dealt with first. The other prerequisites are already satisfied: certificates need a Basic, Standard, Premium or Isolated plan (Basic B1 qualifies), and the A record already points at the app's inbound IP. Once the certificate is created, a TLS binding must still be added for contoso.com so the domain actually serves HTTPS.",
+				"perChoice": {
+					"a": "A DNS Certification Authority Authorization record with the value 0 issue digicert.com is only needed for some domains and merely controls which issuer may issue for the domain; it has no effect on whether the app can be validated. Here the request still fails because the app accepts traffic only from 203.0.113.0/24, and both creation and periodic renewal of the certificate for a root domain depend on the app being reachable from the internet.",
+					"c": "The app's plan tier is not the problem: certificates require the plan to be in the Basic, Standard, Premium or Isolated tier, so Basic B1 already qualifies and scaling up changes nothing. Leaving the IP restrictions in place keeps the app unreachable from the internet, which is the condition that stops the certificate for the root domain from being issued and renewed.",
+					"d": "Importing from Key Vault means the certificate is stored and maintained by your organization in kv-contoso and is a customer-managed option, so it does not meet the requirement of the certificate that App Service issues and renews automatically at no cost. It also leaves the IP restrictions in place, so the prerequisite that issuance for a root domain depends on stays unmet."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-certificate"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-tls"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-bindings"
+				}
+			],
+			"subtopics": [
+				"app-service-managed-certificate",
+				"root-domain-prerequisites",
+				"ip-restrictions"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TD6XQ93S507N48CBBCCCWW",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an App Service app named legacy-shop on a Standard S1 plan whose two custom domains currently share one public IP address (see the exhibit). An on-premises system has talked to legacy.contoso.com for years over an IP address only, because its client software never sends a host name, and it rejects any certificate that was not issued for legacy.contoso.com. You need the app to keep answering that system on the address it uses today, and shop.contoso.com must keep resolving to the address it uses today as well. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Custom domain          TLS/SSL type   Certificate in the binding        Inbound IP address\n--------------------   ------------   ---------------------------        ----------------\nshop.contoso.com       SNI SSL        App Service managed certificate   20.190.128.15\nlegacy.contoso.com     SNI SSL        App Service managed certificate   20.190.128.15"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add an IP based SSL binding for legacy.contoso.com on a dedicated public IP, repoint that domain's A record to the new address, and leave the shop.contoso.com SNI SSL binding unchanged."
+					},
+					{
+						"id": "b",
+						"text": "Add an IP based SSL binding for shop.contoso.com on a dedicated public IP, repoint both domains' A records to that address, and leave legacy.contoso.com on SNI SSL."
+					},
+					{
+						"id": "c",
+						"text": "Change the legacy.contoso.com binding from SNI SSL to IP based SSL so that it reuses the inbound address the two domains currently share."
+					},
+					{
+						"id": "d",
+						"text": "Add an IP based SSL binding for legacy.contoso.com on a dedicated public IP but leave the legacy.contoso.com A record pointing at the shared inbound address."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A client that connects by IP address alone never sends a host name, so it cannot benefit from SNI, which selects the site certificate by host name. The TLS/SSL type that serves a site certificate to such a client is IP based SSL: it holds one binding and one certificate on a dedicated public IP that App Service creates, and the domain's A record is then repointed to that new address shown on the Custom domains page. Because IP based SSL allows only a single binding and certificate, the app keeps its existing SNI SSL binding for shop.contoso.com on the shared address, so that domain keeps resolving to the same IP as today. The Standard S1 plan already satisfies the requirement that IP based SSL needs the Standard tier or higher.",
+				"perChoice": {
+					"b": "IP based SSL permits only one binding and one certificate, so the app cannot carry two of them. Putting shop.contoso.com on the dedicated address would also move that domain off the shared inbound IP, which breaks the requirement that it keeps resolving to its current address, and the IP-only client would arrive at the dedicated address where no certificate for legacy.contoso.com is presented.",
+					"c": "IP based SSL cannot reuse the shared inbound address; App Service creates a dedicated public IP for that binding. Swapping the SNI SSL binding for an IP based one on legacy.contoso.com can change the app's inbound IP address, and the domain's A record would still point at an address that no longer presents its certificate.",
+					"d": "After an IP based SSL binding is created, the domain's A record must be repointed to the new dedicated IP shown on the Custom domains page. If the A record keeps pointing at the shared address, the on-premises client never reaches the binding that holds the legacy.contoso.com certificate, so the symptom persists."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-bindings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-certificate"
+				}
+			],
+			"subtopics": [
+				"ip-based-ssl",
+				"sni-ssl",
+				"tls-bindings"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TDA0S51KH18QGV54SF2HTQ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an App Service Environment v3 that hosts a single app, secure-api, on a Premium v3 plan. The security team wants the cipher suites offered to this app to be controlled from one place only, because changes made to the two cipher configurations listed below sometimes seem to have no effect. Clients of this app must keep negotiating TLS 1.3. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "# App Service Environment v3 - cluster settings\nFrontEndSSLCipherSuiteOrder = TLS_AES_256_GCM_SHA384, TLS_AES_128_GCM_SHA256, TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384, TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256\n\n# App: secure-api (Premium v3) - general settings\nMinimum TLS Cipher Suite    = TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384\nMinimum Inbound TLS Version = TLS 1.2"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Remove the Minimum TLS Cipher Suite setting from the app and keep the FrontEndSSLCipherSuiteOrder cluster setting as the single place where the cipher order is managed."
+					},
+					{
+						"id": "b",
+						"text": "Remove the FrontEndSSLCipherSuiteOrder cluster setting from the App Service Environment and keep the Minimum TLS Cipher Suite setting on the app as the single place where the cipher order is managed."
+					},
+					{
+						"id": "c",
+						"text": "Keep both settings and set the app's Minimum TLS Cipher Suite to the same value as the first suite in the FrontEndSSLCipherSuiteOrder cluster setting."
+					},
+					{
+						"id": "d",
+						"text": "Keep both settings, add the two TLS 1.3 cipher suites to the app's Minimum TLS Cipher Suite selection, and restart the front end so that both changes take effect."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Cipher suite preferences should be configured in exactly one place. In an App Service Environment, the FrontEndSSLCipherSuiteOrder cluster setting is the mechanism that governs the cipher order offered by the front ends, and the documentation explicitly advises not to also enable the Minimum TLS Cipher Suite for a web app in that situation, because the result can be conflicting configurations, which matches the symptom the team reports. The cluster setting shown in the exhibit already lists both TLS 1.3 suites (TLS_AES_256_GCM_SHA384 and TLS_AES_128_GCM_SHA256), so deleting the app-level Minimum TLS Cipher Suite setting leaves TLS 1.3 negotiable and keeps the cipher order defined in one place. Because the cluster setting itself is not being changed, no front end restart is required; a restart is only needed after editing FrontEndSSLCipherSuiteOrder.",
+				"perChoice": {
+					"b": "FrontEndSSLCipherSuiteOrder is the control that governs cipher order for an App Service Environment; it must contain both TLS 1.3 suites and any change to it requires a front end restart. The app-level Minimum TLS Cipher Suite setting is documented for multitenant App Service on Basic SKU or higher, so deleting the environment-level setting removes the control the environment relies on rather than the conflicting one, and it would leave the environment without the required TLS 1.3 suites.",
+					"c": "Matching one suite value in the two scopes still leaves two separate configurations in place, and the documentation warns that using both can result in conflicting configurations. The app-level list also carries its own fixed priority order that you can't reorder to match the environment-level list, so the two scopes still do not define one predictable cipher order.",
+					"d": "The Minimum TLS Cipher Suite list is fixed: you can't add new or different cipher suites to it, and the TLS 1.3 suites are not selectable that way. A front end restart applies only after you change the FrontEndSSLCipherSuiteOrder cluster setting, and leaving both configurations enabled can still produce conflicting behavior, so this does not deliver a single place to manage cipher preferences."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-tls"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-bindings"
+				}
+			],
+			"subtopics": [
+				"tls-cipher-suites",
+				"app-service-environment"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TDC3EBP7R1Q4V9WTW1HMPQ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an App Service app named hr-portal that runs on a Linux Premium v3 plan (see the exhibit). You need only company clients that present a certificate issued by the corporate certificate authority to be able to use the app, and the app itself must be able to read which client connected. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting or property",
+						"Value"
+					],
+					"rows": [
+						[
+							"App name",
+							"hr-portal"
+						],
+						[
+							"Operating system",
+							"Linux"
+						],
+						[
+							"App Service plan",
+							"Premium v3"
+						],
+						[
+							"Minimum Inbound TLS Version",
+							"TLS 1.2"
+						],
+						[
+							"HTTPS Only",
+							"On"
+						],
+						[
+							"Client certificates",
+							"Not set"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Enable mutual TLS (mTLS) and configure the trusted certificate authority chain that validates client certificates"
+					},
+					{
+						"id": "b",
+						"text": "Enable end-to-end TLS (E2E) and upload the corporate certificate authority certificates as client certificates"
+					},
+					{
+						"id": "c",
+						"text": "Add a TLS binding for the custom domain and configure the corporate certificate authority certificates as the bound certificates"
+					},
+					{
+						"id": "d",
+						"text": "Upload the corporate certificate authority certificates as public key certificates (.cer) and turn on HTTPS Only"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Mutual TLS (mTLS) is supported on both Linux and Windows App Service plans. With mTLS enabled and a trusted certificate authority chain configured, clients must present certificates that are validated against that chain, and the client certificate details are exposed to the app code through request headers. That is exactly what this scenario requires: restricting access to clients holding a certificate issued by the corporate certificate authority and letting the app read who connected.",
+				"perChoice": {
+					"b": "End-to-end TLS encrypts the traffic between the App Service front end and the app worker inside Azure, so that traffic is not unencrypted after it leaves the load balancer. It does not authenticate inbound callers against a certificate authority, and merely uploading the corporate authority certificates as client certificates does not restrict who can reach the app or expose client certificate details to the code.",
+					"c": "A TLS binding attaches a server certificate to a custom domain so the domain serves HTTPS; it says nothing about the certificates presented by callers. Binding the corporate certificate authority certificates to the domain does not make the app request and check client certificates, so callers without a corporate-issued certificate would still be accepted.",
+					"d": "Public key certificates (.cer) are uploaded so that app code can present a public certificate when calling a remote resource; they are never used to secure custom domains or to authenticate incoming callers. HTTPS Only only forces inbound HTTP requests to be redirected to HTTPS and does not check client certificates either."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-tls"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-certificate"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-bindings"
+				}
+			],
+			"subtopics": [
+				"mutual-tls",
+				"client-certificates",
+				"tls-encryption-options"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TDDZY2CS1YZ56247WJWQ46",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an App Service app named payments-api that runs on a Basic B1 plan. Your organization's security baseline states that every inbound connection to the app and to its SCM endpoint must use the newest transport protocol version that App Service supports, and that clients offering only older versions must be turned away. The exhibit shows the app's current configuration and its latest compliance evaluation. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Configuration item",
+						"Current value"
+					],
+					"rows": [
+						[
+							"App Service plan",
+							"Basic B1"
+						],
+						[
+							"Minimum Inbound TLS Version",
+							"TLS 1.2"
+						],
+						[
+							"HTTPS Only",
+							"On"
+						],
+						[
+							"Minimum TLS Cipher Suite",
+							"Not configured"
+						],
+						[
+							"Policy evaluation: App Service apps should use the latest TLS version",
+							"NonCompliant"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set the Minimum Inbound TLS Version setting to TLS 1.3"
+					},
+					{
+						"id": "b",
+						"text": "Set the Minimum Inbound TLS Version setting to TLS 1.2"
+					},
+					{
+						"id": "c",
+						"text": "Set the Minimum Inbound TLS Version setting to TLS 1.1"
+					},
+					{
+						"id": "d",
+						"text": "Set the Minimum TLS Cipher Suite setting to TLS_AES_128_GCM_SHA256"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Raising the Minimum Inbound TLS Version to TLS 1.3 makes that version the floor for inbound traffic to the app and its SCM endpoint, so a client that can only offer an older version is refused. TLS 1.3 is the newest inbound version App Service supports, and the built-in Azure Policy definition 'App Service apps should use the latest TLS version' audits exactly this setting, which is why the app is currently reported as NonCompliant.",
+				"perChoice": {
+					"b": "TLS 1.2 is the default minimum for new web apps and their SCM endpoints. Keeping that value leaves the app accepting clients that negotiate an older protocol, so it does not satisfy the baseline and does not clear the NonCompliant result.",
+					"c": "TLS 1.1 is a legacy version that is no longer considered secure. Using it as the floor weakens the app's posture instead of enforcing the newest supported protocol version.",
+					"d": "The Minimum TLS Cipher Suite setting controls which cipher algorithms are offered for the protocol versions that are allowed; it does not raise the minimum protocol version, so clients that negotiate TLS 1.2 would still be accepted."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-tls"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-bindings"
+				}
+			],
+			"subtopics": [
+				"minimum-inbound-tls-version",
+				"tls-versions",
+				"azure-policy"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TDHPV9X3GEM2KWGQF2ZG02",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have four App Service apps, each on a Standard S1 plan, that must serve HTTPS on a custom domain (see the exhibit). You need to decide how the certificate for each app is supplied. Drag the certificate option that meets each target's requirement to that target.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"App",
+						"Plan",
+						"Custom domain",
+						"Current state"
+					],
+					"rows": [
+						[
+							"portal-web",
+							"Standard S1",
+							"portal.contoso.com",
+							"Domain mapped; nothing attached"
+						],
+						[
+							"docs-site",
+							"Standard S1",
+							"docs.contoso.com and *.docs.contoso.com",
+							"Domain mapped; nothing attached"
+						],
+						[
+							"legacy-api",
+							"Standard S1",
+							"legacy.contoso.com",
+							"Domain mapped; nothing attached"
+						],
+						[
+							"partner-portal",
+							"Standard S1",
+							"partner.contoso.com",
+							"Domain mapped; nothing attached"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "App Service managed certificate"
+					},
+					{
+						"id": "i2",
+						"text": "App Service certificate (GoDaddy)"
+					},
+					{
+						"id": "i3",
+						"text": "Bring your own certificate (.pfx)"
+					},
+					{
+						"id": "i4",
+						"text": "Import from Key Vault"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "portal-web: the domain must be protected at zero cost, and the platform must keep the certificate current and refresh every binding on its own, with no file work by the team."
+					},
+					{
+						"id": "s2",
+						"label": "docs-site: the certificate must cover a wildcard host name and be exportable so other services can use it outside the app."
+					},
+					{
+						"id": "s3",
+						"label": "legacy-api: the organization already holds a certificate issued by a public CA and must supply the password-protected file to the app itself."
+					},
+					{
+						"id": "s4",
+						"label": "partner-portal: the file must stay only in the organization's Azure-hosted certificate store, and a newer copy must reach the app by itself within a day, with no one supplying it again."
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "portal-web takes the free App Service managed certificate: it costs nothing, renews itself as long as its prerequisites stay satisfied, and updates all of its bindings with the new file, which is exactly what that target asks for (it cannot be a wildcard and cannot be exported, so it cannot satisfy docs-site). docs-site takes the App Service certificate, which supports wildcard host names and is exportable for use outside App Service. legacy-api takes the bring-your-own .pfx option, because the organization already holds a file signed by a trusted CA and will upload it with its password; such a file must be a password-protected PFX containing the full chain. partner-portal takes the Key Vault import option, which keeps the PKCS12 file in the vault as the source of truth and syncs a renewed version to the app automatically within 24 hours, so nobody has to supply the file again.",
+				"perChoice": {
+					"i1": "Belongs in the portal-web target: the free managed certificate renews automatically and updates all of its bindings while its prerequisites remain satisfied, matching the zero-cost, hands-off requirement. It cannot be a wildcard and cannot be exported, so it does not fit the docs-site target.",
+					"i2": "Belongs in the docs-site target: the App Service certificate is issued by GoDaddy, kept in a Key Vault, supports wildcard host names, and is exportable and usable outside App Service, which is what that target requires.",
+					"i3": "Belongs in the legacy-api target: uploading an existing password-protected .pfx together with its password and friendly name is the way to use a certificate the organization already holds; the file must contain the full chain and be signed by a trusted CA to work in a binding.",
+					"i4": "Belongs in the partner-portal target: the vault remains the single place where the file is stored, and App Service syncs the renewed version to the app automatically within 24 hours, so no manual file handling is needed."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-tls"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-certificate"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-bindings"
+				}
+			],
+			"subtopics": [
+				"app-service-tls",
+				"certificate-selection"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TDMGN2YDDY6GMMEGYH0K6D",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have five workloads running in Azure, listed in the exhibit, and each one has its own requirement for how inbound connections are protected and which certificates are used. You need to apply exactly one approach to each workload. Which approach should you apply to each workload? Drag the approach that meets each workload's requirement to that workload.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Workload",
+						"Plan",
+						"Custom domain",
+						"Requirement"
+					],
+					"rows": [
+						[
+							"storefront",
+							"Standard S1",
+							"shop.contoso.com, www.shop.contoso.com, shop.eu.contoso.com",
+							"Each of the three names must present a certificate issued for that exact name, and all three must keep using the public address the app uses today."
+						],
+						[
+							"partnerportal",
+							"Standard S1",
+							"partner.contoso.com",
+							"The partner will only talk to a public address used by this workload alone, and the platform must supply that address."
+						],
+						[
+							"secureapi",
+							"Premium P1V3",
+							"api.contoso.com",
+							"Traffic travelling between the Azure front end and the app's worker process must not be readable on the Azure network."
+						],
+						[
+							"fieldapps",
+							"Linux Premium v3",
+							"field.contoso.com",
+							"Every device must present a certificate issued by the device CA before it is let in, and the app must be able to tell which device called."
+						],
+						[
+							"billingapp",
+							"Standard S1",
+							"billing.contoso.com",
+							"The security team wants the app to offer clients one approved list of encryption algorithms and to refuse anything weaker; the approved list and its priority order are supplied by Azure and cannot be extended or reordered."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "SNI SSL binding"
+					},
+					{
+						"id": "b",
+						"text": "IP based SSL binding"
+					},
+					{
+						"id": "c",
+						"text": "E2E TLS"
+					},
+					{
+						"id": "d",
+						"text": "Mutual TLS (mTLS)"
+					},
+					{
+						"id": "e",
+						"text": "Minimum TLS Cipher Suite"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "storefront"
+					},
+					{
+						"id": "s2",
+						"label": "partnerportal"
+					},
+					{
+						"id": "s3",
+						"label": "secureapi"
+					},
+					{
+						"id": "s4",
+						"label": "fieldapps"
+					},
+					{
+						"id": "s5",
+						"label": "billingapp"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d",
+				"s5": "e"
+			},
+			"explanation": {
+				"correct": "storefront needs SNI SSL binding, because that option allows many certificates to secure many domain names on the same shared public address, so each of the three names can present its own certificate while the app keeps the address it has today. partnerportal needs IP based SSL binding, the only option that gives the workload a dedicated public address created for it by the platform, with one certificate for one domain; it is supported on the Standard tier or higher, which partnerportal runs on. secureapi needs E2E TLS, which protects traffic between the Azure front ends and the worker processes, not only traffic from clients to the front ends, and it is available on Premium plans such as P1V3. fieldapps needs Mutual TLS (mTLS), where clients present certificates validated against a trusted CA chain you configure and the client certificate details are exposed to the app through request headers, supported on both Linux and Windows plans. billingapp needs the Minimum TLS Cipher Suite setting, which is available on Basic SKU or higher on multitenant App Service and offers a fixed list of suites in a fixed priority order while blocking every less-secure suite, matching the requirement that the list cannot be extended or reordered.",
+				"perChoice": {
+					"a": "Belongs on storefront. SNI SSL lets you add multiple certificates that secure multiple domains on the same address, which is exactly what the three host names on one shared address require.",
+					"b": "Belongs on partnerportal. IP based SSL is the option that secures a dedicated public address that App Service creates for the app, and it allows only one binding and one certificate; it works on the Standard tier or higher, which this plan is.",
+					"c": "Belongs on secureapi. E2E TLS encrypts the front-end-to-worker traffic inside Azure in addition to the client-to-front-end traffic, and it is offered on Premium plans (recommended for new deployments).",
+					"d": "Belongs on fieldapps. With mTLS the device certificates are checked against the trusted CA chain you configure, only clients with valid certificates can connect, and the client certificate information is available to the app through request headers, so the app can tell which device called.",
+					"e": "Belongs on billingapp. The app-level minimum cipher list is supported on Basic SKU or higher on multitenant App Service, uses a fixed list and priority order that you cannot add to or reorder, and blocks all less-secure suites once selected rather than only the ones you pick."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-bindings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-tls"
+				}
+			],
+			"subtopics": [
+				"ssl-bindings",
+				"end-to-end-tls-encryption",
+				"mutual-tls"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V2K90WGV4YJN7JW9SWYATV",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have an App Service app named portal-app on a Premium P1V3 plan (see the exhibit). The team wants it to serve the custom domain portal.contoso.com over HTTPS with the certificate that App Service provides and renews automatically at no cost, and several parts of the setup are still outstanding. Each requirement below is met by exactly one of the listed artifacts. Drag each artifact to the requirement it satisfies.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Current configuration"
+					],
+					"rows": [
+						[
+							"App Service plan",
+							"Premium P1V3"
+						],
+						[
+							"Operating system",
+							"Windows"
+						],
+						[
+							"Custom domain",
+							"portal.contoso.com (added)"
+						],
+						[
+							"Public DNS zone for contoso.com",
+							"Maintained by the corporate DNS team"
+						],
+						[
+							"Current state",
+							"The domain name does not yet reach the app, and no certificate is attached to it"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "A CAA record containing 0 issue digicert.com"
+					},
+					{
+						"id": "i2",
+						"text": "An A record mapping portal.contoso.com to the inbound address of the host"
+					},
+					{
+						"id": "i3",
+						"text": "A TLS binding of type SNI SSL on portal.contoso.com"
+					},
+					{
+						"id": "i4",
+						"text": "The X-Forwarded-Proto header"
+					},
+					{
+						"id": "i5",
+						"text": "End-to-end TLS encryption"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Must limit in public DNS which certificate authority is allowed to sign the certificate of portal.contoso.com"
+					},
+					{
+						"id": "s2",
+						"label": "Must use public DNS to direct clients that ask for portal.contoso.com to the location where the site answers"
+					},
+					{
+						"id": "s3",
+						"label": "Must make portal.contoso.com answer over HTTPS with the certificate that App Service provided for it"
+					},
+					{
+						"id": "s4",
+						"label": "Must let the application code learn whether a visitor's original connection arrived over HTTP or HTTPS"
+					},
+					{
+						"id": "s5",
+						"label": "Must meet a company policy that no part of an HTTPS session travels in readable form inside the Azure network"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "The five requirements each map to exactly one artifact. Restricting in DNS which certificate authority may sign the certificate for portal.contoso.com is done with a CAA record, and the value 0 issue digicert.com is what lets DigiCert issue and renew the App Service-provided certificate for that domain. Sending clients who ask for portal.contoso.com to the location where the app answers is done with an A record pointing the name at the app's inbound IP; an A record pointing at the app's IP is also a prerequisite for the App Service-provided certificate. Making the custom domain answer over HTTPS with the chosen certificate requires a TLS binding on that domain, because adding a certificate by itself never secures the domain, and SNI SSL is the type that lets many domains and certificates share one public IP on a multitenant app. Letting the application code learn the visitor's original protocol is done with the X-Forwarded-Proto header, because the connection is decrypted at the platform load balancers and arrives at the worker as unencrypted HTTP. Keeping every segment of the session unreadable inside Azure is done with end-to-end TLS encryption, which also encrypts the front-end-to-worker traffic and is offered on Premium plans such as the one in the exhibit.",
+				"perChoice": {
+					"i1": "Goes with the requirement about limiting in public DNS which certificate authority may sign the certificate for portal.contoso.com. A CAA record restricts the issuers permitted for the domain, and the value 0 issue digicert.com allows DigiCert to issue and renew the App Service-provided certificate for that domain.",
+					"i2": "Goes with the requirement about using public DNS to direct clients to the location where the site answers. An A record mapping the custom name to the app's inbound IP makes the domain reach the app, and such a record is also a prerequisite for the App Service-provided certificate.",
+					"i3": "Goes with the requirement about making portal.contoso.com answer over HTTPS with the certificate that was provided for it. A binding is what actually attaches a certificate to a custom domain; without it the domain stays unsecured even though the certificate exists, and SNI SSL supports many domains and certificates on one shared IP.",
+					"i4": "Goes with the requirement about letting the application code learn the protocol the visitor originally used. Because the connection is decrypted before it reaches the app, code reads X-Forwarded-Proto to determine whether the original request arrived over HTTP or HTTPS.",
+					"i5": "Goes with the requirement about keeping every part of the session unreadable inside the Azure network. End-to-end TLS encryption also encrypts the traffic between the front end and the worker, and it is offered on Premium plans, which is the tier in the exhibit."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-certificate"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-bindings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-tls"
+				}
+			],
+			"subtopics": [
+				"tls-certificates",
+				"ssl-bindings",
+				"end-to-end-tls"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V30QR8DX7KEZGZ54CPY14W",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have six Azure App Service apps, listed in the exhibit, and each one still has an outstanding task. You need to choose exactly one action out of the list for each app so that the task described in the slot is satisfied. Drag each action to the task it belongs to.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"App",
+						"Plan",
+						"Current state"
+					],
+					"rows": [
+						[
+							"shop-window",
+							"Standard S1",
+							"The name servers for shop-window.contoso.com permit only two named certificate authorities. Every attempt to create a certificate for that name at no cost fails, so the name currently has no certificate."
+						],
+						[
+							"warehouse-sync",
+							"Standard S1",
+							"A certificate file produced on the build host is rejected and reports an error when the app tries to store it. The name keeps serving the certificate that was installed last month."
+						],
+						[
+							"partner-connect",
+							"Standard S1",
+							"The app calls a third-party API that only accepts callers that present a certificate file the API operator already trusts. The app has nothing to present in that call."
+						],
+						[
+							"order-lookup",
+							"Standard S1",
+							"Every incoming call is logged as plain HTTP, including calls that browsers made over HTTPS. The app builds absolute URLs based on the logged scheme, so the links it generates are wrong."
+						],
+						[
+							"partner-secure",
+							"Premium P1V3",
+							"The leg that a caller sees at the platform edge is secured, but traffic linking that edge and the app is captured in clear text on the internal network."
+						],
+						[
+							"internal-tools",
+							"Standard S1",
+							"The app needs the traffic that callers send to be covered by a certificate issued by the organization's internal certificate authority. Attempts to use that certificate for incoming calls are refused."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "item-1",
+						"text": "Re-export the app's PFX for upload in OpenSSL using -keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES -macalg SHA1"
+					},
+					{
+						"id": "item-2",
+						"text": "Move the app to an App Service Environment v3 so a certificate from the company's own certificate authority can serve the app's inbound traffic"
+					},
+					{
+						"id": "item-3",
+						"text": "Upload a certificate for the app under Public key certificates (.cer)"
+					},
+					{
+						"id": "item-4",
+						"text": "Add a DNS Certification Authority Authorization record with the value 0 issue digicert.com on the app's domain zone"
+					},
+					{
+						"id": "item-5",
+						"text": "Turn on end-to-end TLS encryption so the app's traffic between the App Service front end and its worker process also gets protected"
+					},
+					{
+						"id": "item-6",
+						"text": "Read the X-Forwarded-Proto request header in the app's code and act on the value carried by the request"
+					}
+				],
+				"slots": [
+					{
+						"id": "slot-1",
+						"label": "internal-tools: The traffic must be covered by a certificate that the organization's internal certificate authority issued, but the multitenant service refuses such a certificate, so the app has to run somewhere that accepts them."
+					},
+					{
+						"id": "slot-2",
+						"label": "partner-connect: The app reaches a third-party API that accepts a caller only when the caller shows a certificate file that the API operator already trusts; today the app has nothing it could show in that call."
+					},
+					{
+						"id": "slot-3",
+						"label": "partner-secure: The traffic linking the platform edge and the app must be kept secret too, not only the part that a caller observes."
+					},
+					{
+						"id": "slot-4",
+						"label": "shop-window: One of the names you control may only be signed by the short list of external parties that your name servers allow, so the certificate the service creates and renews by itself never appears for it."
+					},
+					{
+						"id": "slot-5",
+						"label": "order-lookup: Because the connection closes at the platform edge, the app logs every call as plain HTTP even when the caller used HTTPS, and the app must work out the scheme the caller really used."
+					},
+					{
+						"id": "slot-6",
+						"label": "warehouse-sync: The certificate file the build host produced is refused by the service when you try to store it, and the current name has to keep working while a replacement goes into place."
+					}
+				]
+			},
+			"key": {
+				"slot-1": "item-2",
+				"slot-2": "item-3",
+				"slot-3": "item-5",
+				"slot-4": "item-4",
+				"slot-5": "item-6",
+				"slot-6": "item-1"
+			},
+			"explanation": {
+				"correct": "Each app has exactly one matching action. internal-tools needs an App Service Environment v3 because a certificate from a private certificate authority cannot be used for inbound TLS in multitenant App Service. partner-connect needs a certificate uploaded under Public key certificates (.cer), which is what application code presents to a remote resource that already trusts it. partner-secure needs end-to-end TLS encryption so that the traffic between the front end and the worker is protected as well, and that option exists on the Premium plan it runs on. shop-window needs a DNS Certification Authority Authorization record with the value 0 issue digicert.com, because its name servers restrict which certificate authorities may act for the name. order-lookup needs the code to read the X-Forwarded-Proto request header, since TLS is terminated at the load balancers and the worker sees plain HTTP. warehouse-sync needs its certificate file re-exported with the 3DES and SHA1 options, because the AES256 cipher that OpenSSL v3 defaults to is not accepted by App Service.",
+				"perChoice": {
+					"item-1": "The file the build host produced used the AES256 PFX cipher that OpenSSL v3 defaults to, and App Service does not accept that cipher; re-exporting with -keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES -macalg SHA1 produces a file the service can store, so warehouse-sync keeps serving its current name while the replacement goes into place.",
+					"item-2": "A certificate from a private certificate authority cannot be used for inbound TLS in multitenant App Service; that requires an App Service Environment v3, so internal-tools has to run there before such a certificate can cover the calls it receives.",
+					"item-3": "Public certificates (.cer) are never used to secure custom domains; they are uploaded under Public key certificates so that application code can present a certificate to a remote resource that already trusts it, which is exactly what partner-connect needs for its outbound call.",
+					"item-4": "The certificate the service creates and renews by itself is issued by DigiCert, so a zone that restricts which certificate authorities may act for the name blocks it; a record with the value 0 issue digicert.com removes that block for shop-window.",
+					"item-5": "End-to-end TLS encryption extends protection beyond the client-to-front-end leg and also encrypts the traffic between the front end and the worker inside Azure; it is offered on Premium plans, which is the tier partner-secure runs on.",
+					"item-6": "TLS is terminated at the App Service network load balancers, so HTTPS requests reach the worker as unencrypted HTTP; reading X-Forwarded-Proto (or the x-appservice-proto header) lets order-lookup learn the scheme the caller really used."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-certificate"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-bindings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-tls"
+				}
+			],
+			"subtopics": [
+				"app-service-tls",
+				"tls-certificate-configuration",
+				"ssl-bindings"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V3CRMW76VX33NSEE9P48XM",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have six Azure App Service apps whose current situation is shown in the exhibit. You need to pick the one action that produces the required outcome for each app. Drag each action to the app where it belongs.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"App",
+						"Plan and hosting",
+						"Outcome required"
+					],
+					"rows": [
+						[
+							"checkout-web",
+							"Standard S1, multitenant",
+							"The code must report the protocol that the visitor's browser used when the connection first arrived at Azure; Azure supplies that value as either http or https."
+						],
+						[
+							"media-stream",
+							"Premium P1V3, multitenant",
+							"Traffic must stay protected between the tier that browsers connect to and the tier that runs the app's code."
+						],
+						[
+							"partner-bridge",
+							"Standard S1, multitenant",
+							"The app must call a partner service and hand that service a certificate; the same certificate must never protect the app's own custom domain."
+						],
+						[
+							"build-runner",
+							"Standard S1, multitenant",
+							"The certificate that the build host produced is refused when it is added to the app, because the host now uses a newer packaging format for it."
+						],
+						[
+							"internal-tools",
+							"App Service Environment v3, Premium v3",
+							"Inbound traffic to the custom domain must be protected with a certificate that the company's own certificate authority provides."
+						],
+						[
+							"shop-front",
+							"Standard S1, multitenant",
+							"Browsers must accept the custom domain's certificate with no extra setup on visitor devices, and the certificate authority that issued it is not the company's own."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Enable end-to-end TLS encryption"
+					},
+					{
+						"id": "b",
+						"text": "Read the x-appservice-proto request header"
+					},
+					{
+						"id": "c",
+						"text": "Re-export the PFX with 3DES for key and certificate encryption"
+					},
+					{
+						"id": "d",
+						"text": "Bind a certificate signed by a publicly trusted certificate authority"
+					},
+					{
+						"id": "e",
+						"text": "Upload the certificate under Public key certificates (.cer)"
+					},
+					{
+						"id": "f",
+						"text": "Bind a certificate from a private certificate authority"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "checkout-web"
+					},
+					{
+						"id": "s2",
+						"label": "media-stream"
+					},
+					{
+						"id": "s3",
+						"label": "partner-bridge"
+					},
+					{
+						"id": "s4",
+						"label": "build-runner"
+					},
+					{
+						"id": "s5",
+						"label": "internal-tools"
+					},
+					{
+						"id": "s6",
+						"label": "shop-front"
+					}
+				]
+			},
+			"key": {
+				"s1": "b",
+				"s2": "a",
+				"s3": "e",
+				"s4": "c",
+				"s5": "f",
+				"s6": "d"
+			},
+			"explanation": {
+				"correct": "Each action matches one app's requirement and none of the others: checkout-web needs the original protocol of the visitor's connection, which the platform exposes as the x-appservice-proto header value (http or https) because the connection is terminated before the request reaches the app, so it takes item b; media-stream must keep the segment between the public-facing tier and the code-running worker encrypted, which is what end-to-end TLS does on a Premium plan, so it takes item a; partner-bridge only presents a certificate to an outbound partner call and must never use it for its own domain, which is the role of a certificate uploaded under Public key certificates (.cer), so it takes item e; build-runner's file is rejected because the newer packaging default on the host encrypts the key and certificate with AES256, so it takes item c, which re-exports using 3DES for both; internal-tools sits in an App Service Environment v3, the only place where a certificate from the company's own private certificate authority can protect inbound traffic, so it takes item f; shop-front runs in a multitenant environment where a private authority's certificate cannot be used for inbound traffic, so it takes item d, a binding using a certificate from an authority browsers already accept.",
+				"perChoice": {
+					"a": "media-stream (s2): end-to-end TLS encryption protects the traffic between the platform's public-facing tier and the worker running the app's code, and it is available on Premium plans, which is the plan media-stream uses.",
+					"b": "checkout-web (s1): the visitor's connection is terminated at the platform before the request reaches the app, and the x-appservice-proto header carries the original protocol as http or https, so reading it lets the code report the visitor's protocol.",
+					"c": "build-runner (s4): the newer packaging default on the build host produces a file whose key and certificate encryption the platform refuses, and re-exporting with 3DES for both makes the file acceptable.",
+					"d": "shop-front (s6): in a multitenant App Service, inbound traffic must be protected with a certificate from an authority that browsers already accept, so the binding has to come from a publicly trusted certificate authority rather than the company's own.",
+					"e": "partner-bridge (s3): a certificate uploaded under Public key certificates (.cer) is only for presenting to a remote service such as the partner API and is never used to protect an inbound custom domain, which is exactly what this app requires.",
+					"f": "internal-tools (s5): a certificate from a private certificate authority can protect inbound traffic only inside an App Service Environment v3, and this app runs in one."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-tls"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-certificate"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-bindings"
+				}
+			],
+			"subtopics": [
+				"tls-configuration",
+				"certificate-import",
+				"certificate-binding"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V3FWNER8KARTKT4HPZVH3Q",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have six Azure App Service apps, listed in the exhibit, and each one has a different inbound TLS problem to solve. You need to apply exactly one configuration change to each app, and one of the listed changes is not needed by any of these apps. Drag each change to the app it belongs to.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"App",
+						"Plan",
+						"Reported problem"
+					],
+					"rows": [
+						[
+							"checkout-web",
+							"Standard S1",
+							"Clients that offer only the two obsolete protocol versions still complete a handshake. Business policy forbids those obsolete versions, but the long-established version that the platform supports for broad compatibility must keep working for existing clients."
+						],
+						[
+							"partner-api",
+							"Premium P1V3",
+							"Policy allows only the newest protocol version the platform supports, and both of the suites that are fixed for that version must stay negotiable."
+						],
+						[
+							"survey-app",
+							"Basic B1",
+							"TLS is stopped before the code runs, so the application only ever sees plain HTTP. The application must report whether a visitor's session arrived over http or over https."
+						],
+						[
+							"hr-web",
+							"Linux Premium v3",
+							"Only devices holding a certificate issued by the company certificate authority may open a session, and the application must show which device connected."
+						],
+						[
+							"orders-api",
+							"Premium P1V3",
+							"Traffic between the platform front end and the worker that runs the application must be encrypted inside Azure, not only between the browser and the front end."
+						],
+						[
+							"finance-app",
+							"Standard S1",
+							"Only the suite named in the corporate standard may be negotiated, and the order of the allowed suites must be the one the platform publishes."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Set Minimum Inbound TLS Version to TLS 1.2"
+					},
+					{
+						"id": "b",
+						"text": "Set Minimum Inbound TLS Version to TLS 1.3"
+					},
+					{
+						"id": "c",
+						"text": "Enable the Minimum TLS Cipher Suite on the app"
+					},
+					{
+						"id": "d",
+						"text": "Enable mutual TLS and upload the trusted client certificate CA chain"
+					},
+					{
+						"id": "e",
+						"text": "Enable end-to-end TLS encryption for the front-end-to-worker traffic"
+					},
+					{
+						"id": "f",
+						"text": "Read the X-Forwarded-Proto and x-appservice-proto request headers in app code"
+					},
+					{
+						"id": "g",
+						"text": "Set the FrontEndSSLCipherSuiteOrder cluster setting and restart the front end"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "checkout-web"
+					},
+					{
+						"id": "s2",
+						"label": "partner-api"
+					},
+					{
+						"id": "s3",
+						"label": "survey-app"
+					},
+					{
+						"id": "s4",
+						"label": "hr-web"
+					},
+					{
+						"id": "s5",
+						"label": "orders-api"
+					},
+					{
+						"id": "s6",
+						"label": "finance-app"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "f",
+				"s4": "d",
+				"s5": "e",
+				"s6": "c"
+			},
+			"explanation": {
+				"correct": "checkout-web needs a TLS 1.2 floor (Minimum Inbound TLS Version = TLS 1.2): TLS 1.0 and TLS 1.1 are legacy protocols that are no longer considered secure, while TLS 1.2 is the default minimum for new web apps and SCM endpoints and keeps broad client compatibility. partner-api needs Minimum Inbound TLS Version = TLS 1.3, the newest fully supported version whose two fixed suites (TLS_AES_256_GCM_SHA384 and TLS_AES_128_GCM_SHA256) remain available. survey-app must read the X-Forwarded-Proto and x-appservice-proto headers, because TLS is terminated at the App Service network load balancers and the worker receives plain HTTP while the original protocol is reported through those headers. hr-web needs mutual TLS, which is supported on Linux and Windows plans, validates client certificates against a trusted CA chain you configure, and exposes client certificate details to the app through request headers. orders-api needs end-to-end TLS encryption, offered on Premium plans, so traffic between the front end and the worker is encrypted inside Azure. finance-app needs the app-level Minimum TLS Cipher Suite, supported on Basic SKU or higher on multitenant App Service, whose fixed list and priority order cannot be changed and which blocks every less-secure suite once a minimum is selected. The FrontEndSSLCipherSuiteOrder cluster setting belongs to an App Service Environment, so it fits none of these apps.",
+				"perChoice": {
+					"a": "Fits checkout-web: the two obsolete protocol versions (TLS 1.0 and TLS 1.1) must be refused while the broadly supported version keeps working, which is a TLS 1.2 floor set with Minimum Inbound TLS Version.",
+					"b": "Fits partner-api: only the newest protocol version the platform supports may be negotiated, and TLS 1.3's two fixed cipher suites stay available when the floor is raised to TLS 1.3.",
+					"c": "Fits finance-app: the Minimum TLS Cipher Suite setting uses the platform's published, fixed suite list and priority order, and selecting one suite automatically blocks all less-secure suites; it is supported on Basic SKU or higher on multitenant App Service, which finance-app is.",
+					"d": "Fits hr-web: mutual TLS lets the platform validate client certificates against a trusted CA chain you upload and surfaces the client certificate details to the app through request headers, and it works on Linux and Windows plans.",
+					"e": "Fits orders-api: end-to-end TLS encryption covers front-end-to-worker communication inside Azure, and the app runs on a Premium plan where this feature is offered.",
+					"f": "Fits survey-app: since TLS is terminated at the App Service load balancers, the app must read X-Forwarded-Proto and the x-appservice-proto header (http or https) to know the protocol the client originally used.",
+					"g": "Fits no slot: FrontEndSSLCipherSuiteOrder is a cluster setting of an App Service Environment, and none of these apps runs in one; it should also not be combined with the app-level Minimum TLS Cipher Suite, because conflicting configurations can result."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-tls"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-bindings"
+				}
+			],
+			"subtopics": [
+				"tls-version-configuration",
+				"mutual-tls-authentication",
+				"cipher-suite-control"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V3N57A5PJRJQTMX746GGM4",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an App Service app named ledger-api that runs on a Premium v3 plan (see the exhibit). The corporate security policy states that the traffic between the Azure network load balancer that accepts the incoming connection and the worker process that runs the app code must not be readable on the network inside Azure. Which change should you make to the app?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "App Service property            Current value\n------------------------------  -----------------------------------\nApp Service plan                Premium v3\nMinimum inbound TLS version     TLS 1.2\nHTTPS Only                      On\nMinimum TLS cipher suite        Not configured\nClient certificate auth         Off\nCustom domain binding           SNI SSL for ledger.contoso.com"
+				},
+				"statement": "To satisfy the policy, you should {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Enable end-to-end TLS encryption for the app"
+							},
+							{
+								"id": "b",
+								"text": "Require TLS 1.3 as the minimum inbound version for the app"
+							},
+							{
+								"id": "c",
+								"text": "Assign a dedicated public IP with an IP based SSL binding for the app"
+							},
+							{
+								"id": "d",
+								"text": "Require client certificates with mutual TLS for the app"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "End-to-end (E2E) TLS encryption is the App Service feature that also protects the front-end-to-worker traffic inside Azure, not just the client-to-front-end connection, and it is offered on Premium plans (recommended for new deployments) and legacy Standard plans. Because ledger-api runs on a Premium v3 plan, turning it on for the app is the change that satisfies the policy requirement that traffic between the Azure network load balancer and the worker process must not be readable on the internal network.",
+				"perChoice": {
+					"action:b": "Setting the minimum inbound TLS version only decides which protocol versions clients may negotiate with the front end of the app; the app still receives requests as plain HTTP from the front end, so the internal front-end-to-worker path is not protected and the policy is not met.",
+					"action:c": "An IP based SSL binding gives the app a dedicated public IP address and its own certificate; it changes how the app is reached from the internet but leaves the traffic between the load balancer and the worker unprotected inside Azure.",
+					"action:d": "Mutual TLS makes callers present a certificate that is validated against a trusted chain, which authenticates the clients; it does not protect the connection between the Azure network load balancer and the worker process."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-tls"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-bindings"
+				}
+			],
+			"subtopics": [
+				"end-to-end-tls",
+				"inbound-tls-configuration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V3W6T54EBDFM4BJ6EG4JZF",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an App Service app that must serve HTTPS on a custom domain (see the exhibit). Corporate policy for this internal service requires the domain to be protected with a certificate issued by your organization's internal certificate authority instead of a publicly trusted one, and that certificate has already been exported as a password-protected PFX that contains the full chain. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"App name",
+							"claims-api"
+						],
+						[
+							"Plan tier",
+							"Standard S1"
+						],
+						[
+							"Deployment",
+							"Multitenant (shared) service"
+						],
+						[
+							"Custom domain",
+							"claims.contoso.com"
+						],
+						[
+							"TLS/SSL binding for claims.contoso.com",
+							"None yet"
+						],
+						[
+							"Certificate issuer",
+							"Internal certificate authority"
+						],
+						[
+							"Certificate file",
+							"Password-protected PFX, full chain included"
+						]
+					]
+				},
+				"statement": "You should {{slot1}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "Move the app into an App Service Environment v3 and bind the internal certificate authority certificate for the custom domain"
+							},
+							{
+								"id": "b",
+								"text": "Upload the PFX under Bring your own certificates (.pfx) in App Service and add a TLS/SSL binding for the custom domain"
+							},
+							{
+								"id": "c",
+								"text": "Import the PFX from an Azure Key Vault and add a TLS/SSL binding for the custom domain"
+							},
+							{
+								"id": "d",
+								"text": "Enable mutual TLS on the App Service app so that clients must present a certificate signed by the internal certificate authority"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a"
+			},
+			"explanation": {
+				"correct": "A certificate issued by a private (internal) certificate authority can be used for inbound TLS only in App Service Environment v3 — that isn't possible in App Service (multitenant). Because policy requires this internal CA certificate for claims.contoso.com, the app has to run in an App Service Environment v3 and the certificate must be bound to the custom domain there. The Standard S1 tier itself isn't the blocker: private certificates are supported on Basic, Standard, Premium and Isolated plans, and the PFX format already satisfies the private certificate requirements (password-protected, full chain). What blocks the current deployment is that it runs on the shared multitenant service.",
+				"perChoice": {
+					"slot1:b": "Uploading a password-protected PFX is the right mechanism for a certificate issued by a publicly trusted CA, but a certificate from an internal CA can't be used for inbound TLS on the shared multitenant service, so the custom domain would still not be protected by a certificate the clients can validate.",
+					"slot1:c": "Importing the certificate from a Key Vault only changes where the certificate comes from and how renewals are synced. The certificate is still issued by an internal CA, and such a certificate can't be used for inbound TLS in multitenant App Service, so this doesn't secure the custom domain.",
+					"slot1:d": "Mutual TLS validates the certificates that clients present to the app against a trusted CA chain that you configure; it doesn't allow the app to serve an internal-CA-issued server certificate that clients will accept for inbound HTTPS."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-certificate"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-bindings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-tls"
+				}
+			],
+			"subtopics": [
+				"private-ca-certificates",
+				"app-service-environment",
+				"tls-bindings"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V42GAD2PCQ4ECZAGXE6HMQ",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an App Service app named travel-site that runs on a Standard S1 plan. It must serve HTTPS for the custom domain www.travelcontoso.com with the App Service managed certificate, which is issued and renewed automatically at no cost. The travelcontoso.com DNS zone is managed by the corporate DNS team, and only approved certificate authorities may act for company domains. Every attempt to create the managed certificate for www.travelcontoso.com fails, and the domain still serves no certificate of its own (see the exhibit). Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"App name",
+							"travel-site"
+						],
+						[
+							"App Service plan",
+							"Standard S1"
+						],
+						[
+							"Custom domain",
+							"www.travelcontoso.com"
+						],
+						[
+							"Where www.travelcontoso.com currently resolves",
+							"The travel-site app"
+						],
+						[
+							"Certificate requested",
+							"App Service managed certificate (no cost, renewed automatically)"
+						],
+						[
+							"Outcome of the creation attempts",
+							"Failed - the domain still serves no certificate of its own"
+						],
+						[
+							"Who controls the travelcontoso.com zone",
+							"The corporate DNS team; only approved certificate authorities may act for company domains"
+						]
+					]
+				},
+				"statement": "To make the App Service managed certificate available for www.travelcontoso.com, you should {{slot1}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "Create a CAA record for the domain with the value 0 issue digicert.com"
+							},
+							{
+								"id": "b",
+								"text": "Create a CAA record for the domain with the value 0 issue internalcorp-ca.com"
+							},
+							{
+								"id": "c",
+								"text": "Create an A record for the domain that points it to the app's IP address"
+							},
+							{
+								"id": "d",
+								"text": "Create an App Service certificate for the domain in the Azure Key Vault"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a"
+			},
+			"explanation": {
+				"correct": "The App Service managed certificate is issued by DigiCert, and for some domains the DNS zone must explicitly allow that authority to act for the domain. A certificate authority authorization (CAA) record holding the value 0 issue digicert.com is what allows DigiCert to issue, and later renew, the managed certificate for www.travelcontoso.com, so the creation attempts start to succeed. Nothing about the app's plan, tier or address records needs to change, since the domain already resolves to the app and the failure comes from the zone's issuer policy.",
+				"perChoice": {
+					"slot1:b": "Only the authority that issues the App Service managed certificate can be listed for that certificate to be created and renewed. Authorizing the internal authority instead leaves the managed certificate blocked, so the attempts keep failing.",
+					"slot1:c": "The address record for www.travelcontoso.com already points to the travel-site app, and an address record says nothing about which authorities the zone may let act; the failure comes from the zone's issuer policy, not from where the domain points.",
+					"slot1:d": "The App Service certificate is a different offering: it is a paid certificate issued by GoDaddy and kept in your Key Vault, exportable and usable outside App Service. It is not the no-cost certificate that App Service provides and renews automatically."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-certificate"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-tls"
+				}
+			],
+			"subtopics": [
+				"managed-certificate",
+				"certificate-authorization",
+				"custom-domain-tls"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V44WFVB5SGET8KTE72JVDM",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an App Service app named orders-web that serves the custom domain orders.contoso.com over HTTPS through a TLS binding. The app builds absolute URLs that it returns to browsers and hands to a payment provider, and users report that these links start with http:// even though they reached the site over https://. The incoming connection is already decrypted before the request is handed to the app process (see the exhibit). You need the generated absolute URLs to reflect the protocol that the client actually used. Which change should you make to the app code?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "// OrdersController\npublic string BuildCallbackUrl()\n{\n    // The scheme reported here is always \"http\":\n    // the connection was decrypted before the request reached this process.\n    return Request.Scheme + \"://\" + Request.Host.Value + \"/api/payments/callback\";\n}"
+				},
+				"statement": "The app code should {{slot1}} so that the absolute URLs it generates use the protocol that the client actually sent.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "Read the `X-Forwarded-Proto` request header and use its value as the URL scheme"
+							},
+							{
+								"id": "b",
+								"text": "Read the `X-Forwarded-For` request header and use its value as the URL scheme"
+							},
+							{
+								"id": "c",
+								"text": "Read the `X-Forwarded-Host` request header and use its value as the URL scheme"
+							},
+							{
+								"id": "d",
+								"text": "Read the `X-Forwarded-Port` request header and use its value as the URL scheme"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a"
+			},
+			"explanation": {
+				"correct": "App Service terminates TLS at its network load balancers, so a request that arrived over HTTPS reaches the worker process as unencrypted HTTP and the in-process request object reports the \"http\" scheme. To learn the protocol the client really used, the code must inspect the `X-Forwarded-Proto` request header (App Service also exposes the original protocol in the `x-appservice-proto` header, whose value is `http` or `https`). Reading the header and using its value as the scheme produces correct absolute URLs for both browsers and the payment provider.",
+				"perChoice": {
+					"slot1:b": "The `X-Forwarded-For` header carries the IP address of the original client (plus any proxy addresses), not the protocol, so building the URL from it cannot tell HTTP from HTTPS.",
+					"slot1:c": "The `X-Forwarded-Host` header carries the host name the client requested; the app already knows its own host name, and this header says nothing about whether the client used HTTP or HTTPS.",
+					"slot1:d": "The `X-Forwarded-Port` header carries the port of the original request; a port number alone cannot be used to choose between an http:// and an https:// URL."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-bindings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-tls"
+				}
+			],
+			"subtopics": [
+				"tls-termination",
+				"request-headers",
+				"custom-domain-https"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V4C886ZMFNX3FF0AQ6YQ20",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an App Service app named secure-portal that runs on a Standard S1 plan. The custom domain portal.contoso.com is mapped to the app, and the certificate that your organization bought from a public certificate authority is already stored on the app (see the exhibit). The domain currently answers over plain HTTP only, and requests to https://portal.contoso.com fail. The same certificate is installed on other company systems, so the app has to serve that exact certificate, and its key material must stay under your organization's control. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"App Service app",
+							"secure-portal (Standard S1 plan)"
+						],
+						[
+							"Custom domain",
+							"portal.contoso.com (A record points to the app's inbound IP)"
+						],
+						[
+							"Certificate on the app",
+							"portal-cert, issued by a public CA, valid for portal.contoso.com until 2027-06-30"
+						],
+						[
+							"Certificate source",
+							"Bring your own certificates (.pfx)"
+						],
+						[
+							"Public key certificates (.cer)",
+							"None"
+						],
+						[
+							"HTTPS on the custom domain",
+							"Not working - the domain responds over plain HTTP only"
+						]
+					]
+				},
+				"statement": "The action you should take is to {{slot1}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "add a TLS binding for portal.contoso.com that uses the certificate stored on the app"
+							},
+							{
+								"id": "b",
+								"text": "add a TLS binding for portal.contoso.com that uses the public key certificate (.cer) stored on the app"
+							},
+							{
+								"id": "c",
+								"text": "add a TLS binding for portal.contoso.com that uses the App Service certificate (ASC) held in Azure Key Vault"
+							},
+							{
+								"id": "d",
+								"text": "add a TLS binding for portal.contoso.com that uses the App Service managed certificate"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a"
+			},
+			"explanation": {
+				"correct": "Serving HTTPS on a custom domain takes two separate steps: the certificate must exist on the app, and a binding must attach that certificate to the domain. secure-portal already has the purchased certificate (portal-cert) stored on the app, but nothing attaches it to portal.contoso.com, which is why the domain still answers over plain HTTP only. Adding a TLS binding that uses the stored certificate completes the setup, and it keeps the app presenting exactly the certificate the organization installed on its other systems, with key material the organization controls. Two related reminders: a domain that shows the state Secured on the Custom domains page still does not prove the certificate is trusted, because App Service never checks whether a bound certificate is self-signed or expired, and the certificate renewal should be done by uploading the new file and updating the binding without deleting the old binding first, so the app keeps serving traffic throughout.",
+				"perChoice": {
+					"slot1:b": "A public key certificate (.cer) holds only the public key and is uploaded under Public key certificates (.cer) when your code has to present a public certificate to reach a remote resource. It is never used to secure a custom domain, and this app has no .cer stored anyway, so it cannot serve HTTPS for portal.contoso.com.",
+					"slot1:c": "An App Service certificate (ASC) is a separate certificate issued by GoDaddy and kept in your key vault. It is not the certificate your organization purchased and installed on its other systems, so binding it would make the app present a different certificate than the one the requirement calls for.",
+					"slot1:d": "The App Service managed certificate is issued and renewed by the platform. Its issuer, public key and private key can change at any time outside your control and it cannot be exported, so it cannot satisfy the requirement that the app present the organization's purchased certificate with key material under the organization's control."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-bindings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-certificate"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-tls"
+				}
+			],
+			"subtopics": [
+				"tls-bindings",
+				"custom-domain-https",
+				"app-service-certificates"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V4REPBS0YJ7KF33Q4N3SNY",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an App Service app named checkout-web on a Standard S1 plan that must serve HTTPS for the custom domain checkout.contoso.com with a publicly trusted certificate your organization already owns. A colleague prepared the PFX file on the team's Linux build host from the private key and the merged chain and protected it with a password, but the portal rejects the file every time the team tries to add it under Bring your own certificates (.pfx). The build host and the command that produced the file are shown in the exhibit. Which change should you make to the PFX file?",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "$ openssl version\nOpenSSL 3.0.13 30 Jan 2024\n\n$ openssl pkcs12 -export -out checkout.pfx -inkey checkout.key -in mergedcertificate.crt\nEnter Export Pass Phrase:"
+				},
+				"statement": "The team should {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "re-create the PFX with 3DES-based encryption for the key and the certificate and a SHA1 message authentication code"
+							},
+							{
+								"id": "b",
+								"text": "re-create the PFX with AES256-based encryption for the key and the certificate and a SHA256 message authentication code"
+							},
+							{
+								"id": "c",
+								"text": "re-create the PFX with 3DES-based encryption for the key, AES256-based encryption for the certificate, and a SHA1 message authentication code"
+							},
+							{
+								"id": "d",
+								"text": "re-create the PFX with 3DES-based encryption for the key and the certificate and a SHA256 message authentication code"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "OpenSSL v3 changed the default PFX cipher from 3DES to AES256, and App Service doesn't accept a PFX produced with those v3 defaults, which is why the file is rejected even though the chain is complete and the file is password protected. Rebuilding the file with 3DES-based encryption for both the key and the certificate and a SHA1 message authentication code (openssl pkcs12 -export -out checkout.pfx -inkey checkout.key -in mergedcertificate.crt -keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES -macalg SHA1) produces the combination App Service accepts, which is the behavior OpenSSL v1 gave by default.",
+				"perChoice": {
+					"action:b": "This is the OpenSSL v3 default (AES256 with a SHA256 message authentication code), and App Service doesn't accept a PFX built that way. The key and the certificate must both be encrypted with PBE-SHA1-3DES and the MAC algorithm set to SHA1.",
+					"action:c": "The private key and the certificate must both use PBE-SHA1-3DES encryption, so leaving the certificate at the OpenSSL v3 AES256 default still yields a file App Service rejects. Use -keypbe PBE-SHA1-3DES and -certpbe PBE-SHA1-3DES together.",
+					"action:d": "The supported override pairs the 3DES encryption of the key and the certificate with -macalg SHA1. Keeping 3DES encryption but producing the file with a SHA256 message authentication code doesn't reproduce the PFX combination App Service accepts."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-certificate"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-bindings"
+				}
+			],
+			"subtopics": [
+				"app-service-tls",
+				"private-certificate-upload",
+				"openssl-pkcs12-export"
+			],
+			"reviewed": false
+		}
+	]
+}

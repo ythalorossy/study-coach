@@ -1,0 +1,1924 @@
+{
+	"skill": "storage.file-shares",
+	"questions": [
+		{
+			"id": "q_01M5MB5N08Q9E0PWR8RHES0GH1",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an existing storage account that is shown below. An HPC team needs a share today that Linux nodes reach over NFSv4.1 with single-digit millisecond latency, and next quarter the same account must also hold a large, low-cost departmental share for Windows clients. You need a single billing model that covers both shares. Which File share billing model should you select on the file share creation blade?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Storage account property",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Kind",
+							"FileStorage"
+						],
+						[
+							"Performance",
+							"Premium"
+						],
+						[
+							"Primary service",
+							"Azure Files"
+						],
+						[
+							"Redundancy",
+							"ZRS"
+						],
+						[
+							"Enable hierarchical namespace",
+							"Disabled"
+						],
+						[
+							"Enable network file system v3",
+							"Disabled"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Pay-as-you-go"
+					},
+					{
+						"id": "b",
+						"text": "Provisioned v1"
+					},
+					{
+						"id": "c",
+						"text": "Provisioned v2"
+					},
+					{
+						"id": "d",
+						"text": "Provisioned v1 for the NFS share now, Pay-as-you-go for the departmental share later"
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "Provisioned v2 is the billing model recommended for new deployments, and it is the only one that covers both SSD and HDD media in a single FileStorage account. It serves the NFSv4.1 share on Premium media now and the planned HDD SMB share later, and it requires Primary service to be set to Azure Files, which this account already has. Its SKUs here would be PremiumV2_ZRS or StandardV2_ZRS (note that ZRS for SSD is offered only in a subset of regions).",
+				"perChoice": {
+					"a": "Pay-as-you-go is an HDD-only model and requires a StorageV2 account, so it cannot deliver the SSD media the NFS share needs and cannot be used in this FileStorage account.",
+					"b": "Provisioned v1 serves SSD media, so it would work for the NFS share, but it is the older model and cannot host HDD shares, which breaks the plan for the departmental share in the same account.",
+					"d": "Pay-as-you-go shares need a StorageV2 account and are unavailable in this FileStorage account; the departmental share should be created with the same provisioned v2 model using a StandardV2 or PremiumV2 SKU instead."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/create-classic-file-share"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-planning"
+				}
+			],
+			"subtopics": [
+				"file-share-billing-models",
+				"nfs-protocol",
+				"storage-account-settings"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MBCNSHMC5SCNW932NP033Q",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a FileStorage account set up as shown below and are creating a file share for an engineering team. The original plan put the workload on SSD with LRS because latency mattered most. That has changed: the share's data must now be recoverable from a second Azure region, and per-GiB cost has become the priority over latency. Which combination of Performance and Redundancy should you select on the file share creation blade?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account kind",
+							"FileStorage"
+						],
+						[
+							"Primary service",
+							"Azure Files"
+						],
+						[
+							"File share billing",
+							"Provisioned v2"
+						],
+						[
+							"Performance",
+							"Premium (SSD)"
+						],
+						[
+							"Redundancy",
+							"LRS"
+						],
+						[
+							"Provisioned storage (GiB)",
+							"4096"
+						],
+						[
+							"Protocol",
+							"SMB"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set Performance to Premium (SSD) and Redundancy to ZRS"
+					},
+					{
+						"id": "b",
+						"text": "Set Performance to Standard (HDD) and Redundancy to GZRS"
+					},
+					{
+						"id": "c",
+						"text": "Set Performance to Standard (HDD) and Redundancy to LRS"
+					},
+					{
+						"id": "d",
+						"text": "Set Performance to Premium (SSD) and Redundancy to GRS"
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "Recovering the share in a second Azure region requires a redundancy option that replicates asynchronously across regions, which only the geo-redundant choices (GRS or GZRS) provide. File shares on SSD are limited to LRS and ZRS, so keeping the share on Premium leaves no cross-region option at all; the media tier has to move to Standard (HDD), where all four redundancy options are supported. GZRS then gives zone-redundant copies in the primary region plus async replication to a second region, and Standard/HDD is the cost-effective tier the team has agreed to accept.",
+				"perChoice": {
+					"a": "ZRS keeps three copies inside the primary region, spread across availability zones; it protects against a zone failure but creates no copy in a second region, so it cannot satisfy the new recovery requirement.",
+					"c": "Standard (HDD) is the right media tier for this requirement, but LRS is single-region only — three copies in one storage cluster — so there is still nothing to recover from in a second region.",
+					"d": "SSD file shares support only LRS and ZRS, so GRS cannot be deployed on the Premium tier; the deployment would fail rather than produce a cross-region copy."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-planning"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/create-classic-file-share"
+				}
+			],
+			"subtopics": [
+				"redundancy-options",
+				"performance-tiers"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MBDFGMYC5WZDM5V12FDCF8",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a FileStorage storage account configured as shown below. A Linux rendering farm must mount a file share from it over NFSv4.1, and corporate policy requires that all NFS traffic be encrypted. On the Basics tab, however, the per-protocol option for requiring encryption on NFS cannot be selected. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Storage account setting",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Storage account kind",
+							"FileStorage"
+						],
+						[
+							"Primary service",
+							"Azure Files"
+						],
+						[
+							"File share billing",
+							"Provisioned v2"
+						],
+						[
+							"Performance",
+							"Standard"
+						],
+						[
+							"Redundancy",
+							"Locally-redundant storage (LRS)"
+						],
+						[
+							"Secure transfer required",
+							"Enabled"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Change Performance from Standard to Premium"
+					},
+					{
+						"id": "b",
+						"text": "Change the File share billing model from Provisioned v2 to Pay-as-you-go and leave Performance on Standard"
+					},
+					{
+						"id": "c",
+						"text": "Set Primary service to Azure Files again and leave Performance on Standard"
+					},
+					{
+						"id": "d",
+						"text": "Enable the Hierarchical namespace checkbox and leave Performance on Standard"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The per-protocol Require Encryption in Transit for NFS checkbox only becomes selectable when Performance is set to Premium, so the account must move from Standard (HDD) to Premium (SSD). This also fits the workload: SSD is the only media tier that supports NFS at all, and it delivers the single-digit millisecond latency a rendering farm needs. Once the checkbox is available and selected, it governs NFS traffic independently of the account-level Secure transfer required setting, which applies to the REST API.",
+				"perChoice": {
+					"b": "Pay-as-you-go shares are an SMB-only billing model and require a StorageV2 account, so this both breaks the NFS requirement and still leaves Performance on Standard, which is why the NFS encryption option remains unavailable.",
+					"c": "Primary service is already set to Azure Files, which is what enables the Provisioned v2 billing model; it has no bearing on whether the NFS encryption checkbox appears. That visibility is controlled solely by Performance.",
+					"d": "Hierarchical namespace is a Blob-only checkbox that has no effect on file shares, so enabling it would not surface the NFS encryption option or make the share usable over NFSv4.1."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/create-classic-file-share"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-planning"
+				}
+			],
+			"subtopics": [
+				"nfs-shares",
+				"storage-account-settings",
+				"encryption-in-transit"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MBGGZ5SJZENXE9K0D9MW8K",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a classic file share created on a FileStorage storage account with the NFS protocol, and you granted access to a virtual network where Linux virtual machines run. You need those machines to mount the share, but every mount attempt stalls and then fails, and the subnet's network security group currently contains only the rules shown below. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Rule name",
+						"Direction",
+						"Protocol",
+						"Port",
+						"Priority"
+					],
+					"rows": [
+						[
+							"AllowHttpsOutbound",
+							"Outbound",
+							"TCP",
+							"443",
+							"100"
+						],
+						[
+							"AllowDnsOutbound",
+							"Outbound",
+							"UDP",
+							"53",
+							"200"
+						],
+						[
+							"AllowNtpOutbound",
+							"Outbound",
+							"UDP",
+							"123",
+							"300"
+						],
+						[
+							"DenyAllOutbound",
+							"Outbound",
+							"Any",
+							"*",
+							"4096"
+						],
+						[
+							"DenyAllInbound",
+							"Inbound",
+							"Any",
+							"*",
+							"4096"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Allow TCP port 2049 outbound from the clients, and allow inbound TCP port 2049 for the virtual networks granted access"
+					},
+					{
+						"id": "b",
+						"text": "Allow UDP port 2049 outbound from the clients, and allow inbound UDP port 2049 for the virtual networks granted access"
+					},
+					{
+						"id": "c",
+						"text": "Allow TCP port 445 outbound from the clients, and allow inbound TCP port 445 for the virtual networks granted access"
+					},
+					{
+						"id": "d",
+						"text": "Allow TCP port 443 outbound from the clients, and allow inbound TCP port 443 for the virtual networks granted access"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "NFSv4.1 traffic runs on TCP port 2049. Clients must be able to send that traffic outbound, and any network security groups associated with virtual networks that have been granted access to the share must not block it coming in on the same port. The group shown ends in a catch-all deny for both directions with no rule for 2049, so every mount attempt is dropped, which matches the observed stall and timeout.",
+				"perChoice": {
+					"a": "Correct. NFSv4.1 uses TCP port 2049, so the rule set must permit it outbound from the mounting clients and, for virtual networks granted access, inbound on the same port.",
+					"b": "Wrong transport. A share created with the NFS protocol serves NFSv4.1 clients, which carry their traffic over TCP; permitting the same port number over UDP leaves the mount blocked by the outbound deny rule.",
+					"c": "Wrong service port. Port 445 is the SMB port used by Windows-style shares; this share was created with the NFS protocol and its Linux clients never send SMB traffic, so this rule changes nothing for the failing mount.",
+					"d": "Wrong service port. Port 443 carries HTTPS traffic such as FileREST calls to the share; NFS client traffic does not use it, and it is already permitted here, which shows the failure has a different cause."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/create-classic-file-share"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-introduction"
+				}
+			],
+			"subtopics": [
+				"nfs-connectivity",
+				"network-security-rules"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MBJN250797EWY0HDMY6H3Q",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have the storage account shown below, which today holds two provisioned SMB shares for an application team. Leadership now wants a large departmental document share that Windows and Linux clients mount, latency is not a concern, and finance wants to be billed only for the data actually stored plus the transactions against it instead of reserving performance. On the file share creation blade for this account, the Pay-as-you-go choice cannot be selected. What should you do?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Storage account property",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Storage account name",
+							"contosofiledata01"
+						],
+						[
+							"Kind",
+							"FileStorage"
+						],
+						[
+							"Performance",
+							"Premium (SSD)"
+						],
+						[
+							"Primary service",
+							"Azure Files"
+						],
+						[
+							"Redundancy",
+							"ZRS"
+						],
+						[
+							"Enable soft delete for file shares",
+							"Checked, 7 days"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Create a separate StorageV2 storage account and add the document share with the required access tier"
+					},
+					{
+						"id": "b",
+						"text": "Keep this FileStorage storage account and add the share with the Provisioned v2 billing model at Standard performance using the StandardV2_LRS SKU"
+					},
+					{
+						"id": "c",
+						"text": "Set the account's Primary service to Azure Files, then create the document share again in the same storage account"
+					},
+					{
+						"id": "d",
+						"text": "Deploy the document share as a top-level resource with the Microsoft.FileShares resource provider, then select its access tier"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Pay-as-you-go is the only billing model charged for used capacity plus transactions, and it is offered only for HDD shares in a StorageV2 storage account; such a share is configured with an access tier (transaction optimized, hot, or cool) and uses SMB. The account in the exhibit is FileStorage, which hosts provisioned shares only, so the document share must be created in a separate StorageV2 account while the application team's provisioned shares stay where they are.",
+				"perChoice": {
+					"b": "Provisioned v2 does work on this FileStorage account, and StandardV2_LRS is a valid provisioned v2 SKU that covers HDD. It is still wrong for the requirement because it bills for provisioned storage, IOPS, and throughput rather than for used GiB and transactions, which is exactly the reserved-capacity cost finance wants to avoid.",
+					"c": "Primary service being set to Azure Files is only a prerequisite for the provisioned v2 billing model; it does not change which billing models an account kind supports. A FileStorage account still cannot offer per-used-GiB billing, so creating the share again in the same account would not change the outcome.",
+					"d": "The Microsoft.FileShares resource provider deploys file shares as top-level Azure resources and is limited to NFS today. It cannot deliver the SMB protocol that the Windows and Linux clients in this scenario require, so it is not a route to this share."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/create-classic-file-share"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-planning"
+				}
+			],
+			"subtopics": [
+				"pay-as-you-go-billing",
+				"storage-account-kind",
+				"file-share-creation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MBKQEQ8J3BJB8XSE5MRA6R",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have the file share below, mounted today by every client with the storage account key because that is the only method the team knew. A compliance audit has flagged two problems: the folder permissions that limit who may read or change documents are not actually being honoured, and the newest staff have no corporate account that can sign in to the share. Windows workstations and Linux servers both need access. Which authentication approach should you configure for this share?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Share protocol",
+							"SMB"
+						],
+						[
+							"Clients that mount the share",
+							"Windows workstations and Linux servers"
+						],
+						[
+							"Most staff accounts",
+							"Synchronized from the on-premises AD DS forest"
+						],
+						[
+							"Newest staff accounts",
+							"Guest users created only in Microsoft Entra ID"
+						],
+						[
+							"Mount command in use",
+							"net use Z: \\\\contosodata.file.core.windows.net\\design /user:contosodata <storage account key>"
+						],
+						[
+							"Permissions on \\design\\legal",
+							"Modify for the Legal group; Read for Contractors; no other entries"
+						],
+						[
+							"Audit observation",
+							"A contractor who appears in no group can open, edit, and delete files under \\design\\legal"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Microsoft Entra Kerberos"
+					},
+					{
+						"id": "b",
+						"text": "Microsoft Entra Domain Services with Kerberos"
+					},
+					{
+						"id": "c",
+						"text": "AD-based Kerberos authentication for Linux clients"
+					},
+					{
+						"id": "d",
+						"text": "Keep the storage account key and reinforce share-level permissions"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The share needs one credential that both the directory-synchronized corporate accounts and the Entra-only guest accounts can present, from both Windows and Linux clients, and that makes the file system's own permissions effective. Microsoft Entra Kerberos is the recommended option for exactly this mix: users connect with their own account, so each user's folder ACLs are evaluated rather than bypassed. Swapping the mount to Entra Kerberos fixes the audit finding and removes the account-key dependency for end users.",
+				"perChoice": {
+					"b": "Microsoft Entra Domain Services means you create and operate a managed directory domain and join machines to it; it fits organizations without an existing directory that need cloud-only authentication, not a population already synchronized from an on-premises AD DS forest.",
+					"c": "AD-based Kerberos authentication for Linux clients only covers Linux clients that can reach AD DS, so it cannot serve the Windows workstations, and it provides no path at all for accounts that exist only in Microsoft Entra ID.",
+					"d": "Mounting with the storage account key authenticates with NTLMv2 and deliberately skips share and file ACLs, handing the caller full administrative rights over everything in the share; adding share-level permissions does not change that, so it does not resolve the audit finding."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-planning"
+				}
+			],
+			"subtopics": [
+				"smb-authentication",
+				"identity-based-access",
+				"ntfs-permissions"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MBNEGB9Q5KB6MTTV4NARB8",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have the storage account and file share shown below, both reached today over the public endpoint. You need the on-premises servers that reach Azure over an existing ExpressRoute circuit, and the virtual machines in a hub virtual network in a second Azure region, to mount the share. The address the clients use must keep working through an availability-zone outage without manual changes on each client. Which network configuration should you deploy for this share?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Storage account",
+							"fsdocs01 (kind StorageV2, Primary service: Azure Files)"
+						],
+						[
+							"File share",
+							"shareddocuments, protocol SMB, 2 TiB, Standard (HDD), Provisioned v2"
+						],
+						[
+							"Current exposure",
+							"Public endpoint only; storage account network rules allow the corporate public IP range"
+						],
+						[
+							"Client group 1",
+							"On-premises file servers, connected to the Azure region by an ExpressRoute circuit"
+						],
+						[
+							"Client group 2",
+							"Virtual machines in a hub virtual network in a second Azure region, linked by VNet peering"
+						],
+						[
+							"Observed",
+							"SMB mounts from both client groups time out; the mount uses the storage account name and a shared key"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Deploy a service endpoint in the client virtual network subnets and mount the share by the storage account name."
+					},
+					{
+						"id": "b",
+						"text": "Deploy a private endpoint for the storage account, and have clients mount the share over its address in the virtual network."
+					},
+					{
+						"id": "c",
+						"text": "Deploy allowlist entries on the storage account firewall for the on-premises address space and the peered virtual network."
+					},
+					{
+						"id": "d",
+						"text": "Deploy a site-to-site VPN from the branch offices into the virtual network and keep mounting the share over the public endpoint."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "A private endpoint gives the share a static IP address inside your own virtual network, and it is reachable across peered networks, other regions, and ExpressRoute, which covers both client groups in the exhibit. It also avoids the SMB-over-internet path on port 445 that many ISPs block, so on-premises mounts work without manual changes when an availability-zone event occurs.",
+				"perChoice": {
+					"a": "A service endpoint restricts access to specific virtual network subnets at no extra charge, but the IP address it assigns can change during a zone outage, forcing clients to remount, and it does not serve clients arriving from the corporate LAN over ExpressRoute.",
+					"c": "Firewall allowlists apply to the public endpoint and match public address ranges. Traffic arriving from the ExpressRoute-connected LAN and from the peered hub virtual network does not carry the allowed corporate public range, so those mounts keep failing and no address inside the network is handed to the clients.",
+					"d": "A VPN only changes the path into Azure; the share is still mounted from the public endpoint, so the mounts keep depending on the public endpoint and on SMB to port 445 over the outbound internet path, which many ISPs block."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/create-classic-file-share"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-planning"
+				}
+			],
+			"subtopics": [
+				"network-security",
+				"private-endpoint-vs-service-endpoint"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MBWS1T4002NHY2PVFKSGFE",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a storage account and its file share configured as shown below. A long-standing on-premises application mounts the share over SMB by passing the account name and one of the account's access keys, and since these settings were applied every mount attempt returns an authentication error. People browsing the share in the Azure portal see its folders normally, and that behaviour has to stay as it is. The application itself cannot be rebuilt to use a different credential method this quarter. Which setting should you change?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Primary service",
+							"Azure Files"
+						],
+						[
+							"Performance",
+							"Premium"
+						],
+						[
+							"File share billing",
+							"Provisioned v2"
+						],
+						[
+							"Require Encryption in Transit for SMB",
+							"Checked"
+						],
+						[
+							"Require secure transfer for REST API operations",
+							"Checked"
+						],
+						[
+							"Enable storage account key access",
+							"Unchecked"
+						],
+						[
+							"Default to Microsoft Entra authorization in the Azure portal",
+							"Checked"
+						],
+						[
+							"Minimum TLS version",
+							"TLS 1.2"
+						],
+						[
+							"Enable soft delete for file shares",
+							"Checked, 7 days to retain"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Select Enable storage account key access on the storage account, leaving the portal's Microsoft Entra browsing unchanged."
+					},
+					{
+						"id": "b",
+						"text": "Clear Default to Microsoft Entra authorization in the Azure portal on the storage account, so that browsing the share falls back to the access key the application already stores."
+					},
+					{
+						"id": "c",
+						"text": "Rotate the storage account access keys and redeploy the application's mount definition with the newest key, because authentication failures usually mean an expired credential."
+					},
+					{
+						"id": "d",
+						"text": "Enable soft delete for file shares on the storage account and raise Days to retain deleted file shares to 90, so anything the application removes by mistake stays recoverable."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Enable storage account key access is the switch that decides whether the account's shared keys may be used at all — for SMB mounts and for FileREST calls. While it is unchecked, no access key can authenticate, so a mount that supplies the account name plus a key fails regardless of which key it uses, and rotating the keys changes nothing. Default to Microsoft Entra authorization in the Azure portal only decides whether the portal browses the share with the user's Entra identity instead of a shared key, which is why portal users still see their folders and why that setting should stay as it is. Selecting Enable storage account key access therefore restores key-based mounts while identity-based browsing in the portal continues to work.",
+				"perChoice": {
+					"b": "That setting governs only how the Azure portal browses share contents (user identity instead of a shared key). It has no effect on SMB or NFS mounts, so it cannot fix the mount failures, and clearing it would remove the identity-based portal browsing that must be kept.",
+					"c": "Rotating keys cannot help because the account currently blocks shared key credentials altogether — the key is not being treated as an expired credential, key-based mounting is simply refused, so reissuing the keys and redeploying the mount produces the same authentication error.",
+					"d": "Soft delete governs how long deleted shares stay recoverable, and soft-deleted content is still billed for its used capacity. It neither issues nor accepts credentials, so extending the retention period cannot repair a mount that is failing authentication."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/create-classic-file-share"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-planning"
+				}
+			],
+			"subtopics": [
+				"shared-key-access",
+				"smb-mounts",
+				"storage-account-security"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MC5SFHGRP7PWG4HFDBZCRA",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have the storage account and the two file shares shown below. Five requests have arrived from different teams this quarter, and each one needs its own answer. Drag each request to the answer that meets it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Storage account kind",
+							"FileStorage"
+						],
+						[
+							"Primary service",
+							"Azure Files"
+						],
+						[
+							"Performance",
+							"Premium"
+						],
+						[
+							"Redundancy",
+							"LRS"
+						],
+						[
+							"File share billing",
+							"Provisioned v2"
+						],
+						[
+							"Existing file shares",
+							"design-docs (SMB), vendor-archive (SMB)"
+						],
+						[
+							"Secure transfer required",
+							"Disabled"
+						],
+						[
+							"Enable soft delete for file shares",
+							"On"
+						],
+						[
+							"Days to retain deleted file shares",
+							"7"
+						],
+						[
+							"Minimum TLS version",
+							"TLS1_1"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Days to retain deleted file shares: 30"
+					},
+					{
+						"id": "b",
+						"text": "Minimum TLS version: TLS1_2"
+					},
+					{
+						"id": "c",
+						"text": "Require Encryption in Transit for SMB: Enabled"
+					},
+					{
+						"id": "d",
+						"text": "Protocol: NFSv4.1"
+					},
+					{
+						"id": "e",
+						"text": "Up to 200 read-only snapshots, retained for up to 10 years"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "After a team member removes one by mistake, its contents must still be restorable four weeks later."
+					},
+					{
+						"id": "s2",
+						"label": "Calls to a share's REST interface that negotiate only an obsolete handshake must be refused."
+					},
+					{
+						"id": "s3",
+						"label": "The account was exempted from its own transport rule for a legacy client in the same region, and the security team now insists that no session for the Windows-mounted shares may be sent in the clear."
+					},
+					{
+						"id": "s4",
+						"label": "The render cluster runs Linux and must mount its own share, while the shares already serving Windows users in this account must be left as they are."
+					},
+					{
+						"id": "s5",
+						"label": "The compliance team wants point-in-time copies of a share kept for the longest span the platform allows."
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d",
+				"s5": "e"
+			},
+			"explanation": {
+				"correct": "Each request maps to a different file share capability. The recovery window is the soft delete retention value: soft delete is already on, so raising Days to retain deleted file shares from the 7-day default to 30 keeps a removed share restorable for four weeks (soft-deleted shares are still billed for their used capacity). The REST-only refusal is governed by Minimum TLS version, because SMB and NFS traffic never uses TLS; setting it to TLS1_2 rejects clients that negotiate an older handshake. The unencrypted-session concern is answered by the per-protocol Require Encryption in Transit for SMB setting, which overrides the account-level Secure transfer required value for SMB traffic and leaves REST governed by the account setting. The Linux render cluster needs a share created with Protocol: NFSv4.1, because a single share can expose only one protocol, while SMB and NFS shares can coexist in the same storage account, and NFS requires SSD, which this Premium account already provides. Finally, the snapshot ceiling documented for a file share is 200 read-only, point-in-time, incremental copies retained for up to 10 years, so 10 years is the longest span the compliance team can be promised.",
+				"perChoice": {
+					"a": "Belongs with the request about restoring something a team member removed by mistake. Soft delete is already enabled on this account, so only the retention value has to change, from the 7-day default to 30.",
+					"b": "Belongs with the request about REST interface calls that negotiate only an obsolete handshake. This setting applies to FileREST only, because SMB and NFS do not use TLS, so raising it is the way to refuse those clients.",
+					"c": "Belongs with the request that no session for the Windows-mounted shares may be sent in the clear. This per-protocol setting overrides the account-level Secure transfer required value for SMB traffic, which is currently Disabled.",
+					"d": "Belongs with the request from the Linux render cluster. NFS targets Linux clients only, a share exposes one protocol at a time, and the account's Premium (SSD) media is required for NFS.",
+					"e": "Belongs with the compliance request for the longest retention span. These snapshots are read-only and incremental, and the documented maximum is 200 snapshots retained for up to 10 years."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/create-classic-file-share"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-planning"
+				}
+			],
+			"subtopics": [
+				"file-share-settings",
+				"encryption-in-transit",
+				"protocol-selection"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MCB0DQ0JBAJ6SSZ989945S",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have the storage account and the file shares shown below, and four reports have come in from the teams that use them. Each report needs to be traced to the single setting or platform behaviour that accounts for it. Drag each report to its match.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Storage account name",
+							"contosofiles01"
+						],
+						[
+							"Storage account kind",
+							"StorageV2"
+						],
+						[
+							"Primary service",
+							"Azure Files"
+						],
+						[
+							"File share billing",
+							"Provisioned v2"
+						],
+						[
+							"Performance",
+							"Premium"
+						],
+						[
+							"Redundancy",
+							"LRS"
+						],
+						[
+							"Share design-docs",
+							"Protocol SMB"
+						],
+						[
+							"Share renders",
+							"Protocol NFSv4.1"
+						],
+						[
+							"Share finance-archive",
+							"Protocol SMB"
+						],
+						[
+							"Snapshots retained",
+							""
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "A user removed the finance-archive share last week; it no longer appears under the account, yet this month's invoice still charges for its contents and nobody will want those files back before the quarter ends."
+					},
+					{
+						"id": "i2",
+						"text": "During last month's rebuild of the account, two checkboxes were ticked on the Basics tab. Nothing about the shares has changed since: mounts behave exactly as before and no new share-level capability appeared."
+					},
+					{
+						"id": "i3",
+						"text": "A legacy Windows 2008 R2 file server in the same region can still mount design-docs over SMB 2.1, while an identical server in another region is refused at the connection stage."
+					},
+					{
+						"id": "i4",
+						"text": "Security reports that a document copied into design-docs from a Windows workstation was never inspected, while the same file uploaded through the portal was flagged by a full-file check."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Enable soft delete for file shares"
+					},
+					{
+						"id": "s2",
+						"label": "Enable hierarchical namespace and Enable network file system v3"
+					},
+					{
+						"id": "s3",
+						"label": "Require secure transfer for REST API operations"
+					},
+					{
+						"id": "s4",
+						"label": "Defender for Storage malware scanning"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Each report maps to the setting or platform behaviour whose scope produces it: the continuing charges for a share that vanished from the list come from soft delete, which is on by default (7 days by default) and keeps billing used capacity; the two checkboxes ticked during the rebuild are the Azure Blob-only hierarchical namespace and network file system v3 options, which can be checked on a StorageV2 account whose Primary service is Azure Files but have no effect on file shares; the same-region/other-region split for legacy SMB 2.1 servers comes from clearing the secure transfer requirement for REST API operations; and the uninspected SMB copy versus the flagged portal upload comes from Defender for Storage, whose malware detection by full file hash covers REST API uploads only.",
+				"perChoice": {
+					"i1": "Belongs with Enable soft delete for file shares. That setting is on by default with a 7-day retention default, and a soft-deleted share is still billed for its used capacity even under provisioned billing, so usage keeps appearing on the invoice until the retention window passes or the share is permanently removed.",
+					"i2": "Belongs with Enable hierarchical namespace and Enable network file system v3. Both are Blob-only options: they cannot be selected on FileStorage accounts, they can still be ticked on a StorageV2 account even when Primary service is Azure Files, and they have no effect on file shares, which explains why nothing about the shares changed.",
+					"i3": "Belongs with Require secure transfer for REST API operations. Clearing that requirement permits legacy SMB 2.1 clients, but only clients located in the share's own Azure region; an SMB 2.1 client from another region is rejected, which matches the regional difference reported.",
+					"i4": "Belongs with Defender for Storage malware scanning. Detection by full file hash inspects uploads that go through the REST API; SMB and NFS traffic is not inspected, so a document copied in from a workstation can bypass it while the same file uploaded through the portal is flagged."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/create-classic-file-share"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-planning"
+				}
+			],
+			"subtopics": [
+				"file-share-settings",
+				"azure-files-troubleshooting"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MCE7RHE25MYXEQ456XF5ST",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have the subscription shown below, which contains no file shares yet. Four teams have sent in requests for new file shares, and each one has to be traced to the way you deploy it. Drag each request to the deployment that satisfies it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Resource",
+						"Detail"
+					],
+					"rows": [
+						[
+							"Storage account",
+							"contosofiles01 - kind: FileStorage, region: eastus2, Primary service: Azure Files"
+						],
+						[
+							"File shares in that account",
+							""
+						],
+						[
+							"Directory service",
+							"On-premises Active Directory Domain Services synchronized to Microsoft Entra ID"
+						],
+						[
+							"Key Vault",
+							"contoso-kv - holds the keys your own team creates and rotates"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "R1 - SMB share for domain users with per-folder permissions, protected by Azure Backup"
+					},
+					{
+						"id": "i2",
+						"text": "R2 - NFSv4.1 share with its own networking and billing, created without a storage account"
+					},
+					{
+						"id": "i3",
+						"text": "R3 - NFS share encrypted at rest with a key from the company's own Key Vault"
+					},
+					{
+						"id": "i4",
+						"text": "R4 - One share that Windows clients mount over SMB and Linux clients mount over NFSv4.1"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Classic file share inside a storage account"
+					},
+					{
+						"id": "s2",
+						"label": "Top-level Microsoft.FileShares resource"
+					},
+					{
+						"id": "s3",
+						"label": "Neither deployment meets it as written"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i4"
+			},
+			"explanation": {
+				"correct": "R1 and R3 both belong on classic file shares: SMB with domain identities, Windows-style folder permissions, and Azure Backup is only available inside a storage account, because the top-level Microsoft.FileShares provider is NFS only today, and a customer-managed key at rest is not an option there either, since those shares must use Microsoft-managed keys. R2 is exactly what Microsoft.FileShares exists for: an NFSv4.1 share with its own billing, networking, and security and no parent storage account. R4 fits neither slot, because one share exposes either SMB or NFS and never both; in a classic account the two client groups would need two separate shares that sit side by side in the same account.",
+				"perChoice": {
+					"i1": "Deploy it as a classic file share in contosofiles01. Identity-based SMB access with Windows-style ACLs and Azure Backup protection both belong to the storage-account model, and the Microsoft.FileShares provider cannot host an SMB share at the moment.",
+					"i2": "Deploy it as a top-level Microsoft.FileShares resource. Per-share billing, networking, and security managed on the share itself, with no parent storage account, is the defining purpose of that provider, which serves NFS shares.",
+					"i3": "Deploy it as a classic file share in contosofiles01. Classic shares support customer-managed encryption keys, whereas Microsoft.FileShares shares are restricted to Microsoft-managed keys, so that provider cannot meet the Key Vault requirement.",
+					"i4": "Neither slot works. A single file share exposes one protocol only, so the Windows clients over SMB and the Linux clients over NFSv4.1 cannot use one share; the request would have to be rewritten as two shares, which a storage account can hold side by side."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-planning"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/create-classic-file-share"
+				}
+			],
+			"subtopics": [
+				"resource-model",
+				"share-protocols",
+				"encryption-options"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MCMTF1AT8VHANFFJ36HTKG",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have the storage account shown below, created this week for a Linux engineering group, and you are about to add its first file share. Four requirements have come in from the teams that will use it. Drag each requirement to the field value you set, either on the storage account's tabs or on the Basics tab of the new file share.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Subscription",
+							"contoso-prod"
+						],
+						[
+							"Resource group",
+							"rg-buildfarm"
+						],
+						[
+							"Storage account name",
+							"stcontosobuild01"
+						],
+						[
+							"Kind",
+							"FileStorage"
+						],
+						[
+							"Primary service",
+							"Azure Files"
+						],
+						[
+							"File share billing",
+							"Provisioned v2"
+						],
+						[
+							"Performance",
+							"Premium"
+						],
+						[
+							"Redundancy",
+							"LRS"
+						],
+						[
+							"Enable soft delete for file shares",
+							"Enabled"
+						],
+						[
+							"Days to retain deleted file shares",
+							"7"
+						],
+						[
+							"Default to Microsoft Entra authorization in the Azure portal",
+							"Disabled"
+						],
+						[
+							"Enable storage account key access",
+							"Enabled"
+						],
+						[
+							"Public network access",
+							"Enabled from all networks"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "The build farm is Linux only: compiled artifacts must keep the exact case of their names and carry Unix-style ownership, and no Windows host will attach."
+					},
+					{
+						"id": "i2",
+						"text": "The account's contents must survive an entire availability zone failing in the region where they live, and a second-region copy has been pushed to next year."
+					},
+					{
+						"id": "i3",
+						"text": "Records management policy requires that anything removed from this account stays recoverable for a full month, and finance has signed off on the extra spend the longer window will cause."
+					},
+					{
+						"id": "i4",
+						"text": "Support staff who browse folders from the management console must be recognised by their own directory account rather than by a secret held with the subscription."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Redundancy: ZRS"
+					},
+					{
+						"id": "s2",
+						"label": "Protocol: NFSv4.1"
+					},
+					{
+						"id": "s3",
+						"label": "Days to retain deleted file shares: 30"
+					},
+					{
+						"id": "s4",
+						"label": "Default to Microsoft Entra authorization in the Azure portal: Enabled"
+					}
+				]
+			},
+			"key": {
+				"s1": "i2",
+				"s2": "i1",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Each requirement maps to one field. The Linux-only, case-sensitive, Unix-permission requirement is met by the share's Protocol field set to NFSv4.1. Surviving a zone failure without a second-region copy is met by Redundancy set to ZRS. A full month of recoverability is met by Days to retain deleted file shares set to 30 (soft delete is already on and defaults to 7 days). Browsing with a staff member's directory identity instead of a subscription secret is met by Default to Microsoft Entra authorization in the Azure portal set to Enabled.",
+				"perChoice": {
+					"i1": "Linux clients, case-sensitive names and Unix-style ownership describe POSIX semantics, which is what NFSv4.1 delivers on the new share's Basics tab. SMB would instead give Win32-style, case-insensitive-but-preserving names with Windows ACLs and Kerberos/NTLMv2 authentication.",
+					"i2": "ZRS keeps three copies spread across the availability zones of the primary region, so a single zone outage does not take the data offline. GRS and GZRS also replicate asynchronously to a second region, which this team deliberately deferred, and LRS keeps all three copies in one storage cluster.",
+					"i3": "Soft delete for file shares is already on, and its retention textbox is expressed in days with a default of 7; a full month of recoverability means 30. Soft-deleted shares are still billed for their used capacity, which is why finance signed off on the longer window.",
+					"i4": "That checkbox makes the console browse the share with the signed-in Microsoft Entra identity instead of using the account's shared keys, which is what the support staff asked for."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/create-classic-file-share"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-planning"
+				}
+			],
+			"subtopics": [
+				"file-share-creation",
+				"storage-account-configuration",
+				"redundancy-and-protocol"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MCWRYT1M8V0WQCV82N8DZC",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have the storage account and the file shares shown below. Four requests have come in from the teams that use them. Three can be met by the mechanisms listed here and one cannot. Drag each request to the mechanism that delivers it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Resource",
+						"Configuration"
+					],
+					"rows": [
+						[
+							"Storage account contosofiles01",
+							"FileStorage, StandardV2_GZRS, primary service Azure Files, region East US"
+						],
+						[
+							"Share teamdocs",
+							"SMB, Standard (HDD), Provisioned v2"
+						],
+						[
+							"Share buildartifacts",
+							"SMB, Premium (SSD), Provisioned v2"
+						],
+						[
+							"Share hpcscratch",
+							"NFSv4.1, Premium (SSD), Provisioned v2"
+						],
+						[
+							"Recovery Services vault contoso-rsv",
+							"East US, same subscription as the storage account"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Compliance must be able to open teamdocs exactly as it stood at 09:00 on a chosen morning, read from it, and know that nobody can alter that copy. A storage administrator raises one whenever the auditors ask for it."
+					},
+					{
+						"id": "i2",
+						"text": "Legal wants buildartifacts recovered on daily, weekly, monthly and yearly cycles, each cycle with its own retention period, and no one may shorten or switch off that protection once the repository is registered. This repository uses SMB."
+					},
+					{
+						"id": "i3",
+						"text": "A support engineer removed hpcscratch by mistake an hour ago and it has to come back before the retention period ends; the same automatic protection has to cover future accidental removals on every share in this account, including the NFS one."
+					},
+					{
+						"id": "i4",
+						"text": "Once buildartifacts is registered, the HPC team wants hpcscratch to receive exactly the same scheduled daily, weekly, monthly and yearly protection, with the same per-cycle retention, and nobody may switch that protection off."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Share snapshots"
+					},
+					{
+						"id": "s2",
+						"label": "Azure Backup"
+					},
+					{
+						"id": "s3",
+						"label": "Soft delete"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3"
+			},
+			"explanation": {
+				"correct": "teamdocs is an SMB share and the request is for an on-demand, unalterable, point-in-time copy: share snapshots are read-only point-in-time copies, are created manually in the portal or by PowerShell/CLI, are incremental, and each share supports up to 200 of them retained for up to 10 years — so i1 goes to Share snapshots. Legal's request for scheduled daily, weekly, monthly and yearly cycles with per-cycle retention and a guard that stops anyone removing the protection is Azure Backup, which handles the scheduling and retention with grandfather-father-son policies and takes a delete lock on the storage account as soon as a share in it is configured for backup; it works for SMB shares and uses a Recovery Services vault in the same region and subscription, which the exhibit already provides — so i2 goes to Azure Backup. The request to recover an accidentally removed share inside a retention period, on every share in the account including the NFS one, is soft delete: it is a storage-account level setting that is on by default (7 days by default), keeps a removed share recoverable until the retention period ends, and applies regardless of protocol, whereas Azure Backup is SMB-only — so i3 goes to Soft delete. Finally, hpcscratch is an NFSv4.1 share, and Azure Backup cannot protect NFS shares at all, so nothing in the list delivers the last request.",
+				"perChoice": {
+					"i1": "Share snapshots. The request is for an on-demand, read-only, point-in-time copy that nobody can modify. Share snapshots are exactly that: read-only point-in-time copies, incremental, up to 200 per share and retainable for up to 10 years. Azure Backup would instead schedule and rotate copies for SMB shares only, and soft delete only preserves a share after it is removed, not a chosen past moment.",
+					"i2": "Azure Backup. Daily, weekly, monthly and yearly cycles with separate retention per cycle is the grandfather-father-son behaviour of Azure Backup for SMB shares, and Azure Backup also orchestrates soft delete and takes a delete lock on the storage account so the protection cannot be switched off. It needs a Recovery Services vault in the same region and subscription, which contoso-rsv already satisfies. Share snapshots are created on demand only, and soft delete cannot schedule anything.",
+					"i3": "Soft delete. The requirement is automatic recovery of an accidentally removed share during a retention period, and it has to work for the NFS share as well. Soft delete is a storage-account level setting, enabled by default with a 7-day retention that you can change, and it moves a deleted share to a recoverable state instead of erasing it; soft-deleted shares are still billed for their used capacity. Azure Backup cannot be used here because it supports SMB shares only.",
+					"i4": "This request fits no slot. hpcscratch uses NFSv4.1, and Azure Backup does not support NFS file shares, so the scheduled daily/weekly/monthly/yearly protection with per-cycle retention cannot be delivered to it. Share snapshots and soft delete are the only two mechanisms in the list that apply to an NFS share, and neither provides the scheduled, retention-per-cycle protection the team asked for."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-planning"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/create-classic-file-share"
+				}
+			],
+			"subtopics": [
+				"data-protection",
+				"file-share-backup",
+				"soft-delete"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MD1BWCCQQ5X2DP23FF5BZT",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have the file share below, and four different consumers mount it, each with its own environment and its own limits. You need to pair every consumer with an access method its environment can actually support. Drag each access method to the consumer it fits.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Consumer",
+						"Environment and constraints"
+					],
+					"rows": [
+						[
+							"A — Windows workstations and servers",
+							"Staff sign in with Microsoft Entra ID accounts only. The machines are not joined to any directory, and no server directory will be deployed for them."
+						],
+						[
+							"B — Render farm nodes",
+							"No directory exists for this workload today. The platform team will deploy a managed Active Directory in Azure and join the nodes to it."
+						],
+						[
+							"C — Non-Windows build servers",
+							"The servers are members of the organization's own Active Directory forest and must prove who they are with those directory accounts before they can reach the data."
+						],
+						[
+							"D — Legacy integration service",
+							"Runs on a Windows host that is not joined to any directory. The application can only read a stored secret from its own configuration file."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Storage account key"
+					},
+					{
+						"id": "i2",
+						"text": "Microsoft Entra Kerberos for hybrid and cloud-only identities"
+					},
+					{
+						"id": "i3",
+						"text": "Microsoft Entra Domain Services"
+					},
+					{
+						"id": "i4",
+						"text": "AD-based Kerberos authentication for Linux clients"
+					}
+				],
+				"slots": [
+					{
+						"id": "sa",
+						"label": "Consumer A — Windows workstations and servers"
+					},
+					{
+						"id": "sb",
+						"label": "Consumer B — render farm nodes"
+					},
+					{
+						"id": "sc",
+						"label": "Consumer C — non-Windows build servers"
+					},
+					{
+						"id": "sd",
+						"label": "Consumer D — legacy integration service"
+					}
+				]
+			},
+			"key": {
+				"sa": "i2",
+				"sb": "i3",
+				"sc": "i4",
+				"sd": "i1"
+			},
+			"explanation": {
+				"correct": "Each consumer's environment rules out the other three options. Consumer A's staff sign in with Microsoft Entra ID accounts only and the machines are never joined to a directory, which is exactly the case Microsoft Entra Kerberos covers for hybrid and cloud-only identities. Consumer B's nodes will be joined to a managed directory that the platform team runs in Azure, which is Microsoft Entra Domain Services. Consumer C runs a non-Windows operating system and authenticates against Active Directory with its directory accounts, which is AD-based Kerberos authentication for Linux clients. Consumer D's host is not joined to any directory and its application can only supply a stored secret, so it mounts with the storage account key.",
+				"perChoice": {
+					"i1": "Belongs with consumer D. The storage account key still works as an SMB credential: the account name is the user name and the key is the password. It is the only option available to a host that is not joined to any directory. It uses NTLMv2, bypasses the share's ACLs and grants full access to everything in the share, so it is treated as an administrator operation rather than end-user access.",
+					"i2": "Belongs with consumer A. Identity-based SMB access through Microsoft Entra Kerberos is the option intended for hybrid and cloud-only Microsoft Entra identities, which matches staff who hold Entra ID accounts on machines that never join a directory.",
+					"i3": "Belongs with consumer B. Microsoft Entra Domain Services supplies a managed directory in Azure that virtual machines and servers can join, matching nodes that will be joined to a managed Active Directory the platform team deploys in Azure.",
+					"i4": "Belongs with consumer C. AD-based Kerberos authentication for Linux clients is the SMB identity option for non-Windows clients that authenticate against Active Directory with their directory accounts, which is what these build servers require."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-planning"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/create-classic-file-share"
+				}
+			],
+			"subtopics": [
+				"file-share-authentication",
+				"smb-identity-based-access"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MD46QYP9GH9K74DBAYMQHS",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have the file share shown below, which today serves an engineering team over SMB. You need single-digit millisecond responses from its files so that a new line-of-business application can run on them. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Storage account kind",
+							"FileStorage"
+						],
+						[
+							"File share",
+							"drawings-prod"
+						],
+						[
+							"Protocol",
+							"SMB"
+						],
+						[
+							"Performance",
+							"HDD"
+						],
+						[
+							"Redundancy",
+							"LRS"
+						],
+						[
+							"File share billing",
+							"Provisioned v2"
+						],
+						[
+							"Provisioned storage (GiB)",
+							"8192"
+						]
+					]
+				},
+				"statement": "In this situation you must {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Create a second file share on faster media, then copy the contents across"
+							},
+							{
+								"id": "b",
+								"text": "Change Redundancy of the existing file share from LRS to ZRS"
+							},
+							{
+								"id": "c",
+								"text": "Change Performance of the existing file share from HDD to SSD"
+							},
+							{
+								"id": "d",
+								"text": "Change File share billing model of the existing file share to Provisioned v2"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "The tier a share is deployed on is fixed when the share is created, so an existing HDD share cannot be turned into an SSD share in place. The supported route to SSD latency is to provision a separate share on the SSD tier in the same FileStorage account, migrate the files into it, and repoint the application.",
+				"perChoice": {
+					"action:b": "ZRS keeps three copies spread across availability zones, which is a durability improvement only; the share stays on the same tier, so response times would not improve.",
+					"action:c": "The tier is chosen when the share is created and cannot be changed afterwards, so editing Performance on an existing share does not move it to SSD.",
+					"action:d": "The File share billing model only decides how a share is charged and provisioned. Switching an existing share to Provisioned v2 leaves its files on the tier they were deployed with."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/create-classic-file-share"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-planning"
+				}
+			],
+			"subtopics": [
+				"file-share-media-tier",
+				"file-share-planning"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MD72RNGNMTM10NXZWVFQJM",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have the storage account and file share shown below. The other shares in this account show up in the vault's backup policies, but this one has never once been reported as protected, and the team assumed the portal's automatic backup step had covered every new share in the account. The share's protocol was fixed when it was created and recreating the share this quarter is not an option, so you need this share's data to be brought back if it is lost. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Storage account",
+							"contosofiles01"
+						],
+						[
+							"Account type",
+							"StorageV2"
+						],
+						[
+							"Primary service",
+							"Azure Files"
+						],
+						[
+							"File share",
+							"hscrum-data"
+						],
+						[
+							"Protocol",
+							"NFSv4.1"
+						],
+						[
+							"Media tier",
+							"Premium (SSD)"
+						],
+						[
+							"Redundancy",
+							"ZRS"
+						],
+						[
+							"Shares listed in vault policies",
+							"apps-prod, finance-docs"
+						],
+						[
+							"Share missing from vault policies",
+							"hscrum-data"
+						]
+					]
+				},
+				"statement": "You should {{action}} so that this share's data can be brought back if it is lost.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Remove the backup configuration from the share and use snapshots for recovery"
+							},
+							{
+								"id": "b",
+								"text": "Re-run the backup configuration so that the policy starts picking up the share"
+							},
+							{
+								"id": "c",
+								"text": "Enable soft delete on the account so that the backup can restore deleted share content"
+							},
+							{
+								"id": "d",
+								"text": "Add a second backup schedule to the existing vault for this share"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "The vault-based backup service for file shares protects only shares that use SMB; a share created with NFS can never be included, which is why this share is missing from every policy while its SMB siblings are listed. Because the protocol is fixed for the life of the share, the workable way to bring this data back is point-in-time, incremental copies of the share, of which up to 200 per share can be kept for up to 10 years. Stripping the unusable backup configuration and using those copies gives the team a mechanism that actually captures the data.",
+				"perChoice": {
+					"action:b": "This share uses NFS, a protocol that the vault-based backup service does not cover for file shares, so re-running the configuration or letting the policies rescan cannot add it to any policy.",
+					"action:c": "Soft delete keeps a deleted share and its files in a recoverable state for the configured retention period, but it does not copy data anywhere and plays no part in bringing back a share's contents.",
+					"action:d": "Extra schedules still depend on the same vault-based backup service, which covers only SMB shares, so a second schedule changes nothing for an NFS share."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/create-classic-file-share"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-planning"
+				}
+			],
+			"subtopics": [
+				"nfs-file-share",
+				"file-share-protection"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MDBM0E5BCY9NJG0WQ167XD",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have the account shown below, which serves one SMB file share to Windows and Linux clients. A colleague enabled Enable hierarchical namespace and Enable network file system v3 from the Configuration tab, expecting the first to give the share POSIX-style permissions and the second to let Linux hosts connect. Since then nothing about the share has changed. How should you characterise those two options?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Kind",
+							"StorageV2"
+						],
+						[
+							"Primary service",
+							"Azure Files"
+						],
+						[
+							"Enable hierarchical namespace",
+							"Checked"
+						],
+						[
+							"Enable network file system v3",
+							"Checked"
+						],
+						[
+							"Redundancy",
+							"LRS"
+						],
+						[
+							"File shares in this account",
+							"smbteam (protocol: SMB)"
+						]
+					]
+				},
+				"statement": "Those two options {{effect}}.",
+				"slots": [
+					{
+						"id": "effect",
+						"options": [
+							{
+								"id": "a",
+								"text": "have no effect on this file share; both settings only apply to Blob data"
+							},
+							{
+								"id": "b",
+								"text": "change this file share to POSIX-style permissions and host-based access on every mount"
+							},
+							{
+								"id": "c",
+								"text": "allow this file share to serve NFSv4.1 on the same endpoint as its SMB protocol"
+							},
+							{
+								"id": "d",
+								"text": "have to be in place on any account before a provisioned file share can be created"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"effect": "a"
+			},
+			"explanation": {
+				"correct": "Enable hierarchical namespace and Enable network file system v3 are Blob-oriented options. They are disabled on FileStorage accounts, and on a StorageV2 account they can still be ticked even when Primary service is Azure Files, but in neither case do they alter a file share. The share keeps the semantics of the protocol it was created with, so its permissions and connectivity behave exactly as before.",
+				"perChoice": {
+					"effect:b": "POSIX-style, host-based permissions are what an NFS share uses. A share's permissions model is fixed by the protocol chosen at creation, and neither Configuration-tab option changes it for an existing SMB share.",
+					"effect:c": "A single file share exposes either SMB or NFS, never both, and the protocol is chosen when the share is created. Ticking these options does not add NFSv4.1 to an SMB share.",
+					"effect:d": "Creating a provisioned file share depends on the account kind and on Primary service being Azure Files, not on these two checkboxes. Leaving them ticked neither blocks nor enables share deployment."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/create-classic-file-share"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-planning"
+				}
+			],
+			"subtopics": [
+				"hierarchical-namespace",
+				"file-share-protocols",
+				"storage-account-configuration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MDCZVGCK1Y115S7T3Y6B49",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have the storage account and file share shown below. Its redundancy setting keeps the data in the primary region and also writes it asynchronously to a paired Azure region, and the setting that exposes that paired copy has been switched on. Contingency planners asked what staff could open from the paired region if the primary region became unavailable, without any change to the account. Which statement describes what they would get?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Storage account name",
+							"contosofiledata01"
+						],
+						[
+							"Storage account kind",
+							"StorageV2"
+						],
+						[
+							"Primary service",
+							"Azure Files"
+						],
+						[
+							"Redundancy",
+							"RA-GZRS"
+						],
+						[
+							"Read access (secondary)",
+							"Enabled"
+						],
+						[
+							"File share",
+							"appdata (Protocol: SMB)"
+						]
+					]
+				},
+				"statement": "Given the configuration shown, the correct conclusion is that {{slot1}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "the file share can be mounted directly from the secondary region before the account is failed over"
+							},
+							{
+								"id": "b",
+								"text": "the file share's data cannot be read from the secondary region until the account is failed over"
+							},
+							{
+								"id": "c",
+								"text": "the file share's data can be read from the secondary region only through the FileREST API"
+							},
+							{
+								"id": "d",
+								"text": "the file share's data can be read from the secondary region by clients holding a storage account key"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "b"
+			},
+			"explanation": {
+				"correct": "Azure Files does not support read access to the secondary region on an account that uses geo-redundant storage (RA-GRS or RA-GZRS) before a failover is performed, so switching on the read access option has no effect on a file share. The share's data is therefore only reachable through the secondary region after the account has been failed over, which makes that the accurate statement.",
+				"perChoice": {
+					"slot1:a": "Incorrect. Mounting is served from the primary region; nothing exposes a mounted SMB share through the secondary region while the account is still serving the primary region.",
+					"slot1:c": "Incorrect. The FileREST API reaches whichever region is currently serving the account, so switching APIs does not unlock the secondary copy for file share data before a failover.",
+					"slot1:d": "Incorrect. A storage account key grants full administrative access to the share through the primary endpoint; it has no bearing on the secondary region before a failover."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/create-classic-file-share"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-planning"
+				}
+			],
+			"subtopics": [
+				"redundancy",
+				"secondary-region-read-access"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MDEESCXA0TD3P8B1JSVCE9",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have the storage account shown below, which already serves several SMB shares to Windows and Linux clients. A partner team has been approved for one more share inside this account to hold the documents they exchange every month, and their automation will create the share and then mount it by name. You need to choose a name the account will accept. Which name should you configure?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Storage account name",
+							"contosofiles01"
+						],
+						[
+							"Storage account kind",
+							"FileStorage"
+						],
+						[
+							"File shares already in the account",
+							"teamdocs, designs, archive-2019"
+						],
+						[
+							"New share requested by",
+							"External partner team (monthly document exchange)"
+						],
+						[
+							"Clients that will mount it",
+							"Windows workstations and Linux servers over SMB"
+						],
+						[
+							"Result of the partner's earlier attempt",
+							"Portal rejected the value supplied by their template as an invalid file share name"
+						]
+					]
+				},
+				"statement": "You should configure the share name as {{shareName}}.",
+				"slots": [
+					{
+						"id": "shareName",
+						"options": [
+							{
+								"id": "a",
+								"text": "partner-docs"
+							},
+							{
+								"id": "b",
+								"text": "Partner-docs"
+							},
+							{
+								"id": "c",
+								"text": "partner--docs"
+							},
+							{
+								"id": "d",
+								"text": "partner_docs"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"shareName": "a"
+			},
+			"explanation": {
+				"correct": "Azure Files accepts only lowercase letters, numbers and single hyphens in a share name, and the name must start and end with a lowercase letter or number. 'partner-docs' satisfies all of those conditions, so the portal accepts it and the partner's automation can create and mount the share.",
+				"perChoice": {
+					"shareName:b": "Uppercase letters are not permitted anywhere in a file share name, so 'Partner-docs' fails validation.",
+					"shareName:c": "A share name cannot contain two hyphens in a row, so 'partner--docs' is rejected.",
+					"shareName:d": "An underscore is not one of the allowed characters (lowercase letters, numbers and hyphens only), so 'partner_docs' is rejected."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/create-classic-file-share"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-planning"
+				}
+			],
+			"subtopics": [
+				"file-share-naming",
+				"file-share-settings"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MDGPF54TSP38W30BZGVWPT",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "A render studio's Linux cluster needs a file share for its 3D assets. The platform team wants billing, network reach, and access settings configured on that single object, rather than on a parent storage account they would have to own and keep running. They also want the keys protecting the data at rest to come from the key vault their own team generates and rotates. Which deployment and key scope should you configure?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Detail"
+					],
+					"rows": [
+						[
+							"Share for the 3D assets",
+							"Not created yet"
+						],
+						[
+							"Hosts that will mount it",
+							"Linux render nodes only; no Windows or macOS clients"
+						],
+						[
+							"Key vault in the subscription",
+							"studio-kv-prod, region westeurope"
+						],
+						[
+							"How the team would rotate keys",
+							"Every 90 days, inside that key vault"
+						]
+					]
+				},
+				"statement": "Configure the asset share as {{deploy}} and protect its data at rest with {{keys}}.",
+				"slots": [
+					{
+						"id": "deploy",
+						"options": [
+							{
+								"id": "a",
+								"text": "a standalone Microsoft.FileShares resource"
+							},
+							{
+								"id": "b",
+								"text": "a share inside a new StorageV2 storage account"
+							},
+							{
+								"id": "c",
+								"text": "a share inside a new FileStorage storage account"
+							}
+						]
+					},
+					{
+						"id": "keys",
+						"options": [
+							{
+								"id": "a",
+								"text": "Microsoft-managed keys"
+							},
+							{
+								"id": "b",
+								"text": "customer-managed keys"
+							},
+							{
+								"id": "c",
+								"text": "storage account access keys"
+							},
+							{
+								"id": "d",
+								"text": "shared access signature keys"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"deploy": "a",
+				"keys": "a"
+			},
+			"explanation": {
+				"correct": "The Microsoft.FileShares deployment model is the one where a file share is created as its own top-level Azure object, with billing, networking, and security set on the share itself and no parent storage account to create first, which is exactly what this team asked for. Shares created that way, however, always use Microsoft-managed keys, so the request for keys held in the studio's own key vault cannot be granted in this model. Customer-managed keys are available only to classic file shares that live inside a storage account, and that deployment is precisely what the platform team wanted to avoid. One of the two stated wishes therefore has to be given up: per-share administration without a parent account, or key-vault-controlled encryption, not both.",
+				"perChoice": {
+					"deploy:b": "A StorageV2 account is where classic file shares live (it is the required kind for pay-as-you-go HDD shares), but it is a parent storage account that the platform team would have to own, size, and keep running, so the per-share object they asked for still does not exist.",
+					"deploy:c": "FileStorage is the classic account kind used for provisioned SSD and HDD file shares; it also requires a storage account to be created and operated first, so it does not satisfy the requirement for a single object that carries its own billing, networking, and access settings.",
+					"keys:b": "Customer-managed keys can be used only by classic file shares inside a storage account. A share deployed as a standalone Microsoft.FileShares resource must use Microsoft-managed keys, so this request cannot be met in the deployment the team needs.",
+					"keys:c": "Storage account access keys are credentials that clients present to authenticate to a storage account; they are not a key scope for data at rest, which is always encrypted with server-side encryption.",
+					"keys:d": "Shared access signature keys and tokens grant REST access to a share or its files; they control who may call the API, not how the stored data is encrypted."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-planning"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/create-classic-file-share"
+				}
+			],
+			"subtopics": [
+				"file-share-deployment-model",
+				"encryption-at-rest",
+				"nfs-file-share"
+			],
+			"reviewed": false
+		}
+	]
+}

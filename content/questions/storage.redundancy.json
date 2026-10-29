@@ -1,0 +1,1913 @@
+{
+	"skill": "storage.redundancy",
+	"questions": [
+		{
+			"id": "q_01M5KE0Z8C9MG1BQZ9KKBKN5FG",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "The exhibit lists the configuration of a storage account you own. Its data must keep serving traffic after the loss of an entire datacenter in the primary region and after a region-wide disaster, and application access must not be interrupted while the account is changed. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account kind",
+							"StorageV2 (standard general-purpose v2)"
+						],
+						[
+							"Primary region",
+							"East US — availability zones supported"
+						],
+						[
+							"Current redundancy",
+							"LRS"
+						],
+						[
+							"Boot diagnostics on attached VMs",
+							"Disabled"
+						],
+						[
+							"Blob access tiers in use",
+							"Hot and cool only — no archive-tier blobs"
+						],
+						[
+							"Object replication",
+							"Not configured"
+						],
+						[
+							"Change feed / point-in-time restore",
+							"Disabled"
+						],
+						[
+							"Planned application downtime",
+							"Not acceptable"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Start one customer-initiated conversion to GZRS and let it run to completion"
+					},
+					{
+						"id": "b",
+						"text": "Start a customer-initiated conversion to ZRS now, then start the conversion to GZRS the following day"
+					},
+					{
+						"id": "c",
+						"text": "Open a support request for a support-initiated conversion to GZRS performed by support in a single step"
+					},
+					{
+						"id": "d",
+						"text": "Provision a new GZRS account in the same region and copy the existing containers into it with AzCopy"
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "Because this change alters zone redundancy as well as geo-redundancy, it cannot be done as a single conversion — it must be split into two conversions, which may run in either order. Starting from LRS, the first conversion moves the account to ZRS and the second moves it to GZRS. Leave a full day between the two so the background work of the finished conversion can settle. Both steps run without data loss and without application downtime, and the account's endpoints, keys and SAS tokens stay the same, which satisfies the no-interruption requirement.",
+				"perChoice": {
+					"a": "A conversion that also changes zone redundancy has to be performed as two separate operations, so GZRS cannot be reached in one pass from LRS; the second step has to be submitted later.",
+					"c": "Support-initiated conversions follow the same rules as customer-initiated ones — a support request does not allow the two changes to be combined. Nothing in the exhibit blocks a conversion anyway (boot diagnostics is off, no archive-tier blobs, no object replication, change feed or point-in-time restore), so opening a request adds no value.",
+					"d": "Copying to a second account is a manual migration, which is reserved for cases the conversion path cannot serve, such as a legacy block blob account, moving regions, or avoiding rehydration of archived blobs. It also takes the application offline, which the exhibit rules out."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/redundancy-migration"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-redundancy"
+				}
+			],
+			"subtopics": [
+				"redundancy-conversion",
+				"zone-and-geo-redundancy"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KE44RDMKB55TYPTD41HNQ5",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You own the storage account described below. You need everything it holds to stay available if an availability zone in its primary region goes down, and you also want a copy of the data maintained in the paired region. Because a single redundancy setting governs the whole account, you must pick one option that works for every service it contains. Which setting should you choose?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account kind",
+							"StorageV2 (general-purpose v2)"
+						],
+						[
+							"Primary region",
+							"France Central"
+						],
+						[
+							"Services in use",
+							"Azure Files (SMB shares), Block blob containers"
+						],
+						[
+							"Access tiers in use",
+							"Hot, Cool"
+						],
+						[
+							"Current replication",
+							"LRS"
+						],
+						[
+							"Availability zones available in region",
+							"Yes"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "GRS"
+					},
+					{
+						"id": "b",
+						"text": "GZRS"
+					},
+					{
+						"id": "c",
+						"text": "RA-GRS"
+					},
+					{
+						"id": "d",
+						"text": "RA-GZRS"
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "The account contains Azure Files shares, and Azure Files supports only LRS, ZRS, GRS and GZRS — it never supports the read-access-to-secondary variants. Of the four geo options offered, GZRS is therefore the only one that meets the zone-failure requirement while remaining selectable for the whole account: it writes synchronously to three or more availability zones in the primary region, so file shares stay mounted through a zone outage, and then copies asynchronously to the paired region. Both Blob Storage and Azure Files support it.",
+				"perChoice": {
+					"a": "GRS replicates with LRS in the primary region before copying to the paired region, so the primary copies all sit in one datacenter in the primary region. Losing an availability zone there is not tolerated, and file shares on such an account must be remounted.",
+					"c": "RA-GRS adds a readable secondary endpoint, but the primary region is protected only with LRS, so a zone failure in the primary region is not covered. Azure Files also does not support the read-access-to-secondary options, so this setting cannot serve the shares in the account.",
+					"d": "RA-GZRS would give zone resilience plus a readable secondary copy, but Azure Files never supports RA-GRS or RA-GZRS, so it cannot be applied to an account whose file shares must keep working."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-redundancy"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-disaster-recovery-guidance"
+				}
+			],
+			"subtopics": [
+				"redundancy-option-selection",
+				"azure-files",
+				"geo-redundancy"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KE7307NWYYKA46RPJM8NK1",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have the storage account shown below. Everything it holds must keep serving traffic after the loss of an availability zone in the primary region and after a region-wide disaster, and the application that consumes it must stay online throughout the change. Which sequence should you use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Account kind",
+							"StorageV2 (general-purpose v2)"
+						],
+						[
+							"Primary region",
+							"West Europe 2 (availability zones supported)"
+						],
+						[
+							"Paired region",
+							"North Europe"
+						],
+						[
+							"Replication",
+							"Locally redundant storage (LRS)"
+						],
+						[
+							"Services in use",
+							"Blob, Queue, Table"
+						],
+						[
+							"VM boot diagnostics",
+							"Not enabled for this account"
+						],
+						[
+							"Blob access tiers in use",
+							"Hot, Cool"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Run one conversion that adds zone redundancy and the geographic copy in a single change."
+					},
+					{
+						"id": "b",
+						"text": "Run a conversion that adds zone redundancy, wait a full day, then run a second conversion that adds the geographic copy."
+					},
+					{
+						"id": "c",
+						"text": "Run a conversion that adds zone redundancy, then run a second conversion that adds the geographic copy without waiting a full day in between."
+					},
+					{
+						"id": "d",
+						"text": "Copy the data to a new account with AzCopy and repoint the application, leaving redundancy on the existing account as it is."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "The account is a general-purpose v2 account in a zone-capable region with a paired region, none of its services are blocked, and no feature on it prevents conversion, so the change can be done in place with a customer-initiated conversion. Any change that also touches zone redundancy has to be a separate two-step conversion, so you first convert the account to keep copies across availability zones in the primary region, let a full day pass so background work can settle, and only then run the second conversion that adds the geographic copy. Both conversions cause no application downtime, and endpoints, keys and SAS tokens stay the same throughout.",
+				"perChoice": {
+					"a": "Zone redundancy cannot be folded into a single portal change together with the geographic copy. Geo-redundancy and read access can be toggled in one operation, but any change that also adds or removes zone redundancy must be a separate two-step conversion, so this jump cannot be applied in one go.",
+					"c": "The order and the two separate conversions are right, but the steps must not be run back to back. After a zone-redundancy conversion completes you should let a full day pass before touching redundancy again, which is why moving from a purely local setup to a zone-plus-geographic end state takes two operations on separate days.",
+					"d": "A manual migration is the fallback for cases the conversion path does not cover, such as changing region, using a legacy blob account, or avoiding rehydration of archived blobs. This account is general-purpose v2 in a suitable region with no blocking features, so a conversion is the right route; copying to a new account can cause application downtime that this scenario's online requirement rules out."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/redundancy-migration"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-redundancy"
+				}
+			],
+			"subtopics": [
+				"redundancy-conversion",
+				"high-availability-design"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KE9RWM8X14WZH1BHXX98Y4",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have the storage account shown below. Everything it holds must stay readable and writable if an availability zone in the primary region goes down. Every time you start a customer-initiated conversion, the request is rejected and the Redundancy page reports the status as failed. Which action should you take first?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Account setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Redundancy",
+							"LRS"
+						],
+						[
+							"Account kind",
+							"Standard general-purpose v2"
+						],
+						[
+							"Services in use",
+							"Blob Storage, Table, Queue"
+						],
+						[
+							"Access tiers holding data",
+							"Hot, Cool"
+						],
+						[
+							"Boot diagnostics",
+							"Enabled on 12 virtual machines that write their logs into this account"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Turn off boot diagnostics for the virtual machines, then submit the conversion again"
+					},
+					{
+						"id": "b",
+						"text": "Turn off boot diagnostics for the virtual machines and open a Microsoft support request for the conversion"
+					},
+					{
+						"id": "c",
+						"text": "Turn on boot diagnostics for the virtual machines, then submit the conversion again"
+					},
+					{
+						"id": "d",
+						"text": "Turn on boot diagnostics for the virtual machines and open a Microsoft support request for the conversion"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "While boot diagnostics is enabled on virtual machines that write their logs into the account, every attempt to add zone redundancy fails — the account stays as it is and each conversion request is rejected. The blocking feature has to be removed on the virtual machines first; once it is, the customer-initiated conversion can be submitted again. The conversion itself needs no downtime and no data loss (a brief pause of under 30 seconds is possible for HNS-enabled accounts), and the endpoints, keys and SAS tokens stay the same.",
+				"perChoice": {
+					"b": "Removing the feature is the right half of the fix, but the route is wrong. A support request (Issue type Technical, Service type Storage Account Management, Problem type Data Migration, Problem subtype Migrate to ZRS, GZRS, or RA-GZRS) is the fallback for when a customer-initiated conversion isn't available; it is not what clears the blocking feature. Turn boot diagnostics off and resubmit the conversion yourself.",
+					"c": "This reverses the required action. Boot diagnostics is precisely the feature that stops any attempt to add zone redundancy from succeeding, so turning it on keeps the conversion rejected.",
+					"d": "Both parts fail: the feature that blocks the conversion remains active, and the support request is only the fallback route to consider after the blocking feature is removed."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/redundancy-migration"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-redundancy"
+				}
+			],
+			"subtopics": [
+				"redundancy-conversion",
+				"boot-diagnostics",
+				"conversion-blockers"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KED9XN7MXAYGK8FN27RYY9",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have the storage account shown below. A region-wide outage in its original home region forced an unplanned failover, so it is now serving from the region that used to be its pair and nothing is left behind in the original region. Management of the account still has to run in that original region. Your compliance team now wants the stored data protected again against the loss of a single availability zone. Which approach should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Observed value"
+					],
+					"rows": [
+						[
+							"Account name",
+							"contosacore01"
+						],
+						[
+							"Account kind",
+							"Standard, GeneralPurposeV2"
+						],
+						[
+							"Location property",
+							"westeurope"
+						],
+						[
+							"Replication setting",
+							"LRS"
+						],
+						[
+							"Last failover event",
+							"Unplanned, customer-initiated, completed 21 October 2026"
+						],
+						[
+							"Access keys and SAS tokens",
+							"Unchanged"
+						],
+						[
+							"Access tiers in use",
+							"Hot and cool only"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Submit a customer-initiated conversion that takes the account from LRS to ZRS and wait for it to complete."
+					},
+					{
+						"id": "b",
+						"text": "Run a migration: copy the contents into another account that already uses the setting you need, then repoint the application at it."
+					},
+					{
+						"id": "c",
+						"text": "Open a support request with issue type Technical, service type Storage Account Management, problem type Data Migration and problem subtype Migrate to ZRS, GZRS, or RA-GZRS."
+					},
+					{
+						"id": "d",
+						"text": "Run a customer-managed planned failover back to the original region so the account returns to its previous configuration."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "An unplanned failover leaves the account in LRS in the region that becomes its primary, and that state cannot be converted to a zone-redundant option: adding zone resilience to a post-failover LRS account has to be done by moving the data. Copying the contents into a second account that already uses the setting you need and repointing the application is therefore the supported path, for example with AzCopy or Azure PowerShell. Because a copy of this kind can interrupt application access, schedule it carefully.",
+				"perChoice": {
+					"a": "This is the usual route for an account that has never failed over, but it is not available for an account sitting in LRS after an unplanned failover: that account cannot be converted to ZRS or GZRS in place.",
+					"c": "The support-initiated route relies on the same in-place conversion, so it cannot rescue this account state either; even if the account passes the eligibility check, the request will not deliver zone resilience and you still have to move the data.",
+					"d": "A planned failover swaps the regions with no data loss and leaves the account geo-redundant, but it does not add protection against the loss of an availability zone, and failover is not a way to move or reconfigure stored data."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/redundancy-migration"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-disaster-recovery-guidance"
+				}
+			],
+			"subtopics": [
+				"post-failover-state",
+				"manual-migration",
+				"zone-resilience"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KEFCXFQ3ENVERQ2XNJA8K4",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have the storage account shown below. Within two weeks it must keep serving data if a single availability zone in its primary region is lost, and the application that reads it must stay online throughout, so the work has to be carried out on this account itself rather than by copying the data somewhere else. Which step should you take first?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account kind",
+							"StorageV2 (standard general-purpose v2)"
+						],
+						[
+							"Primary region",
+							"East US"
+						],
+						[
+							"Replication",
+							"LRS"
+						],
+						[
+							"Redundancy page status",
+							"No conversion in progress"
+						],
+						[
+							"Boot diagnostics",
+							"Disabled"
+						],
+						[
+							"NFSv3 protocol support (Azure Blob)",
+							"Disabled"
+						],
+						[
+							"Azure Files shares",
+							""
+						],
+						[
+							"Container archive-logs",
+							"42 blobs, access tier Archive"
+						],
+						[
+							"Container audit-trail",
+							"3 blobs, access tier Hot"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Relocate or selectively rehydrate the blobs held in the Archive access tier, then start the conversion."
+					},
+					{
+						"id": "b",
+						"text": "Change the account to geo-redundant replication first, leaving the Archive blobs in place, and add zone resilience to the primary region afterwards."
+					},
+					{
+						"id": "c",
+						"text": "Turn off boot diagnostics for the virtual machines that boot from this account and start the conversion with the Archive blobs untouched."
+					},
+					{
+						"id": "d",
+						"text": "Raise a support request with issue type Technical, service type Storage Account Management and problem type Data Migration, and ask for the conversion to proceed with the Archive blobs in place."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The Archive access tier is supported only on LRS, GRS and RA-GRS accounts, so archived blobs block any conversion that adds zone redundancy. Moving them to another account or selectively rehydrating them clears the blocker, after which the customer-initiated conversion can be started; the account itself is a StorageV2 account, so nothing about the account kind prevents it.",
+				"perChoice": {
+					"b": "Geo-redundant replication does support the Archive access tier, so that step could succeed, but the archived blobs still block the later change that adds zone redundancy in the primary region; adding geo-replication first only adds an egress charge and still leaves the requirement unmet.",
+					"c": "Boot diagnostics already shows as Disabled on this account, and it was never enabled, so switching it off changes nothing; it is not what is holding up the change here.",
+					"d": "A support-initiated conversion is the fallback when the portal conversion cannot be used, and it would need the problem subtype Migrate to ZRS, GZRS, or RA-GZRS; support cannot waive the restriction that the Archive access tier places on zone-redundant configurations, so the archived blobs must be dealt with before any conversion is started."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/redundancy-migration"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-redundancy"
+				}
+			],
+			"subtopics": [
+				"redundancy-conversion",
+				"archive-access-tier"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KEJYNNTBMEDY5MX1TJ00H6",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have the storage account shown below. Next month your DR team wants to exercise its recovery procedure: the move of the workload into the paired region has to be scheduled and started by your own team for this account, and once the exercise finishes, copies of the data must again exist in both regions so that a second regional failure would also be survivable. Which operation should the team run?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account kind",
+							"StorageV2 (standard, general-purpose v2)"
+						],
+						[
+							"Replication",
+							"GRS"
+						],
+						[
+							"Access to the paired region",
+							"Read-only"
+						],
+						[
+							"Primary region",
+							"West US 2"
+						],
+						[
+							"Paired region",
+							"West Central US"
+						],
+						[
+							"Change feed",
+							"Disabled"
+						],
+						[
+							"Point-in-time restore",
+							"Disabled"
+						],
+						[
+							"Object replication",
+							"Not configured"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Run a customer-managed planned failover"
+					},
+					{
+						"id": "b",
+						"text": "Run a customer-managed unplanned failover"
+					},
+					{
+						"id": "c",
+						"text": "Submit a request for Microsoft to initiate a failover"
+					},
+					{
+						"id": "d",
+						"text": "Use AzCopy to copy every container to a new storage account in the paired region and repoint the workload at that account"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A customer-managed planned failover swaps the primary and secondary locations on demand at the account level, without data loss, and the account then continues to hold copies in both regions — it comes back as GRS and keeps geo-redundancy. That matches both requirements: your team schedules and starts it for this account, and protection against a second regional failure survives the exercise. The account qualifies: it is a general-purpose v2 account using GRS with read access, and the two features that would block a planned failover (change feed and point-in-time restore) are both off.",
+				"perChoice": {
+					"b": "An unplanned failover is the emergency operation used when the primary endpoints are already unreachable. It can lose data, the account ends up as LRS, and the copy left behind in the original primary is deleted — so after the exercise the account would no longer keep copies in both regions, and it could not be scheduled as a rehearsal.",
+					"c": "A Microsoft-initiated failover is a regional-level response to catastrophic events only; it cannot be triggered for an individual account on a schedule, so it cannot serve as a team-run exercise.",
+					"d": "Copying with AzCopy and repointing the application is only the fallback for accounts that can't fail over, and failover should never be used as a migration strategy in the other direction. This account supports the account-level region swap, so the extra account, the copy operation and the application change are unnecessary."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-disaster-recovery-guidance"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-redundancy"
+				}
+			],
+			"subtopics": [
+				"planned-failover",
+				"disaster-recovery",
+				"geo-redundancy"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KEQNYPWYSPND6GETB43JWT",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have the storage account described below, which holds Azure Files shares alongside blob containers and tables. Everything stored in the account must keep serving traffic if an entire datacenter in the primary region is lost, and it must also remain recoverable after a region-wide disaster. Because a single redundancy setting governs the whole account, one choice has to satisfy every service it hosts. Which redundancy setting should you apply?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account name",
+							"contosomedia"
+						],
+						[
+							"Account type",
+							"Standard general-purpose v2 (StorageV2)"
+						],
+						[
+							"Primary region",
+							"UK South (availability zones supported, paired with France Central)"
+						],
+						[
+							"Current replication",
+							"Locally redundant storage (LRS)"
+						],
+						[
+							"Services in use",
+							"Blob containers, Azure Files shares (SMB), Azure Tables"
+						],
+						[
+							"Blob access tier",
+							"Hot"
+						],
+						[
+							"Application reads during a regional outage",
+							"Primary endpoint only; no reader is configured for the paired region"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Geo-redundant storage (GRS)"
+					},
+					{
+						"id": "b",
+						"text": "Geo-zone-redundant storage (GZRS)"
+					},
+					{
+						"id": "c",
+						"text": "Geo-zone-redundant storage with read access to the secondary region (RA-GZRS)"
+					},
+					{
+						"id": "d",
+						"text": "Zone-redundant storage (ZRS)"
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "GZRS writes synchronously to three or more availability zones in the primary region, so a single datacenter loss in that region does not stop the account from serving, and it then copies data asynchronously to the paired region, which covers a region-wide disaster. Since the requirement is one setting for the entire account, and Azure Files shares rule out the geo options that add read access to the secondary, GZRS is the strongest setting this account can use.",
+				"perChoice": {
+					"a": "GRS keeps the primary copies as locally redundant storage, so losing an entire datacenter in the primary region would knock out the primary side; only the paired-region copy would be left.",
+					"c": "Azure Files never supports read access to the secondary region, and this account hosts file shares, so this setting cannot be applied to it even though its zone and geographic coverage would otherwise match the requirement.",
+					"d": "ZRS replicates synchronously across the zones of the primary region, which covers a single datacenter failure, but it keeps no copy in the paired region, so a region-wide disaster would leave no recoverable data."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-redundancy"
+				}
+			],
+			"subtopics": [
+				"choosing-redundancy",
+				"service-support-matrix",
+				"azure-files-constraints"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5M9MMCPM1783TVTTGGWMWA3",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You manage the four storage accounts listed in the exhibit, and the business has signed off a different availability requirement for each one. Because a single replication setting governs everything held in an account, each account must be left with exactly one setting that satisfies the requirement recorded against it. Drag the setting you would apply to the account it belongs to.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Storage account",
+						"Account kind",
+						"Contents",
+						"Region capabilities",
+						"Signed-off requirement"
+					],
+					"rows": [
+						[
+							"medimgarchive",
+							"Standard general-purpose v2",
+							"Blob containers holding blobs in the archive access tier",
+							"Home region has availability zones and a paired region",
+							"Every image can be regenerated from the master catalogue, and data governance policy forbids any copy of this account's data outside its home region."
+						],
+						[
+							"finfileshare01",
+							"Standard general-purpose v2",
+							"Azure Files shares mounted by the finance team",
+							"Home region has availability zones and a paired region",
+							"The shares must keep serving if an entire datacenter in the home region is lost, and policy forbids a copy of the data in the paired region."
+						],
+						[
+							"retailblobs02",
+							"Standard general-purpose v2",
+							"Blob containers",
+							"Home region has availability zones and a paired region",
+							"The data must remain recoverable after a region-wide disaster. The application connects only to the primary endpoint, and the lowest-cost setting that meets the requirement must be selected."
+						],
+						[
+							"payrollblobs03",
+							"Standard general-purpose v2",
+							"Blob containers",
+							"Home region has availability zones and a paired region",
+							"Payroll processing runs around the clock: the application must keep reading from the paired region while the home region is being recovered, and the data must also survive the loss of an entire datacenter in the home region."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "lrs",
+						"text": "Locally-redundant storage (LRS)"
+					},
+					{
+						"id": "zrs",
+						"text": "Zone-redundant storage (ZRS)"
+					},
+					{
+						"id": "grs",
+						"text": "Geo-redundant storage (GRS)"
+					},
+					{
+						"id": "gzrs",
+						"text": "Geo-zone-redundant storage (GZRS)"
+					},
+					{
+						"id": "ra-grs",
+						"text": "Read-access geo-redundant storage (RA-GRS)"
+					},
+					{
+						"id": "ra-gzrs",
+						"text": "Read-access geo-zone-redundant storage (RA-GZRS)"
+					}
+				],
+				"slots": [
+					{
+						"id": "s_medimgarchive",
+						"label": "medimgarchive"
+					},
+					{
+						"id": "s_finfileshare01",
+						"label": "finfileshare01"
+					},
+					{
+						"id": "s_retailblobs02",
+						"label": "retailblobs02"
+					},
+					{
+						"id": "s_payrollblobs03",
+						"label": "payrollblobs03"
+					}
+				]
+			},
+			"key": {
+				"s_finfileshare01": "zrs",
+				"s_medimgarchive": "lrs",
+				"s_payrollblobs03": "ra-gzrs",
+				"s_retailblobs02": "grs"
+			},
+			"explanation": {
+				"correct": "Each account carries a different constraint, and the cheapest-to-most-expensive order is LRS, ZRS, GRS, RA-GRS, GZRS, RA-GZRS. medimgarchive holds archive-tier blobs and its data must never be copied outside the home region, so LRS is the only acceptable choice and the cheapest. finfileshare01 must survive the loss of an entire datacenter but may not be copied to the paired region: LRS does not survive a datacenter loss, every geo option replicates to the paired region, and Azure Files never supports the read-access variants, leaving ZRS. retailblobs02 must survive a region-wide disaster on the lowest-cost setting, which is GRS, because LRS and ZRS keep every copy inside the home region and every other qualifying option costs more. payrollblobs03 needs continued reading from the paired region during a primary outage plus survival of a datacenter loss in the home region, which only RA-GZRS provides.",
+				"perChoice": {
+					"gzrs": "Belongs to no account here. It keeps a copy in the paired region and protects the home region against a zone loss, but the secondary copy cannot be read until a failover promotes it, so it fails payrollblobs03's requirement to keep reading from the paired region during a recovery; it also costs more than retailblobs02 is allowed to spend.",
+					"grs": "retailblobs02. LRS and ZRS keep every copy inside the home region and cannot recover from a region-wide disaster; GRS is the least expensive option that replicates to the paired region, which matches this account's fixed budget.",
+					"lrs": "medimgarchive. The data is regenerable and governance forbids any copy outside the home region, so the cheapest setting is the right one; this configuration also keeps the archive-tier blobs in a supported setup.",
+					"ra-grs": "Belongs to no account here. It allows reading the paired region during a primary outage, but the home region itself only gets local replication, so it fails payrollblobs03's datacenter-loss requirement; it is also more expensive than retailblobs02 permits, and Azure Files never supports the read-access variants, so it cannot serve finfileshare01 either.",
+					"ra-gzrs": "payrollblobs03. Only this option exposes a readable endpoint in the paired region while the home region is unavailable and spreads writes across zones in the home region, so it alone meets both requirements recorded for this account.",
+					"zrs": "finfileshare01. It is the only option that survives the loss of an entire datacenter in the home region without copying data to the paired region, and Azure Files shares keep serving in that case without remounting."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-redundancy"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/redundancy-migration"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-disaster-recovery-guidance"
+				}
+			],
+			"subtopics": [
+				"redundancy-selection",
+				"replication-cost-and-durability",
+				"service-support-matrix"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5M9Q4DEEK3GNRXB9HAZ5D09",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have the storage account shown in the exhibit, whose data already exists in two regions. Over the next quarter your operations team must rehearse the recovery options available for it and document what each option does to the account afterwards. Drag the effect of each option to the option it applies to.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account name",
+							"contosomedia"
+						],
+						[
+							"Account kind",
+							"StorageV2"
+						],
+						[
+							"Sku",
+							"Standard_GRS"
+						],
+						[
+							"Primary region",
+							"East US"
+						],
+						[
+							"Secondary location",
+							"Central US"
+						],
+						[
+							"Services enabled",
+							"Blob, Queue, Table, File"
+						],
+						[
+							"Secondary endpoint",
+							"Not readable while the primary is serving"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Both regions still hold a copy of the data afterwards; a second regional failure stays survivable."
+					},
+					{
+						"id": "i2",
+						"text": "Only the region that used to be the pair keeps the data; nothing remains in the original region."
+					},
+					{
+						"id": "i3",
+						"text": "It can only be triggered for a catastrophic region-scale event, never for an individual account."
+					},
+					{
+						"id": "i4",
+						"text": "The data is copied with AzCopy into a separate account and the application is pointed at the new account."
+					},
+					{
+						"id": "i5",
+						"text": "Reads continue from the secondary endpoint while the primary region is unavailable."
+					},
+					{
+						"id": "i6",
+						"text": "The original region becomes primary again and all data is copied back to it."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Planned failover started by your team"
+					},
+					{
+						"id": "s2",
+						"label": "Unplanned failover started by your team during a regional outage"
+					},
+					{
+						"id": "s3",
+						"label": "Failover initiated by Microsoft for a disaster"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3"
+			},
+			"explanation": {
+				"correct": "The account is a StorageV2 account that already replicates to a paired region, so the team can compare the three recovery paths it can use. A customer-managed planned failover is scheduled by the team to test disaster recovery: the regions swap roles, no data is lost, the account keeps copies in both regions and stays geo-redundant, so a second regional failure would still be survivable. A customer-managed unplanned failover is started when the primary endpoints are down: the region that used to be the pair becomes primary, some data written since the last sync can be lost, the copy in the original region is deleted and the account comes back as LRS without geo-redundancy. A Microsoft-managed failover is a region-scope action reserved for catastrophic events and cannot be triggered for an individual account.",
+				"perChoice": {
+					"i1": "Matches the planned failover started by the team: the two regions swap roles, nothing is lost and the account keeps replicas in both regions, so it remains geo-redundant.",
+					"i2": "Matches the unplanned failover started by the team during a regional outage: the paired region takes over, the copy in the original region is deleted and the account loses its geo-redundant setting.",
+					"i3": "Matches the Microsoft-initiated failover: it is limited to region-scale catastrophic events and cannot be requested per account.",
+					"i4": "This is the data-copy fallback used with AzCopy when failover is not supported by the account type or its features; it is a migration, not one of the three failover paths.",
+					"i5": "This describes what enabling read access to the secondary endpoint gives you (RA-GRS or RA-GZRS). The account in the exhibit has no readable secondary endpoint, and this is a configuration state rather than the result of a failover.",
+					"i6": "Returning service to the original region is a failback, performed with PowerShell or Azure CLI 2.30.0 or later after a failover; it is not one of the three failover paths."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-disaster-recovery-guidance"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-redundancy"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/redundancy-migration"
+				}
+			],
+			"subtopics": [
+				"failover-types",
+				"geo-redundancy"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5M9SPNG1T6THKPRVTT4SY7G",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have the four storage accounts listed in the exhibit. Each one has to remain available if an availability zone in its home region is taken out of service, and the applications that use them may not be interrupted while you work, so the data cannot be relocated to replacement accounts. You intend to start the work yourself rather than raising a support request. Drag the first step you would take to the account it belongs to.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Account",
+						"Account type",
+						"Access tiers in use",
+						"Content and configuration"
+					],
+					"rows": [
+						[
+							"advstore01",
+							"General-purpose v2, standard",
+							"Hot and archive",
+							"Blob containers; some blobs sitting in the archive tier"
+						],
+						[
+							"nwstore02",
+							"General-purpose v2, standard",
+							"Hot",
+							"Azure Files shares using NFSv4.1, reachable through public endpoints"
+						],
+						[
+							"fbstore03",
+							"General-purpose v1, standard",
+							"Hot",
+							"Blob containers and a table"
+						],
+						[
+							"ctstore04",
+							"Premium block blobs",
+							"Hot",
+							"Premium block blob containers"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Rehydrate or relocate the archived blobs first"
+					},
+					{
+						"id": "b",
+						"text": "Switch off public endpoint access first and restore it after the conversion"
+					},
+					{
+						"id": "c",
+						"text": "Change the account kind to general-purpose v2 first"
+					},
+					{
+						"id": "d",
+						"text": "Start the conversion straight away, with nothing to prepare"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "advstore01"
+					},
+					{
+						"id": "s2",
+						"label": "nwstore02"
+					},
+					{
+						"id": "s3",
+						"label": "fbstore03"
+					},
+					{
+						"id": "s4",
+						"label": "ctstore04"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d"
+			},
+			"explanation": {
+				"correct": "Making each account place its data in separate availability zones inside its home region is a conversion, and three of the four accounts have something in their current configuration that stops the Redundancy page from accepting it. advstore01 keeps blobs in the archive tier, which is offered only on LRS, GRS and RA-GRS accounts, so those blobs must be rehydrated or relocated first. nwstore02 exposes NFSv4.1 file shares through public endpoints, and that combination blocks a conversion until public endpoint access is switched off; the endpoints can be reconfigured afterwards. fbstore03 is still a v1 account, and a v1 account cannot take the zone-based option until it is upgraded to v2. ctstore04 is a premium block blob account, a type that already supports the zone-based option, so nothing has to be prepared and the conversion can be submitted right away.",
+				"perChoice": {
+					"a": "This belongs to advstore01: its blobs in the archive tier must be rehydrated or relocated before the account can be converted to the zone-based option.",
+					"b": "This belongs to nwstore02: conversions are blocked while NFSv4.1 shares are exposed through public endpoints, so public endpoint access is switched off for the conversion and restored afterwards.",
+					"c": "This belongs to fbstore03: a general-purpose v1 account has to be upgraded to v2 before it can be converted.",
+					"d": "This belongs to ctstore04: premium block blob accounts already support the zone-based option and carry no feature that blocks the conversion."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/redundancy-migration"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-redundancy"
+				}
+			],
+			"subtopics": [
+				"redundancy-conversion",
+				"conversion-prerequisites",
+				"account-type-support"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5M9W3S6S193V0HFZFV3Q6KQ",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have the storage account described in the exhibit. Finance has approved the four changes listed below and needs the payment effect of each one recorded before the work starts. Drag the payment effect to the change it applies to.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Replication",
+							"Geo-redundant, read access enabled"
+						],
+						[
+							"Account kind",
+							"Standard general-purpose v2"
+						],
+						[
+							"Blobs held in the archive tier",
+							""
+						],
+						[
+							"Planned work",
+							"All four changes are carried out on this account; no data is copied to a replacement account"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "One-time egress charge, plus egress charged on each later operation"
+					},
+					{
+						"id": "i2",
+						"text": "No one-time charge, but higher ongoing storage costs"
+					},
+					{
+						"id": "i3",
+						"text": "Free, and the contents of the secondary endpoint are removed"
+					},
+					{
+						"id": "i4",
+						"text": "The more expensive billing tier continues for 30 days after conversion"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Extend the account so a copy is also kept in the paired region"
+					},
+					{
+						"id": "s2",
+						"label": "Extend the account so writes also land in all zones of the home region"
+					},
+					{
+						"id": "s3",
+						"label": "Retire the paired-region copy and keep serving from the home region only"
+					},
+					{
+						"id": "s4",
+						"label": "Keep the paired-region copy but stop letting applications read from it"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Adding geo-redundancy is the only change that triggers a one-time egress charge plus egress on every later write (s1 = i1). Adding zone-redundancy has no one-time charge but raises ongoing storage cost (s2 = i2). Removing geo-redundancy costs nothing but deletes the secondary copy (s3 = i3). Dropping read access while keeping the paired-region copy leaves the account billed as RA-GRS for an extra 30 days after the conversion (s4 = i4).",
+				"perChoice": {
+					"i1": "Belongs to s1: enabling geo-redundancy incurs a one-time egress charge plus egress on every later write.",
+					"i2": "Belongs to s2: adding zone redundancy has no one-time charge but raises the ongoing storage cost.",
+					"i3": "Belongs to s3: removing geo-redundancy is free and deletes the copy held in the paired region.",
+					"i4": "Belongs to s4: an account that stops allowing reads from the paired-region copy is still billed as RA-GRS for an additional 30 days after conversion."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/redundancy-migration"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-redundancy"
+				}
+			],
+			"subtopics": [
+				"redundancy-billing",
+				"replication-changes"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MA0H02V4B2RGG9W6RFVY2G",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are writing the compatibility section of a storage design document, and for every entry below your platform team has to record the complete group of replication settings that entry can be used with. Drag the group of settings supported for each entry to the entry it belongs to.",
+				"items": [
+					{
+						"id": "i1",
+						"text": "All six replication settings"
+					},
+					{
+						"id": "i2",
+						"text": "LRS and ZRS"
+					},
+					{
+						"id": "i3",
+						"text": "LRS, GRS and RA-GRS"
+					},
+					{
+						"id": "i4",
+						"text": "LRS, ZRS, GRS and GZRS"
+					},
+					{
+						"id": "i5",
+						"text": "LRS"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Archive access tier on a general-purpose v2 account"
+					},
+					{
+						"id": "s2",
+						"label": "Azure Files shares on a general-purpose v2 account"
+					},
+					{
+						"id": "s3",
+						"label": "Managed disks attached to virtual machines"
+					},
+					{
+						"id": "s4",
+						"label": "Premium page blob account"
+					}
+				]
+			},
+			"key": {
+				"s1": "i3",
+				"s2": "i4",
+				"s3": "i2",
+				"s4": "i5"
+			},
+			"explanation": {
+				"correct": "Every entry has its own restricted list of replication settings, so each one takes a different group. The archive access tier is offered only on LRS, GRS and RA-GRS accounts, which is why it pairs with exactly those three and why an LRS account holding archived blobs can move to GRS or RA-GRS only once the blobs have been rehydrated or relocated. Azure Files accepts LRS, ZRS, GRS and GZRS, but the read-access variants are never offered for it. Managed disks (and Elastic SAN) are limited to LRS and ZRS. Premium page blob accounts are LRS only. The group of all six settings has no home here: it is the list for blob containers, queues and tables on a general-purpose v2 account, and none of the four entries is one of those.",
+				"perChoice": {
+					"i1": "Fits no slot in this question. All six settings (LRS, ZRS, GRS, GZRS, RA-GRS, RA-GZRS) are available for blob storage, queues and tables on a standard general-purpose v2 account, and none of the four entries describes those services.",
+					"i2": "Belongs with managed disks attached to virtual machines: managed disks and Elastic SAN are limited to LRS and ZRS, with no geo-replicated options at all.",
+					"i3": "Belongs with the archive access tier on a general-purpose v2 account: cold and archive tiers are offered only on LRS, GRS and RA-GRS accounts, which is why conversions to the zone-based options are blocked while archived blobs are present.",
+					"i4": "Belongs with Azure Files shares: the service supports LRS, ZRS, GRS and GZRS, and never the RA-GRS or RA-GZRS read-access variants.",
+					"i5": "Belongs with the premium page blob account: premium page blobs can be created only on an LRS account, so no redundancy change of any kind is available for it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-redundancy"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/redundancy-migration"
+				}
+			],
+			"subtopics": [
+				"service-support",
+				"account-types",
+				"access-tiers"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MA2XSR90P7A2JCDG30PBXE",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You manage the three storage accounts shown in the exhibit. For each one, your team has to record in a design document the service level that customers can expect from the configuration the account has today. Drag the figure to the account it belongs to.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Account",
+						"What it hosts",
+						"Replication setting",
+						"Access tier holding most of its data"
+					],
+					"rows": [
+						[
+							"appstoreprod",
+							"Blob containers",
+							"RA-GRS",
+							"Hot"
+						],
+						[
+							"reportfiles",
+							"Azure Files shares",
+							"GRS",
+							"Cool"
+						],
+						[
+							"medimagearc",
+							"Blob containers",
+							"ZRS",
+							"Hot"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "fig-999",
+						"text": "99.9% or better for reads and writes"
+					},
+					{
+						"id": "fig-9999",
+						"text": "99.99% or better for reads"
+					},
+					{
+						"id": "fig-99",
+						"text": "99% for reads and writes"
+					}
+				],
+				"slots": [
+					{
+						"id": "slot-appstoreprod",
+						"label": "appstoreprod"
+					},
+					{
+						"id": "slot-reportfiles",
+						"label": "reportfiles"
+					},
+					{
+						"id": "slot-medimagearc",
+						"label": "medimagearc"
+					}
+				]
+			},
+			"key": {
+				"slot-appstoreprod": "fig-9999",
+				"slot-medimagearc": "fig-999",
+				"slot-reportfiles": "fig-99"
+			},
+			"explanation": {
+				"correct": "appstoreprod is RA-GRS, and RA-GRS and RA-GZRS carry a read commitment of at least 99.99%, so it takes the 99.99% reads figure. medimagearc is ZRS, one of the four settings (LRS, ZRS, GRS, GZRS) committed to at least 99.9% for reads and writes, and its data is in the hot tier, so it takes the 99.9% figure. reportfiles is GRS but most of its data sits in a cool tier, and the cool, cold and archive tiers lower the standard 99.9% commitment to 99% for both reads and writes.",
+				"perChoice": {
+					"fig-99": "Belongs to reportfiles: the standard 99.9% commitment for GRS is reduced to 99% for reads and writes because most of the account's data is in the cool access tier.",
+					"fig-999": "Belongs to medimagearc: ZRS is one of the settings (LRS, ZRS, GRS, GZRS) committed to at least 99.9% for reads and writes, and no colder tier is involved.",
+					"fig-9999": "Belongs to appstoreprod: giving applications read access to the paired region raises the read commitment to at least 99.99%."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-redundancy"
+				}
+			],
+			"subtopics": [
+				"availability-commitments",
+				"read-access-secondary",
+				"access-tier-impact"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MA6WZZMSED9FFAG10AQVSP",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have the storage account shown in the exhibit. Within a month it must keep serving its data if a single availability zone in its home region is taken out of service, and the application that reads it may not be interrupted, so the data has to stay on this account rather than move to a replacement one. Every conversion you submit is rejected and the Redundancy page then shows the request as failed. Which action should you take first?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account name",
+							"contosologs01"
+						],
+						[
+							"Account type",
+							"Standard general-purpose v2"
+						],
+						[
+							"Primary region",
+							"East US 2"
+						],
+						[
+							"Redundancy",
+							"LRS"
+						],
+						[
+							"Blobs held in the archive access tier",
+							"412"
+						],
+						[
+							"Last conversion status on the Redundancy page",
+							"Failed"
+						],
+						[
+							"Retention requirement",
+							"Content must be kept for seven years"
+						]
+					]
+				},
+				"statement": "The first action to take is: {{action}}",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Rehydrate or relocate the archived blobs, then resubmit the conversion"
+							},
+							{
+								"id": "b",
+								"text": "Delete the archived blobs, then resubmit the conversion"
+							},
+							{
+								"id": "c",
+								"text": "Change the tier of the archived blobs to cool, then resubmit the conversion"
+							},
+							{
+								"id": "d",
+								"text": "Raise a support case of problem type Data Migration, then resubmit the conversion"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "The archived blobs are what blocks the work: the archive tier is available only on accounts set to LRS, GRS or RA-GRS, so an LRS account that still holds archived blobs cannot be moved to a zone-redundant option. Getting that data out of the archive tier first, either by rehydrating it in place or relocating it, is the prerequisite, and once it is gone the conversion can be submitted again and completes without application downtime.",
+				"perChoice": {
+					"action:b": "Destroying the data would breach the seven-year retention requirement, and the documented remedy for archived blobs is to relocate or selectively rehydrate them, not to remove them.",
+					"action:c": "A blob cannot be moved out of the archive tier without being rehydrated first, so this step cannot be carried out on its own and does not avoid the rehydration work that has to happen anyway.",
+					"action:d": "A support case is the route for diagnosing a conversion that has failed, but it does not lift the restriction that the archive tier is unsupported on these targets; the archived blobs have to leave the archive tier before the conversion will be accepted."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/redundancy-migration"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-redundancy"
+				}
+			],
+			"subtopics": [
+				"archive-tier-blocks-conversion",
+				"replication-conversion",
+				"zone-redundancy"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MA8YVDCY2W57AV4Y5DFTJ8",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have the storage account shown in the exhibit. You need its data to stay readable by the application while its home region is completely offline, and that home region is fixed for this account and is one where Azure offers no availability zones. Which setting should you apply, and what must your team run before the application can write to the account again?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Storage account name",
+							"contosearchlogs"
+						],
+						[
+							"Account kind",
+							"Standard general-purpose v2 (StorageV2)"
+						],
+						[
+							"Redundancy setting",
+							"Locally redundant storage (LRS)"
+						],
+						[
+							"Services in use",
+							"Blob, Queue, Table"
+						],
+						[
+							"Access to the paired-region copy",
+							"Not configured"
+						]
+					]
+				},
+				"statement": "The account should be set to {{replication}}, and after a home-region outage the team must run {{writeRecovery}} before the application can write to the account again.",
+				"slots": [
+					{
+						"id": "replication",
+						"options": [
+							{
+								"id": "a",
+								"text": "RA-GRS"
+							},
+							{
+								"id": "b",
+								"text": "RA-GZRS"
+							},
+							{
+								"id": "c",
+								"text": "GRS"
+							},
+							{
+								"id": "d",
+								"text": "GZRS"
+							}
+						]
+					},
+					{
+						"id": "writeRecovery",
+						"options": [
+							{
+								"id": "a",
+								"text": "an account failover"
+							},
+							{
+								"id": "b",
+								"text": "an account conversion"
+							},
+							{
+								"id": "c",
+								"text": "an account migration"
+							},
+							{
+								"id": "d",
+								"text": "re-enabling geo-redundancy on the account"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"replication": "a",
+				"writeRecovery": "a"
+			},
+			"explanation": {
+				"correct": "The application must be able to read while the home region is offline, which requires the RA- form so the paired-region copy stays readable; and the home region for this account offers no availability zones, so the zone-based settings are not offered there, leaving RA-GRS as the only option that satisfies both conditions. Once the home region is gone, restoring writes always requires an account failover: only promoting the surviving copy moves the primary endpoints to data the account can accept writes on, and even a plain geo-redundant setup cannot write without it.",
+				"perChoice": {
+					"replication:b": "RA-GZRS needs the primary region to support availability zones; the fixed home region for this account does not, so the setting cannot be offered there.",
+					"replication:c": "GRS keeps a copy in the paired region but leaves it unreadable during a primary outage, so the application would lose access while the home region is offline.",
+					"replication:d": "GZRS has the same zone requirement as RA-GZRS and so is unavailable in the fixed home region; it also leaves the paired-region copy unreadable until it is promoted.",
+					"writeRecovery:b": "A conversion only changes the redundancy setting of an account; it never promotes the paired-region copy, and management operations for the account must run in the original home region, which is the one that is down.",
+					"writeRecovery:c": "A manual migration copies data to a different account so you can repoint the application there; it is not the step that lets this account accept writes again.",
+					"writeRecovery:d": "Turning geo-redundancy back on after the region switch re-replicates everything and bills egress again, but it does not grant write access, because the endpoints still have to be pointed at the surviving copy."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-redundancy"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-disaster-recovery-guidance"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/redundancy-migration"
+				}
+			],
+			"subtopics": [
+				"redundancy-selection",
+				"secondary-read-access",
+				"write-access-recovery"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MAFG8CQCNWJMAR0NWCYKXB",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You own the storage account shown in the exhibit, which an in-house application reads and writes around the clock. Within six weeks the account has to keep serving its data if a single availability zone in its home region goes down, it has to survive a region-wide disaster, and the application must still be able to read the account's contents while its home region is completely offline. No downtime is acceptable, everything has to stay on this account rather than being copied to a replacement one, and the work is to be carried out by your own team rather than by raising a support request. Which two steps should your team take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account name",
+							"contosoarchive01"
+						],
+						[
+							"Account type",
+							"Standard general-purpose v2 (StorageV2)"
+						],
+						[
+							"Home region",
+							"East US 2 (three availability zones, paired region available)"
+						],
+						[
+							"Replication today",
+							"LRS"
+						],
+						[
+							"Blob data in Archive access tier",
+							"1.8 TB of customer invoices, last written three years ago"
+						],
+						[
+							"Maintenance window",
+							"None; the application runs 24/7"
+						]
+					]
+				},
+				"statement": "Your team must first {{prep}}, and then apply the replication setting {{target}} to the account.",
+				"slots": [
+					{
+						"id": "prep",
+						"options": [
+							{
+								"id": "a",
+								"text": "bring the archived blobs back online from the archive tier"
+							},
+							{
+								"id": "b",
+								"text": "delete the blobs that sit in the archive tier before submitting the change"
+							},
+							{
+								"id": "c",
+								"text": "move the blobs that sit in the archive tier to a premium page blob storage account"
+							},
+							{
+								"id": "d",
+								"text": "add geo-redundancy first and add zone redundancy afterwards"
+							}
+						]
+					},
+					{
+						"id": "target",
+						"options": [
+							{
+								"id": "a",
+								"text": "RA-GZRS"
+							},
+							{
+								"id": "b",
+								"text": "RA-GRS"
+							},
+							{
+								"id": "c",
+								"text": "GZRS"
+							},
+							{
+								"id": "d",
+								"text": "GRS"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"prep": "a",
+				"target": "a"
+			},
+			"explanation": {
+				"correct": "The account currently holds blobs in the Archive access tier, and that tier is supported only on accounts replicated with LRS, GRS or RA-GRS, so nothing can be moved to a zone-redundant setting while those blobs sit in Archive. Because the data must stay on this account, the archived blobs have to be rehydrated back into the hot or cool tier first (rehydration is slow and costly, but it is the only route that keeps everything in place), and only then can the account move to the strongest setting. RA-GZRS is the only option that meets all three stated goals at once: data is written synchronously to availability zones in the home region (survives losing one zone), it is replicated to the paired region (survives a region-wide disaster), and read access to the secondary copy lets the application keep reading through a home-region outage. Note that adding zone redundancy is a conversion and is done as a separate step from the geo and read-access change, with at least a day between the two operations, and both steps can be started by your own team without a support request.",
+				"perChoice": {
+					"prep:b": "Deleting the records is not a remedy: the invoices are retained business data and the account must keep serving them. The real constraint is that the Archive access tier cannot coexist with a zone-redundant setting, which is resolved by rehydrating the blobs (or by relocating them), not by destroying them.",
+					"prep:c": "Premium page blob storage accounts support only the locally redundant option and are not an archive-tier home, so the blobs could not simply be parked there, and the account would still have no zone or geo protection. It also contradicts the requirement that the data stay on this account.",
+					"prep:d": "Reordering the work does not clear the blocker: an LRS account containing blobs in the Archive access tier can only be switched to GRS or RA-GRS after all archived blobs are rehydrated to the hot or cool tier, so the archive issue must be resolved first whichever order you choose.",
+					"target:b": "RA-GRS keeps a copy in the paired region and allows reading it, but the data in the home region is still replicated only within datacenters there, so losing an availability zone in that region would stop the application.",
+					"target:c": "GZRS survives the loss of an availability zone and protects against a region-wide disaster, but without read access the copy in the paired region stays unreadable until a failover promotes it, so the application cannot read the data while its home region is offline.",
+					"target:d": "GRS keeps a copy in the paired region but offers neither zone resilience in the home region nor read access to the secondary copy, so it fails both the availability-zone and the read-during-outage requirements."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/redundancy-migration"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-redundancy"
+				}
+			],
+			"subtopics": [
+				"archive-access-tier",
+				"redundancy-conversion",
+				"read-access-secondary"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MAN4QRWPMPJJ1A6KEMTMZ2",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have the storage account shown in the exhibit. Blobs that the application has not touched in months are sitting in the coldest tier, and your records team has ruled out both relocating them and bringing their contents back online before any change is made. At the same time, everything the account holds must be recoverable after the loss of the whole home region, and because a single setting governs every service in the account, one choice has to suit both conditions. Finance has approved only the least expensive setting that still meets them, and the work must be done on this account. What should your team do?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account name",
+							"contosarecords"
+						],
+						[
+							"Account kind",
+							"StorageV2 (general-purpose v2)"
+						],
+						[
+							"Home region",
+							"UK South"
+						],
+						[
+							"Current replication setting",
+							"Locally redundant storage"
+						],
+						[
+							"Services in use",
+							"Blob containers, queues and tables"
+						],
+						[
+							"Blob access tier in use",
+							"Archive"
+						],
+						[
+							"Reads from the paired region during a home region outage",
+							"Not required by the application"
+						]
+					]
+				},
+				"statement": "Your team should set the account's replication to {{repl}}.",
+				"slots": [
+					{
+						"id": "repl",
+						"options": [
+							{
+								"id": "a",
+								"text": "GRS"
+							},
+							{
+								"id": "b",
+								"text": "LRS"
+							},
+							{
+								"id": "c",
+								"text": "ZRS"
+							},
+							{
+								"id": "d",
+								"text": "RA-GRS"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"repl": "a"
+			},
+			"explanation": {
+				"correct": "GRS replicates with LRS in the primary and then copies asynchronously to the paired region, so a region-wide disaster is survivable, and the archive tier is one of the settings that supports archived blobs, so nothing has to be relocated or brought back online. It is also cheaper than RA-GRS, which would add read access to the paired region that the application does not use, so it is the least expensive option meeting both recorded requirements.",
+				"perChoice": {
+					"repl:b": "LRS keeps all three copies in one datacenter in the home region, so the loss of that region means the loss of the data; it is the cheapest setting but fails the recovery requirement.",
+					"repl:c": "ZRS spreads copies across availability zones inside the primary region, which survives a zone loss but not a region-wide disaster, and the archive tier is not supported on it either.",
+					"repl:d": "RA-GRS satisfies both requirements, but it turns on read access to the paired region that the application does not need and costs more than GRS, so it is not the least expensive option that meets the requirements."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-redundancy"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/redundancy-migration"
+				}
+			],
+			"subtopics": [
+				"redundancy-selection",
+				"archive-tier-limits",
+				"replication-cost-order"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MARHSYS5MS3SECNHKADZEM",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have the storage account shown in the exhibit. Your operations team removed a container by mistake yesterday and has asked the service desk to retrieve its contents from the account's other region, where they believe a separate set of blobs is still held because the account keeps data in two regions. Which statement should you give the team?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account name",
+							"contosalesmedia01"
+						],
+						[
+							"Replication",
+							"RA-GZRS"
+						],
+						[
+							"Services in use",
+							"Blob containers, hot tier"
+						],
+						[
+							"Home region",
+							"Sweden Central"
+						]
+					]
+				},
+				"statement": "For the account shown in the exhibit, deleting a container by mistake has the result that {{outcome}}.",
+				"slots": [
+					{
+						"id": "outcome",
+						"options": [
+							{
+								"id": "a",
+								"text": "every version of the container is removed at once, so the paired region offers no way to recover it"
+							},
+							{
+								"id": "b",
+								"text": "only the version in the primary region is removed, while the version in the paired region stays intact"
+							},
+							{
+								"id": "c",
+								"text": "the version in the primary region is removed first, and the version in the paired region follows at the next synchronization"
+							},
+							{
+								"id": "d",
+								"text": "every version of the container is removed at once, but a recoverable version stays in the paired region for 30 days"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"outcome": "a"
+			},
+			"explanation": {
+				"correct": "All replicas of a geo-replicated account always hold the same current state, and deletes and overwrites are applied to every copy at the same time. Replication therefore protects against node, datacenter, zone and regional failures, not against accidental deletion: with RA-GZRS the container is gone from the primary and the paired region at the same moment, so bringing it back requires a data-protection mechanism outside replication, such as blob soft delete, versioning, point-in-time restore or a separate copy of the data.",
+				"perChoice": {
+					"outcome:b": "There is no state in which the paired region keeps an independent, untouched copy after a delete. Every replica tracks the same current state, so the delete reaches the secondary as well; this option contradicts how replication works.",
+					"outcome:c": "Deletes are not applied to the primary region and then delayed to the paired region by a later synchronization cycle. All copies receive the delete together, so the team cannot wait and find the container still present in the other region.",
+					"outcome:d": "No retention period is applied to deleted data by a replication setting. Deleting the container removes it from every copy at the same moment, and there is no 30-day window in which a copy in the paired region could still be used."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-redundancy"
+				}
+			],
+			"subtopics": [
+				"redundancy-vs-backup",
+				"geo-replication",
+				"deletion-behavior"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MAXW7ZPH82YZAEK87CG925",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have the storage account shown in the exhibit, which an in-house line-of-business application reads and writes around the clock. From next month, if the account's home region ever becomes completely unavailable, that application has to carry on reading the account's contents while your team investigates the outage, and the copy held outside the home region also has to keep the data safe if a single availability zone in the home region is lost. Which endpoint and which credentials should you record in the application runbook?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account name",
+							"mycontosodata"
+						],
+						[
+							"Account kind",
+							"Standard general-purpose v2"
+						],
+						[
+							"Redundancy",
+							"Geo-zone-redundant with read access"
+						],
+						[
+							"Primary location",
+							"East US 2"
+						],
+						[
+							"Paired region",
+							"Central US"
+						],
+						[
+							"Data read by the application",
+							"Blob containers"
+						]
+					]
+				},
+				"statement": "The runbook should point the application at {{endpoint}} and authenticate with {{creds}}.",
+				"slots": [
+					{
+						"id": "endpoint",
+						"options": [
+							{
+								"id": "e1",
+								"text": "mycontosodata-secondary.blob.core.windows.net"
+							},
+							{
+								"id": "e2",
+								"text": "mycontosodata.blob.core.windows.net"
+							},
+							{
+								"id": "e3",
+								"text": "mycontosodata-secondary.file.core.windows.net"
+							},
+							{
+								"id": "e4",
+								"text": "mycontosodata-secondary.blob.core.chinacloudapi.cn"
+							}
+						]
+					},
+					{
+						"id": "creds",
+						"options": [
+							{
+								"id": "c1",
+								"text": "the account's existing access keys, unchanged"
+							},
+							{
+								"id": "c2",
+								"text": "a second set of access keys created for the account's paired region"
+							},
+							{
+								"id": "c3",
+								"text": "a shared access signature issued by the account's paired region"
+							},
+							{
+								"id": "c4",
+								"text": "a managed identity that holds no keys for the account"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"creds": "c1",
+				"endpoint": "e1"
+			},
+			"explanation": {
+				"correct": "The account is configured so its geo-replicated copy can also be read, which means the paired region keeps serving the contents of the account while the home region is offline, and the primary copy is written across availability zones. With read access enabled, that read-only copy is reached through a second endpoint whose name repeats the account name with a -secondary suffix ahead of the service domain, which for blob data gives mycontosodata-secondary.blob.core.windows.net. The primary endpoint and this read-only endpoint accept the same account access keys, so nothing about the application's credentials changes; only the endpoint it falls back to does.",
+				"perChoice": {
+					"endpoint:e2": "This is the primary endpoint, which is exactly what becomes unreachable when the home region is offline. The runbook needs the endpoint that serves the readable copy held outside that region.",
+					"endpoint:e3": "The service domain has to match the type of data the application reads. This account's data that is read here lives in blob containers, which are served from the blob domain, not the file share domain.",
+					"endpoint:e4": "That domain suffix belongs to a separate Azure cloud. An account in the public cloud is reached through core.windows.net.",
+					"creds:c2": "Access keys belong to the account rather than to a region, so the single pair the application already stores authorizes requests to both endpoints; no extra key set exists for the paired region.",
+					"creds:c3": "A shared access signature is not what authorizes this fallback path. The account's own keys already grant access to the readable copy, and a signature is not issued per region.",
+					"creds:c4": "Requests to the readable copy are authenticated with the account's shared keys. A role granted to an identity is a separate mechanism and would not help an identity that holds no key for the account."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-redundancy"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-disaster-recovery-guidance"
+				}
+			],
+			"subtopics": [
+				"geo-replication",
+				"secondary-endpoint",
+				"access-keys"
+			],
+			"reviewed": false
+		}
+	]
+}

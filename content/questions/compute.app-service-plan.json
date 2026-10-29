@@ -1,0 +1,1820 @@
+{
+	"skill": "compute.app-service-plan",
+	"questions": [
+		{
+			"id": "q_01M5RT1TVF07822C8SFZZ91CAF",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Windows web app named Storefront that sits on the App Service plan plan-east-prod in the resource group rg-store, as listed in the exhibit. Three other apps share that plan and must stay on the East US hardware. Storefront has virtual network integration turned on. You need Storefront to run on Linux in West Europe and to scale on its own, without being affected by the autoscale behaviour of the other apps on the plan. Which sequence of actions should you take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "App name .............................. Storefront\nHosting plan ........................... plan-east-prod\nResource group ......................... rg-store\nOperating system ...................... Windows\nRegion ................................. East US\nVirtual network integration ........... Enabled\nPricing tier ........................... P1v3\nApps on plan-east-prod ................. Storefront, Portal, Billing, Reporting"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "In the portal, open Storefront, select App Service plan > Change plan, choose a Linux plan in rg-store and West Europe, and save."
+					},
+					{
+						"id": "b",
+						"text": "In the portal, open Storefront, turn off virtual network integration, select App Service plan > Change plan, choose a Linux plan in rg-store and East US, and save."
+					},
+					{
+						"id": "c",
+						"text": "In the portal, open Storefront and use Clone App in the Development Tools section to copy it into a new Linux plan in West Europe, then remove the original app."
+					},
+					{
+						"id": "d",
+						"text": "In the portal, open Storefront and use Clone App in the Development Tools section to copy it into a new Windows plan in East US, then change that new plan's region to West Europe."
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "A plan fixes its operating system and region when it is created, and a plan's region cannot be changed afterwards, so an app that must run on Linux in West Europe needs a brand-new plan created directly in that region. Clone App in the Development Tools section copies an app into a new or existing plan in any region, which is the supported way to relocate an app. The copy also gives Storefront a plan of its own, so the other apps on plan-east-prod keep their existing autoscale behaviour and compute. The correct option therefore covers both the relocation and the independent scaling requirement.",
+				"perChoice": {
+					"a": "Not possible. The Change plan view only lists plans that sit in the same resource group and region as the app, and an app can only be moved between plans that share the same resource group, geographical region and operating system type. A Linux plan in West Europe matches neither of those conditions.",
+					"b": "Turning off virtual network integration is indeed a prerequisite for moving an app, but the remaining steps cannot work. A plan change keeps the app in its current region and operating system type, and switching an app from Windows to Linux is not supported, so no Linux plan can be selected as the target this way.",
+					"d": "Copying the app into a new plan is the right starting point, but a plan's region cannot be edited after creation, so the new plan would stay in East US and Storefront would never run in West Europe. The new plan has to be created in West Europe from the start."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-plan-manage"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans"
+				}
+			],
+			"subtopics": [
+				"app-service-plan-move",
+				"plan-region-and-os-constraints",
+				"app-service-plan-isolation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RT7FMP67V6KMEXQK2KJWR5",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Windows web app named ContosoWeb that must run with repeatable OS and middleware setup scripts, registry values pulled from Azure Key Vault, private DNS with virtual network integration applied at the plan level, and on-demand RDP diagnostics through Azure Bastion. ContosoWeb runs on the plan shown in the exhibit, and you need it on a hosting option that delivers all four of those capabilities. You also want to know which locations and which SKUs offer that option before you change the plan. Which action should you take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"name\": \"plan-contoso-web\",\n  \"resourceGroup\": \"rg-contoso\",\n  \"operatingSystem\": \"Windows\",\n  \"sku\": { \"name\": \"P1v2\", \"tier\": \"PremiumV2\", \"size\": \"Large\" },\n  \"numberOfWorkers\": 2,\n  \"webApps\": [\"ContosoWeb\"],\n  \"containerApps\": []\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Run `az appservice list-locations --managed-instance-enabled --sku P1v4`, resize the plan to the P1v4 pricing tier, and enable Managed Instance on it"
+					},
+					{
+						"id": "b",
+						"text": "Run `az appservice list-locations --managed-instance-enabled --sku P1v3`, resize the plan to the P1v3 pricing tier, and enable Managed Instance on it"
+					},
+					{
+						"id": "c",
+						"text": "Run `az appservice list-locations --managed-instance-enabled --sku P1v4`, change the plan's operating system to Linux, resize the plan to the P1v4 pricing tier, and enable Managed Instance on it"
+					},
+					{
+						"id": "d",
+						"text": "Run `az appservice list-locations --managed-instance-enabled --sku B1`, resize the plan to the B1 pricing tier, and enable Managed Instance on it"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The four capabilities in the scenario point to the Managed Instance hosting option: repeatable PowerShell-based OS and middleware setup, registry adapters that pull their secrets from Azure Key Vault, private DNS plus virtual network integration scoped to the plan, and on-demand RDP diagnostics through Azure Bastion. That option is aimed at Windows web apps, excludes Linux and containers, and is limited to the Pv4 and Pmv4 SKUs, so the Windows plan in the exhibit (with no container apps) has to move to a Pv4-family SKU such as P1v4. Before you commit, `az appservice list-locations --managed-instance-enabled --sku P1v4` (Azure CLI 2.82.0 or later) returns the locations where the option is offered for that SKU, so it is the right check to run first; a pricing tier can be changed up or down at any time, but the eligible family and the operating system are not. The command output also tells you where the option is available: because a plan's region cannot be changed after creation, if the plan's own location is missing from the list you would instead create a new plan in a listed location and clone the app into it.",
+				"perChoice": {
+					"b": "P1v3 belongs to the PremiumV3 family, and the option is restricted to the Pv4 and Pmv4 SKUs, so a plan left on P1v3 could never carry it and ContosoWeb would still be missing the capabilities you asked for.",
+					"c": "The option covers Windows web apps only, and the plan in the exhibit is already Windows, so converting the plan to Linux adds nothing and takes the plan outside the scope of the option entirely.",
+					"d": "B1 is a Basic-tier SKU. The option is limited to the Pv4 and Pmv4 SKUs and is explicitly ruled out for Free, Shared and the standard dedicated tiers such as Basic and Standard, so resizing to B1 cannot deliver it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-plan-manage"
+				}
+			],
+			"subtopics": [
+				"managed-instance-hosting",
+				"pricing-tier-selection",
+				"app-service-plan-cli"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RTDNA7N6P2RMNRDBXNANSD",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have three apps running on the plan plan-shared-prod in the resource group rg-corp, as listed in the exhibit. Every night the batch job takes most of the plan's memory and the other two apps start timing out, even though the plan still has three instances. You need that job held to no more than one of the plan's instances while the other apps keep the capacity they have today, and you don't want to add a second plan or increase what you pay for the plan. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Plan report - plan-shared-prod (resource group rg-corp)\n\n  Location ................. East US\n  Pricing tier ............. Standard (S1)\n  Configured instances ..... 3\n  Autoscale rules .......... none\n\nApps running on this plan\n  Storefront-Web   average memory 1.8 GB   deployment slots: prod, staging\n  Orders-Api       average memory 1.1 GB   deployment slots: none\n  Nightly-Batch    average memory 2.4 GB during the nightly run   deployment slots: none\n"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Turn on per-app scaling for plan-shared-prod and cap Nightly-Batch at one instance"
+					},
+					{
+						"id": "b",
+						"text": "Turn on per-app scaling for plan-shared-prod and cap Storefront-Web at one instance"
+					},
+					{
+						"id": "c",
+						"text": "Add an autoscale rule to plan-shared-prod that scales the plan out when memory usage is high"
+					},
+					{
+						"id": "d",
+						"text": "Reduce plan-shared-prod's instance count from three to one so Nightly-Batch stops competing with the other apps"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Per-app scaling is the mechanism that limits an individual app or deployment slot to a subset of the plan's instances while capacity and billing stay at the plan level. With it enabled on plan-shared-prod, capping Nightly-Batch at one instance places that app on at most one of the plan's three instances, so the nightly job can no longer starve the other apps, while Storefront-Web (production plus its staging slot, since an active slot counts as an active app competing for resources in the same plan) and Orders-Api keep the capacity they have today. The plan keeps its three instances, no second plan is introduced, and the plan's cost does not change because capacity and billing remain at the plan level.",
+				"perChoice": {
+					"b": "This sets the limit on the wrong app. With per-app scaling the cap applies only to the app you name, so capping Storefront-Web leaves Nightly-Batch free to use any of the plan's three instances and the nightly job would still squeeze the other apps; it also throttles Storefront-Web, whose production and staging slots already compete for the same instances.",
+					"c": "Autoscale rules act on the plan, and because all apps in a plan share the same compute, scaling a plan - manually or through autoscale rules - affects every app on it. Such a rule therefore cannot single out the batch job, it does not cap that job at one instance, and scaling out adds VM instances that are billed.",
+					"d": "The plan's instance count is shared by all apps in the plan, so cutting it from three to one removes capacity from Storefront-Web and Orders-Api as well and does not isolate the batch job. Only an app-level cap protects the other apps while the plan keeps its configured capacity."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-plan-manage"
+				}
+			],
+			"subtopics": [
+				"per-app-scaling",
+				"app-service-plan-scaling",
+				"shared-plan-compute"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5STZ43C9RP1KAVGQA20JM6B",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an App Service plan shown in the exhibit. The last web app hosted on it was deleted yesterday, but the plan still appears on the monthly invoice. Your team wants to keep the plan in place so a replacement app can be added next quarter without creating it again, and you need the ongoing charges for it to stop now. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"App Service plan",
+							"plan-checkout"
+						],
+						[
+							"Resource group",
+							"rg-commerce"
+						],
+						[
+							"Operating system",
+							"Linux"
+						],
+						[
+							"Region",
+							"UK South"
+						],
+						[
+							"Pricing tier",
+							"Standard (S1)"
+						],
+						[
+							"Instance count",
+							"2"
+						],
+						[
+							"Apps hosted",
+							"0"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Change the plan's pricing tier to Free."
+					},
+					{
+						"id": "b",
+						"text": "Change the plan's pricing tier to Basic and keep the current instance count."
+					},
+					{
+						"id": "c",
+						"text": "Reduce the plan's instance count to one and keep the current pricing tier."
+					},
+					{
+						"id": "d",
+						"text": "Delete the plan now and create a replacement when the next app is needed."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A plan that has no apps still incurs charges because it keeps reserving its configured VM instances, which is why plan-checkout is still billed after its last app was removed. To retain the plan for future apps without ongoing charges, move it to the Free tier; deleting the last app normally removes the plan, so changing the tier is the way to keep it without paying.",
+				"perChoice": {
+					"b": "Basic is a dedicated-compute tier that is billed per VM instance, so the plan would continue to generate charges while it keeps its current instance count. It also does not satisfy the requirement to eliminate the ongoing cost.",
+					"c": "Keeping the plan on a dedicated pricing tier means it keeps reserving and billing for its instances. Cutting the count from two to one only reduces the amount charged; it does not remove the charge while the plan stays on that tier.",
+					"d": "Deleting the plan would end the charges, but it breaks the requirement to keep the plan available for the replacement app next quarter. The plan can be retained without charges by moving it to the Free tier instead of deleting it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-plan-manage"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans"
+				}
+			],
+			"subtopics": [
+				"app-service-plan-billing",
+				"pricing-tier-change"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SV1ZX4Q7P4MJQHNWXV0JX9",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You are onboarding the NorthwindWeb app, which runs on .NET Framework 4.8, to the Northwind subscription. The portal refuses to create the App Service plan for it with the settings shown in the exhibit, so the app cannot be published. You need the plan created with the same region, operating system and pricing tier, and you need the app live today. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"App to publish",
+							"NorthwindWeb (.NET Framework 4.8)"
+						],
+						[
+							"Resource group",
+							"rg-web-prod"
+						],
+						[
+							"Region",
+							"East US"
+						],
+						[
+							"Operating system",
+							"Windows"
+						],
+						[
+							"Pricing tier",
+							"P0v3"
+						],
+						[
+							"Creation result",
+							"Failed"
+						],
+						[
+							"Portal error",
+							"The pricing tier is not allowed in this resource group"
+						],
+						[
+							"Portal error detail",
+							"P0v3 workers are not available in resource group rg-web-prod"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Create the plan in a new resource group with the same region, operating system and pricing tier, and then create the web app on that plan."
+					},
+					{
+						"id": "b",
+						"text": "Create the plan in rg-web-prod with the Linux operating system instead of Windows, then create the web app on that plan."
+					},
+					{
+						"id": "c",
+						"text": "Create the plan in rg-web-prod with the same pricing tier and retry the creation until worker capacity becomes available."
+					},
+					{
+						"id": "d",
+						"text": "Change the region of a plan that already exists in rg-web-prod to a location where the P0v3 pricing tier is sold, then create the web app on that plan."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Creating a plan in an existing resource group can fail with errors such as \"The pricing tier is not allowed in this resource group\" or \"<SKU> workers are not available in resource group <RESOURCE_GROUP_NAME>\" because of mismatches involving the tier, region, operating system, availability zone, or the Function apps and web apps already in that group. The documented remedy is to create the plan in a new resource group. Doing so keeps the required East US / Windows / P0v3 configuration intact, satisfies the workers-not-available condition for rg-web-prod, and lets the app be deployed immediately.",
+				"perChoice": {
+					"b": "NorthwindWeb is a .NET Framework 4.8 app that has to run on Windows, so a Linux plan cannot host it. The documented remedy for these resource-group creation errors is to create the plan in a different resource group, not to change the operating system of the request.",
+					"c": "Repeating the identical request in rg-web-prod reproduces the same tier, region, operating system and SKU availability mismatch that produced the errors. The documentation provides no retry-until-capacity behaviour for the same resource group; the documented remedy is to create the plan in a different resource group.",
+					"d": "A plan's region is fixed at creation and cannot be changed afterwards, so an existing plan in rg-web-prod cannot be shifted to a location where the tier is sold. Apps are relocated to another region with Clone App, and the documented remedy for the creation errors shown is to create the plan in a different resource group."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-plan-manage"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans"
+				}
+			],
+			"subtopics": [
+				"app-service-plan-creation",
+				"pricing-tier-availability"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SV5XT6FZ9CQJE0QQ038D7C",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You run the ShopFront web app on the App Service plan shown in the exhibit. The plan had three instances, and when you asked for ten instances during a sale the request was trimmed and the plan ended up running seven, so the app is still short of the capacity you need. You need the plan to reach the full ten instances instead of settling at a lower number, and you want the same behaviour available for future scale-outs on this plan. Which action should you take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "App Service plan : plan-shop-prod\nResource group   : rg-shop\nOperating system : Linux\nRegion           : North Europe\nPricing tier     : S1\nInstance count   : 3\nPer-app scaling  : Disabled\n\nLast scale-out request (12 October)\n  Instances requested : 10\n  Instances running   : 7\n"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Run `az appservice plan update -g rg-shop -n plan-shop-prod --async-scaling-enabled true --number-of-workers 10`."
+					},
+					{
+						"id": "b",
+						"text": "Run `az appservice plan update -g rg-shop -n plan-shop-prod --sku S3 --number-of-workers 10` so the larger instances fit the request."
+					},
+					{
+						"id": "c",
+						"text": "Run `az appservice plan update -g rg-shop -n plan-shop-prod --per-app-scaling-enabled true --number-of-workers 10` so each app can be held to a subset of the instances."
+					},
+					{
+						"id": "d",
+						"text": "Run `az appservice plan update -g rg-shop -n plan-shop-prod --async-scaling-enabled true --number-of-workers 0` to release the instances and start again."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Async scaling lets you request a target instance count and have the platform work towards it instead of retrying the request with a lower count, which is exactly the trimmed scale-out in the exhibit (ten requested, seven running). It is supported on all Basic, Standard and Premium pricing plans, so this plan's S1 (Standard) tier qualifies, and it can be switched on at creation or during a scale-out. Enabling it with --async-scaling-enabled true and passing --number-of-workers 10 asks the platform to work towards the full ten instances rather than accept a lower number, and the setting stays in place for later scale-outs.",
+				"perChoice": {
+					"b": "Resizing the instances does not change how a scale-out request is fulfilled: the request is still trimmed and retried with a lower count. During an async scale up or down to another SKU no other plan property can be changed, so a larger SKU is not the way to reach the full count.",
+					"c": "Per-app scaling only lets an app or deployment slot be capped at a subset of the plan's instances; capacity and billing stay at plan level, and it does not change how the platform satisfies a scale-out request for the plan itself, so the shortfall would remain.",
+					"d": "Setting the target worker count to 0 explicitly cancels an in-progress async operation. With no operation running it does not scale the plan out to ten instances, so the app would stay short of capacity."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-plan-manage"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans"
+				}
+			],
+			"subtopics": [
+				"async-scaling",
+				"scale-out",
+				"app-service-plan"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SV8QBQFP3NJYFNKKB0MJ6J",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have the web app Orders running on the plan plan-web-a, and the plan plan-web-b holds the spare instances your team wants Orders to have. Orders must keep its current hostname and URL, must stay a Windows app in its current region, and the change has to be completed without interrupting live traffic. The current configuration is listed in the exhibit. Which sequence of actions should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Web app",
+							"Orders"
+						],
+						[
+							"Current plan",
+							"plan-web-a"
+						],
+						[
+							"Current plan resource group",
+							"rg-contoso-web"
+						],
+						[
+							"Current plan region",
+							"East US"
+						],
+						[
+							"Current plan operating system",
+							"Windows"
+						],
+						[
+							"Current plan pricing tier",
+							"P1v3"
+						],
+						[
+							"Current plan instance count",
+							"1"
+						],
+						[
+							"Virtual network integration on the app",
+							"Enabled"
+						],
+						[
+							"Target plan",
+							"plan-web-b"
+						],
+						[
+							"Target plan resource group",
+							"rg-contoso-web"
+						],
+						[
+							"Target plan region",
+							"East US"
+						],
+						[
+							"Target plan operating system",
+							"Windows"
+						],
+						[
+							"Target plan pricing tier",
+							"P2v3"
+						],
+						[
+							"Target plan instance count",
+							"4"
+						],
+						[
+							"Apps currently on target plan",
+							"2"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Disable virtual network integration on Orders, then select Change plan on the App Service plan page to move Orders to plan-web-b."
+					},
+					{
+						"id": "b",
+						"text": "Use Clone App in Development Tools to copy Orders into plan-web-b, then delete the original app on plan-web-a."
+					},
+					{
+						"id": "c",
+						"text": "Disable virtual network integration, move plan-web-b into a new resource group, then change Orders through the App Service plan properties so it runs on plan-web-b."
+					},
+					{
+						"id": "d",
+						"text": "Change Orders from Windows to Linux, disable virtual network integration, then move Orders to plan-web-b."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "plan-web-a and plan-web-b are in the same resource group (rg-contoso-web), the same region (East US) and use the same operating system (Windows), so both plans belong to the same webspace and the app can be moved between them. The portal path is App services > the app > App Service plan > Change plan > Save, and any virtual network integration configured on the app must be disabled before the plan change. This relocates the existing app, so its hostname and URL are preserved and no downtime or new app is needed.",
+				"perChoice": {
+					"b": "Clone App creates a separate new app with its own name and URL in the target plan; it is the route for relocating an app to a different region, because a plan's region cannot be changed. It does not move the existing Orders app, so the current hostname and URL would not be kept and the original app on plan-web-a would still have to be removed as a separate step.",
+					"c": "Each plan is deployed into an internal deployment unit called a webspace, and plans created with the same resource group, region and operating system land in the same webspace; plans cannot change webspaces after creation. Relocating plan-web-b to a different resource group therefore breaks the requirement that the source and target plans share a resource group, and the two plans would end up in different webspaces, so Orders could not be moved to plan-web-b.",
+					"d": "The source and target plans must have the same operating system type, so converting an app from Windows to Linux while changing its plan is not supported. It also contradicts the requirement that Orders remain a Windows app in its current region."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-plan-manage"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans"
+				}
+			],
+			"subtopics": [
+				"move-app-between-plans",
+				"plan-change-constraints",
+				"webspace"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SVD3N0E21KF01WS0QPPKWB",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an App Service Environment named ase-west in the resource group rg-platform, and its rollout has not completed yet, as listed in the exhibit. You need a new App Service plan that hosts the PortalWeb app inside that environment, running on Windows with the Standard (S1) tier, and you need the plan created today. Which action should you take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "App Service Environment : ase-west\nResource group          : rg-platform\nProvisioning state      : InProgress\nVirtual network         : ase-west-vnet\nDeployment started      : Today 09:15 UTC\nTarget app              : PortalWeb (Windows)\nRequired pricing tier   : Standard (S1)\nOperating system        : Windows"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Create the plan now with the Standard (S1) tier and select ase-west in the Region list; the plan attaches to the environment once its deployment finishes."
+					},
+					{
+						"id": "b",
+						"text": "Wait until ase-west finishes deploying, then create the plan with the Standard (S1) tier and select ase-west in the Region list."
+					},
+					{
+						"id": "c",
+						"text": "Create the plan now in the West Europe region with the Standard (S1) tier, add PortalWeb to it, and relocate the plan into ase-west after the environment is deployed."
+					},
+					{
+						"id": "d",
+						"text": "Create the plan now with the Basic (B1) tier in a new resource group, then change the pricing tier to Standard (S1) once ase-west has finished deploying."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "A plan is placed inside an App Service Environment by creating the environment first, waiting for its deployment to complete, and then selecting that environment in the Region list while creating the plan. Because ase-west is still in progress, the only way to end up with a plan that sits inside ase-west today is to let the environment finish deploying and then create the plan with ase-west selected in the Region list. A plan's region and its environment placement are fixed once it is created, so no later change can put it into an environment that was not selected at creation time.",
+				"perChoice": {
+					"a": "The environment has to be fully deployed before a plan is created inside it; choosing ase-west in the Region list while its deployment is still running does not put the plan in the environment, so this attempt fails or leaves the plan outside it.",
+					"c": "A plan's region and environment placement are fixed at creation, so a plan created in an ordinary region such as West Europe cannot afterwards be relocated into ase-west; it has to be created with the environment selected in the Region list once that environment is deployed.",
+					"d": "Changing a plan's pricing tier does not relocate the plan. A plan created outside ase-west stays outside it, so changing the tier after the environment is deployed still leaves PortalWeb short of the requirement that the plan sit inside ase-west."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-plan-manage"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans"
+				}
+			],
+			"subtopics": [
+				"app-service-plan",
+				"app-service-environment"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SVK035DEFZCT645ZJAKWQ4",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have five web apps in the Fabrikam subscription that all need hosting today, and each one has a different constraint on the compute it is allowed to run on, as listed in the exhibit. You need every app placed on the App Service model that satisfies its constraint. Drag each option to the app it belongs to.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Application",
+						"Operating system",
+						"Region",
+						"Constraint on where the app may run"
+					],
+					"rows": [
+						[
+							"FabrikamSandbox",
+							"Windows",
+							"East US",
+							"A demo used only inside the company; it must never generate a compute charge and will never need more capacity"
+						],
+						[
+							"AdventureWorksTool",
+							"Linux",
+							"West Europe",
+							"Runs on the same Azure VM as apps belonging to other customers, is charged for the CPU quota it uses, and must not scale out"
+						],
+						[
+							"ContosoStorefront",
+							"Linux",
+							"West Europe",
+							"Its Azure VMs are used only by the apps in this plan and each of those VMs is charged separately; it does not need a virtual network of its own"
+						],
+						[
+							"NorthwindPayments",
+							"Linux",
+							"North Europe",
+							"Runs on VMs inside a virtual network set up for the customer, with no other customer's workloads on the same infrastructure"
+						],
+						[
+							"LegacyWinApp",
+							"Windows",
+							"East US",
+							"Needs repeatable OS and middleware setup scripts and mountable storage such as Azure Files with UNC paths"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Free (F1)"
+					},
+					{
+						"id": "i2",
+						"text": "Shared (D1)"
+					},
+					{
+						"id": "i3",
+						"text": "Basic through PremiumV4"
+					},
+					{
+						"id": "i4",
+						"text": "IsolatedV2 (I1)"
+					},
+					{
+						"id": "i5",
+						"text": "Managed Instance"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "FabrikamSandbox"
+					},
+					{
+						"id": "s2",
+						"label": "AdventureWorksTool"
+					},
+					{
+						"id": "s3",
+						"label": "ContosoStorefront"
+					},
+					{
+						"id": "s4",
+						"label": "NorthwindPayments"
+					},
+					{
+						"id": "s5",
+						"label": "LegacyWinApp"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "Each constraint in the exhibit picks out exactly one hosting model. FabrikamSandbox must cost nothing and never scale out, which is the Free tier running on a shared VM with CPU minutes only. AdventureWorksTool sits on the same Azure VM as apps of other customers, is billed for the CPU quota it consumes and cannot scale out, which is the Shared tier. ContosoStorefront's VMs are used only by apps inside its own plan and each VM is billed separately, which is the dedicated-compute group from Basic through PremiumV4. NorthwindPayments needs VMs inside a virtual network set up for the customer with no other customer's workloads present, which is IsolatedV2, adding network isolation on top of compute isolation. LegacyWinApp needs repeatable OS and middleware setup scripts plus mountable storage such as Azure Files and UNC paths on a Windows-only plan, which is the Managed Instance hosting option.",
+				"perChoice": {
+					"i1": "FabrikamSandbox: the demo must never generate a compute charge and will never need more capacity, and the Free tier gives CPU minutes on a shared VM at no cost with no scale-out.",
+					"i2": "AdventureWorksTool: apps on this tier run on the same Azure VM as apps belonging to other customers, each with a CPU quota that the app is charged for, and they cannot scale out.",
+					"i3": "ContosoStorefront: every tier in this range runs apps on Azure VMs dedicated to that plan, where only apps inside the same plan use those VMs, and billing is per VM.",
+					"i4": "NorthwindPayments: this tier runs apps on dedicated VMs attached to a dedicated Azure virtual network, adding network isolation on top of compute isolation so no other customer's workload shares the infrastructure.",
+					"i5": "LegacyWinApp: this plan-scoped option targets Windows web apps and adds PowerShell scripts for repeatable OS and middleware setup, mountable storage such as Azure Files, UNC paths and a local temporary disk, and it is limited to Windows and to the Pv4 and Pmv4 SKUs."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-plan-manage"
+				}
+			],
+			"subtopics": [
+				"pricing-tiers",
+				"compute-isolation",
+				"managed-instance"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SVPTW2X00CVY6QMZ3X0W1A",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have four web apps that must be hosted today on the four existing App Service plans listed in the exhibit, and you are not permitted to create any additional plan. Each app carries one requirement that the plan hosting it has to satisfy. Drag each app to the plan it should be placed on.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Plan",
+						"Region",
+						"Operating system",
+						"Pricing tier"
+					],
+					"rows": [
+						[
+							"Plan Alpha",
+							"East US",
+							"Windows",
+							"Free"
+						],
+						[
+							"Plan Beta",
+							"East US",
+							"Linux",
+							"Basic"
+						],
+						[
+							"Plan Gamma",
+							"West Europe",
+							"Windows",
+							"PremiumV3"
+						],
+						[
+							"Plan Delta",
+							"East US",
+							"Windows",
+							"IsolatedV2"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "TailspinSupport - a proof of concept the team wants to host at no monthly charge; sharing its servers with other tenants' apps is acceptable, and it will never need more than one instance."
+					},
+					{
+						"id": "i2",
+						"text": "NorthwindTools - a Linux app serving East US users; it needs compute reserved for the company instead of shared infrastructure, and it should be able to run several instances."
+					},
+					{
+						"id": "i3",
+						"text": "ContosoDocs - a Windows app serving West Europe users; it needs compute reserved for the company and the option to add instances later."
+					},
+					{
+						"id": "i4",
+						"text": "FabrikamVault - a Windows app serving East US users; the security team requires that no other customer shares its servers and that its compute sits in a virtual network dedicated to the company."
+					}
+				],
+				"slots": [
+					{
+						"id": "alpha",
+						"label": "Plan Alpha"
+					},
+					{
+						"id": "beta",
+						"label": "Plan Beta"
+					},
+					{
+						"id": "gamma",
+						"label": "Plan Gamma"
+					},
+					{
+						"id": "delta",
+						"label": "Plan Delta"
+					}
+				]
+			},
+			"key": {
+				"alpha": "i1",
+				"beta": "i2",
+				"gamma": "i3",
+				"delta": "i4"
+			},
+			"explanation": {
+				"correct": "Each app lands on the one plan that satisfies its requirement. TailspinSupport goes to Plan Alpha: Free is the only tier in the list that costs nothing, its apps run on the same VM as other customers' apps, and Free and Shared tiers never scale out, which matches the app's constraints. NorthwindTools goes to Plan Beta: it is the only Linux plan in the list, and Basic is a dedicated tier whose VMs are used only by the apps in that plan, so several instances are possible. ContosoDocs goes to Plan Gamma: it is the only plan located in West Europe, where apps run, and PremiumV3 is a dedicated tier that can be scaled out. FabrikamVault goes to Plan Delta: IsolatedV2 is the only option that isolates an app from other customers at both the network and compute level, running it on dedicated VMs attached to a dedicated Azure virtual network.",
+				"perChoice": {
+					"i1": "Plan Alpha (Free tier). This is the only tier that satisfies hosting at no monthly charge; its apps share a VM with other customers' apps, and Free and Shared apps cannot scale out, which fits an app that never needs more than one instance. Plans Beta, Gamma and Delta are paid dedicated tiers, so they fail the cost requirement.",
+					"i2": "Plan Beta. It is the only Linux plan in the list and it is located in East US, and Basic is a dedicated tier (VMs used only by the apps in that plan) that supports running several instances. Plan Alpha shares a VM with other tenants and cannot scale out, Plan Gamma is in the wrong region, and Plan Delta's isolation model is not needed here.",
+					"i3": "Plan Gamma. An app runs in the region of the plan that hosts it, and a plan's region cannot be changed, so a West Europe app must go on the only West Europe plan; PremiumV3 is a dedicated tier that can be scaled out. Plan Alpha shares a VM with other tenants and cannot scale out, Plan Beta runs Linux, and Plan Delta is in East US.",
+					"i4": "Plan Delta. IsolatedV2 is the only tier that adds network isolation on top of compute isolation, placing apps on dedicated VMs attached to a dedicated virtual network, which satisfies both the requirement that no other customer shares its servers and the requirement for a company-dedicated virtual network. Plan Alpha shares a VM with other customers' apps, and Plans Beta and Gamma are dedicated to the plan but do not provide the dedicated virtual network."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-plan-manage"
+				}
+			],
+			"subtopics": [
+				"pricing-tiers",
+				"compute-isolation-models",
+				"plan-region-and-os"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SVT1G469GSMMEQB2GWAP8X",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are preparing the monthly cost forecast for the Contoso subscription, and the four App Service plans in the exhibit each bill for their usage in a different way. Match each billing description to the plan it applies to.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Plan",
+						"Pricing tier",
+						"Operating system",
+						"Region",
+						"App Service Environment",
+						"App running on it"
+					],
+					"rows": [
+						[
+							"plan-marketing",
+							"Shared (D1)",
+							"Windows",
+							"West Europe",
+							"None",
+							"Catalog site"
+						],
+						[
+							"plan-web",
+							"Basic (B1)",
+							"Windows",
+							"West Europe",
+							"None",
+							"Customer portal"
+						],
+						[
+							"plan-erp",
+							"Isolated (I1v1)",
+							"Linux",
+							"East US",
+							"ase-prod",
+							"Finance system"
+						],
+						[
+							"plan-sandbox",
+							"Free (F1)",
+							"Linux",
+							"West Europe",
+							"None",
+							"Trial storefront"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "item-app-quota",
+						"text": "Each app is charged for the CPU quota it receives"
+					},
+					{
+						"id": "item-instance",
+						"text": "Each virtual machine instance is charged"
+					},
+					{
+						"id": "item-worker",
+						"text": "Each worker in the App Service Environment is charged"
+					},
+					{
+						"id": "item-none",
+						"text": "No charge applies to the compute used by apps"
+					}
+				],
+				"slots": [
+					{
+						"id": "slot-marketing",
+						"label": "plan-marketing"
+					},
+					{
+						"id": "slot-web",
+						"label": "plan-web"
+					},
+					{
+						"id": "slot-erp",
+						"label": "plan-erp"
+					},
+					{
+						"id": "slot-sandbox",
+						"label": "plan-sandbox"
+					}
+				]
+			},
+			"key": {
+				"slot-erp": "item-worker",
+				"slot-marketing": "item-app-quota",
+				"slot-sandbox": "item-none",
+				"slot-web": "item-instance"
+			},
+			"explanation": {
+				"correct": "Paid App Service hosting bills in three different ways, and the pricing tier in the exhibit tells you which one applies. The Shared tier (D1) charges each app for the CPU quota it receives, so plan-marketing matches item-app-quota. The dedicated tiers, including Basic (B1), charge each virtual machine instance, so plan-web matches item-instance. The Isolated tier (I1v1) charges each worker in the App Service Environment, so plan-erp matches item-worker. The Free tier (F1) costs nothing for the compute its apps use, so plan-sandbox matches item-none.",
+				"perChoice": {
+					"item-app-quota": "plan-marketing runs on the Shared (D1) tier, where each app is charged for the CPU quota it receives on the shared VM.",
+					"item-instance": "plan-web runs on the Basic (B1) tier, a dedicated-compute tier whose charges are made per virtual machine instance rather than per app.",
+					"item-worker": "plan-erp runs on the Isolated (I1v1) tier in the ase-prod App Service Environment, where each worker is charged.",
+					"item-none": "plan-sandbox runs on the Free (F1) tier, which is free of any charge for the compute its apps use; the other three plans are on paid tiers."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-plan-manage"
+				}
+			],
+			"subtopics": [
+				"app-service-plan-pricing-tiers",
+				"plan-billing-model"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SW65Q456XTESV49YYVNTBT",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have four queued changes for the Contoso App Service estate, as listed in the exhibit. You need to know what Azure will do with each one before the team commits to it. Drag each outcome to the change it belongs to.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"ID",
+						"Queued change",
+						"Current state"
+					],
+					"rows": [
+						[
+							"C1",
+							"Raise plan-shop from Basic (B1) to Standard (S1) so it matches the other production plans in rg-core.",
+							"plan-shop runs in East US on Windows and hosts the Sales, Reports and Billing apps."
+						],
+						[
+							"C2",
+							"Move the Sales app from plan-shop to plan-ops.",
+							"plan-ops is in rg-legacy and runs in East US on Windows with the Standard (S1) tier."
+						],
+						[
+							"C3",
+							"Move the Reports app from plan-shop to plan-eu.",
+							"plan-eu is in rg-core, West Europe, Windows, with the Standard (S1) tier."
+						],
+						[
+							"C4",
+							"Move the Billing app from plan-shop to plan-share.",
+							"plan-share is in rg-core, East US, Windows, and Billing has virtual network integration switched on."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "The update is accepted and can be carried out at any time, and the apps already hosted stay on the plan."
+					},
+					{
+						"id": "i2",
+						"text": "The reassignment is refused: the destination is in another resource group and a different webspace, and an app can only be reassigned between plans in the same webspace."
+					},
+					{
+						"id": "i3",
+						"text": "The reassignment is refused: the destination is in a different geographical location, and a plan's location is fixed after creation, so the app has to be copied into a plan in the new location."
+					},
+					{
+						"id": "i4",
+						"text": "The reassignment is refused until the app's virtual network integration is switched off."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "C1"
+					},
+					{
+						"id": "s2",
+						"label": "C2"
+					},
+					{
+						"id": "s3",
+						"label": "C3"
+					},
+					{
+						"id": "s4",
+						"label": "C4"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "C1 matches i1 because the pricing tier of a plan can be raised or lowered at any time, so plan-shop can move from Basic (B1) to Standard (S1) while its apps remain hosted there. C2 matches i2 because plan-ops sits in rg-legacy rather than rg-core, so it is deployed in a different webspace from plan-shop, and an app can only be moved between plans in the same webspace. C3 matches i3 because a plan's region is fixed after creation and the source and target plans must share the app's region, so Reports has to be copied into a plan in the destination region instead of being moved. C4 matches i4 because any virtual network integration configured on the app must be disabled before the plan change, and Billing still has it switched on.",
+				"perChoice": {
+					"i1": "Belongs to C1: the pricing tier can be changed up or down at any time, so raising plan-shop from Basic (B1) to Standard (S1) is accepted and the hosted apps stay in place.",
+					"i2": "Belongs to C2: plan-ops is in rg-legacy instead of rg-core, so it belongs to a different webspace, and Sales cannot be reassigned to it.",
+					"i3": "Belongs to C3: plan-eu runs in West Europe while plan-shop runs in East US, and a plan's region cannot be changed after creation, so the app has to be copied into a plan in the destination region.",
+					"i4": "Belongs to C4: Billing has virtual network integration switched on, and that configuration must be removed before the app can be assigned to a different plan."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-plan-manage"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans"
+				}
+			],
+			"subtopics": [
+				"plan-change-constraints",
+				"plan-move-constraints",
+				"webspace-constraints"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SWFDMW01FEXDGGYRX0D1CK",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You administer the App Service estate in the Litware subscription, and five jobs on the plans listed in the exhibit have failed or are stuck. For each job, drag the handling that resolves it to the slot with the matching job number.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Job",
+						"Plan",
+						"Resource group",
+						"Pricing tier",
+						"What the team saw"
+					],
+					"rows": [
+						[
+							"1",
+							"plan-portal",
+							"rg-web",
+							"P1v3",
+							"Creating this plan in rg-web is refused, and the portal reports the requested pricing tier isn't allowed in the resource group."
+						],
+						[
+							"2",
+							"plan-shared",
+							"rg-web",
+							"D1",
+							"Lowering the app on this plan to a cheaper level is rejected, and the portal says the certificate setup on the site isn't accepted in the cheaper compute mode."
+						],
+						[
+							"3",
+							"plan-labs",
+							"rg-batch",
+							"S1",
+							"The app on this plan cannot be transferred to plan-legacy in rg-apps, which also runs Windows in North Europe."
+						],
+						[
+							"4",
+							"plan-portal",
+							"rg-web",
+							"P1v3",
+							"While a scale-out is still being applied, a request to set a different number of instances on the plan is ignored."
+						],
+						[
+							"5",
+							"plan-ase",
+							"rg-isolated",
+							"I1v1",
+							"The switch for requesting scaling in the background cannot be turned off for a plan hosted in an App Service Environment."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Create the plan inside a fresh resource group instead."
+					},
+					{
+						"id": "i2",
+						"text": "Set the TLS/SSL configuration to Disabled, then retry the update."
+					},
+					{
+						"id": "i3",
+						"text": "Create the destination plan with the same resource group, region and operating system as the current one, then move the workload onto it."
+					},
+					{
+						"id": "i4",
+						"text": "Set the target worker count on the plan; changing it is the only way to cancel a scale request already under way."
+					},
+					{
+						"id": "i5",
+						"text": "Accept the platform behaviour for this plan and expect every scale request to complete on its own rather than at once."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Job 1: plan creation refused"
+					},
+					{
+						"id": "s2",
+						"label": "Job 2: downgrade rejected"
+					},
+					{
+						"id": "s3",
+						"label": "Job 3: relocation blocked"
+					},
+					{
+						"id": "s4",
+						"label": "Job 4: scaling request ignored"
+					},
+					{
+						"id": "s5",
+						"label": "Job 5: scaling switch locked"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "Each job is matched to the handling that the App Service plan rules allow. Job 1 is a tier availability clash inside rg-web, so the plan is created in a fresh resource group. Job 2 is rejected because the site's certificate configuration isn't accepted in the cheaper compute mode, so the TLS/SSL configuration is set to Disabled before retrying. Job 3 is blocked by plan grouping: plans are fixed to an internal deployment unit decided by resource group, region and operating system when they are created and can never be regrouped, so the destination plan must be created with the same resource group, region and operating system as the app's current plan before the app can move. Job 4 happens while an asynchronous scale operation is still running; such an operation is cancelled only by changing the target worker count, and instance count changes that cannot finish synchronously are ignored unless that count also changes. Job 5 cannot be adjusted at all: for plans created inside an App Service Environment the behaviour is fixed and those plans always scale asynchronously.",
+				"perChoice": {
+					"i1": "Job 1. The message about the pricing tier not being allowed in that resource group appears when the tier clashes with the region, operating system, availability zone or app mix already present there. Creating the plan in a fresh resource group avoids the clash, because which tiers you can use depends on the operating system, the region and other factors.",
+					"i2": "Job 2. The rejected update reports that the site's current TLS/SSL configuration is not allowed in the target compute mode, where the only allowed TLS/SSL configuration is Disabled. Turning the site's TLS/SSL configuration off and retrying therefore lets the move to the cheaper tier succeed.",
+					"i3": "Job 3. An app can only move between plans that share the same resource group, geographical region and operating system type, and plans are grouped by resource group, region and operating system at creation and can never change that grouping afterwards. Creating the destination plan with the same resource group, region and operating system as the current plan puts it in the same group, so the app can then be transferred onto it.",
+					"i4": "Job 4. While an asynchronous operation is in flight, only a change to the target worker count cancels it; other property changes, including the SKU, do not cancel it, and instance count changes that cannot complete synchronously are ignored unless the target worker count is also changed. Setting the target worker count is therefore the only handling that stops the request from being discarded.",
+					"i5": "Job 5. For plans created in an App Service Environment this behaviour is not configurable: those plans always scale asynchronously, so the background scaling option cannot be disabled. The handling is to accept that and plan for scale requests to complete on their own instead of at once."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-plan-manage"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans"
+				}
+			],
+			"subtopics": [
+				"app-service-plan-operations",
+				"plan-relocation-constraints",
+				"async-scaling"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SWP7XR2PBPBAZ9EA0G6X4Y",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have the App Service plan plan-retail-prod, which hosts the three Contoso retail web apps listed in the exhibit, and the operations team has logged the five changes that were applied to that plan over the last two quarters. You need to know which property of the plan governs each logged change so that the runbook is accurate. Drag each change to the plan property that governs it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"App hosted on the plan",
+						"Published runtime",
+						"Can the same code also run on Linux?"
+					],
+					"rows": [
+						[
+							"Storefront",
+							".NET Framework 4.8",
+							"No"
+						],
+						[
+							"Catalog",
+							".NET 8",
+							"Yes"
+						],
+						[
+							"Status",
+							"Python 3.11",
+							"Yes"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "The apps published on this plan are Windows apps, and the team was told they cannot be republished for Linux without moving them to a different plan."
+					},
+					{
+						"id": "i2",
+						"text": "A request to move the plan's compute to another Azure geography was declined, and the team was advised to copy the app into a plan in the wanted location instead."
+					},
+					{
+						"id": "i3",
+						"text": "During the December peak the plan was scaled out from three virtual machines to six, and the additional machines took part of the incoming traffic."
+					},
+					{
+						"id": "i4",
+						"text": "Every virtual machine in the plan was changed to a bigger shape so that it could take on more work, without changing how many machines the plan had."
+					},
+					{
+						"id": "i5",
+						"text": "The plan was moved up a service level, which raised what the department pays for each virtual machine and turned on deployment slots and backups."
+					}
+				],
+				"slots": [
+					{
+						"id": "s-os",
+						"label": "Operating system"
+					},
+					{
+						"id": "s-region",
+						"label": "Region"
+					},
+					{
+						"id": "s-count",
+						"label": "Number of VM instances"
+					},
+					{
+						"id": "s-size",
+						"label": "VM instance size"
+					},
+					{
+						"id": "s-tier",
+						"label": "Pricing tier"
+					}
+				]
+			},
+			"key": {
+				"s-os": "i1",
+				"s-region": "i2",
+				"s-count": "i3",
+				"s-size": "i4",
+				"s-tier": "i5"
+			},
+			"explanation": {
+				"correct": "A plan fixes five properties — the operating system, the region, the number of VM instances, the VM instance size and the pricing tier — and each logged change falls to exactly one of them. The apps on this plan are published as Windows apps and cannot be switched to Linux in place, which is governed by the operating system. A plan's region is fixed when the plan is created, so a request to relocate its compute to another geography is refused and the app is copied into a plan in the wanted location instead. Scaling the plan out from three machines to six is a change to the number of VM instances. Re-shaping every virtual machine to a bigger shape without changing the machine count is a change to the VM instance size. Moving the plan up a service level, which raises the amount charged per virtual machine and switches on features such as deployment slots and backups, is a change to the pricing tier.",
+				"perChoice": {
+					"i1": "Belongs with Operating system. The operating system is one of the properties fixed by the plan, and changing an app from Windows to Linux is not supported in place, so the app has to be moved to a plan built for the other operating system.",
+					"i2": "Belongs with Region. A plan's region cannot be changed after creation, so the request to relocate the compute is declined; the documented route for getting the app into another geography is to copy it into a plan there.",
+					"i3": "Belongs with Number of VM instances. Scaling a plan out adds virtual machines to it and every app in the plan then runs across that larger count, because the compute of the plan is shared by all of its apps.",
+					"i4": "Belongs with VM instance size. Changing the shape of each virtual machine changes the size of the instances (small, medium, large) and leaves the number of instances untouched.",
+					"i5": "Belongs with Pricing tier. Moving a plan up or down a level changes its pricing tier, and the tier is what determines the features available (such as deployment slots, backups and autoscaling) and what is charged for the compute."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-plan-manage"
+				}
+			],
+			"subtopics": [
+				"plan-fixed-properties",
+				"pricing-tier",
+				"plan-scaling"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SWT67KH6BJF77N8SFYJ4AM",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have 19 web apps running on the App Service plan plan-marketing-prod in the resource group rg-contoso, and five of those apps each keep one active deployment slot, so those slots compete for the same instances as the apps themselves. Your compliance team has confirmed that no app on this plan may share a virtual machine with apps belonging to other customers, and finance wants the smallest instance size that can carry the whole estate. You need to size the plan today so that every app and every active slot stays on it. Which instance size should the plan use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Plan name",
+							"plan-marketing-prod"
+						],
+						[
+							"Resource group",
+							"rg-contoso"
+						],
+						[
+							"Region",
+							"East US"
+						],
+						[
+							"Operating system",
+							"Windows"
+						],
+						[
+							"Web apps assigned to the plan",
+							"19"
+						],
+						[
+							"Active deployment slots",
+							"5"
+						],
+						[
+							"Virtual machines shared with other customers' apps",
+							"Not permitted"
+						]
+					]
+				},
+				"statement": "You should provision the plan with the {{planSize}} instance size.",
+				"slots": [
+					{
+						"id": "planSize",
+						"options": [
+							{
+								"id": "a",
+								"text": "Basic B1"
+							},
+							{
+								"id": "b",
+								"text": "Basic B2"
+							},
+							{
+								"id": "c",
+								"text": "Basic B3"
+							},
+							{
+								"id": "d",
+								"text": "Shared D1"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"planSize": "c"
+			},
+			"explanation": {
+				"correct": "An active deployment slot is counted as an active app because it competes for resources in the same plan, so this estate needs 19 apps + 5 active slots = 24 active apps on a single plan. The published density guidance caps a plan at 8 apps for B1, 16 apps for B2 and 32 apps for B3, so only Basic B3 (32 apps) covers the whole estate, and it is the smallest size that does. Basic is a dedicated compute tier, so the apps run on virtual machines dedicated to the plan and are not co-located with apps of other customers, satisfying the compliance requirement.",
+				"perChoice": {
+					"planSize:a": "Basic B1 is dedicated compute, but the published maximum for this size is only 8 apps, far below the 24 apps and active slots the estate needs, so the estate cannot stay on one plan at this size.",
+					"planSize:b": "Basic B2 is dedicated compute, but the published maximum for this size is 16 apps, which is still below the 24 apps and active slots the estate needs, so the estate cannot stay on one plan at this size.",
+					"planSize:d": "Shared D1 runs apps on the same virtual machines as other App Service apps, including apps of other customers, so it fails the requirement that no app on the plan share a virtual machine with another customer's apps."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-plan-manage"
+				}
+			],
+			"subtopics": [
+				"plan-sizing",
+				"app-density",
+				"pricing-tiers"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TCGA5BPHAN0YSPXNCZ5GWB",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have one web app hosted on the App Service plan shown in the exhibit. The plan runs a single small instance, and operations reports that this instance's CPU and memory are frequently close to their limits even though the number of incoming requests is low. You need to determine which optional activities on this plan are competing with the web app for the instance's capacity. Which group of activities should you review first?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Plan name",
+							"plan-reporting-prod"
+						],
+						[
+							"Resource group",
+							"rg-contoso"
+						],
+						[
+							"Operating system",
+							"Windows"
+						],
+						[
+							"Location",
+							"West Europe"
+						],
+						[
+							"Pricing tier",
+							"Standard (S1)"
+						],
+						[
+							"Instance size",
+							"S1"
+						],
+						[
+							"Instance count",
+							"1"
+						],
+						[
+							"Apps hosted",
+							"ReportingWeb"
+						]
+					]
+				},
+				"statement": "The optional activities that compete for the plan's instance CPU and memory are {{activities}}.",
+				"slots": [
+					{
+						"id": "activities",
+						"options": [
+							{
+								"id": "a",
+								"text": "Diagnostic logs, backups, and WebJobs"
+							},
+							{
+								"id": "b",
+								"text": "Custom domains, TLS/SSL certificates, and zone redundancy"
+							},
+							{
+								"id": "c",
+								"text": "Autoscale rules, per-app scaling, and the pricing tier"
+							},
+							{
+								"id": "d",
+								"text": "IP-based TLS connections, SNI connections, and domain renewals"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"activities": "a"
+			},
+			"explanation": {
+				"correct": "Enabling diagnostic logging, performing backups, and running WebJobs all use CPU cycles and memory on the plan's VM instances. Because this plan has only one instance and the web app shares it, these activities can take capacity away from the app and explain the reported pressure.",
+				"perChoice": {
+					"activities:b": "Custom domains, TLS/SSL certificates, and zone redundancy are configuration or purchase items; none of them runs as a workload that uses CPU cycles and memory on the plan's instances.",
+					"activities:c": "Autoscale rules, per-app scaling, and the pricing tier control how capacity is allocated and how the plan is billed, but they are not activities that use CPU cycles and memory on the instances themselves.",
+					"activities:d": "IP-based TLS connections carry an hourly charge while SNI connections are free, and renewing an App Service domain is a purchase cost; none of these consumes the instance's CPU cycles and memory."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-plan-manage"
+				}
+			],
+			"subtopics": [
+				"plan-resource-contention",
+				"instance-cpu-memory"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TCKYNX2T02JAGAHWDJJJG0",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a new web app named PartnerPortal that must go live today, and nothing is hosting it yet. Its configuration and the constraints the business placed on it are listed in the exhibit. You need to create the plan that will run this app, and the plan has to be finished today. Which pricing tier should you select for the plan?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"App name",
+							"PartnerPortal"
+						],
+						[
+							"Runtime",
+							"Linux container image"
+						],
+						[
+							"Required region",
+							"East US"
+						],
+						[
+							"App Service Environment in East US",
+							"ase-east, deployment state Succeeded"
+						],
+						[
+							"Business constraint",
+							"No app owned by another organisation may be hosted on the same virtual machine as this app"
+						],
+						[
+							"Business constraint",
+							"The app must be reachable only over private addressing from inside the company's virtual network, with no public endpoint"
+						],
+						[
+							"Plan to create",
+							"One new plan, and it will host this app only"
+						]
+					]
+				},
+				"statement": "You should select the {{tier}} pricing tier when you create the plan.",
+				"slots": [
+					{
+						"id": "tier",
+						"options": [
+							{
+								"id": "a",
+								"text": "IsolatedV2"
+							},
+							{
+								"id": "b",
+								"text": "PremiumV3"
+							},
+							{
+								"id": "c",
+								"text": "Shared"
+							},
+							{
+								"id": "d",
+								"text": "Managed Instance"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"tier": "a"
+			},
+			"explanation": {
+				"correct": "IsolatedV2 belongs to the group whose apps run on dedicated virtual machines attached to a dedicated Azure virtual network, adding network separation on top of compute separation. That matches both constraints in the exhibit: the app never shares a virtual machine with apps belonging to other organisations, and it is reachable only over private addressing inside the company's own network. The exhibit also shows a fully deployed App Service Environment in East US, so a plan can be created there today.",
+				"perChoice": {
+					"tier:b": "PremiumV3 is a dedicated-compute tier: its apps run on virtual machines dedicated to that plan, with only apps inside the same plan sharing them. It offers no dedicated virtual network for the app, so the requirement that the app be reachable only over private addressing with no public endpoint is not met.",
+					"tier:c": "Shared is part of the shared-compute group, where apps run on the same Azure virtual machine as other App Service apps, including apps belonging to other customers, and each app is given only a CPU quota. It therefore fails the requirement that no other organisation's app run on the same virtual machine, and it cannot scale out.",
+					"tier:d": "Managed Instance is a plan-scoped option for Windows web apps that need operating system customisation, optional private networking and legacy Windows components. It is limited to the Pv4 and Pmv4 SKUs in select regions and supports neither Linux nor containers, so it cannot host this app."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-plan-manage"
+				}
+			],
+			"subtopics": [
+				"pricing-tier-selection",
+				"plan-isolation",
+				"app-service-plan-creation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TCRD5PP5AE2Y5NZPPXZB5H",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have the web app Storefront running on the App Service plan plan-storefront in the resource group rg-retail, and it serves all of its traffic over HTTPS. Your team wants the plan dropped to the Free tier today, because the app is being replaced next quarter and nobody wants to keep paying for compute. The portal refused the tier change, as shown in the exhibit. You need the plan on the Free tier today, and Storefront must still be reachable for the staff who test it. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Plan: plan-storefront (rg-retail)\nCurrent plan tier: Shared (D1)\nTarget plan tier: Free (F1)\nOperating system: Windows\nRegion: East US\nInstances: 2\nApp: storefront-contoso\nApp TLS/SSL configuration: SNI based SSL enabled\nCustom domain: www.contoso-storefront.com\n\nOutcome of the tier change attempt:\n  Tier change failed - the site's TLS/SSL configuration 'SNI based SSL enabled' is not permitted\n  in the target compute mode."
+				},
+				"statement": "To move the plan to the Free tier today and keep Storefront reachable, you should {{change}}.",
+				"slots": [
+					{
+						"id": "change",
+						"options": [
+							{
+								"id": "opt1",
+								"text": "Set the app's TLS/SSL configuration to Disabled, then change the plan's pricing tier to Free (F1)"
+							},
+							{
+								"id": "opt2",
+								"text": "Set the app's TLS/SSL configuration to SNI based, then change the plan's pricing tier to Free (F1)"
+							},
+							{
+								"id": "opt3",
+								"text": "Set the app's minimum TLS version to TLS 1.3, then change the plan's pricing tier to Free (F1)"
+							},
+							{
+								"id": "opt4",
+								"text": "Set the app's client certificate setting to Required, then change the plan's pricing tier to Free (F1)"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"change": "opt1"
+			},
+			"explanation": {
+				"correct": "The Free (F1) compute mode only accepts a TLS/SSL configuration of 'Disabled', so the plan's pricing tier cannot be lowered from Shared (D1) to Free (F1) while the site still has 'SNI based SSL enabled'. Turning the app's TLS/SSL configuration to Disabled first lets the tier change complete; the app stays deployed and reachable on the Free tier, it simply no longer terminates HTTPS for the staff who test it.",
+				"perChoice": {
+					"change:opt2": "SNI based is the setting that is already in place on Storefront, and the target compute mode does not accept it, so the tier change would be refused again with the same error.",
+					"change:opt3": "The minimum TLS version setting only governs which TLS versions are accepted once TLS is enabled; it does not change the site's TLS/SSL configuration or the compute mode the app runs in, so the tier change would still be refused.",
+					"change:opt4": "Requiring client certificates controls how clients authenticate to the app; it does not change the site's TLS/SSL configuration in the target compute mode, so the tier change would still be refused."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-plan-manage"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans"
+				}
+			],
+			"subtopics": [
+				"plan-pricing-tier",
+				"tls-ssl-configuration",
+				"tier-downgrade"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TCTY09K3T07D1C5QZ0C2ET",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You run the FleetView web app on the App Service plan plan-fleet-prod in the resource group rg-fleet, which is hosted in the App Service Environment ase-prod. Last night an approved request to grow the plan from five instances to twelve was submitted, and the environment is still carrying that request out in the background, so the plan is still running five instances with the request open. The business has since withdrawn it: the plan has to stay on five instances, the app must keep serving traffic without being rebuilt, and the outstanding request has to be abandoned. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Plan name",
+							"plan-fleet-prod"
+						],
+						[
+							"Resource group",
+							"rg-fleet"
+						],
+						[
+							"App Service Environment",
+							"ase-prod"
+						],
+						[
+							"Operating system",
+							"Linux"
+						],
+						[
+							"Pricing tier",
+							"Standard (S1)"
+						],
+						[
+							"Instances running",
+							"5"
+						],
+						[
+							"Open request",
+							"Scale out to 12 instances, submitted last night, still processing"
+						]
+					]
+				},
+				"statement": "The action you should take is to {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "run az appservice plan update -g rg-fleet -n plan-fleet-prod --async-scaling-enabled true --number-of-workers 0"
+							},
+							{
+								"id": "b",
+								"text": "run az appservice plan update -g rg-fleet -n plan-fleet-prod --async-scaling-enabled false --number-of-workers 5"
+							},
+							{
+								"id": "c",
+								"text": "run az appservice plan update -g rg-fleet -n plan-fleet-prod --sku S1 --number-of-workers 5"
+							},
+							{
+								"id": "d",
+								"text": "run az appservice plan delete -g rg-fleet -n plan-fleet-prod"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "A plan's in-flight background scale operation is abandoned only by changing TargetWorkerCount, and setting that value to 0 cancels the operation. Issuing the plan update with --async-scaling-enabled true --number-of-workers 0 does exactly that: the plan stays at five instances, the app keeps serving, and the open request to reach twelve instances is dropped without rebuilding anything. Every other property change made while the operation runs, including a SKU change or flipping the async scaling switch, is ignored and does not stop it, and inside an App Service Environment plans always scale in the background because that behaviour cannot be switched off.",
+				"perChoice": {
+					"action:b": "Switching the async scaling option off does not stop a request that is already running, and in an App Service Environment it cannot be switched off at all because plans there always scale in the background. Passing the same instance count the plan already has does not change the target worker count either, so the open request is left untouched.",
+					"action:c": "Changing the SKU is one of the property changes that leaves a running background scale operation in place, and it does not change the target worker count, so the pending request to reach twelve instances is not abandoned and the plan still moves towards it.",
+					"action:d": "Deleting the plan removes the hosted web app with it, so FleetView stops serving and has to be recreated and redeployed. The open request can be abandoned without removing the plan or the app."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-plan-manage"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans"
+				}
+			],
+			"subtopics": [
+				"app-service-plan",
+				"async-scaling",
+				"app-service-environment"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TD2KYFHY6ZEV3YN5AAFZSN",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You created the App Service plan plan-contoso-prod last month for the ContosoPartners web app, and the plan now hosts ContosoReports as well, as the exhibit shows. ContosoPartners opens to real customers next week, and the estate team wants to know which parts of the plan they can still adjust in place afterwards, because the setup will not stay as it is today. Which of the plan's settings can still be revised after the plan has been created?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Plan setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Plan name",
+							"plan-contoso-prod"
+						],
+						[
+							"Subscription",
+							"Contoso-Prod"
+						],
+						[
+							"Resource group",
+							"rg-contoso-apps"
+						],
+						[
+							"Operating system",
+							"Windows"
+						],
+						[
+							"Region",
+							"East US"
+						],
+						[
+							"SKU",
+							"Standard (S1)"
+						],
+						[
+							"Instance count",
+							"3"
+						],
+						[
+							"Zone redundancy",
+							"Disabled"
+						],
+						[
+							"Apps hosted",
+							"ContosoPartners, ContosoReports"
+						]
+					]
+				},
+				"statement": "You can still revise {{slot1}} on an existing plan, and the SKU shown in the exhibit belongs to {{slot2}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "the pricing tier"
+							},
+							{
+								"id": "b",
+								"text": "the region"
+							},
+							{
+								"id": "c",
+								"text": "the webspace"
+							},
+							{
+								"id": "d",
+								"text": "the operating system"
+							}
+						]
+					},
+					{
+						"id": "slot2",
+						"options": [
+							{
+								"id": "a",
+								"text": "the dedicated compute group"
+							},
+							{
+								"id": "b",
+								"text": "the shared compute group"
+							},
+							{
+								"id": "c",
+								"text": "the isolated compute group"
+							},
+							{
+								"id": "d",
+								"text": "the managed instance group"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a",
+				"slot2": "a"
+			},
+			"explanation": {
+				"correct": "A plan's pricing tier can be changed up or down at any time, so the estate team can revise it in place after the plan exists, without deleting the plan or the apps it hosts, and can start with one configuration and raise or lower it later as needs change. The SKU in the exhibit, Standard (S1), sits in the dedicated compute group: Basic through PremiumV4 run on Azure VMs that belong to that plan, so only apps inside the same plan share those VMs, and every app later added to the plan runs on that compute.",
+				"perChoice": {
+					"slot1:b": "A plan's region cannot be changed once the plan is created - the plan's compute is created in that region and stays there. An app that has to run somewhere else is copied into a plan in that region instead of being edited in place.",
+					"slot1:c": "Every plan is deployed into an internal deployment unit called a webspace, and a plan cannot change webspaces after creation, so this cannot be revised on an existing plan.",
+					"slot1:d": "The operating system type is one of the properties that define the plan, and apps can only be moved between plans of the same type - a change such as Windows to Linux is not supported - so the OS is not something the team can revise on the plan.",
+					"slot2:b": "The shared compute group covers only the Free and Shared tiers, whose apps run on the same Azure VM as other App Service apps, including other customers' apps, each with a CPU quota. Standard (S1) is not part of that group.",
+					"slot2:c": "The isolated compute group covers IsolatedV2, which runs apps on dedicated VMs attached to a dedicated Azure virtual network, adding network isolation on top of compute isolation. Standard (S1) is not part of that group.",
+					"slot2:d": "Managed Instance is a plan-scoped hosting option for Windows web apps that need OS customisation, private networking or legacy Windows components; it is not one of the three compute groups that tiers fall into, and it is limited to specific SKUs such as Pv4 and Pmv4."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-plan-manage"
+				}
+			],
+			"subtopics": [
+				"plan-properties",
+				"pricing-tiers",
+				"plan-lifecycle"
+			],
+			"reviewed": false
+		}
+	]
+}

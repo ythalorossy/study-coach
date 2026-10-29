@@ -1,0 +1,1829 @@
+{
+	"skill": "storage.files-identity",
+	"questions": [
+		{
+			"id": "q_01M5KB93GTS6VR8PHXJ1K92GCG",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You moved an on-premises file server's team share to Azure Files and turned on identity-based access with on-premises AD DS. The share is \\\\contosofs.file.core.windows.net\\reports, and the finance group must be able to create workbooks there and edit the ones already present. An audit policy forbids changing any ACL that came across with the migrated folder, so your only lever is the storage account's Azure RBAC role assignments. Which share-level role assignment should you apply to the finance group?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Directory service option",
+							"On-premises Active Directory Domain Services (AD DS)"
+						],
+						[
+							"Share-level Azure RBAC role for the finance group",
+							"Storage File Data SMB Share Reader"
+						],
+						[
+							"Effective entry for the finance group in the folder ACL of the migrated \\Reports folder",
+							""
+						],
+						[
+							"Observed result for a finance member creating a workbook",
+							"Access denied"
+						],
+						[
+							"Constraint",
+							"ACLs inherited from the on-premises server cannot be edited"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Storage File Data SMB Share Reader"
+					},
+					{
+						"id": "b",
+						"text": "Storage File Data SMB Share Contributor"
+					},
+					{
+						"id": "c",
+						"text": "Storage File Data SMB Share Elevated Contributor"
+					},
+					{
+						"id": "d",
+						"text": "Storage File Data SMB Share Privileged Contributor"
+					}
+				]
+			},
+			"key": {
+				"optionId": "d"
+			},
+			"explanation": {
+				"correct": "Share-level Azure RBAC and NTFS-style folder ACLs do not stack up for a user: the two intersect and the more restrictive of the two governs. Here the migrated folder's ACL grants the finance group nothing, and the ACLs may not be changed, so the only way to give the group working write access from the share level is Storage File Data SMB Share Privileged Contributor. It delivers the same read/write/delete data access as the regular share contributor role but is not limited by the ACLs already present on files and folders, so it succeeds even where the folder ACL is None.",
+				"perChoice": {
+					"a": "This role maps to read-only access at the share level, so it can never let the finance group create or modify workbooks, regardless of the folder ACL. It is the role the group holds today, which matches the access-denied symptom.",
+					"b": "It grants read, write and delete on the share, but the existing folder ACL still applies and the most restrictive of RBAC and ACL wins. With the folder ACL set to None for the group, members would still be denied.",
+					"c": "Its added value is the permission to change the share ACL, which is the one action you are not allowed to perform here; it does not loosen an ACL that already denies access. Because the finance group's effective folder entry is None, this role would still return access denied."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-configure-file-level-permissions"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-assign-share-level-permissions"
+				}
+			],
+			"subtopics": [
+				"share-level-permissions",
+				"rbac-acl-intersection"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KBBH217Y7DKJYSQSNBSQ7D",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You turned on identity-based access for the shares in storage account contosofs by registering a directory account that represents a NAS appliance, so the appliance can mount \\\\contosofs.file.core.windows.net\\archive without using a storage account key. From a domain-joined Windows server the mount fails right away with error 1396, \"The target account name is incorrect\", and the security log shows KRB_AP_ERR_MODIFIED. You need the appliance to mount the share with its directory identity. Which change to the directory account should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Directory account property",
+						"Current value"
+					],
+					"rows": [
+						[
+							"sAMAccountName",
+							"svc_azurefiles"
+						],
+						[
+							"userPrincipalName",
+							"svc_azurefiles@contoso.local"
+						],
+						[
+							"servicePrincipalName",
+							"cifs/contosofs.file.core.windows.net"
+						],
+						[
+							"Kerberos encryption type",
+							"AES256"
+						],
+						[
+							"Object class",
+							"User (service logon account)"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set userPrincipalName on the service logon account to cifs/contosofs.file.core.windows.net@contoso.local"
+					},
+					{
+						"id": "b",
+						"text": "Set userPrincipalName on the service logon account to cifs/contosofs@contoso.local"
+					},
+					{
+						"id": "c",
+						"text": "Set servicePrincipalName on the service logon account to svc_azurefiles@contoso.local"
+					},
+					{
+						"id": "d",
+						"text": "Set sAMAccountName on the service logon account to cifs/contosofs.file.core.windows.net"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "When the directory account used for the storage account is a user-type (service logon) object, Kerberos must be able to find the service principal through the account's userPrincipalName, so the UPN has to be the service principal plus the UPN suffix: cifs/&lt;StorageAccountName&gt;.file.core.windows.net@&lt;UPN-suffix&gt;. Here the object still carries the short svc_azurefiles@contoso.local value, so ticket requests fail with 1396 / KRB_AP_ERR_MODIFIED — especially once AES256 encryption is in play. Join-AzStorageAccount sets this value automatically, which is why hand-built setups miss it.",
+				"perChoice": {
+					"b": "This shortens the principal to the storage account name only. The UPN has to be built from the full service principal plus the domain suffix, not a trimmed principal, so the lookup still fails.",
+					"c": "The service principal is already in the required form for Azure Files and doesn't change when the account type is user. Overwriting it with an email-style value breaks the request for a service ticket, so the mount keeps failing.",
+					"d": "sAMAccountName is the NetBIOS logon name and is limited to 20 characters or fewer (15 or fewer under NETBIOS restrictions), supplied without a trailing $; it can't hold a principal name, and it isn't what Kerberos consults for a service ticket."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-ad-ds-enable"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-active-directory-overview"
+				}
+			],
+			"subtopics": [
+				"kerberos-upn-and-spn",
+				"ad-ds-identity-enablement",
+				"service-logon-account"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KBE6M9WBNPH244DQKPQ5NG",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your company is moving file workloads into storage account contosofs and wants every workstation and server in the estate below to reach the shares with its signed-in user identity rather than an account key. You are not changing the on-premises domain or how your company manages identities there. You need to settle on one directory source to use for this account. Which identity source should you configure for contosofs?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Client or workload",
+						"Environment and access pattern"
+					],
+					"rows": [
+						[
+							"Designer laptops (macOS)",
+							"Entra joined; no network path to the on-premises domain controllers"
+						],
+						[
+							"Windows 11 session hosts",
+							"Entra joined; store FSLogix profile containers on the shares"
+						],
+						[
+							"Hybrid-joined Windows servers",
+							"Joined to the on-premises forest; the same user accounts are synced to Microsoft Entra ID"
+						],
+						[
+							"Linux build agents",
+							"Reach the shares with a managed identity; no interactive user sign-in"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "On-premises Active Directory Domain Services (AD DS)"
+					},
+					{
+						"id": "b",
+						"text": "Microsoft Entra Domain Services"
+					},
+					{
+						"id": "c",
+						"text": "Microsoft Entra Kerberos"
+					},
+					{
+						"id": "d",
+						"text": "On-premises Active Directory Domain Services (AD DS) plus Microsoft Entra Kerberos"
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "Microsoft Entra Kerberos is the only single source that serves the whole estate as described. It removes the requirement that clients reach on-premises domain controllers, supports Entra-joined clients and macOS clients such as the designer laptops, and is the recommended choice when FSLogix profiles are involved, which covers the Windows 11 session hosts. The hybrid-joined servers also qualify as long as their users are synced from the on-premises domain to Microsoft Entra ID, because share-level permissions target the Entra object. Linux user authentication isn't supported with this source, but that isn't a blocker here because the build agents authenticate with a managed identity, which is a separate mechanism that can coexist with this source. Whichever source is chosen, Kerberos must be enabled under Authentication methods in the account's SMB security settings.",
+				"perChoice": {
+					"a": "AD DS authorizes from SIDs the client already holds, so every client has to be able to reach a domain controller of the on-premises domain. The designer laptops have no network path to those controllers and are Entra joined rather than domain joined, so this source can't serve the estate as listed. AD DS remains the right pick when an existing on-premises domain is in place and clients can reach its domain controllers.",
+					"b": "Entra Domain Services is a managed domain you deploy in Azure and that clients must be able to join or at least reach; non-Azure clients can't join that managed domain, so the macOS laptops and the hybrid-joined servers would have no way to authenticate to it with their existing identities. It also still depends on connectivity to its domain controllers, and it manages synchronization from Microsoft Entra ID for you rather than removing the domain-joined requirement.",
+					"d": "Only one identity source can be configured per storage account, and that source governs every file share in the account, so AD DS and Entra Kerberos cannot be run side by side on contosofs. Choose one and cover the remaining clients with managed identity or other mechanisms."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-active-directory-overview"
+				}
+			],
+			"subtopics": [
+				"identity-source-selection",
+				"entra-kerberos"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KBJPK518AF4NEK48FJH41Y",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You enabled identity-based access on storage account contosofs, and the build pipeline runs on domain-joined servers as CONTOSO\\SVC-BUILD$. Every run of the scheduled task fails with access denied when it writes to the build share, while signed-in users who already hold share-scoped roles reach that same folder without trouble. You are not allowed to change the folder's ACL. You need the scheduled task to be able to write there. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Directory service configured on contosofs",
+							"Microsoft Entra Kerberos"
+						],
+						[
+							"Kerberos in Authentication methods",
+							"Enabled"
+						],
+						[
+							"Target share",
+							"build (\\\\contosofs.file.core.windows.net\\build)"
+						],
+						[
+							"Role assignments scoped to this share",
+							"user1@contoso.com → Storage File Data SMB Share Contributor; user2@contoso.com → Storage File Data SMB Share Elevated Contributor; svc_pipeline@contoso.com → Storage File Data SMB Share Contributor"
+						],
+						[
+							"Object the scheduled task runs as",
+							"CONTOSO\\SVC-BUILD$ (computer account in on-premises domain contoso.local)"
+						],
+						[
+							"ACL entry for that object on the build folder",
+							"Allow Modify (inherited from the share root)"
+						],
+						[
+							"Result of each write attempt by the task",
+							"Access denied"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Assign the Storage File Data SMB Share Contributor role to CONTOSO\\SVC-BUILD$ on the storage account's build share"
+					},
+					{
+						"id": "b",
+						"text": "Assign the Storage File Data SMB Share Contributor role to a Microsoft Entra group that has the computer account as a member on the storage account's build share"
+					},
+					{
+						"id": "c",
+						"text": "Set the storage account's default share-level permission to Storage File Data SMB Share Contributor"
+					},
+					{
+						"id": "d",
+						"text": "Assign the Storage File Data SMB Share Contributor role to the on-premises group CONTOSO\\BUILD-WRITERS on the storage account's build share"
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "Access to Azure Files requires passing two gates: a share-level Azure RBAC role and a Windows ACL at the file or directory level. In this case the ACL gate already passes, because the folder grants the object Modify. The failing gate is RBAC, and a computer account such as CONTOSO\\SVC-BUILD$ has no Microsoft Entra ID object that a role assignment can target. The route the documentation provides for computer accounts (and sMSAs and gMSAs) is the storage account's default share-level permission, which applies to every share inside the account. It starts as None, which denies all file and directory access, so you turn it on under Step 2: Set share-level permissions and choose a role; Storage File Data SMB Share Contributor gives read, write and delete without changing ACLs, which is what this task needs. Keep in mind that the change can take up to about 30 minutes to propagate before you retest.",
+				"perChoice": {
+					"a": "Role assignments are made against Microsoft Entra ID objects, and a computer account such as CONTOSO\\SVC-BUILD$ has no Entra object, so this assignment cannot be created for it. Computer accounts are handled through the storage account's default share-level permission instead.",
+					"b": "Adding the computer account to a Microsoft Entra group does not help: the group only carries identities that have an Entra object, and the computer account still has none to assign to. The documented route for computer accounts is the storage account's default share-level permission.",
+					"d": "An on-premises group has no Microsoft Entra ID object to assign a role to, and even when such a group is synced, its membership by a computer account does not make that computer account assignable. Use the storage account's default share-level permission for computer accounts."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-assign-share-level-permissions"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-active-directory-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-configure-file-level-permissions"
+				}
+			],
+			"subtopics": [
+				"share-level-permissions",
+				"computer-accounts",
+				"entra-kerberos"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KBVPX10J5MZBFCH2JBQWY6",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You finished setting up identity-based access on storage account contosofs using an on-premises Active Directory Domain Services (AD DS) identity source, assigned Storage File Data SMB Share Contributor to the CONTOSO\\Design group on the reports share, and gave that group read and write permission on the share root so it inherits down the tree. Domain-joined Windows users who try to mount \\\\contosofs.file.core.windows.net\\reports with their own domain credentials never get a session started, while the same share mounts fine with an account key. You need those users to reach the share with their directory identity. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Area",
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Identity-based access",
+							"Registered directory service",
+							"On-premises Active Directory Domain Services (AD DS)"
+						],
+						[
+							"Share-level permission",
+							"Role assignment on /contosofs/fileShares/reports",
+							"Storage File Data SMB Share Contributor to CONTOSO\\Design"
+						],
+						[
+							"Root of reports",
+							"Permission entry, inherited by subfolders and files",
+							"CONTOSO\\Design: Read, Write, Create"
+						],
+						[
+							"SMB security settings",
+							"Profile",
+							"Custom"
+						],
+						[
+							"SMB security settings",
+							"Authentication methods",
+							"NTLMv2"
+						],
+						[
+							"SMB security settings",
+							"Kerberos ticket encryption",
+							"AES-256, RC4-HMAC"
+						],
+						[
+							"SMB security settings",
+							"SMB versions",
+							"3.1.1, 3.0, 2.1"
+						],
+						[
+							"SMB security settings",
+							"SMB channel encryption",
+							"AES-256-GCM, AES-128-GCM, AES-128-CCM"
+						],
+						[
+							"Test from CONTOSO-WKS-12",
+							"Mount with domain credentials",
+							"Session setup fails, STATUS_ACCESS_DENIED"
+						],
+						[
+							"Test from CONTOSO-WKS-12",
+							"Mount with account key",
+							"Succeeds"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add Kerberos to Authentication methods in the SMB security settings of the storage account"
+					},
+					{
+						"id": "b",
+						"text": "Restrict Kerberos ticket encryption to RC4-HMAC only in the SMB security settings of the storage account"
+					},
+					{
+						"id": "c",
+						"text": "Remove NTLMv2 from Authentication methods in the SMB security settings so key-based mounts are rejected"
+					},
+					{
+						"id": "d",
+						"text": "Restrict the allowed SMB versions to 3.1.1 only in the SMB security settings of the storage account"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Azure Files authorizes an SMB request from the Kerberos ticket that the directory service issues, and all three supported identity sources require that ticket-based method to be turned on under Authentication methods in the storage account's SMB security settings. With only NTLMv2 in the allowed list there is nothing to evaluate for a domain credential: NTLMv2 covers account-key mounts, which is exactly why the key mount still works. Adding Kerberos to Authentication methods is the change that unblocks the session. The share-level role and the inherited ACL only come into play once a caller is authenticated, so neither can compensate for a session that never starts.",
+				"perChoice": {
+					"b": "Ticket encryption governs how an already-issued ticket is encrypted, not whether ticket-based authentication is accepted, so narrowing it to RC4-HMAC changes nothing while Kerberos is missing from Authentication methods. AES-256 is the recommended setting for the encryption type anyway, so this would move the account the wrong way twice.",
+					"c": "NTLMv2 is the account-key path, and Azure Files doesn't use NTLM to authenticate domain credentials, so deleting it from Authentication methods would leave no usable method in the list and block every client, key-based mounts included. It does not turn on the ticket flow the users need.",
+					"d": "The SMB version setting only decides which dialect a client may negotiate for the session, and the affected workstations already speak SMB 3.x. Restricting versions changes nothing while Kerberos is absent from Authentication methods."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-active-directory-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-assign-share-level-permissions"
+				}
+			],
+			"subtopics": [
+				"authentication-methods",
+				"smb-security-settings"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KC479ZJF5ABEZNBPGVMYK6",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have storage account contosofs in resource group rg-files, and the account you sign in with already holds Reader on that resource group. To register the storage account with the on-premises domain you ran the cmdlet that performs the offline domain join, but it was refused with an authorization error naming the storage account resource itself. You need the registration to succeed while granting only the access it actually requires. Which role should you add?",
+				"exhibit": {
+					"kind": "code",
+					"language": "powershell",
+					"text": "PS C:\\> Join-AzStorageAccount -StorageAccountName contosofs -SamAccountName cifs-contosofs `\n        -AccountType ComputerAccount -ResourceGroupName rg-files\n\nJoin-AzStorageAccount: AuthorizationFailed: The client does not have authorization to perform\naction 'Microsoft.Storage/storageAccounts/write' on scope\n'/subscriptions/<sub>/resourceGroups/rg-files/providers/Microsoft.Storage/storageAccounts/contosofs'.\n\nPS C:\\> (Get-AzRoleAssignment -Scope /subscriptions/<sub>/resourceGroups/rg-files |\n        Where-Object { $_.ObjectId -eq '<client-object-id>' }).RoleName\nReader"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Contributor on the storage account"
+					},
+					{
+						"id": "b",
+						"text": "Reader on the storage account"
+					},
+					{
+						"id": "c",
+						"text": "Storage File Data SMB Share Contributor on the storage account"
+					},
+					{
+						"id": "d",
+						"text": "Storage File Data Privileged Contributor on the storage account"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Registering a storage account with on-premises AD DS changes properties on the storage account itself, so the documented least-privilege pairing is Reader on the resource group plus Contributor on the storage account. The Reader half is already in place here, so Contributor on contosofs is the single addition that lets the join complete without handing out anything broader.",
+				"perChoice": {
+					"b": "Reader grants no permission to write account properties, so the join would still be refused with the same authorization error. Reading the account is not what the cmdlet does.",
+					"c": "This is a data-plane role scoped to file data in the shares. It gives users rights over SMB file shares but no rights to modify the storage account's configuration, which is exactly what the failing write targets.",
+					"d": "Also a data-plane role for file data, and the privileged variant additionally overrides existing ACLs. Neither capability lets you update the storage account resource, so the join stays unauthorized."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-ad-ds-enable"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-active-directory-overview"
+				}
+			],
+			"subtopics": [
+				"directory-join",
+				"least-privilege-rbac"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KC92ZZ8D6FZXGDDGRZ5R7Q",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have storage account contosofs, and the design group works with Microsoft Entra accounts that have no on-premises directory account. A designer in that group must be able to save files into the designs subfolder, where the only permission entry today grants read. Neither the security dialog on the designer's laptop nor the command-line permission editor they tried would apply an entry for that account, so the change has to be made from the account side. You need the designer to be able to write there. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Storage account",
+							"contosofs"
+						],
+						[
+							"Identity source",
+							"Microsoft Entra Kerberos"
+						],
+						[
+							"Kerberos under Authentication methods",
+							"Enabled"
+						],
+						[
+							"Account of the designer",
+							"Exists in Microsoft Entra ID only; no on-premises directory account"
+						],
+						[
+							"Client that writes the files",
+							"Laptop joined only to Microsoft Entra ID"
+						],
+						[
+							"Permission entry on the designs subfolder",
+							"Authenticated Users: Read"
+						],
+						[
+							"Share-level Azure RBAC assignments",
+							""
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Apply the folder's permission entry with Add-AzFileAce from the RestSetAcls module"
+					},
+					{
+						"id": "b",
+						"text": "Apply the folder's permission entry with icacls against the mounted share on a domain-joined client"
+					},
+					{
+						"id": "c",
+						"text": "Apply the folder's permission entry from File Explorer on the mounted share"
+					},
+					{
+						"id": "d",
+						"text": "Assign an Azure RBAC role to the designer at the share level and leave the subfolder's permission entry unchanged"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The designer holds an account that exists only in Microsoft Entra ID, and for such cloud-only identities the Windows-side ACL tooling cannot apply the entry: File Explorer and icacls are usable only for hybrid identities under Microsoft Entra Kerberos, and for identities from AD DS or Entra Domain Services. The route that works is the Azure Files REST-based ACL tooling, for example Add-AzFileAce from the RestSetAcls module (the file browser in the Azure portal is the other working path), which can resolve the cloud-only object and write the folder's permission entry, typically with inheritable flags so new files below the subfolder are covered. Adding a share-level role would not achieve the goal on its own, because the role and the folder entry intersect and the more restrictive of the two governs, so a write-capable role cannot override an entry that grants only read.",
+				"perChoice": {
+					"b": "icacls is supported only for identity types it can resolve in the directory: hybrid identities under Microsoft Entra Kerberos, or identities from AD DS or Entra Domain Services. Against an account that exists only in Microsoft Entra ID it cannot apply the entry, so the subfolder stays read-only for the designer.",
+					"c": "File Explorer has the same identity-type limitation as icacls — it handles hybrid identities under Microsoft Entra Kerberos and identities from AD DS or Entra Domain Services, but it cannot set permissions for an account that exists only in Microsoft Entra ID.",
+					"d": "Share-level RBAC assignments and folder permission entries intersect rather than add: the most restrictive of the two applies. While the entry grants only read, no share-level role can make the designer write there, so the entry itself has to be changed."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-configure-file-level-permissions"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-assign-share-level-permissions"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-active-directory-overview"
+				}
+			],
+			"subtopics": [
+				"file-level-permissions",
+				"cloud-only-identities",
+				"entra-kerberos"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KCMXAPTEWKAXSTPCF2RA5E",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You edited the permission entries on the root of \\\\contosofs.file.core.windows.net\\legal in the portal this morning so that CONTOSO\\Legal has full control there, and every document uploaded since then opens for the legal assistants straight away. Last year's documents still answer with access denied for the same assistants, and you need them to match whatever the share root now specifies. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"File in the team share",
+						"Principal",
+						"Entry reported by icacls (D = deny, F = full control, RX = read and execute)"
+					],
+					"rows": [
+						[
+							"2026-supplier-agreement.docx (uploaded after this morning's edit)",
+							"CONTOSO\\Legal",
+							"(F)"
+						],
+						[
+							"2026-supplier-agreement.docx (uploaded after this morning's edit)",
+							"CONTOSO\\AllStaff",
+							"(RX)"
+						],
+						[
+							"2024-supplier-agreement.docx (uploaded last year)",
+							"CONTOSO\\Legal",
+							"(D)"
+						],
+						[
+							"2024-supplier-agreement.docx (uploaded last year)",
+							"CONTOSO\\AllStaff",
+							"(RX)"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Run Restore-AzFileAclInheritance -Recursive against that share"
+					},
+					{
+						"id": "b",
+						"text": "Add CONTOSO\\Legal on the share root again with Add-AzFileAce -InheritanceFlags ObjectInherit,ContainerInherit"
+					},
+					{
+						"id": "c",
+						"text": "Set CONTOSO\\Legal to full control one file at a time on each of the 900 documents from last year"
+					},
+					{
+						"id": "d",
+						"text": "Assign Storage File Data SMB Share Elevated Contributor to CONTOSO\\Legal at the share scope"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Entries you set on a folder apply to items created from that point forward; items already stored below it keep the entries they were given, which is why last year's documents still carry the old deny entry for CONTOSO\\Legal while new documents show full control. Restoring inheritance recursively over the share makes every stored item re-read the share root's current entries, so the stale deny on the older documents is discarded.",
+				"perChoice": {
+					"b": "Add-AzFileAce with ObjectInherit,ContainerInherit attaches the legal group's entry with propagation to objects, so it is honoured by files and folders created afterwards. The documents uploaded last year are not rewritten by that call and keep the entries they were given, so the assistants stay blocked on them.",
+					"c": "An allow cannot cancel a deny that is already present on the file — deny entries are evaluated ahead of allow entries — so granting full control per file adds an entry that never wins. The blocking entry has to be taken away rather than overruled.",
+					"d": "Role assignments and file permissions intersect, and the more restrictive of the two decides. Storage File Data SMB Share Elevated Contributor lets a user alter permission entries but does not bypass the entries already stored on the files, so last year's deny still governs them."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-configure-file-level-permissions"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-active-directory-overview"
+				}
+			],
+			"subtopics": [
+				"file-level-permissions",
+				"acl-inheritance"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KCSMEF50Y9N2ACZT1VJMNM",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You run storage account contosofs with identity-based access turned on for its SMB shares, and it holds project folders, legal documents and backup data. Four tickets arrived this morning. You may answer each ticket with one role assignment in Azure only: you cannot edit any folder's permission entries yourself, and nobody will mount anything with a storage account key. Drag the role that settles each ticket onto its ticket, using each role once.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Ticket",
+						"What the reporter needs"
+					],
+					"rows": [
+						[
+							"Ticket 1",
+							"Designers working from the domain-joined laptops must be able to save new files into \\\\contosofs.file.core.windows.net\\designs and edit the ones already stored there. The permission entries that came across with the migrated folder must stay exactly as they are."
+						],
+						[
+							"Ticket 2",
+							"The help desk has to work on \\\\contosofs.file.core.windows.net\\legal\\case-notes.txt, whose permission entries currently deny them. They need to be able to take ownership of that file themselves and then open it."
+						],
+						[
+							"Ticket 3",
+							"IT must be able to add and remove permission entries on the root of \\\\contosofs.file.core.windows.net\\shared without a storage account key."
+						],
+						[
+							"Ticket 4",
+							"The nightly backup job must be able to write every folder under \\\\contosofs.file.core.windows.net\\backup, including the subfolders whose entries deny everyone."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Storage File Data SMB Share Contributor"
+					},
+					{
+						"id": "i2",
+						"text": "Storage File Data SMB Share Elevated Contributor"
+					},
+					{
+						"id": "i3",
+						"text": "Storage File Data Privileged Contributor"
+					},
+					{
+						"id": "i4",
+						"text": "Storage File Data SMB Admin"
+					}
+				],
+				"slots": [
+					{
+						"id": "t1",
+						"label": "Ticket 1 - designers save and edit, existing entries preserved"
+					},
+					{
+						"id": "t2",
+						"label": "Ticket 2 - file the help desk must seize and open"
+					},
+					{
+						"id": "t3",
+						"label": "Ticket 3 - editing entries on the share root"
+					},
+					{
+						"id": "t4",
+						"label": "Ticket 4 - writing to folders that deny everyone"
+					}
+				]
+			},
+			"key": {
+				"t1": "i1",
+				"t2": "i4",
+				"t3": "i2",
+				"t4": "i3"
+			},
+			"explanation": {
+				"correct": "Each ticket needs a different piece of the RBAC side of identity-based access. Ticket 1 asks for read/write/delete on the share with no permission-entry changes at all, which is what Storage File Data SMB Share Contributor grants. Ticket 2 asks for the ability to seize a file that the current entries block, and Storage File Data SMB Admin carries the takeOwnership data action (along with readFileBackupSemantics and writeFileBackupSemantics) so takeown works. Ticket 3 asks for editing the permission entries on the share root without a key, which is Storage File Data SMB Share Elevated Contributor, the role that behaves like a change-share-ACL grant because it adds modify-ACLs. Ticket 4 needs write access to subfolders whose entries deny everyone, and only Storage File Data Privileged Contributor overrides existing ACLs while still allowing read/write/delete.",
+				"perChoice": {
+					"i1": "Ticket 1. The contributor role delivers read, write and delete on the share without granting any permission-entry changes, so the entries migrated from the old server stay untouched; remember the folder entries still have to allow the write, because the most restrictive of role and ACL wins.",
+					"i2": "Ticket 3. This role behaves like a change-share-ACL grant: it adds modify-ACLs on top of contributor rights, which is exactly what lets IT add and remove entries on the share root without a storage account key.",
+					"i3": "Ticket 4. It performs the same read/write/delete as the contributor role but overrides whatever the entries say, so it is the fit for backup folders whose entries deny everyone.",
+					"i4": "Ticket 2. The role carries readFileBackupSemantics, writeFileBackupSemantics and takeOwnership, so the help desk can take ownership of a file it currently cannot reach. It is not the same as a key mount: after the file is seized, the existing entries still govern normal file access."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-assign-share-level-permissions"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-configure-file-level-permissions"
+				}
+			],
+			"subtopics": [
+				"share-level-roles",
+				"file-level-permissions",
+				"rbac-and-acl-intersection"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KCZDJ11GZM7W0ED400YM1G",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Identity-based access is on for the SMB shares in storage account contosofs, and the support desk has four open calls about it. Each call below can be settled with one action from the list, and one action in that list is not needed for any of them. Drag the action that settles each call onto it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Call",
+						"What happened"
+					],
+					"rows": [
+						[
+							"Call 1",
+							"The account is registered with the on-premises domain as a computer account and was registered by AzFilesHybrid 0.2.1. The module has since been updated to the current release, but msDS-SupportedEncryptionTypes on the account still reads RC4. Since the update, domain-joined clients fail to mount \\\\contosofs.file.core.windows.net\\finance."
+						],
+						[
+							"Call 2",
+							"Kate's own directory account has never been synced to Microsoft Entra ID, so no Azure assignment can be made to her directly. She belongs to CONTOSO\\Design, which is synced, and the team needs her to store new files in the design folder."
+						],
+						[
+							"Call 3",
+							"Identity-based access for contosofs was turned off last night. The Computers OU still holds the object that was created for the account during enablement, and the retirement checklist requires it to be gone."
+						],
+						[
+							"Call 4",
+							"The account's default share-level permission is Storage File Data SMB Share Elevated Contributor, added for a legacy application that also holds that same role as its own assignment. Consultants, who are synced hybrid identities, were each granted Storage File Data SMB Share Reader on the share, yet they can add, remove and change permissions on the share root."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Set the directory account's Kerberos encryption type to AES-256, clear cached tickets with klist purge on the clients, then remount"
+					},
+					{
+						"id": "i2",
+						"text": "Set the storage account's default share-level permission to Storage File Data SMB Share Contributor"
+					},
+					{
+						"id": "i3",
+						"text": "Delete the leftover directory account in Active Directory yourself"
+					},
+					{
+						"id": "i4",
+						"text": "Set the storage account's default share-level permission to None"
+					},
+					{
+						"id": "i5",
+						"text": "Enable identity-based access for the NFS shares in contosofs"
+					}
+				],
+				"slots": [
+					{
+						"id": "call1",
+						"label": "Call 1"
+					},
+					{
+						"id": "call2",
+						"label": "Call 2"
+					},
+					{
+						"id": "call3",
+						"label": "Call 3"
+					},
+					{
+						"id": "call4",
+						"label": "Call 4"
+					}
+				]
+			},
+			"key": {
+				"call1": "i1",
+				"call2": "i2",
+				"call3": "i3",
+				"call4": "i4"
+			},
+			"explanation": {
+				"correct": "Call 1 is an encryption-type mismatch: the enablement module now supports AES-256 only, the computer account is still set to RC4, so the account has to be moved to AES-256 and clients must clear their cached tickets before remounting. Call 2 has no assignable Entra object for Kate, because only the synced group carries an identity that can be named, so the account's default share-level permission is the route that covers her (Azure Files reads the group's SID straight from the Kerberos ticket). Call 3 is the expected leftover after disabling AD DS: nothing deletes the computer or service logon account, so you remove it by hand. Call 4 follows the rule that the higher of the default share-level permission and a specific assignment wins, so the Reader assignments are overridden by the Elevated Contributor default; returning the default to None leaves the individual assignments in force, and the legacy application keeps its own role.",
+				"perChoice": {
+					"i1": "Call 1. The current release of AzFilesHybrid supports AES-256 only, and a setup created by an earlier release left the account on RC4, so mounts fail until the account's Kerberos encryption type is set to AES-256 and clients purge cached tickets and remount.",
+					"i2": "Call 2. A default share-level permission on the storage account is the only way to cover an unsynced user who belongs to a synced AD DS group, because the group's SID reaches Azure Files in the Kerberos ticket; Storage File Data SMB Share Contributor gives the write and delete rights Kate needs.",
+					"i3": "Call 3. Disabling AD DS leaves the computer or service logon account behind in the domain as an orphan, and removing it is a manual step.",
+					"i4": "Call 4. When a default share-level permission and a specific assignment both apply, the identity gets the higher one, so the Elevated Contributor default is what the consultants are receiving; putting the default back to None leaves their Reader assignments as the deciding permission.",
+					"i5": "Fits no call. Identity-based authentication is an SMB feature and NFS shares do not use it; none of the four calls concerns NFS."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-ad-ds-enable"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-assign-share-level-permissions"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-active-directory-overview"
+				}
+			],
+			"subtopics": [
+				"identity-based-smb-access",
+				"kerberos-encryption-type",
+				"default-share-level-permission"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KDY3KKPR90AKE9TMB9PJZK",
+			"body": {
+				"format": "drag-drop",
+				"stem": "The shares below sit in accounts that already have directory-based sign-in turned on. Match each row with the statement that settles it, and drag that statement into place.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Row",
+						"Share",
+						"Share type",
+						"Directory source in use",
+						"What was asked"
+					],
+					"rows": [
+						[
+							"1",
+							"media (contosofsmedia)",
+							"SMB",
+							"Microsoft Entra Kerberos",
+							"Accounts that exist solely in Microsoft Entra must sign in with their own credentials"
+						],
+						[
+							"2",
+							"inbound (contosofs)",
+							"SMB",
+							"On-premises AD DS",
+							"The application on an Azure virtual machine must read it with no interactive sign-in"
+						],
+						[
+							"3",
+							"photos (contosofsphotos)",
+							"SMB",
+							"On-premises AD DS",
+							"The team wants a second directory source for that account"
+						],
+						[
+							"4",
+							"archive (contosofs)",
+							"NFS",
+							"On-premises AD DS",
+							"A domain-joined client should reach it with its own credentials rather than an account key"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "y",
+						"text": "Managed identity is the mechanism, and it runs beside the directory service."
+					},
+					{
+						"id": "w",
+						"text": "This authentication model has no equivalent for network file system mounts."
+					},
+					{
+						"id": "x",
+						"text": "Accounts without any directory counterpart can be authorized this way, but only where the region supports it."
+					},
+					{
+						"id": "z",
+						"text": "Just one directory service fits an account, and it reaches everything inside."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Row 1: media"
+					},
+					{
+						"id": "s2",
+						"label": "Row 2: inbound"
+					},
+					{
+						"id": "s3",
+						"label": "Row 3: photos"
+					},
+					{
+						"id": "s4",
+						"label": "Row 4: archive"
+					}
+				]
+			},
+			"key": {
+				"s1": "x",
+				"s2": "y",
+				"s3": "z",
+				"s4": "w"
+			},
+			"explanation": {
+				"correct": "Each row matches one distinct property of identity-based access. Row 1 sits on Microsoft Entra Kerberos, which is the one user identity source under which individual cloud-only accounts can be given share-level permissions, and even there it works only in public regions, so the regional limit is what settles the request (x). Row 2 is keyless access for an application running on Azure compute, which uses a managed identity — a mechanism separate from the three user identity sources that can run alongside the on-premises AD DS source already configured (y). Row 3 cannot be met, because only one identity source can be configured per storage account and that source governs every share in it (z). Row 4 targets an NFS share, and identity-based authentication is an SMB capability, so that share stays on account-key access (w).",
+				"perChoice": {
+					"w": "Settles Row 4: the archive share is NFS, and directory-based authentication is an SMB capability, so a domain-joined client cannot reach that share with its own credentials; access there has to remain key-based.",
+					"x": "Settles Row 1: with Microsoft Entra Kerberos, share-level permissions can be assigned to specific cloud-only identities, but that only works in public regions, so the request depends on where the account sits.",
+					"y": "Settles Row 2: keyless SMB for applications and Azure compute uses a managed identity, a mechanism separate from the user identity sources, so it works together with the on-premises AD DS source already configured on that account.",
+					"z": "Settles Row 3: a storage account accepts only one directory source and that source governs every share inside the account, so a second source can't be added alongside the existing on-premises AD DS registration."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-active-directory-overview"
+				}
+			],
+			"subtopics": [
+				"identity-based-access",
+				"identity-source-selection",
+				"azure-file-shares"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KE3RKTQWT1MVQSGKEZ24X1",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Identity-based access for the SMB shares in storage account contosofs is enabled against the on-premises Active Directory Domain Services (AD DS), and the account was registered with the AzFilesHybrid PowerShell module. Four entries from last month's support log are reproduced below, and each one has exactly one explanation among the statements. Drag the statement that explains each entry onto its row; one statement is not needed.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Row",
+						"Entry from the support log"
+					],
+					"rows": [
+						[
+							"A",
+							"The account was registered with AzFilesHybrid v0.2.1 and the join reported success. Months later the estate was moved to AES-256 Kerberos, and mounts that had worked until then began failing on every client that had already connected to the share, until the Kerberos cache was cleared on each client and the share was mounted again."
+						],
+						[
+							"B",
+							"Two directory objects represent the account: one created by the join cmdlet with its default account type, and a second created with -DomainAccountType ServiceLogonAccount. The first keeps working, while the second stopped accepting sign-in on the date the domain's maximum password age elapsed."
+						],
+						[
+							"C",
+							"The directory team searched Microsoft Entra ID for the object that represents contosofs and got no result. They then checked the synchronization job logs and confirmed that nothing had failed."
+						],
+						[
+							"D",
+							"Identity-based access for contosofs was switched off last week, so every mount that uses domain credentials now fails. Nobody on the directory team deleted anything, yet the object that represents the account is still listed in the on-premises domain."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "AzFilesHybrid supports only AES-256 Kerberos, and registrations created with a version below v0.2.2 used RC4, so moving them forward means clearing the client Kerberos cache with klist purge and remounting."
+					},
+					{
+						"id": "b",
+						"text": "Service logon account passwords expire at the domain's maximum password age, whereas computer account passwords are driven by the client machine (by default about every 30 days) and never expire in the directory."
+					},
+					{
+						"id": "c",
+						"text": "The directory identity created to represent a storage account never has to be synced to Microsoft Entra ID."
+					},
+					{
+						"id": "d",
+						"text": "Turning the feature off stops identity-based access to the account's shares but leaves the computer or service logon account behind in the domain as an orphaned object, and removing it isn't automatic."
+					},
+					{
+						"id": "e",
+						"text": "Every identity that reaches a share must exist in Microsoft Entra ID before a share-level role can be assigned to it, so the object that represents the storage account has to be synced as well."
+					}
+				],
+				"slots": [
+					{
+						"id": "ra",
+						"label": "Row A"
+					},
+					{
+						"id": "rb",
+						"label": "Row B"
+					},
+					{
+						"id": "rc",
+						"label": "Row C"
+					},
+					{
+						"id": "rd",
+						"label": "Row D"
+					}
+				]
+			},
+			"key": {
+				"ra": "a",
+				"rb": "b",
+				"rc": "c",
+				"rd": "d"
+			},
+			"explanation": {
+				"correct": "Row A is explained by the statement that AzFilesHybrid supports only AES-256 Kerberos and that registrations made with a version older than v0.2.2 fell back to RC4. Because the tickets clients hold were issued under RC4, mounts keep failing until the cache is purged (klist purge) and the share is remounted after the switch to AES-256. Row B is explained by the difference in how the two account types handle password age: a computer account (the default from the join cmdlet) has its password renewed by the client machine about every 30 days and never expires in the directory, whereas a service logon account follows the domain's password expiration policy and therefore stops working once the maximum password age elapses. Row C is explained by the fact that the Active Directory identity created to represent a storage account does not need to be synchronized to Microsoft Entra ID, so an empty result in the tenant is expected. Row D is explained by the documented consequence of disabling AD DS: the shares lose identity-based access and the computer or service logon account stays in the on-premises directory as an orphaned object, because its removal isn't automatic.",
+				"perChoice": {
+					"a": "Row A. The module only supports AES-256, so a registration produced by an older AzFilesHybrid version (below v0.2.2) that used RC4 needs to be updated immediately; after that change the client Kerberos cache is purged with klist purge and the share remounted so new tickets are issued.",
+					"b": "Row B. Service logon account passwords can expire based on the domain's default expiration age, while computer account password changes are driven by the client machine (every 30 days by default) and don't expire in AD. That is why only the service logon object stopped working on the day the maximum password age elapsed.",
+					"c": "Row C. The AD identity created to represent the storage account is never required to be synced to Microsoft Entra ID, so a directory administrator looking for it in the tenant finds nothing even when synchronization ran cleanly.",
+					"d": "Row D. Disabling AD DS authentication leaves the shares without identity-based access, and the computer account or service logon account created for the storage account remains in AD DS as an orphaned object, so removing it isn't automatic.",
+					"e": "Fits no row. It reverses what the documentation says about the storage account's own object, which never has to be synced to Microsoft Entra ID, and it doesn't explain a mount failure after an encryption change, a password that expires with domain policy, or an object that is still present after the feature was switched off."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-ad-ds-enable"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-active-directory-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-assign-share-level-permissions"
+				}
+			],
+			"subtopics": [
+				"ad-ds-registration",
+				"kerberos-encryption",
+				"password-lifecycle"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KE7KPS2MNSEVJFGFEM9FAZ",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have storage account contosofs in resource group rg-files, and directory-based sign-in is enabled on its SMB shares. The four identities below all map \\\\contosofs.file.core.windows.net\\reports and hold exactly the entries shown. The rollout file has to record what each of them really gets on that folder, so the service desk stops answering from the role names alone. Drag the outcome onto each row.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Identity",
+						"Role entry on the reports share",
+						"Account default share-level permission",
+						"reports folder permission entry"
+					],
+					"rows": [
+						[
+							"mchen",
+							"Storage File Data SMB Share Contributor",
+							"Not set",
+							"Modify"
+						],
+						[
+							"rpatel",
+							"Storage File Data Privileged Reader",
+							"Not set",
+							""
+						],
+						[
+							"temp03",
+							"Storage File Data SMB Share Reader",
+							"Not set",
+							""
+						],
+						[
+							"svc-archive",
+							"Storage File Data SMB Share Reader",
+							"Storage File Data SMB Share Elevated Contributor",
+							"Modify"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Read, write and delete, but the folder's permissions cannot be changed"
+					},
+					{
+						"id": "i2",
+						"text": "Read, write and delete even where the folder grants nothing"
+					},
+					{
+						"id": "i3",
+						"text": "Every request is refused"
+					},
+					{
+						"id": "i4",
+						"text": "Read, write, delete and change the folder's permissions"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Row 1 - mchen"
+					},
+					{
+						"id": "s2",
+						"label": "Row 2 - rpatel"
+					},
+					{
+						"id": "s3",
+						"label": "Row 3 - temp03"
+					},
+					{
+						"id": "s4",
+						"label": "Row 4 - svc-archive"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "The two gates combine rather than add up: Azure RBAC and the folder's own permission entry are intersected, and the more restrictive of the two wins in both directions. On top of that, Storage File Data Privileged Contributor and Privileged Reader bypass the folder's entries, and when an identity has both an account-level default permission and a specific assignment, the higher of the two roles applies.\n\nRow 1: Storage File Data SMB Share Contributor plus a Modify folder entry yields read, write and delete with no ability to alter the folder's permissions, because that share role works on data without touching the ACL.\nRow 2: Storage File Data Privileged Reader behaves like the Contributor role but ignores existing ACLs, so it still reads, writes and deletes in a folder whose entries say None.\nRow 3: Storage File Data SMB Share Reader combined with a None folder entry means the most restrictive side wins and every request is refused.\nRow 4: The account default is Storage File Data SMB Share Elevated Contributor while the explicit assignment is only Reader, so the identity ends up with the Elevated Contributor role, which adds the modify-permissions capability on top of the read, write and delete its Modify folder entry already allows.",
+				"perChoice": {
+					"i1": "Row 1 (mchen). Contributor and a Modify folder entry intersect to read, write and delete; the share role grants no permission-changing capability, so the folder's entries stay as they are.",
+					"i2": "Row 2 (rpatel). The privileged Reader role ignores existing ACLs, so the None folder entry does not block it and it reads, writes and deletes regardless of what the folder grants.",
+					"i3": "Row 3 (temp03). A share-level Reader role combined with a None folder entry leaves the most restrictive side in force, so the identity cannot open anything in that folder.",
+					"i4": "Row 4 (svc-archive). An account default permission of Storage File Data SMB Share Elevated Contributor outranks the specific Reader assignment, and that role adds modify-permissions on top of the data rights the Modify folder entry allows."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-configure-file-level-permissions"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-assign-share-level-permissions"
+				}
+			],
+			"subtopics": [
+				"share-level-permissions",
+				"file-level-permissions",
+				"effective-access"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KEM229RS7DPFSG1479F44Y",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have directory-based sign-in enabled for the SMB shares in storage accounts contosofs and contosobackup, and the service desk is working through the four requests in the table. The directory service configured on each account stays exactly as it is, no share may be mounted with an account key, and the entries on every share root are frozen, so each request has to be met somewhere below the root or through the account itself. Each case is settled by exactly one action from the list. Drag the action that settles each case onto it; one action in the list is not needed.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Case",
+						"Storage account",
+						"Directory identity behind the request",
+						"Identity source on that account",
+						"What has to change"
+					],
+					"rows": [
+						[
+							"A",
+							"contosofs",
+							"CONTOSO\\Design, a domain account that is synced to Microsoft Entra ID",
+							"On-premises Active Directory Domain Services (AD DS)",
+							"One entry on the drafts folder, so that this account can create files there and no other identity is given access"
+						],
+						[
+							"B",
+							"contosofs",
+							"dora@contoso.com, a cloud-only account with no on-premises directory account",
+							"Microsoft Entra Domain Services",
+							"One entry on the drafts folder, so that this account can create files there and nobody else gets access"
+						],
+						[
+							"C",
+							"contosobackup",
+							"CONTOSO\\gmsa-backup$, a group managed service account",
+							"On-premises Active Directory Domain Services (AD DS)",
+							"Write access to every folder of the backup share each time the job runs as that account; the existing folder entries already allow it"
+						],
+						[
+							"D",
+							"contosofs",
+							"CONTOSO\\Accounting, synced to Microsoft Entra ID as accounting@contoso.com",
+							"On-premises Active Directory Domain Services (AD DS)",
+							"Write access to every folder of the accounting share for that group only; the existing folder entries already allow it"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Set the entry for CONTOSO\\Design from the Security dialog in the folder's Properties"
+					},
+					{
+						"id": "i2",
+						"text": "Set the entry for dora@contoso.com from the share's page in the Azure portal"
+					},
+					{
+						"id": "i3",
+						"text": "Set the default share-level permission on contosobackup for authenticated users and groups"
+					},
+					{
+						"id": "i4",
+						"text": "Assign Storage File Data SMB Share Contributor to accounting@contoso.com on the accounting share"
+					},
+					{
+						"id": "i5",
+						"text": "Grant dora@contoso.com modify rights on the mapped drive letter with icacls"
+					},
+					{
+						"id": "i6",
+						"text": "Assign Storage File Data SMB Share Contributor to CONTOSO\\Accounting on the accounting share"
+					}
+				],
+				"slots": [
+					{
+						"id": "sA",
+						"label": "Case A"
+					},
+					{
+						"id": "sB",
+						"label": "Case B"
+					},
+					{
+						"id": "sC",
+						"label": "Case C"
+					},
+					{
+						"id": "sD",
+						"label": "Case D"
+					}
+				]
+			},
+			"key": {
+				"sA": "i1",
+				"sB": "i2",
+				"sC": "i3",
+				"sD": "i4"
+			},
+			"explanation": {
+				"correct": "Each case turns on how the identity can be named and how the change can be made. Case A: the source is on-premises AD DS and CONTOSO\\Design is a domain account that is synced, so an entry below the share root is applied with the Windows permission dialogs — that combination of AD DS plus a synced identity supports them, while the account-side tooling does not. Case B: dora@contoso.com has no on-premises directory account, and for cloud-only identities the account-side paths (the portal, or the RestSetAcls module) are the ones that work, so the entry is made from the share's page in the portal. Case C: a group managed service account has no Microsoft Entra ID object that a role assignment could target, and a default share-level permission on the account is the only route that grants it access; contosobackup holds just the backup share, so nothing else is widened. Case D: the accounting group is a synced hybrid identity, so the share-level role is assigned to the account it syncs to, accounting@contoso.com, and Storage File Data SMB Share Contributor gives read, write and delete without adding the ability to change entries, which is what the request asks for.",
+				"perChoice": {
+					"i1": "Case A. The account uses on-premises AD DS and CONTOSO\\Design is a synced domain identity, and for that combination the Windows permission dialogs work. It is not asked for elsewhere: case B's account is cloud-only, and cases C and D need share-wide reach rather than one entry.",
+					"i2": "Case B. dora@contoso.com is a cloud-only identity, and for those identities the change has to come from the account side, the portal or the RestSetAcls module. Microsoft Entra Domain Services lets all Microsoft Entra ID users, cloud-only included, authenticate, so the account itself is in order.",
+					"i3": "Case C. A group managed service account has no Microsoft Entra ID identity, so no Azure RBAC assignment can be aimed at it; setting a default share-level permission on contosobackup is the documented way to reach such service accounts. It would be the wrong answer for cases A, B and D, where the request names a single identity that must not be widened to everyone.",
+					"i4": "Case D. Role assignments for hybrid identities are made against the Microsoft Entra ID account the identity syncs to, accounting@contoso.com, and Storage File Data SMB Share Contributor grants read, write and delete without adding permission to change entries — exactly what case D asks for.",
+					"i5": "Fits no case. dora@contoso.com is a cloud-only identity, and the Windows tools, including icacls against a mapped drive letter, do not work for those identities; the change has to be made from the account side instead.",
+					"i6": "Fits no case. It repeats case D's role but names the on-premises group name rather than the account it syncs to; a share-level assignment for a hybrid identity is made against the Microsoft Entra ID account, so this target does not resolve."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-active-directory-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-configure-file-level-permissions"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-assign-share-level-permissions"
+				}
+			],
+			"subtopics": [
+				"identity-based-access",
+				"share-level-permissions",
+				"file-level-permissions"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KET8PYFT5M1CJPQ7PXGFW8",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have storage account contosofs in resource group rg-files, and the two populations in the table both want to work from it. The finance shares must keep reaching their users exactly as they do today, and you are not allowed to move any of them into another storage account. You need both populations served at the same time, and you also have to tell finance what their sign-in would go through if contosofs were ever pointed at the platform team's identity source instead. Which approach should you take, and what should finance be told?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Storage account",
+						"Shares",
+						"Users",
+						"Client devices"
+					],
+					"rows": [
+						[
+							"contosofs",
+							"6 SMB shares (in use today)",
+							"Finance staff, each reaching the shares with their own directory identity",
+							"Domain-joined Windows workstations that can reach the on-premises domain controllers"
+						],
+						[
+							"contosofs (requested by the platform team)",
+							"2 new SMB shares",
+							"Platform team staff whose accounts are synchronized to Microsoft Entra ID",
+							"Entra-joined Windows and macOS devices with no route to the on-premises domain controllers"
+						]
+					]
+				},
+				"statement": "You should {{arrangement}}. If contosofs is later pointed at the platform team's identity source, {{switchEffect}}.",
+				"slots": [
+					{
+						"id": "arrangement",
+						"options": [
+							{
+								"id": "a",
+								"text": "create a second storage account and configure the second identity source there"
+							},
+							{
+								"id": "b",
+								"text": "configure the second identity source on the storage account contosofs beside its current one"
+							},
+							{
+								"id": "c",
+								"text": "reconfigure the storage account contosofs so the second identity source covers all eight shares"
+							},
+							{
+								"id": "d",
+								"text": "keep the single identity source and grant the platform team a share-level data role on the new shares in the storage account contosofs"
+							}
+						]
+					},
+					{
+						"id": "switchEffect",
+						"options": [
+							{
+								"id": "a",
+								"text": "briefly interrupts identity-based access to every share in the account"
+							},
+							{
+								"id": "b",
+								"text": "leaves identity-based access working on every share in the account throughout"
+							},
+							{
+								"id": "c",
+								"text": "limits identity-based access on the existing shares to the platform team's users"
+							},
+							{
+								"id": "d",
+								"text": "has no effect on identity-based access for shares created after the change"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"arrangement": "a",
+				"switchEffect": "a"
+			},
+			"explanation": {
+				"correct": "A storage account supports only one identity source, and that source governs every file share in the account. The six finance shares have to keep their current on-premises AD DS sign-in and cannot be moved, so the platform team's population can only be served by a second storage account whose identity source works for Entra-joined Windows and macOS clients that cannot reach domain controllers. Because the identity source is an account-level property, any later switch of that source on contosofs briefly breaks identity-based access to all of its shares, which is what the finance users must be told.",
+				"perChoice": {
+					"arrangement:b": "Only one identity source can be configured per storage account, so a second one cannot sit beside the current one; whichever source is configured governs every share in that account.",
+					"arrangement:c": "Switching the source on contosofs would also move the six finance shares onto the platform team's source, which is not allowed, and the switch interrupts identity-based access on all shares while it happens.",
+					"arrangement:d": "With on-premises AD DS as the account's source, only identities present both on-premises and in Microsoft Entra ID can be authorized, and the platform team's Entra-joined devices have no path to the on-premises domain controllers. A share-level data role grants data-plane rights; it does not create a directory identity for those devices.",
+					"switchEffect:b": "The change is not seamless: it breaks identity-based access to all shares in the account for a short period, so an outage window has to be planned for.",
+					"switchEffect:c": "The effect is not narrowed to particular users; every share in the account loses identity-based access while the source is being changed.",
+					"switchEffect:d": "Shares created after the change are not the only ones affected; all shares in the account are without identity-based access during the change."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-active-directory-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-assign-share-level-permissions"
+				}
+			],
+			"subtopics": [
+				"identity-source-selection",
+				"identity-source-migration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5M9DRKYNV7C2W2QES358FV6",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You turned on identity-based access for the SMB shares in storage account contosofs by joining the account to your on-premises Active Directory Domain Services (AD DS) domain with the AzFilesHybrid PowerShell module. The directory object created for the account still carries the weaker cipher that the module version you used applied by default, and after your domain tightened its cipher policy, domain-joined clients can no longer mount \\\\contosofs.file.core.windows.net\\reports with their own credentials — they report a pre-authentication failure, while the same share still mounts with an account key. You need those clients to reach the share with their directory identity again. Which cipher type should the directory object use, and what should the clients do before they retry the mount?",
+				"exhibit": {
+					"kind": "code",
+					"language": "powershell",
+					"text": "PS C:\\> Get-AzStorageAccount -Name contosofs | Select-Object -ExpandProperty AzureFilesIdentityBasedAuth\n\nDirectoryServiceOptions : ActiveDirectory\n\nPS C:\\> Get-ADComputer -Identity \"azfilescontoso\" -Properties SamAccountName, msDS-SupportedEncryptionTypes, Enabled\n\nSamAccountName                : azfilescontoso$\nmsDS-SupportedEncryptionTypes : RC4-HMAC\nEnabled                       : True"
+				},
+				"statement": "Set the directory object's Kerberos encryption type to {{cipherType}} and have each client {{clientAction}}.",
+				"slots": [
+					{
+						"id": "cipherType",
+						"options": [
+							{
+								"id": "a",
+								"text": "AES256"
+							},
+							{
+								"id": "b",
+								"text": "RC4-HMAC"
+							},
+							{
+								"id": "c",
+								"text": "RC4"
+							},
+							{
+								"id": "d",
+								"text": "DES-CBC-CRC"
+							}
+						]
+					},
+					{
+						"id": "clientAction",
+						"options": [
+							{
+								"id": "a",
+								"text": "discard the tickets it already holds with klist purge and remount the share"
+							},
+							{
+								"id": "b",
+								"text": "renew the directory object's password in AD and remount the share"
+							},
+							{
+								"id": "c",
+								"text": "re-run Join-AzStorageAccount against the storage account and remount the share"
+							},
+							{
+								"id": "d",
+								"text": "sync the directory object to Microsoft Entra ID and remount the share"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"cipherType": "a",
+				"clientAction": "a"
+			},
+			"explanation": {
+				"correct": "AES256 is the supported and recommended Kerberos encryption type for identity-based access over SMB: AzFilesHybrid supports AES-256 only, and older module versions defaulted the storage account's directory object to RC4, which is why it still shows RC4-HMAC. The object is a computer account, so you set the cipher on it with Set-ADComputer -KerberosEncryptionType \"AES256\". Once the cipher changes, every client still holds tickets issued under the old one, so those cached tickets must be discarded (klist purge) and the share remounted so a ticket under the new cipher is requested.",
+				"perChoice": {
+					"cipherType:b": "RC4-HMAC is exactly the legacy value already in place, which is what fails once the domain tightens its cipher policy; the tooling supports AES-256 only, so the object has to move off it.",
+					"cipherType:c": "RC4 is the other legacy Kerberos cipher that pre-AES setups used; AzFilesHybrid supports AES-256 only, so setting RC4 leaves the account where it already fails.",
+					"cipherType:d": "DES-CBC-CRC is the oldest Kerberos cipher, from the NetBIOS era of directory accounts, and is not a cipher Azure Files identity-based access can be used with; AES-256 is the supported one.",
+					"clientAction:b": "Computer account passwords for a storage account rotate from the client machine (every 30 days by default) and never expire in AD, so refreshing the password is not what repairs the mount. The clients still hold tickets obtained under the old cipher, and only discarding those and remounting produces a ticket under the new one.",
+					"clientAction:c": "The account is already joined to the domain; Join-AzStorageAccount performs the offline domain join and creates the directory object. It is not a step each client runs, and repeating it does nothing to the tickets already cached on the clients.",
+					"clientAction:d": "The directory identity that represents the storage account never needs to be synced to Microsoft Entra ID, and forcing such a sync has no effect on the tickets held by the clients that are failing to mount."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-ad-ds-enable"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-active-directory-overview"
+				}
+			],
+			"subtopics": [
+				"kerberos-encryption-types",
+				"ad-ds-enablement",
+				"client-ticket-cache"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5M9GE22C1ARRZFAT3N2HJ74",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have storage account contosofs, and domain-joined Windows users already reach the SMB share \\\\contosofs.file.core.windows.net\\reports by presenting their own directory identity. The same account also publishes an NFS share, nfsshare, that a Linux cluster mounts, and the platform team wants those clients to sign in with their own identities the way the Windows users do. It is willing to create directory objects in the tenant and to switch on whatever protocol settings the account supports. You need a plan that gives the NFS workload the same sign-in experience as the Windows users. Which plan should you apply?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Share name",
+						"Protocol",
+						"How clients sign in today"
+					],
+					"rows": [
+						[
+							"\\\\contosofs.file.core.windows.net\\reports",
+							"SMB",
+							"Each user presents their own domain identity"
+						],
+						[
+							"nfsshare",
+							"NFS",
+							"A secret held in the cluster's mount configuration"
+						]
+					]
+				},
+				"statement": "For the NFS workload, {{plan}}.",
+				"slots": [
+					{
+						"id": "plan",
+						"options": [
+							{
+								"id": "a",
+								"text": "register the account with the on-premises domain and enable Kerberos in the SMB security settings"
+							},
+							{
+								"id": "b",
+								"text": "configure Microsoft Entra Kerberos for the account and enable it in the SMB security settings"
+							},
+							{
+								"id": "c",
+								"text": "assign a share-level role to the cluster's group so the NFS clients sign in with their identities"
+							},
+							{
+								"id": "d",
+								"text": "keep the NFS share on the account key, because identity-based sign-in is not available for NFS shares"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"plan": "d"
+			},
+			"explanation": {
+				"correct": "Directory-based sign-in for Azure Files is an SMB feature: the caller obtains a Kerberos ticket from the identity source configured on the account (here on-premises AD DS) and Azure Files authorizes the request from that ticket alone. NFS shares in the account are outside that mechanism, so no combination of domain registration, Kerberos settings, or Azure RBAC assignments gives the Linux clients their own identities on nfsshare. That workload therefore stays with the credential the cluster already holds, and if keyless access is required the data would have to be served from an SMB share or reached through a managed identity path.",
+				"perChoice": {
+					"plan:a": "Registering the account with the on-premises domain and enabling Kerberos in the SMB security settings is exactly what the Windows users on the reports share already rely on, but it changes nothing for the NFS clients, whose requests never travel the SMB path where a ticket is evaluated.",
+					"plan:b": "Microsoft Entra Kerberos is a cloud-friendly alternative identity source that also authorizes SMB clients from a ticket, but like the other sources it governs SMB file shares, so switching to it leaves the NFS clients as they are.",
+					"plan:c": "Share-level Azure RBAC roles such as Storage File Data SMB Share Reader or Contributor are only evaluated once a directory identity has been authorized for an SMB share. Since the NFS share cannot take part in identity-based access, granting the group a role changes nothing for those clients."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-active-directory-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-assign-share-level-permissions"
+				}
+			],
+			"subtopics": [
+				"identity-based-authentication",
+				"nfs-shares",
+				"directory-sources"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MN8XBYAXQZP4W3P9JCMQQA",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You registered storage account contosofs with your on-premises Active Directory so that a NAS appliance can mount \\\\contosofs.file.core.windows.net\\archive with its own identity instead of an account key, and the registration created a service logon account to represent the storage account. The appliance mounted the share for several weeks, and then every mount attempt began failing with a Kerberos error saying that the account's password had expired, while staff on Windows machines still open the same share with their own credentials and the directory object is still present in Active Directory. You need the appliance to reach the share with its own identity again. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Detail"
+					],
+					"rows": [
+						[
+							"Directory object created for contosofs",
+							"Service logon account (SamAccountName: contosofs)"
+						],
+						[
+							"Error returned to the appliance on every mount",
+							"The account's password has expired"
+						],
+						[
+							"Mounts from staff Windows machines using their own credentials",
+							"Succeeding"
+						],
+						[
+							"Share the appliance must reach",
+							"\\\\contosofs.file.core.windows.net\\archive"
+						]
+					]
+				},
+				"statement": "The step that gets the appliance mounting the share again with its own identity is {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "A 30-day rotation of the service logon account password from the appliance"
+							},
+							{
+								"id": "b",
+								"text": "A password refresh for the service logon account before the domain's maximum password age"
+							},
+							{
+								"id": "c",
+								"text": "A share-level data role assignment for the appliance's identity"
+							},
+							{
+								"id": "d",
+								"text": "An extra identity source on the storage account so a second credential can be used"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "b"
+			},
+			"explanation": {
+				"correct": "The registration created a service logon account, and service logon account passwords expire according to the expiration policy of the domain, so the credential the appliance presents ages out and Kerberos refuses the mount with an expired-password error. The documented remedy is to update that account's password before the maximum password age is reached, which is exactly what the correct option describes. The rest of the configuration is healthy: the directory object still exists, the account is still registered for identity-based access, and staff whose own passwords are managed elsewhere still mount the share successfully. The client-side rotation cycle belongs to computer accounts, not to this registration, and neither a data role nor a second identity source can repair a credential that has expired.",
+				"perChoice": {
+					"action:a": "That rotation cycle is how computer accounts behave: their password is changed by the client machine, by default every 30 days, and it never expires in Active Directory. This registration used a service logon account, whose password expires under the expiration policy of the domain and has to be updated by an administrator, so rotating from the appliance does not restore the mount.",
+					"action:c": "A share-level data role only governs what an identity may do with the share after authentication succeeds. It has no bearing on a Kerberos failure raised while the session is being established, and the appliance's directory identity has no Microsoft Entra ID object that such a role could be assigned to.",
+					"action:d": "Only one identity source can be configured per storage account, and contosofs is already registered with an on-premises directory that is working as intended, so a second source cannot be added and is not what is missing here."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-ad-ds-enable"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-active-directory-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-assign-share-level-permissions"
+				}
+			],
+			"subtopics": [
+				"azure-files-identity-based-access",
+				"kerberos-authentication",
+				"service-logon-account"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MP8K32GY1QG73P7VCMSJH5",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have storage account contosofs in resource group rg-files, and you have turned on identity-based access for its SMB shares against your on-premises Active Directory Domain Services (AD DS) domain by registering the account with the AzFilesHybrid module. Members of CONTOSO\\Readers can sign in to that domain, and the root of the reports share already lists that group with read and execute, yet each of those users receives access denied when opening \\\\contosofs.file.core.windows.net\\reports, and the other shares in the account behave the same way. You want every domain user to be able to open the documents in every share of contosofs, without changing the existing entries on any folder and without letting anyone rewrite or delete content. You also need to tell the service desk when it can start testing. Which change should you make, and how much time should the service desk allow before the first test?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Identity source for the SMB shares",
+							"On-premises Active Directory Domain Services (AD DS)"
+						],
+						[
+							"Kerberos under Authentication methods",
+							"Enabled"
+						],
+						[
+							"Account-wide default permission for shares",
+							"None"
+						],
+						[
+							"Permission entries on the reports share root",
+							"CONTOSO\\Readers - Read and execute"
+						],
+						[
+							"Result of a sign-in by a CONTOSO\\Readers member",
+							"Access denied"
+						]
+					]
+				},
+				"statement": "The account-wide default should be {{default_setting}}, and the service desk should wait {{propagation_wait}} before running the first access test.",
+				"slots": [
+					{
+						"id": "default_setting",
+						"options": [
+							{
+								"id": "a",
+								"text": "enabled for all authenticated users and groups, with Storage File Data SMB Share Reader"
+							},
+							{
+								"id": "b",
+								"text": "enabled for all authenticated users and groups, with Storage File Data SMB Share Contributor"
+							},
+							{
+								"id": "c",
+								"text": "enabled for all authenticated users and groups, with Storage File Data Privileged Reader"
+							},
+							{
+								"id": "d",
+								"text": "left at its current deny-everything value, with the existing entries on each share root deciding who can open what"
+							}
+						]
+					},
+					{
+						"id": "propagation_wait",
+						"options": [
+							{
+								"id": "a",
+								"text": "up to 30 minutes"
+							},
+							{
+								"id": "b",
+								"text": "no delay, and the first test can run as soon as the change is saved"
+							},
+							{
+								"id": "c",
+								"text": "up to 24 hours, and the service desk should schedule its checks for the next working day"
+							},
+							{
+								"id": "d",
+								"text": "until the directory computer account's password rotates, and the accounts team must track that date"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"default_setting": "a",
+				"propagation_wait": "a"
+			},
+			"explanation": {
+				"correct": "The account-wide default share permission applies to every share inside the storage account and, at its starting value, blocks all file and directory content, which is why domain users hit access denied even though their group is listed on the share root. Turning on the option that covers all authenticated users and groups and choosing the read-only share role lets every domain user clear the account-level gate, while the entries already on each folder still decide what those users can open, so nothing can be rewritten or deleted beyond what those entries allow. Share-level permission changes normally settle within about 30 minutes but can take longer than that, so the service desk must allow the change to propagate before treating a failed attempt as a fault.",
+				"perChoice": {
+					"default_setting:b": "Storage File Data SMB Share Contributor adds write and delete on top of read, so it grants more than the stated need and would let people alter content where their folder entries are meant to limit them to viewing.",
+					"default_setting:c": "Storage File Data Privileged Reader grants access on its own instead of honouring the entries on the folders, so it breaks the requirement that those entries keep deciding who may open what.",
+					"default_setting:d": "While the account-wide default stays at its deny-everything starting value, the account-level gate blocks every user regardless of what the share roots list, so the folder entries on their own cannot get anyone in.",
+					"propagation_wait:b": "A share-level permission change is not applied instantly; it normally needs up to about 30 minutes and can take even longer, so testing straight away risks reporting false failures.",
+					"propagation_wait:c": "There is no daily reset for share-level permissions; they normally settle within about 30 minutes, so waiting a full working day only holds the service desk back.",
+					"propagation_wait:d": "Rotation of the directory computer account's password has no bearing on how quickly a share-level permission change reaches the shares."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-assign-share-level-permissions"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-active-directory-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-configure-file-level-permissions"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-ad-ds-enable"
+				}
+			],
+			"subtopics": [
+				"default-share-permissions",
+				"share-level-rbac",
+				"permission-propagation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MPJ7TNS455K5P1JGJNFHD9",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have turned on identity-based access for the SMB shares in storage account contosofs against your on-premises Active Directory domain, and you hold the Storage File Data SMB Admin role on the reports share. One workbook in that share is owned by a disabled account, so its existing permissions stop you from editing them and you have to take ownership first. On a domain-joined Windows server you mapped \\\\contosofs.file.core.windows.net\\reports to a drive letter and tried to take ownership of the workbook and to read its permissions, but both commands report that the path cannot be found, and the share never shows up in File Explorer on that server. Platform policy rules out mounting these shares with a storage account key. You need the mapping to work with the Windows permission tooling so you can take ownership and fix the permissions. Which mount should you use?",
+				"exhibit": {
+					"kind": "code",
+					"language": "powershell",
+					"text": "PS C:\\> icacls Z:\\q3-report.xlsx\nERROR: The system cannot find the path specified.\n\nPS C:\\> takeown /f Z:\\q3-report.xlsx\nERROR: The system cannot find the path specified.\n\nPS C:\\> Get-PSDrive Z\n\nName  Provider      Root\n----  --------      ----\nZ     FileSystem    \\\\contosofs.file.core.windows.net\\reports"
+				},
+				"statement": "You should {{mountAction}}.",
+				"slots": [
+					{
+						"id": "mountAction",
+						"options": [
+							{
+								"id": "a",
+								"text": "mount the share with net use and assign it a drive letter"
+							},
+							{
+								"id": "b",
+								"text": "mount the share with a PowerShell drive and point the native permission tools at the drive-qualified path"
+							},
+							{
+								"id": "c",
+								"text": "mount the storage account root with net use and reach the share through it"
+							},
+							{
+								"id": "d",
+								"text": "mount the share with net use and assign it a drive letter using the storage account key"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"mountAction": "a"
+			},
+			"explanation": {
+				"correct": "Share mounts used for Windows ACL work have to be created with the Windows net use command, as the documentation requires, so the mapping is visible to File Explorer, cmd.exe and the native tools such as icacls and takeown. A drive created only inside PowerShell stays inside that session, so native commands report the path as missing - exactly what the session log shows even though Get-PSDrive lists Z. Because identity-based access is already enabled against the on-premises domain and the Storage File Data SMB Admin role is held, mounting with the admin's own domain identity and then running takeown is the supported way to take ownership of a workbook whose existing ACL blocks the change, after which the ACL can be edited. This keeps the storage account key out of the picture.",
+				"perChoice": {
+					"mountAction:b": "A drive created with New-PSDrive exists only inside the PowerShell session and is not exposed to File Explorer, cmd.exe or native tools such as icacls and takeown. That is precisely why those commands reported the path as missing even though Get-PSDrive listed the mapping, and aiming the same tools at the drive-qualified path does not change it.",
+					"mountAction:c": "Azure Files mounts are made per file share, so the mapping has to point at \\\\contosofs.file.core.windows.net\\reports rather than at the account root; the account root is not a mountable share and gives the permission tools nothing to operate on.",
+					"mountAction:d": "This is the documented but less secure fallback: a key mount grants immediate full access to everything on the share without any need to take ownership, and this scenario rules it out by platform policy. The Storage File Data SMB Admin role is the supported alternative for taking ownership of a file whose existing ACL blocks you."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-configure-file-level-permissions"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-active-directory-overview"
+				}
+			],
+			"subtopics": [
+				"identity-based-access",
+				"file-level-permissions",
+				"smb-mounting"
+			],
+			"reviewed": false
+		}
+	]
+}

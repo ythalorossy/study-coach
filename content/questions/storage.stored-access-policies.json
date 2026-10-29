@@ -1,0 +1,1781 @@
+{
+	"skill": "storage.stored-access-policies",
+	"questions": [
+		{
+			"id": "q_01M5KBA3KXBKD0701HKK6M0BCJ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You hand SAS tokens to an external partner so its applications can upload and read files in a Blob Storage container. If the contract ends you must shut that partner off within minutes, and you cannot regenerate the storage account keys because unrelated workloads also use them. You review the tokens already sitting in the partner's configuration, as listed below. Which token design should you adopt going forward?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Token recipient",
+						"Signed with",
+						"Signed identifier field",
+						"Valid until"
+					],
+					"rows": [
+						[
+							"Partner upload app",
+							"Storage account key",
+							"empty",
+							"2028-03-31"
+						],
+						[
+							"Partner reporting app",
+							"Storage account key",
+							"empty",
+							"2027-09-30"
+						],
+						[
+							"Finance reporting job",
+							"Storage account key",
+							"empty",
+							"2027-04-01"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Hand out a service SAS that references a stored access policy on the container, and revoke by changing or deleting that policy"
+					},
+					{
+						"id": "b",
+						"text": "Hand out an account SAS that references a stored access policy on the container, and revoke by changing or deleting that policy"
+					},
+					{
+						"id": "c",
+						"text": "Hand out a user delegation SAS that references a stored access policy on the container, and revoke by changing or deleting that policy"
+					},
+					{
+						"id": "d",
+						"text": "Hand out a service SAS with a short expiry that is reissued on a schedule, and revoke by waiting for the current token to lapse"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A stored access policy can only be attached to a service SAS. Because the start time, expiry and permissions live server side on the container, the token inherits them, so editing or deleting that policy instantly stops every service SAS bound to it — and the account keys never have to be regenerated. A service SAS is also the narrower token here: it is signed with the account key and delegates to a resource in only one storage service (Blob Storage, in this case), which is all the partner needs.",
+				"perChoice": {
+					"b": "An account SAS spans one or more storage services and adds service-level operations such as Get/Set Service Properties, but it must always be an ad hoc token. Stored access policies are not supported for account SAS, so editing or deleting a policy on the container would have no effect on it and the partner would keep access.",
+					"c": "A user delegation SAS is signed with a user delegation key derived from Microsoft Entra credentials instead of the account key. Microsoft recommends it for security, but it also must always be an ad hoc token and cannot reference a stored access policy, so the on-demand revocation described here is not achievable with it.",
+					"d": "Near-term expiry on an ad hoc token only limits how long a leaked token is useful; it does not let you cut the partner off when you need to. Revocation here would depend on the reissue schedule, not on any action you take at the time of the incident, so the requirement to shut access off within minutes is not met. Near-term expiry is the recommended fallback when a stored access policy cannot be referenced."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-stored-access-policy-define-dotnet"
+				}
+			],
+			"subtopics": [
+				"sas-revocation",
+				"service-sas",
+				"sas-types"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KBFXFJTE59Z3E51JRXBQH3",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an ASP.NET service running on AKS that uses a system-assigned managed identity. On start-up it calls CreateIfNotExistsAsync for the reports container and then SetAccessPolicyAsync to define the policy that the service SAS tokens it hands out depend on. Blob reads and writes through the same identity work all day, and the container call succeeds, but the policy definition fails every time with HTTP 403 and ErrorCode AuthorizationFailure. You need the policy to be defined automatically at start-up with no operator step. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Configured value"
+					],
+					"rows": [
+						[
+							"Pod identity",
+							"System-assigned managed identity via DefaultAzureCredential"
+						],
+						[
+							"Credential material available to the pod",
+							"Managed identity only; no key material in configuration"
+						],
+						[
+							"Role assignment scoped to the container",
+							"Storage Blob Data Contributor"
+						],
+						[
+							"Start-up call that defines the policy",
+							"SetAccessPolicyAsync with one BlobSignedIdentifier (Id = reports-v2, StartsOn = 15 minutes in the past, ExpiresOn = 30 days ahead, Permissions = rw)"
+						],
+						[
+							"Result of that call",
+							"RequestFailedException, HTTP 403 (Forbidden), ErrorCode: AuthorizationFailure"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Build the container client from a connection string that holds an account access key, so the SetAccessPolicyAsync request is authorized with Shared Key"
+					},
+					{
+						"id": "b",
+						"text": "Assign Storage Blob Data Owner to the app's managed identity so the identity is authorized to change the container's policies"
+					},
+					{
+						"id": "c",
+						"text": "Acquire an Entra access token for the managed identity and pass that token to SetAccessPolicyAsync as the credential"
+					},
+					{
+						"id": "d",
+						"text": "Grant the app the Microsoft.Storage/storageAccounts/blobServices/generateUserDelegationKey action and sign the request with the resulting delegation key"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The REST operation behind stored access policy creation is Set Container ACL, and that operation must be authorized with Shared Key using the account access keys supplied in a connection string; Microsoft Entra credentials are explicitly not supported for it. That is why the same managed identity can read and write blobs yet receives 403 when SetAccessPolicyAsync tries to define the policy. Supplying the account access key in a connection string so the request is signed with Shared Key is the change that makes the policy definition succeed.",
+				"perChoice": {
+					"b": "No role assignment, however broad, makes this work. The failure is not a permissions-scope problem: the operation that creates the stored access policy cannot be authorized with Microsoft Entra credentials at all, so widening the managed identity's data-plane role still returns 403.",
+					"c": "Handing an Entra token to the SDK makes the call an Entra-authorized request, and an Entra-authorized Set Container ACL is rejected. The credential type itself is the problem here, not its scope.",
+					"d": "A user delegation key is what signs a user delegation SAS, and stored access policies apply to a service SAS only. It is not a credential that can authorize Set Container ACL, so the call would still fail."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-stored-access-policy-define-dotnet"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				}
+			],
+			"subtopics": [
+				"stored-access-policies",
+				"shared-key-authorization",
+				"service-sas"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KBKA1QQJAFZ3CXQA2S7MFJ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Five internal teams each need their own read/write access to the blobs in a single Blob Storage container, and each team must be able to have its access cancelled without disturbing the others. Every team's token is a service SAS that names a signed identifier on that container, so that you can change or cancel one team's access without regenerating the storage account keys. The container currently holds the entries listed below, and a sixth team starts on Monday needing the same read/write access. You must keep the five running teams working. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Signed identifier",
+						"Used by",
+						"Expires",
+						"Permissions"
+					],
+					"rows": [
+						[
+							"team-finance",
+							"Finance reporting",
+							"2026-12-31",
+							"rw"
+						],
+						[
+							"team-legal",
+							"Legal discovery",
+							"2026-12-31",
+							"rw"
+						],
+						[
+							"team-hr",
+							"HR case files",
+							"2027-03-31",
+							"rw"
+						],
+						[
+							"team-ops",
+							"Operations dashboard",
+							"2027-06-30",
+							"r"
+						],
+						[
+							"team-sales",
+							"Sales exports",
+							"2027-09-30",
+							"rw"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Reassign a signed identifier that its present user no longer needs, then issue the new team's service SAS against that identifier."
+					},
+					{
+						"id": "b",
+						"text": "Define a new signed identifier on a second container in the same storage account and issue the new team's service SAS against it."
+					},
+					{
+						"id": "c",
+						"text": "Move the signed identifiers up to the storage account so the new team's entry does not compete for a slot on the container."
+					},
+					{
+						"id": "d",
+						"text": "Add the new signed identifier as an extra entry on the container and let the service retire the oldest entry automatically."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A container can hold at most five stored access policies, and defining a sixth is not supported, so a request carrying an extra entry is rejected. Because the new team needs access it can lose without rotating keys, it must stay on a service SAS that names a signed identifier, and the only way to supply one is to take over an identifier slot whose previous user no longer needs it. The five running teams are unaffected because their identifiers and their start, expiry and permission values are left alone.",
+				"perChoice": {
+					"b": "A stored access policy lives on the container whose resources it protects, so an identifier kept on a different container can only yield a service SAS for that other container's resources. The new team would still have no access to the shared container, and the five-entry limit still applies to whichever container holds the entries.",
+					"c": "There is no account-level collection of stored access policies that a service SAS can reference. They are held on the container resource and the maximum of five applies to that container, so moving the identifiers up to the storage account is not something the service supports.",
+					"d": "Nothing is retired automatically on your behalf. The Set Container ACL request that creates policies sets the container's policy collection from the list you send, and going past five entries on a container is unsupported, so the call fails instead of silently dropping the oldest one."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-stored-access-policy-define-dotnet"
+				}
+			],
+			"subtopics": [
+				"stored-access-policy-limits",
+				"container-level-sas-policy"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KBRQV40FTD71174C2GP3BF",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You support a Blob Storage container of scanned invoices that three client applications read directly, each using a service SAS that points at a signed identifier on that container. Every client takes its token once during installation, stores it in its own configuration, and only asks for a replacement after a call fails. The client teams cannot be redeployed on demand, so the tokens they hold must keep working for months without a manual reissue. You must change how the constraints on the container are configured. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Signed identifier named by the three client tokens",
+							"scanonapp"
+						],
+						[
+							"StartsOn",
+							"2026-08-01T00:00:00Z"
+						],
+						[
+							"ExpiresOn",
+							"2026-10-30T00:00:00Z"
+						],
+						[
+							"Permissions",
+							"rl"
+						],
+						[
+							"Signed resource in each token",
+							"c (whole container)"
+						],
+						[
+							"Client behaviour",
+							"Token stored at install time and reused until a call fails"
+						],
+						[
+							"Outage on 2026-09-15",
+							"403 (Forbidden) for two clients for four hours until an engineer issued replacement tokens by hand"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set ExpiresOn far in the future (or infinite) and move it further out on a recurring basis"
+					},
+					{
+						"id": "b",
+						"text": "Leave ExpiresOn at its current value and add a second signed identifier carrying the same dates for new clients"
+					},
+					{
+						"id": "c",
+						"text": "Set ExpiresOn to the date the supplier contract ends and change nothing on the container after that"
+					},
+					{
+						"id": "d",
+						"text": "Set ExpiresOn to one hour and have each client fetch a replacement token every hour"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The start time, the expiry time and the permissions are held on the container and are enforced on every request, so a token that names the signed identifier can never be more permissive or longer-lived than the values shown in the exhibit. Because the clients here reuse one token until a call fails, the expiry has to be pushed out to a point they will never reach, and kept moving outward over time; that is the documented approach for long-lived tokens. That keeps the outage on 2026-09-15 from repeating when the current 2026-10-30 date arrives, without any client-side change.",
+				"perChoice": {
+					"b": "Adding a second signed identifier with the same dates changes nothing for the three existing clients, whose tokens already name scanonapp. They will fail the moment the current date passes, because the policy is checked on each request and there is no automatic replacement.",
+					"c": "This is the same fixed-date pattern that already produced the 2026-09-15 outage: once that instant is reached, every service SAS bound to the signed identifier starts returning 403 (Forbidden) and stays broken until the stored value itself is changed. Clients that only reissue after a failure will simply keep failing.",
+					"d": "An expiry of one hour only works if every client refreshes on a schedule. These clients install the token once and reuse it until a call fails, so requests would be rejected for nearly all of each hour, and the client teams have said they cannot redeploy on demand."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-stored-access-policy-define-dotnet"
+				}
+			],
+			"subtopics": [
+				"stored-access-policy",
+				"sas-expiry",
+				"service-sas"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KBVMRE5DCF2BBMQCQ1190Q",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an ASP.NET service that issues service SAS tokens for a Blob Storage container, where each token names a signed identifier that the service writes to the container with SetAccessPolicyAsync. Field reports say that a token a user has just pasted into a request is rejected for the first several minutes and then works, with nothing changed on the user's side, and your monitoring shows HTTP 403 on only those early requests. You need to correct how the constraints on the container are defined so that a token is usable the moment it is handed out. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "var signedIdentifiers = new List<BlobSignedIdentifier>\n{\n    new BlobSignedIdentifier\n    {\n        Id = \"vendorupload\",\n        AccessPolicy = new BlobAccessPolicy\n        {\n            StartsOn   = DateTimeOffset.UtcNow,\n            ExpiresOn  = DateTimeOffset.UtcNow.AddDays(1),\n            Permissions = \"rw\"\n        }\n    },\n    new BlobSignedIdentifier\n    {\n        Id = \"backupreader\",\n        AccessPolicy = new BlobAccessPolicy\n        {\n            StartsOn   = DateTimeOffset.UtcNow,\n            ExpiresOn  = DateTimeOffset.UtcNow.AddDays(1),\n            Permissions = \"r\"\n        }\n    }\n};\n\nawait container.CreateIfNotExistsAsync();\nawait container.SetAccessPolicyAsync(signedIdentifiers);"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set the start time on each signed identifier about 15 minutes earlier than the moment the entry is written"
+					},
+					{
+						"id": "b",
+						"text": "Set the start time on each signed identifier about 15 minutes later than the moment the entry is written"
+					},
+					{
+						"id": "c",
+						"text": "Set the expiry on each signed identifier about 15 minutes later than the moment the entry is written"
+					},
+					{
+						"id": "d",
+						"text": "Leave the start time and expiry on each signed identifier as they are, and have the issuing code put its own start time into every token"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The storage service and the calling client can disagree about the current time by roughly a quarter of an hour in either direction. Because both entries use DateTimeOffset.UtcNow as the start time, requests that reach the service before its clock has reached that instant are rejected, and the 403 errors stop once the service's clock passes the recorded value. Writing the start time about 15 minutes in the past absorbs that discrepancy so a token bound to the identifier is accepted immediately by every client.",
+				"perChoice": {
+					"b": "Moving the start time into the future widens rather than removes the window in which early requests are refused, so the first calls after issuance would keep failing for a longer period.",
+					"c": "The failures happen at the beginning of the validity window, not the end, so moving the expiry has no effect on them; as written here it would also cut the usable lifetime of every token down to about a quarter of an hour.",
+					"d": "A service SAS that references a signed identifier inherits the start time, expiry and permissions held on the container, so values placed in the token itself do not override the entry; the early rejections would continue."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-stored-access-policy-define-dotnet"
+				}
+			],
+			"subtopics": [
+				"clock-skew",
+				"signed-identifiers",
+				"service-sas"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KC21MN6EP1Y6T9NRCAFS05",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "A nightly job in your release pipeline writes the access policy entries for the blob container 'vendor-dropbox' by calling SetAccessPolicyAsync with the list shown below. Last week someone trimmed that list so it carries only the newest vendor entry. Since that run, the four partner applications whose tokens name the entries that were on the container before the trim fail on every request with HTTP 403, and a portal check of the container's access policies now reports a single entry. None of those partners' tokens or settings changed. You must correct the job so the next nightly run leaves the tokens other teams depend on working. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "// nightly policy job for container \"vendor-dropbox\"\nvar signedIdentifiers = new List<BlobSignedIdentifier>\n{\n    new BlobSignedIdentifier\n    {\n        Id = \"vendor-write-2026\",\n        AccessPolicy = new BlobAccessPolicy\n        {\n            StartsOn    = DateTimeOffset.UtcNow.AddMinutes(-15),\n            ExpiresOn   = DateTimeOffset.UtcNow.AddDays(30),\n            Permissions = \"rw\"\n        }\n    }\n};\n\nawait containerClient.SetAccessPolicyAsync(signedIdentifiers);"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Have the job read the signed identifiers currently on the container and pass them together with the new entry to SetAccessPolicyAsync."
+					},
+					{
+						"id": "b",
+						"text": "Replace the single call with one SetAccessPolicyAsync call per signed identifier, so that each entry is written separately."
+					},
+					{
+						"id": "c",
+						"text": "Keep the trimmed list but move the call into a runbook step that an operator executes after inspecting the container by hand."
+					},
+					{
+						"id": "d",
+						"text": "Drop the call from the job and hand each partner a token that carries its own start time, expiry and permissions rather than naming an entry."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "SetAccessPolicyAsync sets the container's whole access policy collection from the list of signedIdentifiers you pass: the entries you omit are removed. Trimming the list therefore deleted the four entries that the partner tokens name, and because a service SAS bound to a stored access policy is checked against that policy on every request, those tokens started failing with HTTP 403 the moment the entries went. Reading the identifiers already on the container and passing them together with the new entry preserves every token other teams depend on while still adding the new one.",
+				"perChoice": {
+					"b": "Each call still sets the entire collection to whatever single identifier that call contains, so the earlier entries are removed one after another and only the last one survives — the same loss of tokens, just spread across several calls.",
+					"c": "The trimmed list still overwrites the container's policy collection whenever it runs, and a manual runbook step does not restore the entries that were already removed, so the broken tokens stay broken and the next run repeats the damage.",
+					"d": "A token that embeds its own start time, expiry and permissions holds no server-side constraints, so nothing on the container can edit or cancel it afterwards; this abandons the control you need and still leaves the four failing tokens unfixed."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-stored-access-policy-define-dotnet"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				}
+			],
+			"subtopics": [
+				"set-access-policy",
+				"signed-identifiers",
+				"policy-collection-overwrite"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KC7CFB7K1VPA36ZXD7Z3JR",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a licensing portal that hands each retail kiosk a service SAS so the kiosk can read its licence file from the blob container 'license-files' without ever holding an account key. Kiosks refresh their own token through the portal once a year, so the signed identifier on that container is written to stay valid for roughly one year. Your compliance team has reviewed the settings and issuance output below and asked for the generation-time warnings and log entries to stop, while the kiosks keep exactly the access length they have today. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Current value or observation"
+					],
+					"rows": [
+						[
+							"Token handed to a kiosk",
+							"Service SAS naming signed identifier 'kiosk-read' on container 'license-files'"
+						],
+						[
+							"Signed identifier 'kiosk-read'",
+							"Starts immediately, expires 2027-10-20"
+						],
+						[
+							"Account recommended maximum SAS validity",
+							"24 hours"
+						],
+						[
+							"Result of each issuance",
+							"A warning is raised and one entry is written to the Azure Monitor logs"
+						],
+						[
+							"Kiosk refresh behaviour",
+							"Kiosk pulls a new token from the portal once a year; no field visits"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set the SAS expiration policy on the storage account to 365 days."
+					},
+					{
+						"id": "b",
+						"text": "Set the SAS expiration policy on the storage account to 30 days and leave the container's signed identifier as it is."
+					},
+					{
+						"id": "c",
+						"text": "Rewrite the container's signed identifier so it expires in 24 hours, and keep issuing kiosk tokens against it."
+					},
+					{
+						"id": "d",
+						"text": "Hand the kiosks account SAS tokens that carry the same one-year expiry instead."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The account-level SAS expiration policy defines a recommended upper validity interval, and it applies to service SAS tokens as well as account SAS tokens. Each kiosk token inherits the roughly one-year validity of the container's signed identifier, which is far longer than the 24 hours the account currently recommends, so every issuance exceeds the recommendation and produces the warning plus the storage log entry you see. Raising the account's SAS expiration policy to 365 days aligns the recommendation with the longest token you intend to issue, so the generation-time warnings and log entries stop while the kiosks keep the same year-long access and nothing has to be redeployed. Remember that this setting is only a recommendation: exceeding it never blocks a token, which is exactly why the mismatch shows up as noise rather than as an error.",
+				"perChoice": {
+					"b": "Thirty days is still far shorter than the roughly one-year validity that the signed identifier gives every kiosk token, so each issuance would continue to exceed the recommended upper interval and keep producing the same warning and log entry — and it would only make the gap worse for any token issued today.",
+					"c": "A service SAS that references the signed identifier inherits that entry's start time, expiry time and permissions. Rewriting 'kiosk-read' to expire in 24 hours would cut off kiosks that can only refresh once a year, so those devices would begin receiving HTTP 403 (Forbidden), and it still leaves the account-level recommendation untouched.",
+					"d": "Account SAS tokens are covered by the account's SAS expiration policy in exactly the same way as service SAS tokens, so a one-year account SAS would keep triggering the same warning and log entry. It would also grant the kiosks broader multi-service and service-level access (including operations such as Get/Set Service Properties) than reading a single licence file requires."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-stored-access-policy-define-dotnet"
+				}
+			],
+			"subtopics": [
+				"sas-expiration-policy",
+				"service-sas-vs-account-sas",
+				"signed-identifier"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KC9Z1M84RC7MZY14AX5XK6",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "A billing vendor downloads one statement PDF at a time from the blob container 'vendor-invoices' using a token that names the access policy entry shown below. Last week one of those tokens was pasted into a public forum, and your security team has ruled that a token in someone else's hands must never let the holder upload, overwrite or delete anything, and must not expose any file other than the single statement that was requested. The vendor's app keeps working against the same entry without being reconfigured. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting on container 'vendor-invoices'",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Signed identifier name",
+							"vendor-read"
+						],
+						[
+							"Start time",
+							"2026-10-01T00:00:00Z"
+						],
+						[
+							"Expiry time",
+							"2028-09-30T00:00:00Z"
+						],
+						[
+							"Permissions",
+							"racwd"
+						],
+						[
+							"Signed resource on the issued tokens",
+							"c=vendor-invoices"
+						],
+						[
+							"Token query fields seen in the vendor's app",
+							"sv=2022-11-02, sr=c, sp=racwd, st=2026-10-01T00:00:00Z, se=2028-09-30T00:00:00Z, sig=…"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set the entry's permissions to read and issue each token for one blob rather than the container"
+					},
+					{
+						"id": "b",
+						"text": "Set the entry's permissions to read and keep issuing each token for the container"
+					},
+					{
+						"id": "c",
+						"text": "Set the entry's permissions to read, add, create, write and delete and issue each token for one blob rather than the container"
+					},
+					{
+						"id": "d",
+						"text": "Set the entry's permissions to read and list and keep issuing each token for the container"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The vendor never uploads or deletes, so the entry's permission string can drop add, create, write and delete and keep read alone. Narrowing further, the token's signed resource should be the specific blob rather than the whole container, so a leaked token exposes nothing beyond the one statement file. Because the constraints are held on the container and enforced server side, tokens already in the field pick up the tightened settings without any change on the vendor's side. This follows Microsoft's guidance to grant the least privilege possible: a read-only SAS where that suffices, scoped to a single object rather than read/write/delete across every object.",
+				"perChoice": {
+					"b": "Reducing the permissions helps, but a token whose signed resource is the container still lets the holder read every blob in 'vendor-invoices'. That conflicts with the requirement that nothing beyond the single requested file be readable.",
+					"c": "Issuing the token for a single blob does bound the exposure, but leaving add, create, write and delete in the entry still lets the holder upload, overwrite or delete content, which the security team has ruled out and the vendor does not need for downloading statements.",
+					"d": "Read plus list at container scope still lets the holder enumerate the blobs in the container, and the vendor's app downloads a file whose path it already knows, so the listing capability is unnecessary as well as contrary to the requirement."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-stored-access-policy-define-dotnet"
+				}
+			],
+			"subtopics": [
+				"stored-access-policy-permissions",
+				"least-privilege-sas",
+				"sas-token-scope"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KCH6A0ND69JATWCC937CZ6",
+			"body": {
+				"format": "drag-drop",
+				"stem": "One storage account serves four client groups, and each group has a different requirement listed below. Match each requirement to the kind of token you should hand that group. One item on the list is needed by no group.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Client group",
+						"Business driver"
+					],
+					"rows": [
+						[
+							"Stock reporting",
+							"Reads finished batches in blobs and drains a back-office queue from one integration"
+						],
+						[
+							"Mobile banking app",
+							"Corporate security will not let the app sit anywhere near a storage key"
+						],
+						[
+							"Payroll bureau",
+							"The contract could end at any time and other workloads also depend on the current keys"
+						],
+						[
+							"Data science team",
+							"Sandbox work that must not outlive the sprint, run by staff who already hold the keys"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "User delegation SAS"
+					},
+					{
+						"id": "i2",
+						"text": "Service SAS with a stored access policy"
+					},
+					{
+						"id": "i3",
+						"text": "Account SAS"
+					},
+					{
+						"id": "i4",
+						"text": "Ad hoc service SAS with a short expiry"
+					},
+					{
+						"id": "i5",
+						"text": "Public container access level with anonymous read on every blob"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "One token must reach Blob Storage and Queue Storage and must also be able to read and write the settings of those services"
+					},
+					{
+						"id": "s2",
+						"label": "The holder's rights must be checked against Microsoft Entra ID rather than against a shared key"
+					},
+					{
+						"id": "s3",
+						"label": "One group must be cut off later without anyone regenerating the storage keys"
+					},
+					{
+						"id": "s4",
+						"label": "No record may be kept on the resource; the token itself must carry when it becomes valid, when it stops being valid and what it allows"
+					}
+				]
+			},
+			"key": {
+				"s1": "i3",
+				"s2": "i1",
+				"s3": "i2",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "The keyed placement pairs each business requirement with the token form that can actually satisfy it: the multi-service, service-level requirement takes an account SAS (i3); the Entra-enforced requirement takes a user delegation SAS (i1); the revocability requirement takes a service SAS that names a stored access policy on the container (i2); and the requirement that nothing be recorded on the resource takes a token whose constraints travel in the token itself, an ad hoc service SAS with a near-term expiry (i4). Public container access (i5) serves none of the four groups.",
+				"perChoice": {
+					"i1": "Belongs in s2. A user delegation SAS is signed with a user delegation key that is created from Microsoft Entra credentials, so the service evaluates the holder's rights against Entra ID instead of against the shared key. It is always issued ad hoc; a stored access policy cannot be attached to it.",
+					"i2": "Belongs in s3. A service SAS that names a stored access policy takes its start time, expiry and permissions from that policy, which is held on the container, so the permissions can be changed or revoked after the token has been handed over and the storage keys do not have to be regenerated. It delegates to one storage service only.",
+					"i3": "Belongs in s1. An account SAS spans one or more storage services and adds service-level operations such as Get/Set Service Properties and Get Service Stats, which a service SAS does not permit. It is signed with the storage account key and must always be ad hoc.",
+					"i4": "Belongs in s4. An ad hoc SAS carries its start, expiry and permissions in the query string of the URI itself, so nothing is kept server-side on the blob container, file share, queue or table. Keeping the expiry short limits how long a leaked token is useful.",
+					"i5": "Fits no slot. A public container access level makes every blob in the container anonymously readable with no token at all, which is too broad for the reporting, banking, payroll and sandbox groups, and it cannot be narrowed to one object, limited in time or revoked per client."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-stored-access-policy-define-dotnet"
+				}
+			],
+			"subtopics": [
+				"sas-token-types",
+				"stored-access-policies",
+				"least-privilege"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KCQ3BTJ4BNN5BX8GTK3H38",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are redesigning how access credentials are issued from the storage resource 'researchprod', which today serves the blob container 'research-datasets', one queue and one table. Four consumers draw their credentials from it. The table records what each consumer must reach and how its credential has to behave. Match each consumer to the kind of token you should issue to it. One item on the list is not issued to anyone.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Consumer",
+						"What the credential must reach",
+						"How the credential has to behave"
+					],
+					"rows": [
+						[
+							"Northwind Analytics, an external partner",
+							"Blobs in the single container 'research-datasets'",
+							"The grant must end within minutes of the contract ending, and the storage keys are also used by workloads that must not be disturbed"
+						],
+						[
+							"FieldOps mobile app",
+							"Blobs in 'research-datasets'",
+							"Authorized through the employee identities that are already in Microsoft Entra ID, and the app itself must hold no shared key"
+						],
+						[
+							"Platform maintenance job",
+							"Queue messages, table entities, and the ability to Get/Set Service Properties",
+							"Short-lived and used for one purpose only, with no need to cancel it early"
+						],
+						[
+							"Legacy migration runbook",
+							"Blobs in 'research-datasets', including deleting copies that the migration supersedes",
+							"Valid only for the duration of the migration window, with no need to cancel it early"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "t1",
+						"text": "Ad hoc user delegation SAS"
+					},
+					{
+						"id": "t2",
+						"text": "Ad hoc service SAS"
+					},
+					{
+						"id": "t3",
+						"text": "Ad hoc account SAS"
+					},
+					{
+						"id": "t4",
+						"text": "Service SAS bound to a stored access policy"
+					},
+					{
+						"id": "t5",
+						"text": "User delegation SAS bound to a stored access policy"
+					}
+				],
+				"slots": [
+					{
+						"id": "northwind",
+						"label": "Northwind Analytics"
+					},
+					{
+						"id": "fieldops",
+						"label": "FieldOps mobile app"
+					},
+					{
+						"id": "maintenance",
+						"label": "Platform maintenance job"
+					},
+					{
+						"id": "migration",
+						"label": "Legacy migration runbook"
+					}
+				]
+			},
+			"key": {
+				"northwind": "t4",
+				"fieldops": "t1",
+				"maintenance": "t3",
+				"migration": "t2"
+			},
+			"explanation": {
+				"correct": "Each consumer's reach and governance point at a different token design. Northwind Analytics must be shut off within minutes while the shared keys stay untouched, which is exactly what a service SAS bound to a stored access policy allows: the times and permissions are held on the container, so they can be changed or the grant withdrawn without regenerating the keys, and the SAS stays inside the limits of the policy it names. The FieldOps app is authorized by Microsoft Entra ID and may not keep a shared key, so it needs an ad hoc user delegation SAS, which is signed with a delegation key derived from Entra credentials and is the strongest option whenever the scenario allows it. The maintenance job must reach queue, table and blob in one token and run service-level operations such as Get/Set Service Properties, which are outside what a service SAS permits, so it needs an ad hoc account SAS; no early cancellation is required, so nothing is lost by keeping the values in the URI. The migration runbook needs write and delete on one blob container only for the length of its window, so an ad hoc service SAS with a near-term expiry fits, since a service SAS delegates access to a single storage service and is signed with the account key. The last item on the list is impossible to issue: the constraints kept server side on the container apply to a service SAS only, and a user delegation SAS must always be an ad hoc token carrying its own start time, expiry and permissions.",
+				"perChoice": {
+					"t1": "Fits the FieldOps mobile app: a user delegation SAS is authorized by Microsoft Entra ID rather than the account key, and the app must hold no shared key.",
+					"t2": "Fits the Legacy migration runbook: access is confined to blobs in one container, deletion is needed, early cancellation is not, so an ad hoc service SAS with a short expiry is the leanest fit.",
+					"t3": "Fits the Platform maintenance job: only an account SAS spans more than one storage service and adds operations such as Get/Set Service Properties, which the job requires.",
+					"t4": "Fits Northwind Analytics: naming a stored access policy on the container keeps the times and permissions under your control, so the partner's grant can be ended quickly without touching the storage keys.",
+					"t5": "Fits no consumer, because it cannot be issued: a stored access policy only supplies the constraints of a service SAS, while a user delegation SAS must be ad hoc with its own start time, expiry and permissions."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-stored-access-policy-define-dotnet"
+				}
+			],
+			"subtopics": [
+				"stored-access-policies",
+				"sas-token-types",
+				"revocable-access"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KD3YQKG1884QFGQHRQZKVA",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You administer a storage service that holds a Blob Storage container, a queue, a table and several on-premises integrations. Four reports arrived this week, listed below. Match each report to the factor behind it. One factor on the list is behind none of the reports.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Report",
+						"What was observed"
+					],
+					"rows": [
+						[
+							"A",
+							"A partner's app asks for a token good for eight hours; the answer is an error, and every token the app does get stops working sixty minutes after issue."
+						],
+						[
+							"B",
+							"A partner with a live write token uploaded a very large object and has been fetching it repeatedly; the month's charges are far above forecast."
+						],
+						[
+							"C",
+							"A token was intercepted on the path between your portal and a partner's app, and the person who intercepted it used it successfully from their own machine."
+						],
+						[
+							"D",
+							"The nightly job that uploads extracts now fails with an access-denied error; it signs its tokens from the connection string and nothing else about it changed."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "A REST API version from 2012-02-12 or earlier handling the calls"
+					},
+					{
+						"id": "i2",
+						"text": "A named policy that bounds permissions and lifetime but not data volume"
+					},
+					{
+						"id": "i3",
+						"text": "A token delivered to the user without TLS"
+					},
+					{
+						"id": "i4",
+						"text": "An account that refuses anything not authorized by Microsoft Entra ID"
+					},
+					{
+						"id": "i5",
+						"text": "A policy whose start time equals the moment the user collects the token"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "A token requested for eight hours is refused, and issued tokens stop working after sixty minutes"
+					},
+					{
+						"id": "s2",
+						"label": "Monthly charges climb while one live token uploads and re-downloads a very large object"
+					},
+					{
+						"id": "s3",
+						"label": "A token intercepted in transit is reused successfully by the interceptor"
+					},
+					{
+						"id": "s4",
+						"label": "A nightly upload job that signs from the connection string is denied after security hardening"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Report A points to the caller, not the token settings: through a REST version from 2012-02-12 or earlier a standalone SAS token is capped at one hour of validity, so an eight-hour ask is refused outright and anything issued dies at sixty minutes. Report B is a scope limit that no policy can fix: a stored access policy pins the start time, expiry and permissions server side, but it does not cap how much data the holder moves, so every byte of that repeated traffic is billed to the owner. Report C is a transport problem: a token sent over plain HTTP can be captured in transit and replayed by the interceptor exactly as the intended client, so tokens must travel only over HTTPS. Report D follows from tightening authorization at the account level: with key-based (Shared Key) authorization turned off, requests signed with the account key — which is what the connection-string job relies on, including account-key SAS for blob and queue work — are refused, leaving only requests authorized by Microsoft Entra ID.",
+				"perChoice": {
+					"i1": "Belongs with report A. Against a REST version from 2012-02-12 or earlier, a standalone SAS token cannot exceed one hour of validity and asking for a longer window fails outright, which matches both the refused eight-hour ask and the sixty-minute lifetime of what does get issued.",
+					"i2": "Belongs with report B. A stored access policy governs the start time, the expiry and the permissions, so it controls who can use a token and for how long, but narrowing those never caps transferred bytes; read and write rights plus repeated transfers are billed to the account owner.",
+					"i3": "Belongs with report C. Anything sent over plain HTTP can be captured by a man-in-the-middle and reused exactly as the intended client, so a token delivered without TLS is playable by whoever intercepted it.",
+					"i4": "Belongs with report D. Turning off Shared Key authorization for the account prevents account-key-signed SAS for blob and queue workloads and rejects any request signed with the account key, which is exactly how that job builds its tokens; only requests authorized by Microsoft Entra ID are still accepted.",
+					"i5": "Fits none of the four reports. A start time set to the instant the token is collected is the clock-skew case, which shows up as a freshly handed-over token being rejected with 403 for the first several minutes and then working unchanged; none of the reports describes that pattern."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-stored-access-policy-define-dotnet"
+				}
+			],
+			"subtopics": [
+				"stored-access-policy-scope",
+				"sas-failure-causes",
+				"shared-key-authorization"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KD8REJK5RVYSWAF5188V6C",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have an ASP.NET service that hands service SAS tokens to partner applications for the blob container 'partner-uploads'. Each token names one of the entries the service writes to that container with the current .NET client library, and today every entry is written so that its tokens work for one day and allow reading and writing. For the next release you must make four changes to those entries, keeping the same container and without rotating the storage account keys. Match each change to the member of the entry you must set. One of the items listed is not used by any of the four changes.",
+				"items": [
+					{
+						"id": "it_id",
+						"text": "Id"
+					},
+					{
+						"id": "it_start",
+						"text": "StartsOn"
+					},
+					{
+						"id": "it_exp",
+						"text": "ExpiresOn"
+					},
+					{
+						"id": "it_perm",
+						"text": "Permissions"
+					},
+					{
+						"id": "it_public",
+						"text": "The container's public access level"
+					}
+				],
+				"slots": [
+					{
+						"id": "sl_end",
+						"label": "Push the point at which tokens bound to an entry cease to be accepted further into the future"
+					},
+					{
+						"id": "sl_begin",
+						"label": "Shift the beginning of the valid window for tokens bound to an entry, so a token works on the very first request from a client whose clock runs several minutes behind the storage service"
+					},
+					{
+						"id": "sl_ops",
+						"label": "Take away the holders' ability to upload and delete, while keeping what they can read"
+					},
+					{
+						"id": "sl_target",
+						"label": "Make newly issued tokens bind to a different entry than the one they use today"
+					}
+				]
+			},
+			"key": {
+				"sl_end": "it_exp",
+				"sl_begin": "it_start",
+				"sl_ops": "it_perm",
+				"sl_target": "it_id"
+			},
+			"explanation": {
+				"correct": "A stored access policy entry is a BlobSignedIdentifier whose Id is the name that a service SAS points at, together with a BlobAccessPolicy holding StartsOn, ExpiresOn and Permissions. Moving the point at which tokens stop working is a change to ExpiresOn; because the policy is enforced server side on every request, this applies to the tokens already issued against that entry. Moving the point at which tokens begin working is a change to StartsOn, and setting it roughly a quarter of an hour in the past (or leaving it unset) absorbs the clock skew between the client and the storage service so early requests are not rejected. Removing upload and delete while keeping reads is a change to Permissions, reducing the allowed operations from today's read and write down to read only. Pointing newly issued tokens at a different entry is a change to Id, the name the SAS carries; tokens already naming the previous name are unaffected. The container's public access level only decides whether blobs are anonymously readable and places no constraint on tokens that name an entry, so it fits none of the four changes.",
+				"perChoice": {
+					"it_id": "Belongs with 'make newly issued tokens bind to a different entry'. Id is the policy name that the SAS references, so changing it makes new tokens resolve to another entry while tokens already carrying the previous name keep working.",
+					"it_start": "Belongs with the change to the beginning of the valid window. StartsOn sets when tokens bound to the entry first become usable; back-dating it by about 15 minutes covers the clock difference between clients and the storage service.",
+					"it_exp": "Belongs with the change that pushes the end of the validity further out. ExpiresOn sets the point at which the service stops honouring every token bound to that entry, so moving it later extends all of them at once.",
+					"it_perm": "Belongs with the change that strips upload and delete. Permissions lists the operations a token holder may perform; today's value allows reading and writing, and reducing it to reading only blocks writes and deletes.",
+					"it_public": "Fits no slot. The public access level decides whether the container's blobs can be read anonymously; it is a container property rather than part of the entry, so it does not constrain or extend any token that names an entry."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-stored-access-policy-define-dotnet"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				}
+			],
+			"subtopics": [
+				"stored-access-policy-settings",
+				"service-sas"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KDE1Y83R7RTAN2N57027KQ",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a Blob Storage container named 'media-catalogue' in the storage account 'mediashare'. Two internal apps and one external partner read from it with service SAS tokens that each name a signed identifier written to that container, and none of them holds an account key. Four incidents were reported by the field teams this week and are listed in the table. Match each incident to the element you must set so that the reported behaviour stops. One element in the list applies to none of the four incidents.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Incident",
+						"What the field teams observed"
+					],
+					"rows": [
+						[
+							"A",
+							"The in-store app and the catalogue editor app both point at the same container and both hold the same kind of token. After a security review the editor must keep reading and changing entries, while the in-store app may only open them and must be unable to replace or delete anything."
+						],
+						[
+							"B",
+							"A token generated at 00:05 is refused by the service for roughly the first quarter of an hour and then starts working, with nothing changed on the client. Monitoring shows HTTP 403 on only those early attempts."
+						],
+						[
+							"C",
+							"The partner's nightly export job began failing at the same point in every 24-hour cycle and recovered only when the export team handed over a freshly generated token. You want every token of that kind to stop working on one date you pick in advance, rather than on a window that moves each time a token is generated."
+						],
+						[
+							"D",
+							"A contractor reading the catalogue from a home connection tries the same token that works from the office, and the request is refused with HTTP 403. The restriction has to survive the token being copied into the contractor's own configuration file."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "`se` (signed expiry)"
+					},
+					{
+						"id": "i2",
+						"text": "`sip` (signed IP)"
+					},
+					{
+						"id": "i3",
+						"text": "`st` (signed start)"
+					},
+					{
+						"id": "i4",
+						"text": "The permissions value on the container's stored access policy entry"
+					},
+					{
+						"id": "i5",
+						"text": "The storage account's SAS expiration policy"
+					}
+				],
+				"slots": [
+					{
+						"id": "sA",
+						"label": "Incident A"
+					},
+					{
+						"id": "sB",
+						"label": "Incident B"
+					},
+					{
+						"id": "sC",
+						"label": "Incident C"
+					},
+					{
+						"id": "sD",
+						"label": "Incident D"
+					}
+				]
+			},
+			"key": {
+				"sA": "i4",
+				"sB": "i3",
+				"sC": "i1",
+				"sD": "i2"
+			},
+			"explanation": {
+				"correct": "Each incident is a different constraint carried in the token or taken from the container's entry. A service SAS that names an entry inherits that entry's permissions, so changing the permissions value there is what makes one token read-only and leaves the editor able to change data (i4 → A). The early refusals in B come from the window opening at the current moment while client and service clocks differ by up to about 15 minutes, so the start value must sit in the past or be omitted (i3 → B). C wants a fixed end point instead of a window that shifts on every generation, which is the signed expiry (i1 → C). D needs the caller's source address inside the token so the restriction travels with it (i2 → D). The account's SAS expiration policy is only a recommendation, so it resolves none of these.",
+				"perChoice": {
+					"i1": "Incident C — the signed expiry is the date after which the service rejects the token, so putting a date you choose in the entry makes every such token stop at that same moment instead of drifting forward with each generation.",
+					"i2": "Incident D — this field carries the caller's source address; a token limited to the office range is refused from a home connection no matter where the token file was copied, and the partner/contractor keeps using the same token name.",
+					"i3": "Incident B — the gap at the start of the token's life is caused by clock skew of roughly 15 minutes between client and service; placing the start about 15 minutes in the past, or leaving it out, makes a freshly generated token usable immediately.",
+					"i4": "Incident A — a service SAS pointing at an entry takes its permissions from that entry, so putting read-only rights on the entry the in-store app uses, and read/write on the editor's entry, gives each app what the review asked for without reissuing anything else.",
+					"i5": "Applies to none of them — the account-level SAS expiration policy states the longest validity recommended for the account and is advisory only: exceeding it produces a warning when a token is generated plus a log entry, but nothing is blocked, so it cannot stop a token being refused in its first minutes, fix a repeating daily failure, restrict the caller's network, or remove write rights."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-stored-access-policy-define-dotnet"
+				}
+			],
+			"subtopics": [
+				"sas-signed-fields",
+				"access-policy-permissions",
+				"clock-skew"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KDTY7MPJ57ZCQPMAX7B441",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You administer the resource 'harbourline' in your Azure subscription. Every credential that this resource hands out today is a SAS token whose constraints come from an entry the resource holds rather than from values embedded in the URI, so such an entry can be changed or withdrawn after the token has reached a client. Five requests arrived this quarter from the teams that own the applications below. Match each request to the option that answers it. A single option on the list answers none of the five.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Report",
+						"Request from the owning team"
+					],
+					"rows": [
+						[
+							"seaview-gallery (marketing web site)",
+							"Anonymous visitors must keep seeing every image without signing in, and there must be nothing we hand out that we later need to withdraw."
+						],
+						[
+							"dropslot (reseller document portal)",
+							"Every upload must be screened and recorded by an application we control the moment it arrives, because a leaked token today lets an outsider push endless large objects onto our invoice."
+						],
+						[
+							"fieldscan (mobile technician app)",
+							"The app must survive an all-night outage of whatever grants it credentials instead of failing the moment its existing grant runs out."
+						],
+						[
+							"insight-query (nightly reporting job)",
+							"Compliance reviewers must be able to attribute a specific request to the organisation that made it, because the platform keeps nothing on who holds a credential."
+						],
+						[
+							"tokenboard (credential review site)",
+							"Nobody can enumerate or count the credentials already in circulation, so we want it to be impossible for anyone to sign a new one with the long-lived secret that ships with the platform, for blob and for queue workloads."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Set the container's access level to Public and issue no token at all"
+					},
+					{
+						"id": "b",
+						"text": "Route writes through a middle-tier service that authenticates, validates and audits them"
+					},
+					{
+						"id": "c",
+						"text": "Have each client request a fresh token well before the current one lapses"
+					},
+					{
+						"id": "d",
+						"text": "Vary the signed IP, start and expiry fields per client so activity can be tied to a source"
+					},
+					{
+						"id": "e",
+						"text": "Disable Shared Key authorization on the storage account"
+					},
+					{
+						"id": "f",
+						"text": "Hand tokens to clients only over HTTPS"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Gallery reads open to anonymous visitors and nothing to withdraw"
+					},
+					{
+						"id": "s2",
+						"label": "Uploads screened and recorded by an application you control"
+					},
+					{
+						"id": "s3",
+						"label": "Mobile app during an all-night outage of the issuer"
+					},
+					{
+						"id": "s4",
+						"label": "Attribution of a request to an organisation"
+					},
+					{
+						"id": "s5",
+						"label": "Credentials nobody can enumerate"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d",
+				"s5": "e"
+			},
+			"explanation": {
+				"correct": "The five requests line up with the platform options that fit them: for content that only has to be world-readable, drop the credential entirely and make the container Public (a); for writes where the risk of handing out tokens outweighs the benefit, send the traffic through a middle-tier service that authenticates, validates and audits it (b); for clients that call storage repeatedly, have each one obtain a new token well before the old one expires so a temporary outage of the issuing application is survivable (c); to correlate activity per client, vary the signed sip, st and se fields, for example a unique expiry per client, since nothing records who reached the resource (d); and to make it impossible for anyone to mint new credentials with the shared secret that ships with the account, turn off Shared Key authorization, which prevents account-key-signed SAS for blob and queue workloads (e). The HTTPS-only option is sound practice, but no report describes a credential captured in transit, so it fits no slot.",
+				"perChoice": {
+					"a": "Correct for the gallery: when every blob only has to be readable by anyone, the documented alternative to issuing any SAS at all is to make the container Public, which also removes anything you would have to withdraw later.",
+					"b": "Correct for the reseller portal: for operations where the risk of handing out tokens outweighs the benefit, writes are routed through a middle-tier service that performs authentication, validation and auditing, which is also the way to stop a leaked credential being used for unbounded uploads billed to you.",
+					"c": "Correct for the mobile app: clients that call storage repeatedly through a SAS should auto-renew well before expiry so that retries still have a valid token if the SAS-issuing service is temporarily unavailable.",
+					"d": "Correct for the attribution request: because there is no direct way to see which clients accessed a resource, the signed fields sip (signed IP), st (signed start) and se (signed expiry) are used for correlation, for example a unique expiry per client.",
+					"e": "Correct for the review site: SAS generation cannot be audited and no API counts how many tokens exist, so the way to rule out new account-key-signed credentials is to block Shared Key authorization, which prevents account-key-signed SAS for blob and queue workloads.",
+					"f": "Fits no slot: distributing tokens only over HTTPS is good practice, but no report describes a token captured in transit, so it answers none of the five requests."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-stored-access-policy-define-dotnet"
+				}
+			],
+			"subtopics": [
+				"stored-access-policies",
+				"sas-token-security",
+				"access-governance"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5M92Q9135YQTV36B69V39Y9",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You support a partner integration that reads and uploads files in the blob container 'partner-drop' of the storage account 'hubstore'. The credential the partner uses is a service SAS that names the entry 'partner-drop-rw' that your team writes to that container with Shared Key. Two problems were reported this week. The partner's scheduled job stops at the point where it builds the credential, logging 'InvalidQueryParameterValue: One or more of the request inputs could not be parsed'. Separately, your penetration test found that the credential can be read and replayed by anyone watching the traffic between the partner's portal and the browser. You need to correct both problems and keep the partner's applications working as they are. Which change should you make for each problem?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Storage account",
+							"hubstore"
+						],
+						[
+							"Blob container",
+							"partner-drop"
+						],
+						[
+							"Entry the credential names",
+							"partner-drop-rw"
+						],
+						[
+							"Entry permissions",
+							"rw"
+						],
+						[
+							"Entry validity",
+							"one year from the moment it is written"
+						],
+						[
+							"Tool the partner uses to build the request",
+							"AzCopy"
+						],
+						[
+							"Authorization used to write the entry",
+							"Shared Key, connection string"
+						]
+					]
+				},
+				"statement": "For the first problem, the job must write the date and time value as {{q1}}; for the second, the partner's integration must be changed so that it {{q2}}.",
+				"slots": [
+					{
+						"id": "q1",
+						"options": [
+							{
+								"id": "a",
+								"text": "+%Y-%m-%dT%H:%M:%SZ"
+							},
+							{
+								"id": "b",
+								"text": "+%Y-%m-%dT%H:%M:%S"
+							},
+							{
+								"id": "c",
+								"text": "+%Y-%m-%dT%H:%MZ"
+							},
+							{
+								"id": "d",
+								"text": "%Y-%m-%dT%H:%M:%SZ"
+							}
+						]
+					},
+					{
+						"id": "q2",
+						"options": [
+							{
+								"id": "a",
+								"text": "passes the credential over HTTPS and nothing else"
+							},
+							{
+								"id": "b",
+								"text": "base64-encodes the credential before adding it to the download URL"
+							},
+							{
+								"id": "c",
+								"text": "uses a credential whose validity window is only a few minutes"
+							},
+							{
+								"id": "d",
+								"text": "keeps the credential in browser local storage instead of in the page"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"q2": "a",
+				"q1": "a"
+			},
+			"explanation": {
+				"correct": "Two independent corrections are needed. First, tools such as AzCopy accept date and time values only in the form '+%Y-%m-%dT%H:%M:%SZ', which carries the seconds as well as the UTC designator; a value written in any other shape is rejected while the request is parsed, which is what the InvalidQueryParameterValue entry in the job log reports. Second, the query string holding the credential must cross the network only on an encrypted connection, because anything observed on an unencrypted connection can be captured by an interceptor and then replayed as though the interceptor were the legitimate client. Encoding the value, shortening its lifetime, or hiding it in browser storage all leave the value readable and reusable while it is in flight.",
+				"perChoice": {
+					"q1:b": "This value drops the trailing UTC designator, so it no longer matches the shape the tool requires and parsing fails.",
+					"q1:c": "This value has no seconds field; seconds are part of what the tool expects, so the value is still rejected.",
+					"q1:d": "Removing the leading sign means the value no longer matches the form the tool requires, even though the seconds and the UTC designator are present.",
+					"q2:b": "Base64 is an encoding rather than a protection: whoever observes the traffic can decode the value and use it exactly as the legitimate client would.",
+					"q2:c": "A short window only limits how long a captured value stays useful. It does not prevent the value from being read and replayed while it is still valid, and the entry in this scenario stays valid for a year.",
+					"q2:d": "Browser storage changes where the value is kept after it arrives; it does nothing about the moment the value travels from the portal to the browser."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-stored-access-policy-define-dotnet"
+				}
+			],
+			"subtopics": [
+				"stored-access-policies",
+				"service-sas",
+				"sas-token-transport"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5M94EEQFR0S1PT67PNXZPY0",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You run a nightly job against the storage account 'fielddocs' that moves files between containers and shares. Each run calls the copy operation on the item listed against it, and today the job attaches no credential to any of those copy calls. Two of the runs come back with HTTP 403 even though the job runs under a single managed identity and never leaves that one account. You need both failing runs to succeed while granting the least access they require. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Run",
+						"Source",
+						"Destination",
+						"Result today"
+					],
+					"rows": [
+						[
+							"1",
+							"Blob 'q3-report.pdf' in container 'reports'",
+							"Blob 'q2-report.pdf' in container 'archive' (same account)",
+							"Succeeds"
+						],
+						[
+							"2",
+							"Blob 'q3-report.pdf' in container 'reports'",
+							"File 'q3-report.pdf' in share 'archive-share' (same account)",
+							"Fails with HTTP 403"
+						],
+						[
+							"3",
+							"File 'q2-notes.docx' in share 'archive-share'",
+							"Blob 'q2-notes.docx' in container 'reports' (same account)",
+							"Fails with HTTP 403"
+						]
+					]
+				},
+				"statement": "Both failing runs need {{fix}}.",
+				"slots": [
+					{
+						"id": "fix",
+						"options": [
+							{
+								"id": "a",
+								"text": "a service SAS attached to each copy operation"
+							},
+							{
+								"id": "b",
+								"text": "an account SAS attached to each copy operation"
+							},
+							{
+								"id": "c",
+								"text": "the container's public access level changed to Blob so no credential is sent"
+							},
+							{
+								"id": "d",
+								"text": "no credential, because one account and one managed identity already cover them"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"fix": "a"
+			},
+			"explanation": {
+				"correct": "Runs 2 and 3 move content between Blob Storage and Azure Files. A blob-to-file or file-to-blob copy always requires a shared access signature, even when both ends sit in the same storage account and are reached with the same identity, which is exactly why those two runs return 403 while the blob-to-blob run succeeds. A service SAS delegates access to a resource in a single storage service and is signed with the storage account key, so it is the narrowest token that satisfies the copy, and attaching one to each of the two failing copy calls fixes them.",
+				"perChoice": {
+					"fix:b": "An account SAS is signed with the same account key but spans one or more storage services and adds service-level operations such as Get/Set Service Properties plus read, write and delete operations that a service SAS does not permit, so it hands out more access than these two copies need and breaks the least-access requirement.",
+					"fix:c": "Changing the container's public access level does not remove the credential requirement for a copy between a blob and a file, so runs 2 and 3 would still be rejected, and it would additionally expose every blob in 'reports' to anonymous readers.",
+					"fix:d": "Being inside one account and running under one managed identity is not sufficient: copies that move content between Blob Storage and Azure Files still require a shared access signature, so both runs would keep failing."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-stored-access-policy-define-dotnet"
+				}
+			],
+			"subtopics": [
+				"service-sas-for-copies",
+				"service-vs-account-sas",
+				"least-privilege-sas"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5M986BX7QA40A3TVTBNNEMN",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your team owns the storage account 'vaultstore', whose container 'case-evidence' holds closed case files. Two review applications open these files with service SAS tokens, each token pointing at one of the entries your team writes on that container with Shared Key, and neither application holds an account key. A new records-retention application must be able to remove objects once they reach the end of their retention period. You must leave what the two review applications can do today unchanged, and you must later be able to switch the retention application's access off without disturbing them. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Application",
+						"How it reaches the files",
+						"Access required"
+					],
+					"rows": [
+						[
+							"Legal review app",
+							"Service SAS naming the entry 'review-ro'",
+							"Open files"
+						],
+						[
+							"Audit app",
+							"Service SAS naming the entry 'audit-ro'",
+							"Open files"
+						],
+						[
+							"Records-retention app (new)",
+							"Not issued yet",
+							"Open files and delete expired ones"
+						]
+					]
+				},
+				"statement": "Make this change: {{fix}}",
+				"slots": [
+					{
+						"id": "fix",
+						"options": [
+							{
+								"id": "a",
+								"text": "Add a separate entry with the permissions the new application needs, and point its token at it"
+							},
+							{
+								"id": "b",
+								"text": "Add delete to the permissions of the entry that the two review applications point at"
+							},
+							{
+								"id": "c",
+								"text": "Replace the permissions on the existing entry with a set that includes delete"
+							},
+							{
+								"id": "d",
+								"text": "Embed delete in the new application's token URI and leave the container's entries as they are"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"fix": "a"
+			},
+			"explanation": {
+				"correct": "A service SAS that names a stored access policy on the container inherits that policy's start time, expiry and permissions, so every token bound to a given entry permits exactly what that entry allows. The two review tokens already in circulation cannot be widened without also widening the review applications' rights. Writing an additional entry on the container with the read and delete rights the retention application requires, and having its service SAS name that entry, gives the new application precisely what it needs, leaves the review tokens' permissions untouched, stays within the limit of five entries per container, and lets you withdraw the retention application's access later simply by changing or removing its own entry — with no account key rotated and none handed to the client.",
+				"perChoice": {
+					"fix:b": "Every token bound to the entry the review applications point at inherits that entry's permissions, so adding delete there silently grants the delete right to the two review applications as well and breaks the requirement that their access stays exactly as it is today.",
+					"fix:c": "This edits the entry that the two live review tokens already name, so the same widening happens for them; adjusting the expiry as well changes nothing about the fact that both entries' clients share one permission set.",
+					"fix:d": "With the rights embedded in the URI, the token's constraints travel with the token and nothing on the container governs it, so the retention application's access could not be switched off later without rotating the storage account keys."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-stored-access-policy-define-dotnet"
+				}
+			],
+			"subtopics": [
+				"stored-access-policy-permissions",
+				"revocable-service-sas",
+				"least-privilege-permissions"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5M9AXPF52V9V21918FXV2J5",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You run a platform that issues tokens to about 400 handheld devices, and each device uploads its daily traces to the blob container 'fleet-telemetry' using one long-running token. After a data-leak investigation you must be able to prove, from what the service records in its own logs, which device was holding a given token on a given day. The tokens are issued by your platform in a single nightly batch, the devices themselves cannot be changed, and every constraint listed below has to keep holding. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Constraint that must keep holding",
+						"Why it cannot move"
+					],
+					"rows": [
+						[
+							"Every device holds exactly the same rights on the container",
+							"The fleet is managed centrally and one operations team reads every trace"
+						],
+						[
+							"Every device's token must work from the moment the nightly batch is pushed",
+							"Devices stay powered down all day and upload inside the 02:00 window"
+						],
+						[
+							"All traffic leaves through one outbound gateway",
+							"No per-device address exists anywhere on the corporate network"
+						],
+						[
+							"The service writes the signed fields of each request to its analytics log",
+							"That record is the only evidence the investigation can use"
+						]
+					]
+				},
+				"statement": "The platform should {{value}}.",
+				"slots": [
+					{
+						"id": "value",
+						"options": [
+							{
+								"id": "a",
+								"text": "put a unique expiry time in each device's token"
+							},
+							{
+								"id": "b",
+								"text": "put a unique start time in each device's token"
+							},
+							{
+								"id": "c",
+								"text": "put a unique client IP address in each device's token"
+							},
+							{
+								"id": "d",
+								"text": "put a unique permission set in each device's token"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"value": "a"
+			},
+			"explanation": {
+				"correct": "With the rights, the moment a token becomes usable and the network path all fixed by the fleet, the signed expiry (se) is the only value left that your platform can vary, and the service records signed fields on every request. Giving each device its own expiry therefore makes each token recognizable in the analytics log, which is the documented way to correlate a request with the client that generated it: the documentation names sip, st and se as the signed fields used for audit-style correlation and gives a unique expiry per client as the example, precisely because there is no direct way to see which clients accessed a resource.",
+				"perChoice": {
+					"value:b": "The devices are powered down until the nightly window opens, so every token must be usable from the moment it is pushed and the start value is identical for the whole fleet. The logged value then identifies nothing about which device sent the request.",
+					"value:c": "Every device reaches the service through one shared gateway, so no per-device address exists to sign, and the signed address recorded in the log is the gateway's rather than the device's.",
+					"value:d": "A permission set describes what a token may do on the container, not which device holds it, and all devices are intentionally given the same rights, so it separates nothing in the log records."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				}
+			],
+			"subtopics": [
+				"signed-fields",
+				"audit-correlation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5M9E06PDE4ZNY92G4P3HRT1",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You maintain a media website backed by the storage account 'contosomedia'. Every picture request from that site currently travels with a service SAS naming the entry 'press-images-rw' on the container 'press-images', and when that credential is missing or has lapsed the gallery answers HTTP 403 for every image. Marketing now wants the pictures to reach visitors who supply no credentials at all, while the listing of files inside the container must stay out of reach for them. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item on the container 'press-images'",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Access level",
+							"Private"
+						],
+						[
+							"Signed identifiers",
+							"press-images-rw"
+						],
+						[
+							"Permissions on press-images-rw",
+							"r"
+						],
+						[
+							"Expiry of press-images-rw",
+							"2026-10-26T09:00:00Z"
+						],
+						[
+							"Credential sent on each image request",
+							"Service SAS naming press-images-rw, appended to the image URL"
+						]
+					]
+				},
+				"statement": "The change you should make is {{change}}.",
+				"slots": [
+					{
+						"id": "change",
+						"options": [
+							{
+								"id": "a",
+								"text": "Set the access level on the container so unauthenticated blob downloads are allowed, and retire the signed identifiers"
+							},
+							{
+								"id": "b",
+								"text": "Set the access level on the container to Private, extend the expiry of each signed identifier, and keep handing out tokens"
+							},
+							{
+								"id": "c",
+								"text": "Assign the Storage Blob Data Reader role at the container scope to visitors, and retire the signed identifiers"
+							},
+							{
+								"id": "d",
+								"text": "Turn on public network access on the storage account so the container is reachable from the internet, and retire the signed identifiers"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"change": "a"
+			},
+			"explanation": {
+				"correct": "When every file in a container only has to be readable by anyone, a SAS is unnecessary overhead: the container's access level can be opened up so that blobs are fetched with no credential, and the signed identifier plus every token that names it can be dropped. That removes the front-end service from the request path, so no expiry can break the gallery again, and because the change is scoped to the blobs, the file listing inside the container is still not served to credential-less visitors.",
+				"perChoice": {
+					"change:b": "A container left at Private still authenticates every request, so a visitor who supplies nothing is rejected with HTTP 403 exactly as reported; pushing the expiry further out only moves the date of the next failure and leaves the credential requirement in place.",
+					"change:c": "A role assignment is granted to an identity, and a browser that presents no credential is not an identity, so Storage Blob Data Reader cannot open the pictures to visitors. It also leaves the 403 behaviour in place for any request that arrives without a token.",
+					"change:d": "Public network access on the storage account only controls which networks may reach the endpoint; it does not change what the container requires from the caller, so image requests with no credential would still be refused."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-stored-access-policy-define-dotnet"
+				}
+			],
+			"subtopics": [
+				"when-not-to-use-sas",
+				"container-access-level",
+				"service-sas"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5M9HYTNAA3WRQJ5TASDNVYR",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You maintain an ASP.NET Core web API that internal applications call to read and upload blobs in the container 'claims-docs'. Today the service is built with the storage account connection string, and the token it hands back to each caller names one of the entries shown below; callers keep that token in their own configuration and reuse it for months. Your security group now requires that no long-lived shared secret sits in the service's code or configuration, and that every token the service issues be traceable to the signed-in account the service runs under. You need to change how the token is produced and settle what becomes of the entries that already sit on that container. Which completion applies?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Blob container",
+							"claims-docs"
+						],
+						[
+							"Entry ops-read",
+							"Starts 2026-01-01, expires 2027-01-01, permissions r"
+						],
+						[
+							"Entry ops-rw",
+							"Starts 2026-01-01, expires 2027-01-01, permissions rw"
+						],
+						[
+							"Entry ops-rwd",
+							"Starts 2026-01-01, expires 2027-01-01, permissions rwd"
+						],
+						[
+							"Issuing service",
+							"ASP.NET Core web API, connection string built with the storage account access key"
+						],
+						[
+							"Token returned to callers",
+							"service SAS naming one of the entries above"
+						],
+						[
+							"Security requirement",
+							"No account access key in the service; every token traceable to the signed-in account the service runs under"
+						]
+					]
+				},
+				"statement": "Every request should carry {{tokentype}}, and you should plan for {{oldentries}}.",
+				"slots": [
+					{
+						"id": "tokentype",
+						"options": [
+							{
+								"id": "a",
+								"text": "A user delegation SAS token generated from the service's signed-in account"
+							},
+							{
+								"id": "b",
+								"text": "A service SAS token naming a stored access policy on the container"
+							},
+							{
+								"id": "c",
+								"text": "An account SAS token naming a stored access policy on the container"
+							},
+							{
+								"id": "d",
+								"text": "An ad hoc service SAS token signed with the storage account access key"
+							}
+						]
+					},
+					{
+						"id": "oldentries",
+						"options": [
+							{
+								"id": "a",
+								"text": "They stop applying and can be deleted"
+							},
+							{
+								"id": "b",
+								"text": "They keep applying and continue to bound every token that names them"
+							},
+							{
+								"id": "c",
+								"text": "They must be rewritten on the storage account before the new tokens can use them"
+							},
+							{
+								"id": "d",
+								"text": "They must be converted into account SAS tokens before the new tokens can use them"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"oldentries": "a",
+				"tokentype": "a"
+			},
+			"explanation": {
+				"correct": "A user delegation SAS is signed with a user delegation key obtained from Microsoft Entra credentials rather than with the storage account key, so it is the only one of the four options that satisfies the requirement that no account access key live in the issuing service. It is always issued ad hoc, because stored access policies can be referenced by a service SAS only — a user delegation SAS carries its own start time, expiry and permissions in the URI. The service's signed-in identity therefore needs an Azure role that includes Microsoft.Storage/storageAccounts/blobServices/generateUserDelegationKey. Once issuance changes this way, nothing names the three entries on the container, so they constrain nothing any more and can be deleted; the trade-off is that you can no longer cancel one caller's access by editing a container entry.",
+				"perChoice": {
+					"oldentries:b": "Stored access policies govern service SAS tokens only. Once the service hands out user delegation SAS tokens, no token names those entries, so they bound nothing.",
+					"oldentries:c": "Stored access policies live on a storage resource — a blob container, file share, queue or table — not on the storage account, so they cannot be rewritten there; each resource holds at most five of them.",
+					"oldentries:d": "A container entry is a stored constraint record, not a token: it cannot be turned into an account SAS, and account SAS tokens cannot name a stored access policy in any case.",
+					"tokentype:b": "A service SAS is signed with the storage account key, and writing the entries it names requires Shared Key authorization with the account keys, so the long-lived secret stays in the service — the opposite of the requirement.",
+					"tokentype:c": "An account SAS is also signed with the storage account key, and it can never reference a stored access policy at all: account SAS tokens must always be ad hoc.",
+					"tokentype:d": "Being ad hoc removes the need for a container entry, but the token is still signed with the storage account access key, so the secret remains in the service and a leaked token cannot be withdrawn."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-stored-access-policy-define-dotnet"
+				}
+			],
+			"subtopics": [
+				"user-delegation-sas",
+				"service-sas",
+				"shared-key-authorization"
+			],
+			"reviewed": false
+		}
+	]
+}

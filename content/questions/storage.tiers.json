@@ -1,0 +1,1727 @@
+{
+	"skill": "storage.tiers",
+	"questions": [
+		{
+			"id": "q_01M5MCY6C646GZ9WKSYTNKADZ7",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a general-purpose v2 storage account in the state shown below. You need the account to use GRS and you cannot lose any of the stored data. Which action should you take first?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account type",
+							"General-purpose v2"
+						],
+						[
+							"Redundancy today",
+							"LRS"
+						],
+						[
+							"Required redundancy",
+							"GRS"
+						],
+						[
+							"Blobs reporting Archive",
+							"214 block blobs"
+						],
+						[
+							"When those blobs were archived",
+							"45 days ago"
+						],
+						[
+							"Blob versioning",
+							"Disabled"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Run Set Blob Tier against each of the 214 blobs so they sit in an online tier, then switch the account to GRS"
+					},
+					{
+						"id": "b",
+						"text": "Delete the 214 blobs now and then switch the account to GRS"
+					},
+					{
+						"id": "c",
+						"text": "Switch the account to GRS immediately and leave the blobs where they are"
+					},
+					{
+						"id": "d",
+						"text": "Copy each blob with Copy Blob into new blobs in the same container, keep the archived originals, and then switch the account to GRS"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Changing the redundancy of an account that holds archived blobs requires every archived blob to be brought back to hot, cool or cold first, and an LRS to GRS move is only supported when nothing was archived while the account was LRS. Here 214 blobs were archived while the account was LRS, so they must leave the archive tier before the redundancy can be changed. Set Blob Tier moves each blob and its data in place to an online tier, which keeps the data in place and satisfies the requirement; you then change the redundancy to GRS.",
+				"perChoice": {
+					"b": "Deleting the data contradicts the requirement that nothing may be lost, and archive has a 180-day minimum retention: removing a blob after only 45 days is billed as an early deletion for the remaining days, so this also adds charges while destroying the content.",
+					"c": "The archived blobs are exactly what blocks the move. Because they were archived while the account was LRS, the LRS to GRS change is not supported until all archived blobs are rehydrated to an online tier.",
+					"d": "Copy Blob produces an online copy, but the archived originals stay in the container, so the account still holds archived blobs and the redundancy change remains blocked. This also leaves you paying capacity for two copies of every blob."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-online-manage"
+				}
+			],
+			"subtopics": [
+				"redundancy-with-archived-blobs",
+				"archive-rehydration",
+				"early-deletion-charges"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MD03FMTS4EH6FVMV1RZZ3Z",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a general-purpose v2 storage account that holds compliance records and runs the lifecycle management policy shown below. Your auditors restore records each quarter by changing the tier of the existing blob back to Hot, and every restored copy has to stay readable long enough for the team to work with it. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"rules\": [\n    {\n      \"name\": \"archiveInactiveComplianceRecords\",\n      \"enabled\": true,\n      \"type\": \"Lifecycle\",\n      \"definition\": {\n        \"filters\": { \"blobTypes\": [\"blockBlob\"] },\n        \"actions\": { \"setTier\": { \"Tier\": \"Archive\" } },\n        \"conditions\": { \"daysAfterModificationGreaterThan\": 30 }\n      }\n    },\n    {\n      \"name\": \"deleteExpiredComplianceRecords\",\n      \"enabled\": true,\n      \"type\": \"Lifecycle\",\n      \"definition\": {\n        \"filters\": { \"blobTypes\": [\"blockBlob\"] },\n        \"actions\": { \"delete\": { \"options\": { \"deleteSnapshots\": \"Include\" } } },\n        \"conditions\": { \"daysAfterCreationGreaterThan\": 2555 }\n      }\n    }\n  ]\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add a daysAfterLastTierChangeGreaterThan condition to the rule that moves blobs to Archive"
+					},
+					{
+						"id": "b",
+						"text": "Add a daysAfterCreationGreaterThan condition to the rule that moves blobs to Archive"
+					},
+					{
+						"id": "c",
+						"text": "Add a daysAfterLastAccessTimeGreaterThan condition to the rule that moves blobs to Archive"
+					},
+					{
+						"id": "d",
+						"text": "Add a daysAfterLastTierChangeGreaterThan condition to the rule that deletes blobs"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Changing the tier of an existing blob back to Hot does not change that blob's last modified time, and the archiving rule shown keys off daysAfterModificationGreaterThan. Because a compliance record was last modified long before it was archived, the day counter is already over the threshold when the restore finishes, so the policy can push the just-restored blob straight back to Archive. Adding daysAfterLastTierChangeGreaterThan to the archiving action restarts that counter at the moment of the tier change, so the restored copy stays online for the configured number of days before it is archived again. (Rehydrating by copying the archived blob to a new blob name is the alternative, since the copy gets a new last modified time.)",
+				"perChoice": {
+					"b": "A blob's creation time is set once and is not refreshed by a tier change, so this condition evaluates to the same age it had before the restore and the blob can still be archived immediately after rehydration.",
+					"c": "Last access time is not refreshed by changing a blob's tier, and the archiving rule is not driven by reads, so adding this condition does not hold the restored blob in an online tier.",
+					"d": "This only delays when the blob is removed; the archiving rule keeps its daysAfterModificationGreaterThan condition, so the freshly restored copy is still moved back to Archive as soon as the restore completes."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/archive-rehydrate-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+				}
+			],
+			"subtopics": [
+				"lifecycle-management",
+				"archive-rehydration",
+				"access-tiers"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MD28RSCF3A1D9DE2KF12B7",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a general-purpose v2 storage account in which the file listed below sits in the archive tier. A restore request for that file was sent two hours ago, and the business needs the file readable before 16:00 today. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Reported value"
+					],
+					"rows": [
+						[
+							"Storage account kind",
+							"General-purpose v2"
+						],
+						[
+							"Container",
+							"reports"
+						],
+						[
+							"Blob",
+							"board-minutes-2024.pdf"
+						],
+						[
+							"Blob size",
+							"8 GB"
+						],
+						[
+							"Access tier right now",
+							"Archive"
+						],
+						[
+							"x-ms-rehydrate-priority right now",
+							"Standard"
+						],
+						[
+							"Time the data is needed",
+							"16:00 today"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Check the reported x-ms-rehydrate-priority with Get Blob Properties, then submit Set Blob Tier again for the same blob with x-ms-rehydrate-priority: High"
+					},
+					{
+						"id": "b",
+						"text": "Check the reported x-ms-rehydrate-priority with Get Blob Properties, then leave the submitted Set Blob Tier request to finish on its own"
+					},
+					{
+						"id": "c",
+						"text": "Check the reported x-ms-rehydrate-priority with Get Blob Properties, then cancel the submitted Set Blob Tier request and submit it again for the same blob with x-ms-rehydrate-priority: High"
+					},
+					{
+						"id": "d",
+						"text": "Check the reported x-ms-rehydrate-priority with Get Blob Properties, then submit Copy Blob using the same blob as source and destination with x-ms-rehydrate-priority: High"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Get Blob Properties reports that the request is running at Standard, and a request that is already underway can be sped up by submitting Set Blob Tier again on the same blob with x-ms-rehydrate-priority set to High. That matches the business need: the blob is 8 GB, so a High-priority retrieval can finish in under an hour, while a Standard-priority retrieval of a blob under 10 GB can take up to 15 hours. The account-wide ceiling of 10 GiB of priority retrieval per hour is not a problem for a single 8 GB blob, and High priority only bills more, not less, which is acceptable to hit the deadline.",
+				"perChoice": {
+					"b": "Waiting accomplishes nothing for the deadline. The blob keeps reporting its archive access tier for the entire retrieval, and a Standard-priority restore of a blob under 10 GB can take up to 15 hours, so the file would still be offline at 16:00. Leaving the request alone is the opposite of raising its priority.",
+					"c": "A Set Blob Tier request cannot be cancelled after it has been submitted; it runs to completion and the blob continues to report archive for the whole operation. Get Blob Properties only reports state, it cannot stop a request, so the cancel-then-resubmit plan is not available.",
+					"d": "A rehydrating Copy Blob must write to a different blob name or a different container, never to the source blob itself, so a copy with the same blob as both source and destination is not valid. The destination of such a copy also has to be an online tier."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/archive-rehydrate-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+				}
+			],
+			"subtopics": [
+				"rehydration-priority",
+				"archive-tier",
+				"set-blob-tier"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MD65B7RGQKHA41VX3H1FFH",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a general-purpose v2 storage account that a finance team uses for quarterly exports. The blobs listed below still sit in the tiers shown, and the day counts show how long each blob has already been stored. A scheduled cleanup will delete them tonight. Finance will only sign off if the resulting invoice does not charge for capacity that the data never actually used. Which change should you make to the plan?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Blob",
+						"Access tier",
+						"Days already stored in this tier",
+						"Planned action"
+					],
+					"rows": [
+						[
+							"Q3-export.csv",
+							"Cool",
+							"12",
+							"Delete tonight"
+						],
+						[
+							"Model-snapshots.zip",
+							"Cold",
+							"40",
+							"Delete tonight"
+						],
+						[
+							"2022-ledger.bak",
+							"Archive",
+							"95",
+							"Delete tonight"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Delay the cleanup until every blob has been in its current tier for that tier's minimum retention period"
+					},
+					{
+						"id": "b",
+						"text": "Delay the cleanup by 30 days, which is longer than the shortest minimum retention period for any current tier"
+					},
+					{
+						"id": "c",
+						"text": "Delay the cleanup until every blob has been moved down to a colder tier, so its current tier's retention period starts again from the move"
+					},
+					{
+						"id": "d",
+						"text": "Delay the cleanup until each blob has been overwritten in place with Put Blob, replacing the data while it stays in its current tier"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "In a general-purpose v2 account, deleting a blob before it has reached its tier's minimum retention still bills the remainder of that minimum: 30 days for cool and 90 days for cold, prorated against the days already stored, and a flat 180 days for archive no matter how long the blob was there. In the exhibit the cool blob has been in place 12 days (18 more billed), the cold blob 40 days (50 more billed), and the archive blob 95 days (billed the full 180). All three fall short, so the only plan that matches the finance requirement is to hold the cleanup until each blob has served its tier's full minimum.",
+				"perChoice": {
+					"b": "A flat 30-day delay only clears the cool blob, which would then be at 42 days. The cold blob would be at 70 days against a 90-day minimum, and the archive blob at 125 days against 180, so both would still be billed for capacity they never used.",
+					"c": "Moving a blob to a colder tier before deleting it does not avoid the charge. Explicitly moving a blob out of cool or cold to archive triggers the early deletion charge for the tier it left, and archive's own 180-day clock then applies on top of it, so the invoice grows instead of shrinking.",
+					"d": "Rewriting a blob with Put Blob inside the minimum window is treated as a deletion for billing purposes, so the same early deletion charges apply and the plan saves nothing on the invoice."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-online-manage"
+				}
+			],
+			"subtopics": [
+				"access-tier-minimum-retention",
+				"early-deletion-charges"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MD9FRYCRA3J6RSVQ631PV7",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a premium block blob storage account that holds a finance team's quarterly exports under a seven-year retention commitment. The account state and the way those exports are used are shown below. Finance reports that the storage bill has nearly doubled in two quarters while usage stayed flat, and the exports are read only a handful of times a year. Leadership will accept several hours of unavailability whenever an export has to be retrieved, but no export may be deleted or lost. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account kind",
+							"Premium block blob storage"
+						],
+						[
+							"Redundancy",
+							"LRS"
+						],
+						[
+							"Container",
+							"quarterlyexports"
+						],
+						[
+							"Items stored",
+							"1,480"
+						],
+						[
+							"Reads during the last 90 days",
+							"9 in total"
+						],
+						[
+							"Largest item",
+							"180 GB"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Run Set Blob Tier on each export to move it to the Archive tier of this account"
+					},
+					{
+						"id": "b",
+						"text": "Add a lifecycle management rule that moves each export to the Archive tier 30 days after its last modification"
+					},
+					{
+						"id": "c",
+						"text": "Copy each export with Put Block From URL into the hot tier of another account, then move its tier there"
+					},
+					{
+						"id": "d",
+						"text": "Copy each export with Put Block From URL into the hot tier of this same account and leave it there"
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "Premium block blob storage cannot be tiered to hot, cool, cold or archive by Set Blob Tier or by lifecycle management; the data has to be copied out — with the Put Block From URL API or a compatible AzCopy version — into the hot tier of another storage account. Only after the copies exist in that destination account can the normal access-tier changes and lifecycle tier rules be applied to them, which is what delivers the cost saving while keeping every export (and its seven-year retention) intact.",
+				"perChoice": {
+					"a": "Set Blob Tier cannot assign hot, cool, cold or archive to data held in premium block blob storage, so this request cannot move the exports to the archive tier.",
+					"b": "Lifecycle management rules are equally unable to apply access-tier actions to premium block blob storage, so no rule will archive these exports while they stay in this account.",
+					"d": "Put Block From URL can write into this account, but premium block blob storage keeps its data in a single, premium-priced class, so copies written here are still billed at the premium rate and the bill problem is not solved. The copies must land in the hot tier of a different account before a cheaper tier can be applied."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-online-manage"
+				}
+			],
+			"subtopics": [
+				"premium-block-blob",
+				"moving-data-between-tiers"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MDDC58326JMKEBD2ZVKTG3",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a general-purpose v2 storage account that holds the block blobs listed below. Yesterday the finance team asked to work with seven-year-old exports, so a restore was submitted for every blob still in offline storage, and the queue has barely moved: only one blob is readable and the pending requests are at the default retrieval priority. The maintenance window for this work closes in four hours and the finance team will not extend it, so all of the data has to be readable by then. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Blob",
+						"Size (GiB)",
+						"Access tier",
+						"Restore status",
+						"Requested priority"
+					],
+					"rows": [
+						[
+							"invoices-2023.csv",
+							"10",
+							"Archive",
+							"In progress",
+							"Standard"
+						],
+						[
+							"claims-2024.csv",
+							"8",
+							"Archive",
+							"In progress",
+							"Standard"
+						],
+						[
+							"ledger-2025.csv",
+							"10",
+							"Hot",
+							"Restore finished",
+							"High"
+						],
+						[
+							"reports-2022.csv",
+							"6",
+							"Archive",
+							"Request not sent",
+							""
+						],
+						[
+							"audit-2021.csv",
+							"8",
+							"Archive",
+							"Request not sent",
+							""
+						],
+						[
+							"exports-2020.csv",
+							"12",
+							"Archive",
+							"Request not sent",
+							""
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Start Copy Blob restores of the remaining archived blobs into other storage accounts in the same region, so each account draws on its own retrieval capacity"
+					},
+					{
+						"id": "b",
+						"text": "Raise the pending Standard requests for the remaining archived blobs to High priority, because the higher priority multiplies the data every storage account retrieves each hour"
+					},
+					{
+						"id": "c",
+						"text": "Add containers to the storage account so the remaining archived blobs spread across them, because the retrieval limit is applied per container"
+					},
+					{
+						"id": "d",
+						"text": "Restore the remaining archived blobs one at a time, because sending the requests one by one works around the per storage account limit"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Priority retrieval throughput is capped at 10 GiB per storage account per hour, and the cap is account-wide rather than per blob. Roughly 44 GiB of the data is still in offline storage, so even at the highest priority it needs more than the four hours that remain — the volume is the constraint, not the priority setting. Because the limit applies to each storage account separately, restoring the remaining archived blobs with Copy Blob into other storage accounts in the same region (service version 2021-02-12 or later) gives the job several independent retrieval budgets, so everything can be readable inside the window. The archived sources stay in place, which also suits the seven-year retention rule and avoids an early deletion charge.",
+				"perChoice": {
+					"b": "Raising a pending Standard request to High priority is allowed and it does put the blob on the priority retrieval budget, but that budget is still 10 GiB per storage account per hour and every request in the account shares it. The higher priority therefore does not raise the total volume the account can pull back each hour, and the remaining 44 GiB still needs more than four hours.",
+					"c": "The retrieval limit is charged against the storage account, not against individual containers, so adding containers inside the same account creates no extra retrieval capacity. All of the pending restores continue to share one 10 GiB per hour budget.",
+					"d": "Restoring the blobs one at a time works against the limit rather than around it. The budget is consumed at a fixed hourly rate no matter how many requests are in flight, so serialising the restores simply leaves the account idle for most of the window and finishes later, not sooner."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/archive-rehydrate-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-online-manage"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+				}
+			],
+			"subtopics": [
+				"archive-rehydration",
+				"rehydration-throughput",
+				"retrieval-priority"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MDF8YB9EPYTETD2QM9PDQC",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a general-purpose v2 storage account in the state shown below that keeps seven years of compliance records in offline storage. Every January an automation job copies each record into a new blob in a separate review container and then removes the original, so that the review container becomes the system of record for the auditors. This year the job finished in under an hour, yet the auditors cannot open a single one of the copies, and for a large part of the records no original is left anywhere. You need to correct the job so that an unfinished or failed restore can never destroy data again, while still delivering a readable copy of every record to the reviewers. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account type",
+							"General-purpose v2"
+						],
+						[
+							"Redundancy",
+							"RA-GRS"
+						],
+						[
+							"Source container",
+							"legal-hold - blobs offline, read a few times a year"
+						],
+						[
+							"Restore method",
+							"Copy Blob to a new name in container audit-2026"
+						],
+						[
+							"Retrieval priority value sent",
+							"none (default)"
+						],
+						[
+							"Condition that triggers removal of the original",
+							"Destination name present in the container listing"
+						],
+						[
+							"Run outcome",
+							"412 of 900 destination names listed; every one still reports access tier Archive; all 412 originals removed"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Leave each original untouched until the Microsoft.Storage.BlobTierChanged Event Grid event arrives for its destination copy, and remove it only then"
+					},
+					{
+						"id": "b",
+						"text": "Remove each original as soon as the destination copy's name shows up in the container listing"
+					},
+					{
+						"id": "c",
+						"text": "Remove each original 15 hours after its copy request was submitted, which is the time a restore of that size needs"
+					},
+					{
+						"id": "d",
+						"text": "Remove each original as soon as Get Blob Properties returns a result for the destination copy, no matter which access tier that result reports"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A rehydrating Copy Blob leaves the source in its original offline tier, so the source is the only safe copy until the restore has genuinely finished. The destination blob can appear in the container listing while it is still being restored, which is exactly the condition this job reacted to. Waiting for the Microsoft.Storage.BlobTierChanged Event Grid event for the destination confirms the tier has actually flipped to an online tier; if the restore never completes or fails, the original is still intact and the copy can simply be retried. Polling Get Blob Properties is not a substitute, because the tier keeps reporting Archive for the whole operation.",
+				"perChoice": {
+					"b": "This is exactly the condition that caused the incident. Listing a blob says nothing about whether its restore has finished, so the job removed 412 originals while their copies were still offline and unreadable.",
+					"c": "The 15-hour figure is an upper bound for default-priority retrieval of blobs under 10 GB, not a guarantee for these copies, and nothing in the request confirms that the copy actually succeeded. A fixed wait gives no signal at all.",
+					"d": "A successful response from Get Blob Properties only proves the request was accepted; the destination keeps reporting access tier Archive throughout the restore, so this condition would have removed the originals just as the listing did."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/archive-rehydrate-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-online-manage"
+				}
+			],
+			"subtopics": [
+				"archive-rehydration",
+				"copy-blob",
+				"monitoring-tier-changes"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MDHK3BRZEH7B46T9A3C093",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a general-purpose v2 storage account in the state shown below. The audit team must work with last year's backups again, and the reviewers have to start within two hours. The same review happens every year, so the fix cannot depend on a person picking files one by one. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account",
+							"General-purpose v2, locally redundant (LRS)"
+						],
+						[
+							"Blob /backups/2025/q3-export.zip",
+							"Access tier: Archive"
+						],
+						[
+							"Blob /backups/2025/q4-export.zip",
+							"Access tier: Archive"
+						],
+						[
+							"Lifecycle rule 1",
+							"Prefix /backups/ -> change access tier to Cool, 30 days after last modified"
+						],
+						[
+							"Lifecycle rule 2",
+							"Prefix /backups/ -> change access tier to Archive, 90 days after last tier change"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add a rule to the same lifecycle management policy that changes the access tier to Cool for any blob whose access tier is Archive."
+					},
+					{
+						"id": "b",
+						"text": "Add a second lifecycle management policy that copies every blob with an access tier of Archive into a new container in Cool and then expires the original."
+					},
+					{
+						"id": "c",
+						"text": "Rewrite the existing lifecycle management policy so that blobs move to Cool 90 days after they were last modified and are never moved to Archive."
+					},
+					{
+						"id": "d",
+						"text": "Run a scheduled job outside the account that submits a tier change to Cool with High rehydration priority for every blob whose access tier is Archive."
+					}
+				]
+			},
+			"key": {
+				"optionId": "d"
+			},
+			"explanation": {
+				"correct": "Lifecycle management policies are the rule-based way to move data to cooler tiers (and to expire it) inside one account, but they cannot bring an archived blob back to an online tier. Archived blobs must be rehydrated outside the account by submitting a tier change for each one (for example Set Blob Tier, azcopy set-properties, or a storage client library), and a scheduled job can submit those requests so that nobody picks files by hand. Because the reviewers must start within two hours, the requests should carry High rehydration priority: High can complete in under an hour for blobs under 10 GB, while the default Standard priority can take up to 15 hours for the same size.",
+				"perChoice": {
+					"a": "Lifecycle management policies can only push data toward cooler tiers and expire it; no policy action can rehydrate an archived blob into an online tier, so this rule would never make the backups readable.",
+					"b": "Lifecycle management policies have no copy action at all - their base-blob actions change the access tier, edit metadata or tags, set permissions and delete. Copying an archived blob into an online tier is something you submit yourself, not something a policy can do.",
+					"c": "This only prevents future archives; it never touches the two blobs that already carry the Archive access tier, so last year's backups would stay offline and unreadable."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/archive-rehydrate-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-online-manage"
+				}
+			],
+			"subtopics": [
+				"archive-rehydration",
+				"lifecycle-management",
+				"access-tiers"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MDNN1V1KRHABNV87P7X1TM",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a general-purpose v2 storage account with GRS redundancy that holds the block blob containers listed below. Each container has its own cost and availability expectations, and you must settle on one access tier for the blobs in each container. Drag each container to the access tier that should be used for it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Container",
+						"How the blobs are used",
+						"Retention",
+						"Access expectation"
+					],
+					"rows": [
+						[
+							"checkout-media",
+							"Uploaded by the order pipeline and read by customers continuously, and every blob is replaced each night",
+							"Kept until it is replaced",
+							"Open within milliseconds"
+						],
+						[
+							"nightly-backups",
+							"Restored only during a quarterly restore drill, otherwise untouched",
+							"Deleted 60 days after it is written",
+							"A drill must be able to start within minutes"
+						],
+						[
+							"audit-bundles",
+							"Opened by auditors about twice a year, otherwise untouched",
+							"Kept 2 years",
+							"Must open immediately, at any hour"
+						],
+						[
+							"master-recordings",
+							"Master copies of original sessions, opened a few times a decade",
+							"Kept 7 years under legal hold",
+							"Readers are willing to wait several hours"
+						],
+						[
+							"seasonal-traces",
+							"Traffic bursts in summer and is almost idle in winter, with no dependable schedule",
+							"Kept about 400 days",
+							"Nobody wants to maintain rules or jobs that pick the tier"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Hot"
+					},
+					{
+						"id": "i2",
+						"text": "Cool"
+					},
+					{
+						"id": "i3",
+						"text": "Cold"
+					},
+					{
+						"id": "i4",
+						"text": "Archive"
+					},
+					{
+						"id": "i5",
+						"text": "Smart"
+					}
+				],
+				"slots": [
+					{
+						"id": "s_checkout",
+						"label": "Read and rewritten by the storefront continuously, so the lowest per-transaction cost matters"
+					},
+					{
+						"id": "s_backups",
+						"label": "A drill must begin within minutes, the files go away at 60 days, and the invoice must not bill capacity for data that was already removed"
+					},
+					{
+						"id": "s_audits",
+						"label": "Must open instantly at any hour, kept two years, and capacity cost matters most"
+					},
+					{
+						"id": "s_masters",
+						"label": "Seven-year legal hold, readers accept several hours of waiting, and capacity cost dominates"
+					},
+					{
+						"id": "s_traces",
+						"label": "Nobody wants to maintain rules or jobs; the service should pick the placement from actual usage"
+					}
+				]
+			},
+			"key": {
+				"s_checkout": "i1",
+				"s_backups": "i2",
+				"s_audits": "i3",
+				"s_masters": "i4",
+				"s_traces": "i5"
+			},
+			"explanation": {
+				"correct": "checkout-media takes the Hot tier: it is read and rewritten continuously, so the lowest per-GB price being the highest but the lowest access and transaction cost with millisecond time-to-first-byte is what matters, and each nightly replacement would count as a deletion inside a cooler tier's retention window. nightly-backups takes Cool: a drill has to start within minutes, so the blob must stay online with instant read/write, and a 60-day life fits the 30-day minimum for that online tier, whereas the tier below it charges a 90-day minimum on a general-purpose v2 account and would bill capacity for a deleted backup set. audit-bundles takes Cold: auditors pull it at any hour, so millisecond retrieval is required and the offline tier is excluded, but it is touched only twice a year, so per-GB capacity price outweighs read and transaction price; the two-year retention is far beyond the 90-day minimum. master-recordings takes Archive: under a seven-year legal hold the files are read a few times a decade, hours of retrieval latency are acceptable, and the lowest storage cost wins; the 180-day minimum is met and GRS redundancy is supported for this tier, unlike ZRS, GZRS or RA-GZRS. seasonal-traces takes Smart: the pattern is unpredictable and the team wants no hand-written rules or jobs, and this tier moves data between the three online tiers on its own based on usage patterns rather than tier changes you trigger.",
+				"perChoice": {
+					"i1": "Hot belongs to checkout-media.",
+					"i2": "Cool belongs to nightly-backups.",
+					"i3": "Cold belongs to audit-bundles.",
+					"i4": "Archive belongs to master-recordings.",
+					"i5": "Smart belongs to seasonal-traces."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-online-manage"
+				}
+			],
+			"subtopics": [
+				"access-tiers",
+				"tier-selection",
+				"retention-requirements"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MNBSGBYT6H7KZJZ4GYHX5D",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a general-purpose v2 storage account in the state shown below. The data platform team wants to cut what the account costs for capacity, and each data set has a requirement that decides how its move has to be carried out. Drag each data set to the mechanism that meets its requirement.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Account type ....... General-purpose v2\nRedundancy ......... GRS\nBlob soft delete ... Disabled\n\nData set                      Requirement\n---------------------------  ----------------------------------------------------------------------\nQuarterly exports             Move to a cheaper class of service as part of tonight's change, keep\n                              the same names and paths, and be readable as soon as the change\n                              finishes\nSeven-year compliance records Stay offline for the full seven years while auditors get a readable\n                              version in a second container\nAging logs                    Move to a cheaper class of service once the logs reach a certain\n                              age, then expire, with no manual step\nSensor readings               Move to a cheaper class of service across forty accounts in one\n                              coordinated run"
+				},
+				"items": [
+					{
+						"id": "exports",
+						"text": "Quarterly exports"
+					},
+					{
+						"id": "records",
+						"text": "Seven-year compliance records"
+					},
+					{
+						"id": "logs",
+						"text": "Aging logs"
+					},
+					{
+						"id": "readings",
+						"text": "Sensor readings"
+					}
+				],
+				"slots": [
+					{
+						"id": "settier",
+						"label": "Set Blob Tier"
+					},
+					{
+						"id": "copyblob",
+						"label": "Copy Blob"
+					},
+					{
+						"id": "lifecycle",
+						"label": "Lifecycle management policy"
+					},
+					{
+						"id": "sttask",
+						"label": "Storage task in Azure Storage Actions"
+					}
+				]
+			},
+			"key": {
+				"copyblob": "records",
+				"lifecycle": "logs",
+				"settier": "exports",
+				"sttask": "readings"
+			},
+			"explanation": {
+				"correct": "Quarterly exports go to Set Blob Tier: it moves the blob and its data in place and is instant between online tiers, so the exports keep their names and paths and are readable as soon as tonight's change finishes, with the move billed as a write to the destination tier. The seven-year compliance records go to Copy Blob: it leaves the source in its original tier and creates a new blob in the target, so the records can stay offline for the full seven years while auditors receive a readable version in the second container, and no early deletion charge applies to the source. The aging logs go to a Lifecycle management policy, which is the rule-based way to move data to a cooler tier and expire it inside a single account, so no manual step is needed. The sensor readings go to a storage task in Azure Storage Actions, because tier moves at scale across many accounts are handled that way rather than with per-account rules, which suits one coordinated run over forty accounts. GRS redundancy permits archived blobs to be stored, and with blob soft delete disabled, moving the records out of offline storage early would trigger an early deletion charge, which copying avoids.",
+				"perChoice": {
+					"exports": "Set Blob Tier. It moves the blob and its data in place and is instant between online tiers, so the exports keep their names and paths and are readable as soon as tonight's change finishes. Copy Blob would create a new blob rather than move the existing one, and rule-based handling would run on a schedule instead of on demand.",
+					"records": "Copy Blob. The source stays in its original tier and a new blob is created in the target, so the records can remain offline for the full seven years while auditors read a copy in the second container, and no early deletion charge applies. Changing the tier of the existing blob instead would take it out of offline storage and break the seven-year offline requirement.",
+					"logs": "Lifecycle management policy. Rules inside a single account can move data to a cooler tier and then expire it once it reaches a certain age, with no manual step. A storage task in Azure Storage Actions is intended for tier moves at scale across many accounts, and Set Blob Tier would require a call for every blob.",
+					"readings": "Storage task in Azure Storage Actions. Tier moves at scale across multiple accounts are handled with a storage task rather than with per-account lifecycle rules, which is what one coordinated run over forty accounts requires."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-online-manage"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/archive-rehydrate-overview"
+				}
+			],
+			"subtopics": [
+				"blob-tier-migration",
+				"archive-rehydration",
+				"lifecycle-tiering"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MP2YN140J8RR9H22QT15PD",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You manage the accounts and blobs listed below while re-shaping how the data is stored. Every row needs a single change from the list, and each change fits a single row. Drag each change to the row it applies to.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Object",
+						"Account (redundancy)",
+						"Details",
+						"What the owner asks for"
+					],
+					"rows": [
+						[
+							"cases-prod/2017-scan.tif",
+							"cases-prod (GRS)",
+							"Block blob, 30 GB, currently in Cool",
+							"Kept for ten years and opened only during investigations; hours of retrieval delay are acceptable"
+						],
+						[
+							"ledger-prod/2020-quarter.bin",
+							"ledger-prod (RA-GZRS)",
+							"Block blob, 120 GB, currently in Cool",
+							"Kept for three years and opened about twice a year; the owner wants the smallest possible capacity charge and will tolerate hours of retrieval delay"
+						],
+						[
+							"cases-prod/app-events.log",
+							"cases-prod (GRS)",
+							"Append blob, written to continuously",
+							"Lower capacity charges are wanted, but the blob must keep accepting new writes"
+						],
+						[
+							"cases-new",
+							"cases-new (not yet provisioned)",
+							"A new general-purpose v2 account",
+							"Blobs that arrive without naming a tier should start in the tier with the smallest per-request and transaction charges"
+						],
+						[
+							"invoice-batch.csv",
+							"cases-prod (GRS)",
+							"An object that arrives tomorrow and does not exist yet",
+							"It must start in the tier with the smallest per-request and transaction charges, while cases-prod keeps placing every other unnamed blob in Cool"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "item-1",
+						"text": "Move the blob to the archive tier with Set Blob Tier"
+					},
+					{
+						"id": "item-2",
+						"text": "Move the blob to the cold tier with Set Blob Tier"
+					},
+					{
+						"id": "item-3",
+						"text": "Leave the blob alone; this blob type cannot be tiered"
+					},
+					{
+						"id": "item-4",
+						"text": "Choose Hot in the Access tier option on the Advanced tab"
+					},
+					{
+						"id": "item-5",
+						"text": "Pick the Hot tier for that incoming object when it is uploaded"
+					}
+				],
+				"slots": [
+					{
+						"id": "slot-1",
+						"label": "cases-prod/2017-scan.tif"
+					},
+					{
+						"id": "slot-2",
+						"label": "ledger-prod/2020-quarter.bin"
+					},
+					{
+						"id": "slot-3",
+						"label": "cases-prod/app-events.log"
+					},
+					{
+						"id": "slot-4",
+						"label": "cases-new"
+					},
+					{
+						"id": "slot-5",
+						"label": "invoice-batch.csv"
+					}
+				]
+			},
+			"key": {
+				"slot-1": "item-1",
+				"slot-2": "item-2",
+				"slot-3": "item-3",
+				"slot-4": "item-4",
+				"slot-5": "item-5"
+			},
+			"explanation": {
+				"correct": "Each row is decided by the tier rules that apply to it: the scanned file is a block blob in a GRS account, is read rarely and tolerates hours of retrieval delay, so it belongs in the archive tier and Set Blob Tier moves it in place; the quarterly ledger sits in an RA-GZRS account, where archived blobs are not possible, so the cheapest remaining choice that still opens instantly is the cold tier; the continuously written log is an append blob, and tiering only applies to block blobs, so no tier change should be attempted; for the account that does not exist yet, the tier that arriving blobs inherit when they name none is chosen with the Access tier option on the Advanced tab, and Hot carries the lowest per-request and transaction charges; for the single object arriving tomorrow, the tier can be selected for that one upload and that choice wins over the account's setting, so Hot can be used while every other unnamed blob in cases-prod stays in Cool.",
+				"perChoice": {
+					"item-1": "Belongs with cases-prod/2017-scan.tif. It is a block blob in an account with GRS redundancy, so archived blobs are supported there, and it is kept for ten years, opened only during investigations, and tolerant of hours of retrieval delay, which matches the offline tier's profile. Set Blob Tier moves the blob and its data in place.",
+					"item-2": "Belongs with ledger-prod/2020-quarter.bin. The owner wants the smallest capacity charge, but ZRS, GZRS and RA-GZRS accounts cannot hold archived blobs, so the offline tier is out. Among the remaining tiers the cold one has the lowest storage charge while still retrieving in milliseconds, and Set Blob Tier moves it in place.",
+					"item-3": "Belongs with cases-prod/app-events.log. Access tiers are a block blob feature; append blobs and page blobs cannot be moved between tiers, so no tier change should be attempted for this continuously written log even though the owner would like lower storage charges.",
+					"item-4": "Belongs with cases-new. Blobs that arrive without naming a tier inherit the account default, and on a brand-new general-purpose v2 account that default is set with the Access tier option under Blob storage on the Advanced tab. Hot has the lowest access and transaction charges, matching the request.",
+					"item-5": "Belongs with invoice-batch.csv. The tier can be selected for a single upload, and that per-blob choice wins over the account default, so Hot can be picked for that object while every other unnamed blob in cases-prod continues to land in Cool."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-online-manage"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/archive-rehydrate-overview"
+				}
+			],
+			"subtopics": [
+				"access-tiers",
+				"tier-configuration",
+				"redundancy-constraints"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MP7N6XFG5J5782H9TR5BHS",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a general-purpose v2 storage account with GRS redundancy that holds the four workloads listed below. You need each workload stored so that its retrieval speed, its retention rule and its cost profile are all respected, and no workload should end up paying for capacity that it never actually used. Drag each access tier to the workload it should serve.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Workload",
+						"Data age",
+						"How it is used",
+						"Retention rule",
+						"Retrieval expectation"
+					],
+					"rows": [
+						[
+							"W1 - live transaction log",
+							"Rewritten every hour",
+							"Read continuously by the operations dashboard",
+							"Discarded after 24 hours",
+							"Answers within milliseconds, and the dashboard needs 99.9% uptime each month"
+						],
+						[
+							"W2 - nightly full backup",
+							"35 days old",
+							"Restored only during the quarterly disaster-recovery test",
+							"Kept for 45 days",
+							"Back in service within minutes"
+						],
+						[
+							"W3 - product warehouse extract",
+							"8 months old",
+							"Opened by analysts a few times a year",
+							"Kept for at least one year",
+							"Must be readable immediately, and capacity spend should be as low as possible"
+						],
+						[
+							"W4 - superseded tape-transfer records",
+							"9 years old",
+							"Requested by regulators once every few years",
+							"Kept for 25 years",
+							"A wait of up to one business day to open the data is acceptable"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "hot",
+						"text": "Hot"
+					},
+					{
+						"id": "cool",
+						"text": "Cool"
+					},
+					{
+						"id": "cold",
+						"text": "Cold"
+					},
+					{
+						"id": "archive",
+						"text": "Archive"
+					}
+				],
+				"slots": [
+					{
+						"id": "w1",
+						"label": "W1 - live transaction log"
+					},
+					{
+						"id": "w2",
+						"label": "W2 - nightly full backup"
+					},
+					{
+						"id": "w3",
+						"label": "W3 - product warehouse extract"
+					},
+					{
+						"id": "w4",
+						"label": "W4 - superseded tape-transfer records"
+					}
+				]
+			},
+			"key": {
+				"w1": "hot",
+				"w2": "cool",
+				"w3": "cold",
+				"w4": "archive"
+			},
+			"explanation": {
+				"correct": "Hot serves W1: the log is written and read continuously, must answer in milliseconds, and carries a 99.9% uptime commitment, which only the hot tier meets (the other tiers offer 99%, or 99.9% only for reads on geo-redundant accounts); its 24-hour lifetime also fits a tier that imposes no minimum retention. Cool serves W2: the backup has to be usable again within minutes, so it must stay online, and a 45-day retention rule fits the 30-day minimum of this tier without paying for the extra days a 90-day minimum would add. Cold serves W3: the extract must open immediately, which rules out offline storage, and among the online tiers it carries the lowest capacity price while still returning data in milliseconds. Archive serves W4: the records are opened only every few years, must be kept for 25 years, and a wait of up to a business day is tolerated, so offline storage with hours-long retrieval and a 180-day minimum fits, and GRS redundancy supports offline storage.",
+				"perChoice": {
+					"hot": "Belongs in W1 - live transaction log: continuous reads and rewrites, millisecond answers and a 99.9% monthly uptime commitment, plus a 24-hour lifetime that suits a tier with no minimum retention. Placing it in a cooler tier would add a minimum-retention charge for data that is discarded the next day.",
+					"cool": "Belongs in W2 - nightly full backup: the file must be back in service within minutes, so it stays online, and 45 days of retention matches the 30-day minimum without paying for the 90 days a colder online tier bills. It would not fit W1, because that data is discarded long before any minimum retention period ends.",
+					"cold": "Belongs in W3 - product warehouse extract: it must open immediately, so it cannot go to offline storage, and among the online tiers it has the lowest capacity price with millisecond retrieval, matching the requirement to keep spend low. It would be a poor fit for W2, whose 45-day retention is shorter than the 90 days this tier bills.",
+					"archive": "Belongs in W4 - superseded tape-transfer records: opened only every few years, kept for 25 years, and a one-day wait is acceptable, so offline storage with hours-long retrieval and a 180-day minimum is appropriate, and GRS redundancy allows it. It cannot serve W3 or W1, whose data has to be readable immediately."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-online-manage"
+				}
+			],
+			"subtopics": [
+				"tier-selection",
+				"minimum-retention",
+				"retrieval-latency"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MPCZ3B10FQVQXNQXRAT5TA",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a general-purpose v2 storage account that holds the block blobs listed below. Each blob sits in one of the account's tiers, and the cleanup run on 15 March will carry out the action shown against it. Finance spotted extra days of capacity on last month's invoice for blobs that the cleanup removed while they were still young, and it has asked for a schedule that keeps every blob in place long enough to avoid those extra days. Drag each outcome to the blob it applies to.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Blob                    Tier      Days held in tier   Action in the 15 March cleanup run\nmarketing-site-images   Cool      21                  Delete\nsupport-snapshots       Cool      45                  Delete\ntelemetry-raw           Cold      60                  Overwrite with Put Blob\ncontract-originals      Archive   120                 Delete"
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "It must wait 9 more days"
+					},
+					{
+						"id": "i2",
+						"text": "It can be actioned in this cleanup run"
+					},
+					{
+						"id": "i3",
+						"text": "It must wait 30 more days"
+					},
+					{
+						"id": "i4",
+						"text": "It must wait 60 more days"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "marketing-site-images"
+					},
+					{
+						"id": "s2",
+						"label": "support-snapshots"
+					},
+					{
+						"id": "s3",
+						"label": "telemetry-raw"
+					},
+					{
+						"id": "s4",
+						"label": "contract-originals"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "On a general-purpose v2 account, blobs held in Cool are billed for 30 days and blobs held in Cold for 90 days if they are removed early, and Archive has a 180-day minimum everywhere; the extra days are prorated, so a blob only pays for the full period once it has actually been held that long. marketing-site-images has been in Cool for 21 days, so removing it now would bill 30 days of Cool capacity and it must wait 9 more days. support-snapshots has been in Cool for 45 days, past the 30-day Cool minimum, so it can be deleted in this run with no extra days. telemetry-raw has been in Cold for 60 days, and replacing its content with Put Blob counts as a removal, so it would be billed for 90 days of Cold capacity and must wait 30 more days. contract-originals has been in Archive for 120 days, and removing it bills the full 180 days of Archive capacity, so it must wait 60 more days to reach 180.",
+				"perChoice": {
+					"i1": "Belongs with marketing-site-images: after 21 days in Cool the blob is still short of the 30-day Cool minimum, so deleting it adds 9 days of Cool capacity to the invoice and the action must wait 9 more days.",
+					"i2": "Belongs with support-snapshots: 45 days in Cool is already beyond the 30-day Cool minimum, so the deletion in this run produces no extra days of capacity.",
+					"i3": "Belongs with telemetry-raw: overwriting the blob with Put Blob inside the 90-day Cold window counts as a removal, so the account bills 90 days of Cold capacity and the overwrite must wait 30 more days.",
+					"i4": "Belongs with contract-originals: Archive has a 180-day minimum, and a blob removed at 120 days is billed the full 180 days, so it must stay for 60 more days to reach that mark."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+				}
+			],
+			"subtopics": [
+				"access-tiers",
+				"minimum-retention",
+				"early-deletion-charges"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MPM1EHBV12C2EDEPTV4AD6",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a general-purpose v2 storage account that holds block blobs, and your platform team is standardizing how access tiers are applied. You need to complete each task below in the Azure portal. Drag each task to the portal location where you should perform it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Account property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account type",
+							"General-purpose v2"
+						],
+						[
+							"Redundancy",
+							"GRS"
+						],
+						[
+							"Stored content",
+							"Block blobs"
+						],
+						[
+							"Blobs with their own tier value",
+							"1"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Choose the tier that a newly provisioned resource starts with, before any content is sent to it."
+					},
+					{
+						"id": "i2",
+						"text": "Apply one tier to every stored object that does not already carry a tier value of its own."
+					},
+					{
+						"id": "i3",
+						"text": "Move a single object that is already stored to a warmer or colder destination."
+					},
+					{
+						"id": "i4",
+						"text": "Pick the tier for one new object as it is being sent to the service."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Account creation → Advanced → Blob storage"
+					},
+					{
+						"id": "s2",
+						"label": "Account Settings → Configuration"
+					},
+					{
+						"id": "s3",
+						"label": "Selected blob menu → Change tier"
+					},
+					{
+						"id": "s4",
+						"label": "Upload → Advanced"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Each task belongs to the portal location that exposes that tiering control. The tier a brand-new resource starts with is chosen while the resource is being created, on the Advanced tab under Blob storage. The account-wide value applied to stored objects that carry no tier of their own is changed under Settings → Configuration. Moving an object that is already stored to another tier is done from the selected blob's menu with Change tier. Choosing a tier for a single new object as it is sent to the service is done in the Upload pane by expanding Advanced.",
+				"perChoice": {
+					"i1": "Belongs in Account creation → Advanced → Blob storage, because the starting tier for a newly provisioned resource is set during creation on the Advanced tab under Blob storage.",
+					"i2": "Belongs in Account Settings → Configuration, because that is where the account-wide default is changed and it governs only blobs that have no tier value of their own.",
+					"i3": "Belongs in Selected blob menu → Change tier, because an object that is already stored is moved to another tier by selecting it and choosing Change tier, then saving the target tier.",
+					"i4": "Belongs in Upload → Advanced, because a tier chosen for one new object as it is written to the service is a per-blob override made by expanding Advanced in the Upload pane, and it takes precedence over the account-wide default."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-online-manage"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+				}
+			],
+			"subtopics": [
+				"access-tier-settings",
+				"portal-configuration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MPR5Q9SKTSM6CMVZ98JE4T",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a general-purpose v2 storage account that holds a large set of blobs, and none of those blobs has a storage class of its own — each one simply takes whatever the account specifies by default. The platform team wants to switch that default to a cheaper online tier so the capacity bill falls, and finance has asked what the change will do to the next invoice and how long each blob has to stay in its new tier before it can be removed or sent somewhere else. Which statement should you give them?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account type",
+							"General-purpose v2"
+						],
+						[
+							"Current default blob access tier",
+							"Hot"
+						],
+						[
+							"Blobs that use the account default",
+							"About thirty thousand"
+						],
+						[
+							"Blobs with their own tier value set",
+							"None"
+						],
+						[
+							"Intended new default blob access tier",
+							"Cold"
+						]
+					]
+				},
+				"statement": "The next invoice will show {{charge}}, and each affected blob must remain in its new tier for at least {{retention}} before it is deleted or moved to another tier.",
+				"slots": [
+					{
+						"id": "charge",
+						"options": [
+							{
+								"id": "a",
+								"text": "Write operations charged per 10,000 blobs"
+							},
+							{
+								"id": "b",
+								"text": "Read operations charged per 10,000 blobs plus data retrieval per GB"
+							},
+							{
+								"id": "c",
+								"text": "Write operations charged per 10,000 blobs plus data retrieval per GB"
+							},
+							{
+								"id": "d",
+								"text": "No transaction charges for the default change"
+							}
+						]
+					},
+					{
+						"id": "retention",
+						"options": [
+							{
+								"id": "a",
+								"text": "90 days"
+							},
+							{
+								"id": "b",
+								"text": "30 days"
+							},
+							{
+								"id": "c",
+								"text": "180 days"
+							},
+							{
+								"id": "d",
+								"text": "60 days"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"charge": "a",
+				"retention": "a"
+			},
+			"explanation": {
+				"correct": "Changing the default blob access tier of a general-purpose v2 account is chargeable. Every blob here takes its class from the account default, so the change moves all of them from Hot to Cold — a move to a colder tier, which is billed as a write operation to the destination tier: write operations per 10,000 blobs, with no read or data-retrieval component. Because those blobs now sit in the cold tier, each must stay there for at least 90 days in a general-purpose v2 account; deleting or moving one sooner is billed for the remaining days up to that 90-day minimum (prorated, for example deleting a cool blob after 21 days still bills 9 more cool days). The 30-day figure belongs to the cool tier and 180 days to the offline archive tier, so neither applies here.",
+				"perChoice": {
+					"charge:b": "Reads and data retrieval are charged when a blob moves to a warmer tier. Moving from Hot to Cold is a move to a colder tier and is billed as a write operation to the destination tier, so the read and retrieval components do not apply.",
+					"charge:c": "Data retrieval from the source tier is only charged when data moves to a warmer tier. A Hot-to-Cold move is billed only as a write operation to the destination tier, so the retrieval component is incorrect.",
+					"charge:d": "Changing the default tier is chargeable in general-purpose v2 accounts: switching to a colder tier bills write operations per 10,000 for every blob whose tier comes from the account default, and this account has about thirty thousand such blobs.",
+					"retention:b": "30 days is the minimum retention for the cool tier. The blobs in this scenario are moving to the cold tier, which requires at least 90 days in a general-purpose v2 account before deletion or a move.",
+					"retention:c": "180 days is the minimum retention for the archive tier, which is offline and must be rehydrated before it can be read. The cold tier is online and needs 90 days, not 180.",
+					"retention:d": "No access tier has a 60-day minimum. The cold tier requires blobs to be kept for at least 90 days in a general-purpose v2 account, with earlier deletion or moves billed up to that minimum."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-online-manage"
+				}
+			],
+			"subtopics": [
+				"account-default-tier",
+				"tier-change-billing",
+				"minimum-retention"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MQGF93RBQ9YJWM7JSQSEXQ",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a general-purpose v2 storage account whose approved capacity limit is 10 TiB. The data platform team wants to spread block blobs across several access tiers so that rarely touched data costs less, and the platform owner needs to know exactly how the account's capacity limit applies before the migration starts. Which statement should you give them?",
+				"statement": "The platform owner should be told that {{limit_scope}}.",
+				"slots": [
+					{
+						"id": "limit_scope",
+						"options": [
+							{
+								"id": "choice1",
+								"text": "every blob in the account counts toward the single 10 TiB limit whichever access tier it occupies"
+							},
+							{
+								"id": "choice2",
+								"text": "each access tier has its own 10 TiB allowance so the account can hold several times that amount"
+							},
+							{
+								"id": "choice3",
+								"text": "only the blobs in the cheapest tier count toward the 10 TiB limit and data in the other tiers is unlimited"
+							},
+							{
+								"id": "choice4",
+								"text": "each container has its own 10 TiB allowance regardless of which access tiers its blobs occupy"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"limit_scope": "choice1"
+			},
+			"explanation": {
+				"correct": "Capacity limits for a storage account are set at the account level and not according to access tier. Every blob stored in the account counts against the same limit regardless of which tier holds it, so capacity can either be concentrated in one tier or distributed across two or more tiers. Spreading the data across tiers therefore creates no additional capacity for the account.",
+				"perChoice": {
+					"limit_scope:choice2": "Limits are not granted per access tier, so an account cannot hold several times its limit by spreading data across tiers because all blobs draw on the same account-level allowance.",
+					"limit_scope:choice3": "All blobs count toward the account limit regardless of the tier that holds them, so data in the online tiers is neither excluded from the limit nor unlimited.",
+					"limit_scope:choice4": "The limit is enforced for the storage account as a whole and not separately for each container, so the number of containers does not multiply the allowance."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+				}
+			],
+			"subtopics": [
+				"account-capacity-limits",
+				"access-tier-planning"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MQY3NQ7CCCH0ZRHK01R8FJ",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a general-purpose v2 storage account with GRS redundancy that holds case files for a legal practice. The account stores block blobs that are opened on demand during working hours, and the files must remain immediately readable. The practice's contract requires read availability of at least 99.9 percent. You need to bring down the per-gigabyte capacity charges without making any file less available than the contract allows. Which access tier should the files use?",
+				"statement": "The files should use the {{tier}} access tier.",
+				"slots": [
+					{
+						"id": "tier",
+						"options": [
+							{
+								"id": "a",
+								"text": "Hot"
+							},
+							{
+								"id": "b",
+								"text": "Cool"
+							},
+							{
+								"id": "c",
+								"text": "Cold"
+							},
+							{
+								"id": "d",
+								"text": "Archive"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"tier": "a"
+			},
+			"explanation": {
+				"correct": "With GRS redundancy, Hot delivers 99.9% availability, while Cool, Cold, and Archive each deliver 99% (those three reach 99.9% only for RA-GRS reads, and this account uses GRS). The contract therefore rules out every tier except Hot, and Hot also satisfies the requirement that the files stay immediately readable. Cool and Cold would save per-gigabyte capacity cost but would breach the contractual availability level, and Archive is offline as well as 99%. Block blobs are eligible for tiering, so the account and blob types shown allow this choice.",
+				"perChoice": {
+					"tier:b": "Cool provides 99% availability with GRS redundancy, which is below the contractual 99.9% minimum, so it fails the availability requirement even though its per-gigabyte storage price is lower than Hot.",
+					"tier:c": "Cold also provides 99% availability with GRS redundancy, and it adds a 90-day minimum retention period, so it does not meet the contractual availability level.",
+					"tier:d": "Archive is an offline tier with 99% availability under GRS, and its contents cannot be read or modified until a rehydration completes, so it cannot serve immediately readable files or meet the 99.9% requirement."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+				}
+			],
+			"subtopics": [
+				"access-tier-availability",
+				"access-tier-selection"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MR89QSNNMAAJW9CX881RSW",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a general-purpose v2 storage account that a retail inventory application writes to as shown below. The application depends on every blob listed, and the platform team wants the capacity bill to fall by putting the account's content into a cheaper online tier that still returns it immediately. Which change should you make to the platform team's plan?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Blob",
+						"Blob type",
+						"What it holds",
+						"Tier shown in portal today"
+					],
+					"rows": [
+						[
+							"app-audit-log",
+							"Append blob",
+							"Rolling audit trail the application appends to every minute",
+							"Hot"
+						],
+						[
+							"sql-data-vhd",
+							"Page blob",
+							"Virtual disk of the on-premises SQL instance",
+							"Hot"
+						],
+						[
+							"nightly-export",
+							"Block blob",
+							"Full database export uploaded at 02:00 each night",
+							"Hot"
+						]
+					]
+				},
+				"statement": "You should change the plan so that {{plan}}.",
+				"slots": [
+					{
+						"id": "plan",
+						"options": [
+							{
+								"id": "a",
+								"text": "only the nightly block blob exports move to the cheaper online tier and the append blob and page blob stay where they are"
+							},
+							{
+								"id": "b",
+								"text": "the nightly block blob exports, the append blob and the page blob all move to the cheaper online tier"
+							},
+							{
+								"id": "c",
+								"text": "only the append blob and page blob move to the cheaper online tier and the nightly block blob exports stay where they are"
+							},
+							{
+								"id": "d",
+								"text": "the nightly block blob exports move to the cheaper online tier and lifecycle management rules put the append blob and page blob in the same tier"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"plan": "a"
+			},
+			"explanation": {
+				"correct": "Access tiers are a block blob feature only: an access tier can be set on block blobs, while tiering is not supported for append blobs or page blobs. The only part of the plan that can actually be carried out is moving the nightly export, which is a block blob, into the cheaper online tier. The audit log (an append blob) and the database disk (a page blob) must stay where they are, because a Set Blob Tier call against them cannot place them in another tier. Moving just the export still lowers capacity cost for the largest part of the account's data while leaving the data the application depends on untouched.",
+				"perChoice": {
+					"plan:b": "Tiering is not supported for append blobs or page blobs, so the audit log and the database disk cannot be moved into a cheaper online tier with a tier change. This plan fails for two of the three blobs listed.",
+					"plan:c": "The append blob and the page blob cannot be given an access tier, so this plan fails for both of them and leaves the export at its current price, which does not deliver the capacity saving the platform team asked for.",
+					"plan:d": "Lifecycle management rules move block blobs between tiers and expire them within a single account, but they cannot apply an access tier to an append blob or a page blob, so the audit log and the database disk would remain where they are."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-online-manage"
+				}
+			],
+			"subtopics": [
+				"access-tiers",
+				"blob-types"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5N5ZP6HN8SR2QVEKPB18P5F",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a subscription that contains 320 general-purpose v2 storage accounts, each holding block blobs that the finance team wants moved to a cheaper online tier next month under one rule. The table below shows four of those accounts, and the same change has to be applied to all of them before the deadline, without anyone editing settings on hundreds of accounts by hand. Which mechanism should you use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Storage account",
+						"Block blobs",
+						"Current tier",
+						"Target tier"
+					],
+					"rows": [
+						[
+							"contoso-prod-01",
+							"412,000",
+							"Hot",
+							"Cool"
+						],
+						[
+							"contoso-prod-02",
+							"388,500",
+							"Hot",
+							"Cool"
+						],
+						[
+							"contoso-dr-03",
+							"1,205,000",
+							"Hot",
+							"Cool"
+						],
+						[
+							"contoso-dr-04",
+							"96,400",
+							"Hot",
+							"Cool"
+						]
+					]
+				},
+				"statement": "The team should {{mechanism}}.",
+				"slots": [
+					{
+						"id": "mechanism",
+						"options": [
+							{
+								"id": "a",
+								"text": "Use a lifecycle management policy in each storage account"
+							},
+							{
+								"id": "b",
+								"text": "Use Set Blob Tier on each blob in a script"
+							},
+							{
+								"id": "c",
+								"text": "Use a storage task in Azure Storage Actions"
+							},
+							{
+								"id": "d",
+								"text": "Use Copy Blob to copy every blob into a second account"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"mechanism": "c"
+			},
+			"explanation": {
+				"correct": "A storage task in Azure Storage Actions is the documented mechanism for moving blobs between access tiers at scale across multiple accounts: it runs one managed tier change over the accounts in scope instead of per-account rules or per-blob calls. Lifecycle management policies remain confined to a single account, so a subscription-wide move of this size is handled by a storage task instead.",
+				"perChoice": {
+					"mechanism:a": "Lifecycle management policies are the rule-based way to tier and expire data, but they act only inside one account; covering 320 accounts would mean authoring and maintaining 320 separate policies, which is not a single mechanism spanning the subscription.",
+					"mechanism:b": "Set Blob Tier is a per-blob operation (it can be batched within an account), so scripting it over roughly two million blobs across 320 accounts is not the mechanism intended for account-wide tier moves at scale and would be slow and error-prone.",
+					"mechanism:d": "Copy Blob writes a new copy and leaves the original where it is, so the same data is billed twice until the originals are removed, and it rewrites the data instead of re-tiering what already exists."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-online-manage"
+				}
+			],
+			"subtopics": [
+				"bulk-tier-migration",
+				"lifecycle-policies",
+				"storage-automation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5N65C06WRDAE7HCN13DWSYN",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a general-purpose v2 storage account that a video studio uses for its project archive, including clips from projects that finished years ago. The account's lifecycle management policy is shown below. Yesterday an editor restored three archived clips in place so that they could be cut into a promo, and this morning all three clips report as offline storage again, so the edit cannot continue. The clips have to stay readable for the next two weeks, the studio's shot-tracking system points at the existing clips, and no duplicate of a clip may be created. Which action should you take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Lifecycle management policy: studio-archive\n\n  Rule: ArchiveOldClips\n    Trigger : Days since last modification = 180\n    Action  : Move blob to Archive (offline storage)\n\n  Rules that remove clips: none\n"
+				},
+				"statement": "To solve this, you should {{policyAction}} in the account's lifecycle management policy.",
+				"slots": [
+					{
+						"id": "policyAction",
+						"options": [
+							{
+								"id": "a",
+								"text": "add a condition on the days since the access tier last changed"
+							},
+							{
+								"id": "b",
+								"text": "add a condition on the days since the blob was last modified"
+							},
+							{
+								"id": "c",
+								"text": "add a condition on the days since the blob was last accessed"
+							},
+							{
+								"id": "d",
+								"text": "add a condition on the days since the blob was last created"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"policyAction": "a"
+			},
+			"explanation": {
+				"correct": "Restoring a clip by putting it back into an online tier with Set Blob Tier does not update the blob's last modified time, so the rule that keys on days since modification still matches these clips as soon as the policy runs and pushes them straight back into offline storage. Adding a condition that counts the days since the access tier last changed makes the policy wait for a fresh period after every restore, so the three clips stay online and readable for the whole edit. Rehydrating by copying the clips into new blobs would also stop the loop, but the studio forbids duplicates and its tracking system points at the existing clips.",
+				"perChoice": {
+					"policyAction:b": "This is already the trigger the rule uses, and a tier restore leaves the last modified timestamp untouched, so the restored clips still satisfy that trigger and are pushed back into offline storage immediately. Repeating the same condition would alter nothing.",
+					"policyAction:c": "An access timestamp is refreshed whenever the clips are opened, and the editor opens them repeatedly during the cut, so an access-based window cannot reliably hold the clips in the online tiers for the full two weeks. The safeguard that matters for a restore is tied to the moment the tier was changed.",
+					"policyAction:d": "Clips from projects that finished years ago already exceed any creation-based window, so the rule would still match them right after the restore and send them back into offline storage."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/archive-rehydrate-overview"
+				}
+			],
+			"subtopics": [
+				"access-tiers",
+				"rehydration",
+				"lifecycle-management"
+			],
+			"reviewed": false
+		}
+	]
+}

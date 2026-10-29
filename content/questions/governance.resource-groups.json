@@ -1,0 +1,1564 @@
+{
+	"skill": "governance.resource-groups",
+	"questions": [
+		{
+			"id": "q_01M5GFT3T30VXF29V9XQPZ3K8P",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have moved a web app named `shop-prod` from resource group `rg-legacy` to resource group `rg-commerce` within the same subscription. The app now fails in a monitoring dashboard because that dashboard still queries it by its old path, and a deployment script also still contains the old path.\n\nHere are the two values:\n- Old reference stored in the dashboard and script: `/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-legacy/providers/Microsoft.Web/sites/shop-prod`\n- Current reference returned by the portal: `/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-commerce/providers/Microsoft.Web/sites/shop-prod`\n\nYou need to bring the dashboard and script back in sync with the app's current path. Which segment of the path should you change?",
+				"options": [
+					{
+						"id": "a",
+						"text": "Change only the `resourceGroups` value to `rg-commerce` and leave the subscription GUID, provider namespace, resource type and resource name unchanged."
+					},
+					{
+						"id": "b",
+						"text": "Change the `subscriptions` value to a new GUID for the target subscription and leave the `resourceGroups` value unchanged."
+					},
+					{
+						"id": "c",
+						"text": "Change the `providers` value to `Microsoft.Resources` so the path points at the resource group rather than the web app."
+					},
+					{
+						"id": "d",
+						"text": "Change the `sites` value to `rg-commerce` so the resource type segment carries the new container name."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The resource ID format is `/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/{resourceProviderNamespace}/{resourceType}/{resourceName}`. Moving the web app within the same subscription changed only the `resourceGroups` segment from `rg-legacy` to `rg-commerce`; the subscription, provider namespace, resource type and resource name are unchanged. Updating that one segment in the dashboard query and in the deployment script restores both to the app's current path.",
+				"perChoice": {
+					"b": "No subscription changed in this scenario, so the `11111111-...` GUID in both references is already correct. Substituting a different GUID would break the reference rather than repair it.",
+					"d": "The `sites` segment names the resource type (`Microsoft.Web/sites`), not the container. Putting the container name there produces a path that no longer matches the app's ID.",
+					"c": "`Microsoft.Resources` is not the provider namespace of a web app. The provider namespace for this resource is `Microsoft.Web`, so changing `providers` this way would point away from the app."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/overview"
+				}
+			],
+			"subtopics": [
+				"resource-id",
+				"move-resources",
+				"resource-groups"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GFTF26HY3A0NYJX54S1TMY",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have just finished moving a set of web app resources into a resource group that lives in a different Azure subscription. The resources themselves are running fine and are still in the same region, but the team reports that cost reporting by cost center has stopped and the platform team can no longer deploy.\n\nHere is what was observed immediately after the move:\n\n| Item | Observed after the move |\n| --- | --- |\n| Cost center tag on the web app | Still reads `finance-marketing` |\n| Tag on the destination resource group | None present |\n| Role assignment letting the platform team deploy into the group | No longer listed |\n| Deny policy for the resource type in the target region | Not present |\n| Region the resources are deployed in | Unchanged |\n\nYou need to restore the cost reporting and deployment capability. Which statement best explains the situation?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Observed after the move"
+					],
+					"rows": [
+						[
+							"Cost center tag on the web app",
+							"Still reads `finance-marketing`"
+						],
+						[
+							"Tag on the destination resource group",
+							"None present"
+						],
+						[
+							"Role assignment letting the platform team deploy into the group",
+							"No longer listed"
+						],
+						[
+							"Deny policy for the resource type in the target region",
+							"Not present"
+						],
+						[
+							"Region the resources are deployed in",
+							"Unchanged"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Tags, role assignments, and policies don't carry over automatically from the source resource group to the destination, so you must apply the tag, the role assignment, and the policy again on the destination group. The resources staying in the same region is expected, because a move only changes the associated resource group and not the physical region."
+					},
+					{
+						"id": "b",
+						"text": "Tags, role assignments, and policies move automatically with the resources, but they take several hours to propagate, so the team should wait and recheck before making changes."
+					},
+					{
+						"id": "c",
+						"text": "The move failed to transfer the dependent resources, which is why the tags and permissions are missing; re-run the move and include the destination resource group's settings in the request."
+					},
+					{
+						"id": "d",
+						"text": "The subscription change forced the resources to be relocated to the destination subscription's default region, which is why the tags and permissions appear to be missing until the region is correct."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Per the documentation, a resource group itself can't be moved to a new subscription, but all resources in it can be moved to a resource group in another subscription, and settings such as tags, role assignments, and policies don't transfer automatically - you need to apply these settings manually to the new resource group. That's why the destination group shows no tag, the platform team's role assignment is gone, and the deny policy isn't present. The unchanged region is also expected: moving a resource only changes its associated resource group and doesn't alter the physical region of the resource. The correct option captures both facts and points to the right remedy.",
+				"perChoice": {
+					"b": "This contradicts the documented behavior. Tags, role assignments, and policies do not transfer automatically; they don't appear later through propagation, so waiting changes nothing and the settings must be applied manually.",
+					"d": "A move never changes the physical region of a resource - it only changes the associated resource group. The row showing the region unchanged is already consistent with a successful move, so a region relocation doesn't explain the missing tags or permissions.",
+					"c": "The resources moved successfully (they're running), and dependent resources must be included in the request when needed - but the missing tags/permissions/policies are not fixed by re-running the move. Those settings are applied manually to the destination group."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+				}
+			],
+			"subtopics": [
+				"move-resources",
+				"resource-groups",
+				"cross-subscription-move"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GFV7C4DB7VB6XV1GAC2CET",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "A virtual machine, its managed disks, and its network interface are being moved from one subscription to another. While the operation is running, a support engineer tries to change the virtual machine's size and the portal rejects the change, so the team asks whether the move should be cancelled and restarted.\n\nHere is what was observed during the run:\n\n| Check performed during the move | Result |\n| --- | --- |\n| Change the virtual machine's size (SKU) in the source group | Error returned; change rejected |\n| Endpoint health probe against the application | Probe passing, requests served normally |\n| Create a new resource in the destination group | Error returned; operation rejected |\n| Application traffic handled by the virtual machine | Normal, no dropped connections |\n\nYou need to give the team accurate guidance before it decides to cancel. Which statement should you give?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Check performed during the move",
+						"Result"
+					],
+					"rows": [
+						[
+							"Change the virtual machine's size (SKU) in the source group",
+							"Error returned; change rejected"
+						],
+						[
+							"Endpoint health probe against the application",
+							"Probe passing, requests served normally"
+						],
+						[
+							"Create a new resource in the destination group",
+							"Error returned; operation rejected"
+						],
+						[
+							"Application traffic handled by the virtual machine",
+							"Normal, no dropped connections"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Changes are refused while the move holds the groups locked, but the virtual machine keeps running normally, and because such a lock can last as long as four hours, the team should let the move finish rather than cancel it."
+					},
+					{
+						"id": "b",
+						"text": "Changes are refused while the move holds the groups locked, and the virtual machine also stops serving traffic until the move completes, so the team should expect an outage of up to four hours before retrying the resize."
+					},
+					{
+						"id": "c",
+						"text": "Changes are accepted during the move because existing resources stay fully operational, and the lock on the destination group is released as soon as the resources land, normally within four hours."
+					},
+					{
+						"id": "d",
+						"text": "Changes are refused while the move holds the groups locked, but if the move has not completed after four hours the source group stays locked until an administrator removes the lock by hand."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "During a move operation both the source and target resource groups are locked: you can't create, delete, or update resources in them, which is exactly what the rejected resize and rejected resource creation in the exhibit show. At the same time, existing resources remain fully operational - the health probe and normal traffic confirm no downtime. The lock can last up to four hours, most moves finish faster, and Resource Manager unlocks both groups when the operation ends. So the team should wait rather than cancel.",
+				"perChoice": {
+					"b": "This contradicts the documented behavior that existing resources remain fully operational during the move, with services relying on them experiencing no downtime. The exhibit's passing probe and normal traffic rule out an outage.",
+					"d": "The documentation states that Resource Manager unlocks both resource groups if a resource doesn't move within four hours, so the lock is never left in place waiting for manual removal. Cancelling and restarting wouldn't help either, since the same lock applies to every move.",
+					"c": "Updates are explicitly blocked during the move, so the rejected resize contradicts this option. The lock applies to both the source and destination groups and is released only when the operation completes, not as soon as the resources land."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+				}
+			],
+			"subtopics": [
+				"move-resources",
+				"resource-group-locking"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GFWFVVPN9GR9FXMMHS72FN",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You are planning to move six resources, including a storage account, from subscription `sub-prod` to subscription `sub-dr`, and you want the operation to succeed the first time you run it. Before submitting anything you collect the values below with `az account show` and `az provider list`.\n\nWhich action should you take first?\n\n| Property checked before the move | Observed value |\n| --- | --- |\n| Source subscription tenant ID | 72f1a0d3-5c88-4b41-9c2e-7f3a1d9b6e10 |\n| Destination subscription tenant ID | 4b8e2c17-9d0a-47f6-b3c5-2a61e4d80f39 |\n| Microsoft.Storage registration state in the destination subscription | NotRegistered |\n| Status of both subscriptions | Active |\n| Number of resources in the planned move request | 6 |",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property checked before the move",
+						"Observed value"
+					],
+					"rows": [
+						[
+							"Source subscription tenant ID",
+							"72f1a0d3-5c88-4b41-9c2e-7f3a1d9b6e10"
+						],
+						[
+							"Destination subscription tenant ID",
+							"4b8e2c17-9d0a-47f6-b3c5-2a61e4d80f39"
+						],
+						[
+							"Microsoft.Storage registration state in the destination subscription",
+							"NotRegistered"
+						],
+						[
+							"Status of both subscriptions",
+							"Active"
+						],
+						[
+							"Number of resources in the planned move request",
+							"6"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Reconcile the difference so both subscriptions belong to the same Microsoft Entra tenant, then register Microsoft.Storage as a resource provider in the destination subscription."
+					},
+					{
+						"id": "b",
+						"text": "Reconcile the difference so both subscriptions belong to the same Microsoft Entra tenant, then submit the storage account on its own so that the destination inherits none of the source group's settings."
+					},
+					{
+						"id": "c",
+						"text": "Leave the two subscriptions in their current tenants, and register Microsoft.Storage as a resource provider in the destination subscription before rerunning the move."
+					},
+					{
+						"id": "d",
+						"text": "Leave the two subscriptions in their current tenants, and include the source resource group's tags, role assignments, and policies in the move request so the destination keeps the same lifecycle and access."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The move checklist requires the source and destination subscriptions to exist within the same Microsoft Entra tenant - the two IDs in the exhibit differ, so the tenant difference must be reconciled first, either by transferring billing ownership or by associating the subscription with the tenant. It also requires the destination subscription to be registered for the resource provider of the resource being moved; Microsoft.Storage shows NotRegistered in the destination, so registering it there is required, otherwise you get an error stating that the subscription isn't registered for a resource type. Doing both satisfies every documented precondition.",
+				"perChoice": {
+					"c": "Registering the provider is necessary but not sufficient. If the move involves different subscriptions, both subscriptions must be part of the same Microsoft Entra ID tenant, and the exhibit shows two different tenant IDs, so the move would still fail.",
+					"d": "Tags, role assignments, and policies don't transfer automatically from the original resource group to the destination group; you apply them manually afterward. They also cannot be included in a move request, and the differing tenant IDs still block the move.",
+					"b": "Reconciling the tenant is right, but submitting the storage account alone is not: when dependent resources exist they must be in the destination group or included in the request, and the provider registration shown as NotRegistered is still outstanding."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+				}
+			],
+			"subtopics": [
+				"move-resources",
+				"resource-provider-registration",
+				"cross-subscription-move"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GFYNHPQ1K6DHMBX39SZG8R",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You are laying out resource groups for a new commerce solution. Two teams own the resources, and each of those teams changes and retires its resources on its own schedule, so a change by one team must never require the other team to take work offline.\n\n| Resource | Owning team | Change frequency | Disposal trigger |\n| --- | --- | --- | --- |\n| `shop-portal` (storefront front end) | Storefront | Weekly, with the release train | Replaced when the storefront is retired |\n| `shop-api` (storefront back end) | Storefront | Weekly, with the release train | Replaced when the storefront is retired |\n| `orders-prod` SQL database | Data | Quarterly schema change | Retained for 7 years for audit |\n| `audit-archive` storage account | Data | Annual compliance review | Retained for 7 years for audit |\n\nYou need to pick an arrangement in which resources that change and retire together are handled as one group. Which arrangement should you use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Resource",
+						"Owning team",
+						"Change frequency",
+						"Disposal trigger"
+					],
+					"rows": [
+						[
+							"`shop-portal` (storefront front end)",
+							"Storefront",
+							"Weekly, with the release train",
+							"Replaced when the storefront is retired"
+						],
+						[
+							"`shop-api` (storefront back end)",
+							"Storefront",
+							"Weekly, with the release train",
+							"Replaced when the storefront is retired"
+						],
+						[
+							"`orders-prod` SQL database",
+							"Data",
+							"Quarterly schema change",
+							"Retained for 7 years for audit"
+						],
+						[
+							"`audit-archive` storage account",
+							"Data",
+							"Annual compliance review",
+							"Retained for 7 years for audit"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Create two resource groups, splitting the four resources so each group holds resources with the same lifecycle and can be deployed, updated, and deleted as one unit."
+					},
+					{
+						"id": "b",
+						"text": "Create four resource groups, one per resource, so each resource has a lifecycle of its own and can be deployed, updated, and deleted as one unit."
+					},
+					{
+						"id": "c",
+						"text": "Create two resource groups, splitting by owning team, so each team's resources can be deployed, updated, and deleted as one unit even when their lifecycles differ."
+					},
+					{
+						"id": "d",
+						"text": "Create one resource group per Azure region, so each region's resources can be deployed, updated, and deleted as one unit regardless of their lifecycle."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "All resources in a resource group should share the same lifecycle - you deploy, update, and delete them together. In the exhibit, the two storefront resources change weekly with the release train and are replaced when the storefront is retired, while the two data resources change rarely and are retained for seven years for audit. Putting each pair in its own group keeps every group on one lifecycle, so each can be changed or removed as a unit without disturbing the other team's resources.",
+				"perChoice": {
+					"d": "Geographic grouping ignores lifecycle entirely. It splits resources that belong on the same schedule across separate groups, and it forces resources with very different schedules into one group, so a change or removal can't be handled as one coordinated operation.",
+					"c": "Team ownership isn't lifecycle. The Data team's two resources change on quite different cycles, and the Storefront team's two resources change together, so grouping by team mixes lifecycles in one group and separates matching ones across groups.",
+					"b": "One group per resource gives every item a private lifecycle but gives up the main purpose of the container: resources that genuinely belong together can no longer be deployed, updated, or deleted together as a single unit."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/manage-resource-groups-portal"
+				}
+			],
+			"subtopics": [
+				"resource-group-design",
+				"lifecycle"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GG2RCKBFBPSAW1HT1875ZC",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your operations team must not be able to destroy `rg-billing-prod` by accident, but that same team must still be able to resize virtual machines and add tags to resources inside the group. Every other resource group in the subscription must keep behaving exactly as it does today. Which lock should you apply?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Operation an operations engineer attempts",
+						"Result the business requires"
+					],
+					"rows": [
+						[
+							"Resize a virtual machine inside rg-billing-prod",
+							"Must succeed"
+						],
+						[
+							"Add a new tag to a storage account inside rg-billing-prod",
+							"Must succeed"
+						],
+						[
+							"Delete rg-billing-prod",
+							"Must be blocked"
+						],
+						[
+							"Delete rg-marketing-dev, a different group in the same subscription",
+							"Must stay possible"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "A lock of type Delete applied at the resource group scope"
+					},
+					{
+						"id": "b",
+						"text": "A lock of type Read-only applied at the resource group scope"
+					},
+					{
+						"id": "c",
+						"text": "A lock of type Delete applied at the subscription scope"
+					},
+					{
+						"id": "d",
+						"text": "A lock of type Read-only applied at the subscription scope"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A Delete lock lets authorized users read and modify the resources it covers while refusing any delete request, so resizing and tagging keep working but rg-billing-prod can't be removed. Applying it to the group itself means the restriction stays inside that group and doesn't spread to the rest of the subscription.",
+				"perChoice": {
+					"b": "Read-only allows reading only: delete and update operations are both refused. A resize or a new tag is an update, so both required operations would fail, and a Read-only lock on a group holding virtual machines also blocks starting or restarting them.",
+					"c": "A lock placed at a parent scope is inherited by everything inside it, so a Delete lock at subscription scope would block removal of rg-marketing-dev and every other group in the subscription, which the business explicitly does not want.",
+					"d": "Read-only at subscription scope refuses updates across the entire subscription, not just within rg-billing-prod. Resizing and tagging would fail in groups the team needs to keep fully operational."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/lock-resources"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/manage-resource-groups-portal"
+				}
+			],
+			"subtopics": [
+				"resource-locks",
+				"lock-scope"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GG35BF4SJAGP78GR625F8Q",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You are creating the resource group for a new regulated solution and must pass the organization's data residency audit. The choice has to be made now, before any resource is deployed. Which location should you set for the resource group?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Input for the new group",
+						"Value"
+					],
+					"rows": [
+						[
+							"Data residency rule for the solution",
+							"Records kept by Resource Manager for the solution must stay in an EU region"
+						],
+						[
+							"Regions planned for the resources that will go in the group",
+							"East US and West US 2"
+						],
+						[
+							"Location from which administrators send their management requests",
+							"Switzerland North"
+						],
+						[
+							"Region of the hub virtual network used for connectivity (another subscription)",
+							"East US"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "France Central, because the location chosen is where Resource Manager keeps the metadata for the group's resources"
+					},
+					{
+						"id": "b",
+						"text": "East US, because the location chosen is where Resource Manager keeps the metadata for the group's resources"
+					},
+					{
+						"id": "c",
+						"text": "Switzerland North, because the location chosen is where Resource Manager keeps the metadata for the group's resources"
+					},
+					{
+						"id": "d",
+						"text": "West US 2, because the location chosen is where Resource Manager keeps the metadata for the group's resources"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The location you give a resource group tells Resource Manager where to keep the metadata about the resources in it, so the residency rule is satisfied only by a region inside the EU. Resources inside the group are allowed to sit in other regions, so placing the group in France Central doesn't prevent the workload from being created in East US or West US 2.",
+				"perChoice": {
+					"b": "The regions the resources themselves run in don't determine where the group's metadata is kept, and resources in a group may be deployed in regions other than the group's own region. Choosing East US would place the stored records outside the EU and fail the audit.",
+					"c": "Being close to where management requests originate is a routing and latency recommendation, not a residency control. The records the audit covers would sit in Switzerland rather than the EU, so the requirement isn't met.",
+					"d": "Matching the group to the region where most resources are created helps resilience but says nothing about the residency rule; the records would still be kept in a US region and the audit would fail."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/manage-resource-groups-portal"
+				}
+			],
+			"subtopics": [
+				"resource-group-location",
+				"data-residency"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GG45AN84Y3KGDCRG49RBGV",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You are moving a virtual machine from subscription `sub-src` to subscription `sub-dr`. The move request you sent that included only the virtual machine was rejected during validation with the error code `MissingMoveDependentResources`. The other resources the machine needs currently sit in other groups in `sub-src`, and every one of them has to end up in `rg-dr`. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Resource",
+						"Type",
+						"Current resource group in sub-src"
+					],
+					"rows": [
+						[
+							"vm-web01",
+							"Microsoft.Compute/virtualMachines",
+							"rg-app"
+						],
+						[
+							"disk-web01",
+							"Microsoft.Compute/disks",
+							"rg-data"
+						],
+						[
+							"pip-web01",
+							"Microsoft.Network/publicIPAddresses",
+							"rg-net"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Move the other listed resources to rg-app, then submit one move request that includes the virtual machine and the other listed resources"
+					},
+					{
+						"id": "b",
+						"text": "Submit three separate move requests, one for each source resource group, so the resources reach sub-dr in stages"
+					},
+					{
+						"id": "c",
+						"text": "Include only the virtual machine in the move request, then recreate the other listed resources in rg-dr after the move completes"
+					},
+					{
+						"id": "d",
+						"text": "Move rg-app itself to sub-dr so the resources it already holds are transferred in a single operation"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "For a move across subscriptions, the resource and everything it depends on must be in the same resource group and travel in the same request. The documented sequence is to gather the dependent resources into one group, move them together, and only afterwards spread them across groups again in the target subscription. Bringing the managed disk and public IP address into rg-app and submitting a single request for all three satisfies the validation.",
+				"perChoice": {
+					"b": "Splitting the work into a request per source group can't satisfy validation: a dependent resource must be either part of the same request or already present in the destination group. Separate requests for rg-app, rg-data and rg-net leave each request incomplete, so the same error returns.",
+					"c": "Validation doesn't pass just because the virtual machine travels alone; the disk and the public IP address it needs aren't in the destination group, so the request still fails. Hand-recreating them afterwards is not a substitute, since those objects are bound to the machine's settings and identity.",
+					"d": "A resource group itself can't be transferred to another subscription; only the resources inside it can be moved, and rg-app currently holds just the virtual machine, so it wouldn't carry the disk or the public IP address with it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/overview"
+				}
+			],
+			"subtopics": [
+				"move-resources",
+				"cross-subscription-move"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GGDHF9FS7JKT8H8BFY0RTY",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Your company runs a large estate of Azure resources and wants every control to apply exactly where it is needed and nowhere wider. Drag each requirement to the level at which you should assign the control.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Environment fact",
+						"Value"
+					],
+					"rows": [
+						[
+							"Azure subscriptions in the estate",
+							"12"
+						],
+						[
+							"Resource groups in subscription sub-east",
+							"37"
+						],
+						[
+							"Virtual machines in rg-app-prod",
+							"6"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i_baseline",
+						"text": "A baseline that the finance department expects to be enforced across all twelve of its Azure subscriptions"
+					},
+					{
+						"id": "i_deny",
+						"text": "A deny rule for East US that has to take effect in every resource group of subscription sub-east"
+					},
+					{
+						"id": "i_lock",
+						"text": "A lock on rg-billing-prod that stops the operations team deleting it, while leaving every other resource group alone"
+					},
+					{
+						"id": "i_role",
+						"text": "A role assignment that has to reach only the virtual machine vm-prod-01 in sub-east"
+					}
+				],
+				"slots": [
+					{
+						"id": "s_sub",
+						"label": "One subscription, so the resource groups and resources inside it inherit it"
+					},
+					{
+						"id": "s_rg",
+						"label": "One resource group, so the resources inside it inherit it and nothing beside it does"
+					},
+					{
+						"id": "s_mg",
+						"label": "One level above the individual subscriptions, so each of them and everything beneath inherits it"
+					},
+					{
+						"id": "s_res",
+						"label": "One resource, with anything set at the levels above it still applying"
+					}
+				]
+			},
+			"key": {
+				"s_sub": "i_deny",
+				"s_rg": "i_lock",
+				"s_mg": "i_baseline",
+				"s_res": "i_role"
+			},
+			"explanation": {
+				"correct": "Azure offers four management scopes - management groups, subscriptions, resource groups and resources - and settings flow down the hierarchy, so a lower scope inherits what was assigned above it. A baseline that must reach twelve subscriptions at once belongs at the level above subscriptions. A rule that must hit every resource group inside one subscription and no others is assigned once at the subscription. A lock aimed at one named resource group is assigned at that resource group. A role assignment that must apply to one virtual machine and nothing else is assigned on that single resource, while the settings inherited from the subscription and resource group above it continue to apply.",
+				"perChoice": {
+					"i_baseline": "Management group level. This scope sits above individual subscriptions and exists precisely to apply governance, policies and roles across many subscriptions at once, so the finance baseline lands here rather than being copied subscription by subscription.",
+					"i_deny": "Subscription level. One assignment at subscription scope is inherited by every resource group in that subscription and by the resources in each of them, while other subscriptions are unaffected, which is exactly what the requirement asks for.",
+					"i_lock": "Resource group level. rg-billing-prod is one container, so assigning the lock on that resource group protects the group and its resources without changing the behaviour of any other group in the subscription.",
+					"i_role": "Resource level. The requirement targets one virtual machine by name, so the assignment must sit on that resource. Assigning it higher up would grant the same access to every sibling resource that inherits the assignment."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/manage-resource-groups-portal"
+				}
+			],
+			"subtopics": [
+				"management-scopes",
+				"scope-inheritance"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GGE3CTNPF9ZEQ28J9J7ME7",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Your team is standardising on scripts for reorganising resources, and each engineer uses a different shell. Drag each command to the job it performs.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Tooling available to the team"
+					],
+					"rows": [
+						[
+							"Azure CLI on a Bash workstation"
+						],
+						[
+							"Azure PowerShell (Az module) session"
+						],
+						[
+							"An internal Python tool built on the Azure SDK for Python"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "c_cli_move",
+						"text": "az resource move --destination-group newgroup --ids $webapp $plan"
+					},
+					{
+						"id": "c_cli_test",
+						"text": "az resource invoke-action --action validateMoveResources --ids ... --request-body ..."
+					},
+					{
+						"id": "c_ps_move",
+						"text": "Move-AzResource -DestinationResourceGroupName rg-new -ResourceId $resources.ResourceId"
+					},
+					{
+						"id": "c_ps_test",
+						"text": "Invoke-AzResourceAction -Action validateMoveResources -ResourceId $sourceResourceGroup.ResourceId -Parameters @{...}"
+					},
+					{
+						"id": "c_py",
+						"text": "resource_client.resources.begin_move_resources(source_name, { ... })"
+					}
+				],
+				"slots": [
+					{
+						"id": "j_test",
+						"label": "Model the scenario from an Azure CLI session without relocating anything"
+					},
+					{
+						"id": "j_move",
+						"label": "Relocate the resources from an Azure CLI session"
+					},
+					{
+						"id": "j_test_ps",
+						"label": "Model the scenario from an Azure PowerShell session without relocating anything"
+					},
+					{
+						"id": "j_move_ps",
+						"label": "Relocate the resources from an Azure PowerShell session"
+					},
+					{
+						"id": "j_move_py",
+						"label": "Relocate the resources from a tool built on the Azure SDK"
+					}
+				]
+			},
+			"key": {
+				"j_move": "c_cli_move",
+				"j_move_ps": "c_ps_move",
+				"j_move_py": "c_py",
+				"j_test": "c_cli_test",
+				"j_test_ps": "c_ps_test"
+			},
+			"explanation": {
+				"correct": "Each shell family has its own pair of operations: one that performs the relocation and one that only models it. In the CLI, az resource move performs the move while az resource invoke-action with the validateMoveResources action performs a dry run that changes nothing. In Azure PowerShell, Move-AzResource performs the move and Invoke-AzResourceAction with the same validateMoveResources action performs the dry run. In the Python SDK the equivalent of performing the move is begin_move_resources.",
+				"perChoice": {
+					"c_cli_move": "Azure CLI relocation. The az resource move command with --destination-group and a list of resource IDs carries the resources to the target group; adding --destination-subscription-id targets a different subscription.",
+					"c_cli_test": "CLI dry run. az resource invoke-action with the validateMoveResources action tests the scenario against the source group, the target group and each resource ID, and returns an error message explaining any problem.",
+					"c_ps_move": "Azure PowerShell relocation. Move-AzResource with -DestinationResourceGroupName performs the move; supplying DestinationSubscriptionId moves them to another subscription instead.",
+					"c_ps_test": "Azure PowerShell dry run. Invoke-AzResourceAction with -Action validateMoveResources produces no output when the move is acceptable and an error message when it is not.",
+					"c_py": "SDK relocation. begin_move_resources is the Python method that actually moves the listed resources to the target resource group."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+				}
+			],
+			"subtopics": [
+				"move-resources",
+				"move-commands"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GGEQHVMMVYNPQ8JV6BDNTS",
+			"body": {
+				"format": "drag-drop",
+				"stem": "A move request keeps failing before anything is relocated. Drag each message or platform reported back to you to the condition that produced it.",
+				"items": [
+					{
+						"id": "i_policy",
+						"text": "RequestDisallowedByPolicy"
+					},
+					{
+						"id": "i_state",
+						"text": "MoveCannotProceedWithResourcesNotInSucceededState"
+					},
+					{
+						"id": "i_provider",
+						"text": "The subscription isn't registered for a resource type"
+					},
+					{
+						"id": "i_stack",
+						"text": "Azure Stack Hub"
+					}
+				],
+				"slots": [
+					{
+						"id": "s_policy",
+						"label": "A rule forbids that kind of object from being created where it is heading"
+					},
+					{
+						"id": "s_state",
+						"label": "Something attached to the network never came up, even though it sits outside the two groups involved"
+					},
+					{
+						"id": "s_provider",
+						"label": "The supplier of that kind of object was never switched on in the account receiving it"
+					},
+					{
+						"id": "s_stack",
+						"label": "Relocating resources between groups is not offered at all on this platform"
+					}
+				]
+			},
+			"key": {
+				"s_policy": "i_policy",
+				"s_provider": "i_provider",
+				"s_stack": "i_stack",
+				"s_state": "i_state"
+			},
+			"explanation": {
+				"correct": "Resource Manager validates a move request before it starts and reports which condition failed. RequestDisallowedByPolicy means a policy defined for the resources rejects the move, for example an organisational rule that denies creating a key vault in the target group. MoveCannotProceedWithResourcesNotInSucceededState is raised when a resource that depends on a virtual network in the source or destination group is not in a succeeded state, which can block the move even when that resource is neither being moved nor in either group. The subscription isn't registered for a resource type means the destination subscription has never registered the resource provider that supplies the resource. Azure Stack Hub does not offer moving resources between groups at all.",
+				"perChoice": {
+					"i_policy": "Policy denial. Validation checks the policies defined for the resources involved, so a request is rejected when an organisational rule forbids creating that resource type in the destination.",
+					"i_state": "Unhealthy dependent resource. If the source or target group contains a virtual network, the state of everything that depends on it - directly or indirectly - is checked, and any resource that hasn't succeeded blocks the operation.",
+					"i_provider": "Unregistered provider. The destination subscription must be registered for the provider that supplies the resource; the usual cause is moving a resource type that has never been used in that subscription before.",
+					"i_stack": "Unsupported platform. On Azure Stack Hub you cannot move resources between resource groups, so no amount of retrying or re-registering providers will make a relocation succeed."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+				}
+			],
+			"subtopics": [
+				"move-resources",
+				"move-errors"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GGFJC556Q5DXXH3M1XEWAN",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Your support engineers want to answer common questions from inside a resource group instead of opening each resource. Drag each portal blade to the question it answers.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Portal observation",
+						"Detail"
+					],
+					"rows": [
+						[
+							"Group opened",
+							"rg-commerce-prod (subscription sub-east)"
+						],
+						[
+							"Question on the table",
+							"Answerable without leaving the group"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "b_metrics",
+						"text": "Metrics"
+					},
+					{
+						"id": "b_deploy",
+						"text": "Deployments"
+					},
+					{
+						"id": "b_policy",
+						"text": "Policy"
+					},
+					{
+						"id": "b_diag",
+						"text": "Diagnostics settings"
+					}
+				],
+				"slots": [
+					{
+						"id": "s_util",
+						"label": "How much processor and other usage each resource in the group is reporting"
+					},
+					{
+						"id": "s_rollout",
+						"label": "Which template-based rollouts have targeted this group and what they returned"
+					},
+					{
+						"id": "s_rules",
+						"label": "Which rules are being enforced on this group and on everything inside it"
+					},
+					{
+						"id": "s_problems",
+						"label": "What errors and warnings have been raised for this group"
+					}
+				]
+			},
+			"key": {
+				"s_problems": "b_diag",
+				"s_rollout": "b_deploy",
+				"s_rules": "b_policy",
+				"s_util": "b_metrics"
+			},
+			"explanation": {
+				"correct": "The portal uses the resource group as a scope that spans multiple resources, and each blade answers one kind of question. Metrics provides usage information such as processor figures for the resources. Deployments shows the history of ARM template or Bicep deployments that targeted the group, including portal deployments. Policy lists the policies enforced on the group. Diagnostics settings provides errors and warnings to review.",
+				"perChoice": {
+					"b_metrics": "Usage figures. This blade gives metrics information such as CPU for the resources in the group, so it answers the question about how much processor and other usage is being reported.",
+					"b_deploy": "Rollout history. This blade lists the deployments of ARM templates or Bicep that targeted the resource group, including anything deployed from the portal, so it answers the question about template-based rollouts and their results.",
+					"b_policy": "Enforced rules. This blade reports the policies that are enforced on the resource group, which is the question about which rules apply to the group and everything inside it.",
+					"b_diag": "Problems to review. This blade surfaces the errors and warnings raised for the resource group, which is the question about what has gone wrong."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/manage-resource-groups-portal"
+				}
+			],
+			"subtopics": [
+				"resource-group-portal",
+				"resource-group-blades"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GGG7RJB595TGW4NM1DKK4T",
+			"body": {
+				"format": "drag-drop",
+				"stem": "After reorganising a solution, an engineer lines up the team's notes with the behaviour the platform guarantees. Drag each note to the statement that best explains it.",
+				"items": [
+					{
+						"id": "i_child",
+						"text": "A nested item arrived in the new group during the move even though only the parent was listed"
+					},
+					{
+						"id": "i_region",
+						"text": "The workloads stayed on the same Azure hardware after the move, even though their group changed"
+					},
+					{
+						"id": "i_grant",
+						"text": "An access rule that pointed at one object in the group stopped applying after the move"
+					},
+					{
+						"id": "i_tags",
+						"text": "The labels set on the group stayed on it, but none of the items inside picked them up after the move"
+					}
+				],
+				"slots": [
+					{
+						"id": "s_child",
+						"label": "Name the top-level entry; everything under it comes along automatically and cannot be sent separately"
+					},
+					{
+						"id": "s_region",
+						"label": "Just the resource group differs afterwards; the region where the resource runs is untouched"
+					},
+					{
+						"id": "s_grant",
+						"label": "Grants attached directly to a resource don't follow it and have to be created again"
+					},
+					{
+						"id": "s_tags",
+						"label": "What you apply at the group level isn't inherited by the resources it holds"
+					}
+				]
+			},
+			"key": {
+				"s_child": "i_child",
+				"s_grant": "i_grant",
+				"s_region": "i_region",
+				"s_tags": "i_tags"
+			},
+			"explanation": {
+				"correct": "Moving a resource only changes its associated resource group and does not alter the physical region it runs in, which is why the workloads stayed on the same hardware. Only top-level resources should be listed in a move request: child resources travel with their parent but cannot be moved independently. A role assignment made against a resource does not travel with it - the assignment is left orphaned and must be created again after the move. Separately, tags applied to a resource group are not inherited by the resources it contains, so items inside the group did not pick up the labels.",
+				"perChoice": {
+					"i_child": "Top-level resources only. Listing the parent is enough because child resources move automatically with it; a child resource such as a virtual machine extension cannot be moved on its own, which is why the nested item arrived despite never being listed.",
+					"i_region": "Region is untouched. A move rewrites the resource ID so that it points at the new group, but it does not relocate the resource physically, so the hardware and region are unchanged.",
+					"i_grant": "Access is not carried across. If a resource with an active role assignment is moved, the assignment does not travel with it and becomes orphaned, so access must be granted again once the move finishes.",
+					"i_tags": "Tags don't cascade downward. You can apply tags to a resource group, but the resources in the resource group don't inherit those tags, so each resource keeps its own values."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/overview"
+				}
+			],
+			"subtopics": [
+				"move-resources",
+				"resource-group-behavior"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GGT57QA7R62SJ8AT3GWP84",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have deployed a commerce solution into a new resource group and are writing the runbook for the operations team. You need to record, for each behavior below, whether the value entered at creation time shapes it, has no bearing from that value, or is handled somewhere else entirely. Drag each behavior to the group it belongs to.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Aspect of the deployment",
+						"Observed value"
+					],
+					"rows": [
+						[
+							"Resource group",
+							"rg-commerce"
+						],
+						[
+							"Value entered when the group was created",
+							"East US"
+						],
+						[
+							"Region hosting the web app and the storage account",
+							"West Europe"
+						],
+						[
+							"Traffic reaching the web app",
+							"HTTPS requests sent to the app's own endpoint"
+						],
+						[
+							"Storage activity",
+							"Read and write requests sent straight to the account's endpoint"
+						],
+						[
+							"Deployment work",
+							"Create, update, and delete requests sent to management.azure.com"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Where the metadata about the group's resources is kept"
+					},
+					{
+						"id": "i2",
+						"text": "How create, update, and delete requests that target the group's resources are routed"
+					},
+					{
+						"id": "i3",
+						"text": "Rerouting calls to management.azure.com to a backup area when the group's own region is unavailable"
+					},
+					{
+						"id": "i4",
+						"text": "Read and write calls sent straight to a storage account's data endpoint"
+					},
+					{
+						"id": "i5",
+						"text": "Serving a web app to browsers over HTTPS"
+					},
+					{
+						"id": "i6",
+						"text": "Keeping a storage account's data reachable when the location hosting that account fails"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Shaped by the value entered at creation time"
+					},
+					{
+						"id": "s2",
+						"label": "Has no bearing from that value"
+					},
+					{
+						"id": "s3",
+						"label": "Handled outside the platform's cross-region failover"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i4",
+				"s3": "i6"
+			},
+			"explanation": {
+				"correct": "The location supplied when a resource group is created decides where the group's metadata about its resources is stored, and control plane operations (create, update, delete) that target resources in the group are routed through that location, so the metadata location, the routing of those calls, and the automatic rerouting of them to a backup region when the group's region is temporarily unavailable all follow the value entered at creation time. Data plane traffic - HTTPS requests to a web app's endpoint and read/write requests sent directly to a storage account - goes straight to the resource endpoints, so the group's location has no bearing on it. When the region that actually hosts a resource fails, data plane access to that resource is affected no matter where its resource group is located, which is outside the rerouting Resource Manager performs for control plane operations.",
+				"perChoice": {
+					"i1": "Belongs with the behaviors driven by the value entered at creation time: a resource group stores metadata about its resources, and the location you specify at creation is where that metadata is stored, which is also why compliance teams may insist on a particular location.",
+					"i2": "Belongs with the behaviors driven by the value entered at creation time: control plane operations that target resources in the resource group are routed through the resource group's location, and that is why you are told to pick a location close to where your control operations originate.",
+					"i3": "Belongs with the behaviors driven by the value entered at creation time: when a resource group's region is temporarily unavailable, Resource Manager reroutes ARM control plane requests to a backup region transparently, which is a consequence of the location the group was created with.",
+					"i4": "Belongs with the behaviors that the group's location has no bearing on: data plane requests sent directly to a resource endpoint, such as read and write operations against a storage account, are not routed through the resource group's location.",
+					"i5": "Belongs with the behaviors that the group's location has no bearing on: the location choice applies only to ARM control plane operations and does not affect data plane requests such as HTTP requests to a web app, even when that app is deployed in a region other than the group's.",
+					"i6": "Belongs with the behaviors handled outside the platform's cross-region failover: the rerouting Resource Manager does covers only ARM control plane operations routed through the resource group; if the region where a resource is deployed is also unavailable, data plane access to that resource is affected regardless of where its resource group is located."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/manage-resource-groups-portal"
+				}
+			],
+			"subtopics": [
+				"resource-group-location",
+				"control-plane-vs-data-plane"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GGZJKAF6BZVNV4R2CX5FWB",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have prepared a single move request that lists more than 800 resources from `rg-legacy` to `rg-app` in the same subscription. Every submission is rejected before anything is relocated, and the operations lead wants the migration completed this week. You need to adjust your plan so the relocation succeeds. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Entries in the request",
+							"812 resources, each given by its full resource ID"
+						],
+						[
+							"Source",
+							"rg-legacy (subscription sub-retail)"
+						],
+						[
+							"Destination",
+							"rg-app (subscription sub-retail)"
+						],
+						[
+							"Entries whose parent has child resources",
+							"37"
+						],
+						[
+							"Result of the last two submissions",
+							"Rejected; nothing relocated"
+						]
+					]
+				},
+				"statement": "The change you make is to {{change}}.",
+				"slots": [
+					{
+						"id": "change",
+						"options": [
+							{
+								"id": "a",
+								"text": "Split the work into several smaller batches."
+							},
+							{
+								"id": "b",
+								"text": "Retry the same submission until the service accepts it."
+							},
+							{
+								"id": "c",
+								"text": "Remove the entries for parent resources that have child resources."
+							},
+							{
+								"id": "d",
+								"text": "Ask the owner of the destination subscription to raise its per-group instance limit."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"change": "a"
+			},
+			"explanation": {
+				"correct": "Resource Manager turns a move submission away straight away once it carries more than 800 resources, so a single oversized submission can never succeed no matter how it is re-sent. The documented remedy is to break a large migration into separate, smaller move operations, which also lowers the chance of one of them timing out.",
+				"perChoice": {
+					"change:b": "Repeating the identical oversized submission produces the same rejection; nothing about waiting changes the entry count that triggers the error.",
+					"change:c": "Whether a parent or one of its children is listed doesn't change how many entries are counted against the limit, and child resources travel with their parent anyway. Removing those 37 entries leaves the submission well over the maximum, so it still fails.",
+					"change:d": "The per-group instance limit is about how many instances of one resource type can live in a single resource group. Raising it says nothing about how many resources one move submission may carry, so the oversized request is still refused."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/overview"
+				}
+			],
+			"subtopics": [
+				"resource-move",
+				"operation-limits",
+				"move-planning"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GGZYV0J19WRHRZ9256EJTJ",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your team deploys everything for a retail solution through Azure Resource Manager, and the resource group `rg-sales` sits in the Sweden Central region. That region becomes temporarily unavailable. You need to explain to the operations team what happens to each type of request. Which statement should you give them?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Detail"
+					],
+					"rows": [
+						[
+							"Resource group",
+							"rg-sales"
+						],
+						[
+							"Region set when the group was created",
+							"Sweden Central"
+						],
+						[
+							"How the team deploys",
+							"Azure Resource Manager templates and SDKs"
+						],
+						[
+							"Status of the region",
+							"Temporarily unavailable"
+						],
+						[
+							"Endpoints the team calls directly",
+							"Application URL and storage endpoint"
+						]
+					]
+				},
+				"statement": "The guidance you give the team is: {{behavior}}.",
+				"slots": [
+					{
+						"id": "behavior",
+						"options": [
+							{
+								"id": "a",
+								"text": "Control plane requests routed through the resource group are rerouted to a backup region, while data plane requests are not."
+							},
+							{
+								"id": "b",
+								"text": "Control plane requests routed through the resource group are rerouted to a backup region, and data plane requests are too."
+							},
+							{
+								"id": "c",
+								"text": "Control plane requests routed through the resource group are rerouted to a backup region, but every data plane request fails."
+							},
+							{
+								"id": "d",
+								"text": "Control plane requests routed through the resource group are not rerouted, and data plane requests fail until the region recovers."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"behavior": "a"
+			},
+			"explanation": {
+				"correct": "When the region holding a resource group is unavailable, Azure Resource Manager sends control plane requests aimed at that group to a backup region without the client changing any endpoint, so deployments and other management calls keep working. That handling applies only to control plane traffic that passes through Resource Manager; requests the team sends straight to an application's URL or a storage endpoint are untouched by it.",
+				"perChoice": {
+					"behavior:b": "The automatic rerouting is limited to control plane operations handled by Resource Manager. Requests that go directly to a resource's own endpoint are outside its scope, so they are not rerouted along with the management calls.",
+					"behavior:c": "Nothing in the resource group behaviour stops direct requests from working. They simply aren't part of the rerouting; that traffic is only affected if the region hosting the resource itself is unavailable.",
+					"behavior:d": "This has the rerouting backwards. Resource Manager does send control plane requests for a resource group to a backup region when the group's region is unavailable, and it does so transparently, so the group does not go dark for the whole outage."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/overview"
+				}
+			],
+			"subtopics": [
+				"resource-group-location",
+				"resilience",
+				"control-plane"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GH11665HN3G7894A536FHV",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your team has a resource group of virtual machines and storage accounts in East US. A data residency rule now requires the workload to run in West Europe, and the group is in subscription `sub-prod`. You need to relocate everything. Which approach should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Detail"
+					],
+					"rows": [
+						[
+							"Current resource group",
+							"rg-app, located in East US"
+						],
+						[
+							"Contents",
+							"40 virtual machines and their storage accounts"
+						],
+						[
+							"Region the resources run in",
+							"East US"
+						],
+						[
+							"Required location",
+							"West Europe"
+						]
+					]
+				},
+				"statement": "The approach to take is to {{approach}}.",
+				"slots": [
+					{
+						"id": "approach",
+						"options": [
+							{
+								"id": "a",
+								"text": "Use Azure Resource Mover to move the resources across regions from the resource group."
+							},
+							{
+								"id": "b",
+								"text": "Use the Move button's Move to a new subscription option and target a subscription in the West Europe region."
+							},
+							{
+								"id": "c",
+								"text": "Use the Move button's Move to a new resource group option and target a group in the West Europe region."
+							},
+							{
+								"id": "d",
+								"text": "Move each resource one at a time into new resource groups that you create in the West Europe region."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"approach": "a"
+			},
+			"explanation": {
+				"correct": "A standard relocation only changes the container a resource is associated with; the resource stays in the physical location it was deployed to. Changing where a workload runs is a separate capability, and the portal points this scenario at Azure Resource Mover for moving resources to a different region.",
+				"perChoice": {
+					"approach:b": "Choosing another subscription changes only which subscription holds the resources. Every virtual machine and storage account remains in the region it was deployed to.",
+					"approach:c": "The same limitation applies: resources can sit in a different region than their group, so moving them into a group located in West Europe leaves them running in East US.",
+					"approach:d": "Moving items one at a time repeats the same container change, and relocating a resource never alters the region it runs in, so nothing would serve from West Europe."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/overview"
+				}
+			],
+			"subtopics": [
+				"resource-move",
+				"region-change"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GH1RYBYJPRBXD9TNZR8402",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You want a chargeback report that lists the assets belonging to the retail cost center. The value is already set on the subscription and on the resource group, yet the report returns none of the resources held in that group. You need the report to pick them up. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Scope",
+						"Tags currently set"
+					],
+					"rows": [
+						[
+							"Subscription sub-retail",
+							"CostCenter = 1420"
+						],
+						[
+							"Resource group rg-retail",
+							"CostCenter = 1420"
+						],
+						[
+							"Storage account stdata (in rg-retail)",
+							"Env = prod"
+						],
+						[
+							"Web app shop-prod (in rg-retail)",
+							"Env = prod"
+						]
+					]
+				},
+				"statement": "The action to take is to {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Add the tag to every resource inside the group."
+							},
+							{
+								"id": "b",
+								"text": "Add the tag to the management group that sits above the subscription."
+							},
+							{
+								"id": "c",
+								"text": "Add the tag to a policy assignment scoped to the resource group."
+							},
+							{
+								"id": "d",
+								"text": "Add the tag to the resource group only and wait for the resources to pick it up."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "A tag placed on a resource group is not handed down to the resources it holds; a resource carries only the tags set on it directly. Because the report filters on the tag value, the value has to be set on the resources themselves for them to appear.",
+				"perChoice": {
+					"action:b": "Setting the tag on a broader scope does not put the value on the group or on the resources already inside it. Nothing in the existing resources changes when a higher-level object is tagged.",
+					"action:c": "A policy assignment is how you allow, deny or audit properties such as locations; assigning one does not stamp the value onto the resources in the group. The tag still has to be set on the resources that must be reported.",
+					"action:d": "This is the behaviour the team is already seeing. Tagging the group a second time changes nothing, because resources never pick up a tag from the group that contains them."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/manage-resource-groups-portal"
+				}
+			],
+			"subtopics": [
+				"tags",
+				"resource-group-scope"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GH26Q6KCCEVDR91QXA7V1P",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are preparing to move a set of resources from `rg-legacy` to `rg-app` and want one service principal to carry it out with the narrowest access possible. That principal currently holds exactly the permissions shown below. You need the move to succeed without granting anything beyond the two groups. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Subscription holding both groups",
+							"sub-retail"
+						],
+						[
+							"Prefix shared by both permission names",
+							"Microsoft.Resources/subscriptions/resourceGroups/"
+						],
+						[
+							"Permission granted on rg-legacy (source side)",
+							".../write"
+						],
+						[
+							"Permission granted on rg-app (destination side)",
+							".../moveResources/action"
+						]
+					]
+				},
+				"statement": "The change you make is to {{change}}.",
+				"slots": [
+					{
+						"id": "change",
+						"options": [
+							{
+								"id": "a",
+								"text": "Add moveResources/action to rg-legacy and write to rg-app."
+							},
+							{
+								"id": "b",
+								"text": "Add write to rg-legacy and moveResources/action to rg-app."
+							},
+							{
+								"id": "c",
+								"text": "Add write to both rg-legacy and rg-app."
+							},
+							{
+								"id": "d",
+								"text": "Add moveResources/action to both rg-legacy and rg-app."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"change": "a"
+			},
+			"explanation": {
+				"correct": "The account running the operation needs the moveResources action at the source resource group and the write permission at the destination resource group. The identity holds those two permissions on the wrong sides of the transfer, so they have to be swapped onto the correct scopes.",
+				"perChoice": {
+					"change:b": "This puts the two permissions on the opposite scopes: the source side is missing the moveResources action and the destination side is missing write, so the operation is still blocked.",
+					"change:c": "Write on its own does not cover the source side, which specifically requires the moveResources action, so the transfer still cannot be authorised.",
+					"change:d": "The moveResources action on its own does not cover the destination side, which requires write on the target group, so the transfer still cannot be authorised."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+				}
+			],
+			"subtopics": [
+				"resource-move",
+				"permissions"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GH73DMF105P5T2HT4Y26TD",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are consolidating workloads into a single resource group. The virtual machine `vm-sales01` in `rg-legacy` has two VM extensions that need to end up in `rg-app`, which sits in the same subscription. Your first request listed the machine along with both extension resource IDs, and the platform returned an error, so nothing was relocated. You need the consolidation to finish successfully.",
+				"statement": "To finish the consolidation, you {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "submit a request that names only the parent virtual machine, because everything attached underneath arrives together"
+							},
+							{
+								"id": "b",
+								"text": "submit a request that names only the two attached extensions, because the parent stays in the current group"
+							},
+							{
+								"id": "c",
+								"text": "submit a request that names the parent virtual machine and both attached extensions, because each entry is processed on its own"
+							},
+							{
+								"id": "d",
+								"text": "submit three requests, one for the parent virtual machine and one for each attached extension"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "A move request should list only the top-level (parent) resources. Child resources, such as the extensions of a virtual machine, follow their parent automatically and cannot be moved independently. Naming just the virtual machine therefore relocates the machine and both of its extensions in a single operation, which is what the consolidation needs.",
+				"perChoice": {
+					"action:b": "The extensions are child resources of the virtual machine and can't be moved on their own. A request that names only the extensions is rejected, which is the failure you already hit.",
+					"action:c": "Only top-level resources should be listed. Child entries such as extensions aren't relocated as independent items; they are carried by the parent, so adding them to the list changes nothing and is not a supported pattern.",
+					"action:d": "Because child resources can't be moved separately, per-extension requests aren't valid. One request naming the parent moves everything, and the source and destination groups are locked for the duration of a move, so they can't take part in concurrent move operations anyway."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/manage-resource-groups-portal"
+				}
+			],
+			"subtopics": [
+				"resource-move",
+				"child-resources",
+				"move-request"
+			],
+			"reviewed": false
+		}
+	]
+}

@@ -1,0 +1,1834 @@
+{
+	"skill": "storage.files-snapshots",
+	"questions": [
+		{
+			"id": "q_01M5MDJY2TY0HQF3CFA1QQ5BYE",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an NFS file share named nfsdata, created with the Microsoft.FileShares resource provider in storage account stcontoso. Immediately after the share was created, you created two snapshots from the CLI; both calls reported success. You now need the stored recovery points on this share to be browsable, but listing them returns nothing. Which action should you take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "$ az fileshare snapshot create --account-name stcontoso --share-name nfsdata --query name -o tsv\n2026-10-22T18:05:11.0000000Z\n$ az fileshare snapshot create --account-name stcontoso --share-name nfsdata --query name -o tsv\n2026-10-22T18:06:40.0000000Z\n$ az fileshare snapshot list --account-name stcontoso --share-name nfsdata -o json\n[]"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Mount the share from a Linux client first, then delete the early snapshots and take new ones"
+					},
+					{
+						"id": "b",
+						"text": "Register the share with Azure Backup, then delete the snapshots that show nothing and let the service create new ones"
+					},
+					{
+						"id": "c",
+						"text": "Replace the listing command with the file data plane APIs (AzStorageShare) so the existing snapshots show up"
+					},
+					{
+						"id": "d",
+						"text": "Wait 24 hours after the share was created, then run the listing command again to see the snapshots"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "For NFS file shares, the share should be mounted before snapshots are captured. If a new NFS share is snapshotted before it has ever been mounted, listing its snapshots returns an empty list even though the creation calls succeeded. The fix is to mount the share (for example from an NFS client on a Linux VM), delete the snapshots that were taken before that first mount, and capture them again; afterwards the list is populated.",
+				"perChoice": {
+					"b": "Azure Backup does not support NFS file shares, so it cannot be registered for this share or used to manage its recovery points. Snapshots are the only in-service protection option for NFS shares.",
+					"c": "Only the file management APIs (AzRmStorageShare) are supported for NFS share snapshots; the file data plane APIs (AzStorageShare) are not supported, so switching to them will not surface the stored snapshots.",
+					"d": "There is no waiting period after creation that makes the snapshot list populate; the empty result comes from capturing snapshots before the share was mounted. The early snapshots must be deleted and re-created after mounting."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-snapshots-files"
+				}
+			],
+			"subtopics": [
+				"nfs-share-snapshots",
+				"snapshot-listing"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MDM1N13C22S7M1XYN97RVS",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You deleted the classic file share payroll from storage account stcontoso on 3 May 2026 at 09:00 UTC. The account's recovery configuration and the deletion record are shown below. Your compliance team needs to be told the date after which the share's data can no longer be recovered. Which date should you report?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Soft delete for all file shares",
+							"Enabled"
+						],
+						[
+							"File share retention period in days",
+							"7 (unchanged since the account was created)"
+						],
+						[
+							"Configuration change",
+							"5 May 2026 08:00 UTC - retention period raised from 7 to 30"
+						],
+						[
+							"Share deleted",
+							"payroll - 3 May 2026 09:00 UTC"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "10 May 2026, seven days after the share was deleted"
+					},
+					{
+						"id": "b",
+						"text": "2 June 2026, thirty days after the share was deleted"
+					},
+					{
+						"id": "c",
+						"text": "4 June 2026, thirty days after the retention change was saved"
+					},
+					{
+						"id": "d",
+						"text": "12 May 2026, seven days after the retention change was saved"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The retention window for a deleted share is counted from the moment the share is deleted, using the retention period that was configured at that moment. payroll was deleted on 3 May 2026 while the account still had the 7-day setting, so it becomes fully deleted and unrecoverable on 10 May 2026. Raising the retention period to 30 days on 5 May applies to future deletions; it does not re-date shares that are already soft-deleted, and it does not extend the window for payroll.",
+				"perChoice": {
+					"b": "This uses the current 30-day value, but 30 days was not in effect on 3 May 2026 when payroll was deleted, so it does not govern this share.",
+					"c": "Changing the retention period does not retroactively re-date existing soft-deleted shares. The new 30-day period was only in effect from 5 May 2026 and applies to shares deleted after that point.",
+					"d": "This applies the correct 7-day duration but starts the clock on the wrong date. The retention clock starts when the share is deleted (3 May 2026), not when the retention setting is saved, so the share expires on 10 May 2026, not 12 May 2026."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-prevent-file-share-deletion"
+				}
+			],
+			"subtopics": [
+				"soft-delete-retention",
+				"file-share-recovery"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MDNEXEJ05HM1ERYFJZ2DRR",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a classic SMB file share named archive in storage account stcontoso. Your nightly batch job rewrites thousands of files in that share, and last week it corrupted several of them. You need a point-in-time copy of the share's files from before tonight's run so you can roll the bad writes back one file at a time. The attempt to capture it has failed. Which action should you take first?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Storage account",
+							"stcontoso (classic file shares, Microsoft.Storage provider)"
+						],
+						[
+							"File share",
+							"archive (SMB)"
+						],
+						[
+							"Account redundancy",
+							"Geo-redundant storage (GRS)"
+						],
+						[
+							"Existing snapshots on archive",
+							"200"
+						],
+						[
+							"Snapshot request (23 Oct 2026)",
+							"Failed - HTTP 409, snapshot limit reached for this file share"
+						],
+						[
+							"File share soft delete on stcontoso",
+							"Enabled, 14-day retention"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Delete the oldest snapshots of the file share archive, then create the new snapshot"
+					},
+					{
+						"id": "b",
+						"text": "Delete the file share archive and create a new share with the same name, then create the new snapshot"
+					},
+					{
+						"id": "c",
+						"text": "Raise the file share soft delete retention period on storage account stcontoso, then create the new snapshot"
+					},
+					{
+						"id": "d",
+						"text": "Reduce the redundancy of the file share archive from geo-redundant to locally redundant, then create the new snapshot"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A file share can hold a maximum of 200 snapshots, and the existing snapshots are never overwritten or replaced by a new one, so the request is rejected while the share is already at that count. Removing the snapshots with the oldest timestamps frees the slots that a new point-in-time copy needs, while the share itself and the files in it are left untouched, so you can still restore individual files afterwards.",
+				"perChoice": {
+					"b": "Deleting the file share removes its snapshots along with it and erases the share's data, so the point-in-time versions you still need would be destroyed; a freshly created, empty share also contains none of the files the job is about to overwrite.",
+					"c": "Soft delete governs how long a deleted file share can be undeleted. It does not control how many snapshots an existing share may hold, so changing the retention period frees no snapshot slot and the next request still fails.",
+					"d": "Snapshots inherit the redundancy of the base share, but redundancy has no bearing on how many snapshots a share may contain. Changing it neither removes the existing snapshots nor raises the cap, so the request would still be rejected."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-snapshots-files"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-prevent-file-share-deletion"
+				}
+			],
+			"subtopics": [
+				"snapshot-limits",
+				"share-snapshots",
+				"file-recovery"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MPJGB4ZBXHM2SB69XMZYJT",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a classic SMB file share named contracts in storage account stcontoso. A compliance officer has asked that the share's contents be removed before the current recovery window ends, and the share was already deleted yesterday. You need to purge it now. Which sequence of steps should you follow?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Storage account",
+							"stcontoso"
+						],
+						[
+							"File share",
+							"contracts (classic, SMB)"
+						],
+						[
+							"Recovery setting for file shares",
+							"Soft delete enabled, 30-day retention"
+						],
+						[
+							"Share state",
+							"Deleted on 2026-10-22 at 14:05 UTC"
+						],
+						[
+							"Snapshots on the share",
+							"4"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Undelete the share, disable soft delete for file shares on the storage account, delete the share again, and then re-enable soft delete for the account."
+					},
+					{
+						"id": "b",
+						"text": "Leave soft delete for file shares enabled on the storage account and delete the share again, so the data is removed right away."
+					},
+					{
+						"id": "c",
+						"text": "Disable soft delete for file shares on the storage account and wait for the retention period to expire, so the share is removed permanently."
+					},
+					{
+						"id": "d",
+						"text": "Undelete the share, delete the snapshots it contains, and then disable soft delete for file shares on the storage account."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Soft delete cannot be bypassed. While it is enabled for file shares, a delete request against the share is captured again as a soft-deleted share, so the data stays recoverable until the retention window that was in force at deletion expires. The only way to remove the share permanently before that window ends is to undelete it first (which brings back the share with its files and its snapshots), turn off soft delete for the account, delete the share so the deletion is permanent, and then turn soft delete back on so the account's other shares stay protected.",
+				"perChoice": {
+					"b": "Deleting again while soft delete is still enabled does not purge anything: the share is simply soft-deleted once more and remains recoverable for the remainder of its retention period, so the request to remove the data now is not met.",
+					"c": "Turning soft delete off does not destroy a share that was already soft-deleted, and the share expires only when the retention period in force at the time of deletion has passed. This therefore waits for the very window the compliance officer wants to shorten.",
+					"d": "Undeleting makes the share active again with all of its contents; removing the snapshots only discards the point-in-time copies of the files and leaves the share itself present in the account, so nothing has been purged."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-prevent-file-share-deletion"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-snapshots-files"
+				}
+			],
+			"subtopics": [
+				"soft-delete",
+				"file-share-recovery",
+				"data-protection"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MPMJJMYPZ0M375FH6KWCS7",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a classic SMB file share named reports in storage account stcontoso. Every night a batch job rewrites the files in that share, and you want a point-in-time copy of the share's contents captured before tonight's run so that a bad write can be rolled back one file at a time. The capture attempt fails every time. The current state of the share and the account is shown below. Which action should you take first?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"File share",
+							"reports (classic, SMB)"
+						],
+						[
+							"Snapshots retained on the share",
+							"200"
+						],
+						[
+							"Most recent snapshot taken",
+							"2026-10-20 02:00 UTC"
+						],
+						[
+							"Locks on storage account stcontoso",
+							"none"
+						],
+						[
+							"Soft delete for file shares",
+							"disabled"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Delete an existing snapshot from the share, then take the new snapshot"
+					},
+					{
+						"id": "b",
+						"text": "Increase the total file share quota of storage account stcontoso, then take the new snapshot"
+					},
+					{
+						"id": "c",
+						"text": "Enable soft delete for file shares, then take the new snapshot"
+					},
+					{
+						"id": "d",
+						"text": "Remove the locks on storage account stcontoso, then take the new snapshot"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A single file share can hold at most 200 snapshots. The reports share already has 200 snapshots retained, so no further snapshot can be created until at least one of the older ones is removed. Deleting an existing snapshot frees a slot, after which the point-in-time capture succeeds and the bad writes can be rolled back file by file.",
+				"perChoice": {
+					"b": "The 200-snapshot ceiling is a per-file-share count limit, not a capacity or quota limit. Raising the storage account's total file share quota does not create a snapshot slot, so the capture still fails; snapshot data in any case does not count toward the maximum file share size.",
+					"c": "Soft delete governs recovery of a file share that has been deleted and does not affect how many snapshots a live share can hold. Switching it on leaves the per-share snapshot count unchanged, so the capture still fails.",
+					"d": "Locks on a storage account block the removal of snapshots, not the creation of new ones, and this account has no locks listed in the table. Clearing locks therefore changes nothing about the failed capture."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-snapshots-files"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-prevent-file-share-deletion"
+				}
+			],
+			"subtopics": [
+				"share-snapshots",
+				"snapshot-limits"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MPS4YVX6ZX39RDNHZPDC0F",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a classic SMB file share named vault in storage account stcontoso. A job writes to that share every night and a point-in-time copy of the share is captured at the end of each run. The extra data held by those snapshots is appearing as a monthly charge, and finance wants it reduced. You must keep the ability to restore the entire share to its most recent point in time. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Snapshot date (UTC)",
+						"Unique data billed (GiB)",
+						"Note"
+					],
+					"rows": [
+						[
+							"2026-09-25",
+							"812.4",
+							"Full share after the bulk import"
+						],
+						[
+							"2026-10-02",
+							"37.1",
+							"Daily deltas"
+						],
+						[
+							"2026-10-09",
+							"21.6",
+							"Daily deltas"
+						],
+						[
+							"2026-10-16",
+							"12.9",
+							"Daily deltas"
+						],
+						[
+							"2026-10-22",
+							"8.3",
+							"Daily deltas"
+						],
+						[
+							"—",
+							"—",
+							"Storage account redundancy: Geo-redundant (GRS)"
+						],
+						[
+							"—",
+							"—",
+							"File share soft delete: Enabled, 7-day retention"
+						],
+						[
+							"—",
+							"—",
+							"Snapshot schedule: every night at 22:00 UTC"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Delete the four oldest snapshots and keep only the newest one"
+					},
+					{
+						"id": "b",
+						"text": "Delete the newest snapshot and keep only the oldest one"
+					},
+					{
+						"id": "c",
+						"text": "Delete every snapshot on the share and rely on file share soft delete for the recovery point"
+					},
+					{
+						"id": "d",
+						"text": "Keep all snapshots and reduce the snapshot frequency from nightly to weekly instead"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Share snapshots are incremental: each one stores and bills only the data that changed since the preceding snapshot, and removing a snapshot frees only the data that was unique to it. Every snapshot that remains still carries everything needed to browse and restore its own point in time, so retaining only the newest copy (22 October 2026) preserves a full restore of the latest state while releasing the unique data billed for the four older copies — including the 812.4 GiB charged for the 25 September bulk import. Soft delete has no bearing on this: it only covers a deleted share, and this share is still active.",
+				"perChoice": {
+					"b": "Because each snapshot carries only its own increment, the earliest copy cannot reproduce anything written after the bulk import, so the most recent state would no longer be restorable. It also leaves the other copies in place, so the billed data for them is not released.",
+					"c": "Soft delete is the recovery path for a share that has been deleted: it holds the share and its contents for the configured retention so the share can be undeleted. It does not produce point-in-time versions of files inside a share that still exists, so removing every snapshot would leave no way to recover earlier contents of this active share.",
+					"d": "Taking snapshots less often only limits the unique data added by future snapshots; the data already stored for the existing snapshots stays on the account and keeps being billed, so the current monthly charge is unchanged. It also reduces the number of recovery points available and widens the exposure between runs."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-snapshots-files"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-prevent-file-share-deletion"
+				}
+			],
+			"subtopics": [
+				"snapshot-billing",
+				"incremental-snapshots",
+				"soft-delete-scope"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MPWCNRCNNEWHB5X8NBGZY6",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a classic SMB file share named ledger in storage account stcontoso. A compliance job captures a point-in-time copy of that share every Sunday before the quarterly close, and it has run successfully for years. It failed on the most recent Sunday, the retry also failed, and no new copy was produced. You need the next run to succeed while the share stays online with its current files and the recovery points that are already stored. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"File share",
+							"ledger (classic, SMB) in storage account stcontoso"
+						],
+						[
+							"Snapshots on the share",
+							"200"
+						],
+						[
+							"Earliest snapshot created",
+							"2021-06-06T02:00:00Z"
+						],
+						[
+							"Most recent snapshot created",
+							"2026-10-18T02:00:00Z"
+						],
+						[
+							"File share soft delete (account level)",
+							"Enabled, 30-day retention"
+						],
+						[
+							"Storage account redundancy",
+							"Geo-redundant (GRS)"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Delete existing snapshots on the share, then rerun the capture job."
+					},
+					{
+						"id": "b",
+						"text": "Delete the existing file share and its snapshots, then recreate the share and rerun the capture job."
+					},
+					{
+						"id": "c",
+						"text": "Enable soft delete for the file shares on the storage account, then rerun the capture job."
+					},
+					{
+						"id": "d",
+						"text": "Change the redundancy of the storage account, then rerun the capture job."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A file share can hold at most 200 share snapshots, and once that ceiling is reached you must delete existing snapshots before new ones can be created. The exhibit shows 200 snapshots on ledger, which is why the weekly capture fails. Removing snapshots brings the count back below the ceiling so the job can create the new one. Delete the surplus older points and keep the most recent snapshot, because every active snapshot can still browse and restore its own point in time and the newest one alone is enough for a full restore.",
+				"perChoice": {
+					"b": "Deleting the base file share permanently removes that share and takes its snapshots with it, so every recovery point stored for ledger is lost along with the current contents of the share. Recreating the share produces an empty share, which does not meet the requirement to keep the current files and the stored recovery points.",
+					"c": "Soft delete covers file shares that have been deleted: it keeps them recoverable for the configured retention window and undeleting restores the share, its files and its snapshots. It is already enabled on this account for 30 days and it does not change how many snapshots a live share can hold, so the capture would still fail.",
+					"d": "The ceiling on the number of snapshots is a per-share limit that redundancy does not change. A snapshot simply inherits the redundancy of its base share, so switching the account to locally redundant storage would only reduce where the snapshot data is kept, not free a slot for a new snapshot."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-snapshots-files"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-prevent-file-share-deletion"
+				}
+			],
+			"subtopics": [
+				"share-snapshot-limits",
+				"soft-delete-account-scope"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MQ33Y5CBD0W13311HR8753",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You administer two NFS file shares in storage account stcontoso, and both were created with the Microsoft.Storage resource provider. Your operations lead wants two standing safeguards in place: a file that someone accidentally deletes inside a share that stays online must be recoverable, and a share that gets deleted must be recoverable with all of its contents. Which combination of features should you put in place?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Storage account",
+							"stcontoso"
+						],
+						[
+							"File share `data`",
+							"Protocol NFS, Microsoft.Storage provider"
+						],
+						[
+							"File share `media`",
+							"Protocol NFS, Microsoft.Storage provider"
+						],
+						[
+							"Stored point-in-time copies on `data`",
+							"None"
+						],
+						[
+							"Stored point-in-time copies on `media`",
+							"None"
+						],
+						[
+							"Soft delete for all file shares",
+							"Disabled"
+						],
+						[
+							"File share retention period in days",
+							"7"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Enable soft delete for all file shares at the account level; capture share snapshots of the shares"
+					},
+					{
+						"id": "b",
+						"text": "Enable soft delete for all file shares at the account level only"
+					},
+					{
+						"id": "c",
+						"text": "Capture share snapshots of the shares only"
+					},
+					{
+						"id": "d",
+						"text": "Configure an Azure file share backup policy for the account"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The two safeguards need two different mechanisms. A file deleted while its share is still active can only be brought back from a point-in-time copy of that share, and on NFS shares Azure file share backup is not supported, so share snapshots are the option (soft delete works at share level only and cannot recover an individual file from a share that was never deleted). A share that gets deleted needs soft delete, which retains the share with all of its contents for the retention window and undeletes it in its pre-deletion state; share snapshots cannot cover this because deleting a file share removes its snapshots with it. Soft delete for file shares is configured once at the storage account level and covers the classic Microsoft.Storage shares in stcontoso, so the correct option is the only combination that satisfies both requirements.",
+				"perChoice": {
+					"b": "Soft delete for all file shares, enabled at the account level, only covers the case where the whole share is deleted. It cannot bring back a single file that was removed while the share stayed active, because it operates at the share level only and no deleted share exists to undelete.",
+					"c": "Capturing share snapshots covers the file-level safeguard, but it does not satisfy the share-level safeguard: when a file share is deleted its snapshots are deleted along with it, so nothing would remain to restore the deleted share.",
+					"d": "Azure file share backup is not supported for NFS file shares, so a backup policy in this account would deliver neither safeguard for the two NFS shares listed."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-snapshots-files"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-prevent-file-share-deletion"
+				}
+			],
+			"subtopics": [
+				"file-share-snapshots",
+				"file-share-soft-delete"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MQ8KS3BN4S8SQJ70K8GS83",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You administer the classic file shares in storage account stcontoso. Four separate protection requests have come in from the business, listed below. Match each request to the Azure Files capability that satisfies it. Some of the capabilities in the list apply to none of the requests.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Ref",
+						"Request",
+						"Current state"
+					],
+					"rows": [
+						[
+							"R1",
+							"Protect an SMB share automatically every night, with the length of time the copies are kept set automatically and not adjusted by hand.",
+							"Share ledger is SMB. The platform team does not want to touch the share manually."
+						],
+						[
+							"R2",
+							"A share that was removed in error must return with every file it held, including the point-in-time copies taken of it beforehand.",
+							"Share payroll was removed this morning by mistake. The account's settings were not changed."
+						],
+						[
+							"R3",
+							"The storage account that hosts these shares must not be removable by an administrator or by an unattended automation run.",
+							"stcontoso also hosts unrelated workloads in the same subscription."
+						],
+						[
+							"R4",
+							"One file inside an online share was overwritten by a faulty job; the earlier version of that file must be recoverable straight away, using only what the account already provides, with no new service introduced for the share.",
+							"Share archive is online and serving users."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "snap-share",
+						"text": "Share snapshot"
+					},
+					{
+						"id": "soft-delete",
+						"text": "Soft delete for file shares in the storage account"
+					},
+					{
+						"id": "arm-lock",
+						"text": "Azure Resource Manager lock on the storage account"
+					},
+					{
+						"id": "backup-smb",
+						"text": "Azure file share backup with a schedule and retention policy"
+					},
+					{
+						"id": "backup-nfs",
+						"text": "Azure file share backup for an NFS file share"
+					},
+					{
+						"id": "grs",
+						"text": "Geo-redundant storage with geo-replication"
+					}
+				],
+				"slots": [
+					{
+						"id": "r1",
+						"label": "R1 – nightly unattended protection of an SMB share"
+					},
+					{
+						"id": "r2",
+						"label": "R2 – a removed share must return with its contents"
+					},
+					{
+						"id": "r3",
+						"label": "R3 – the storage account must not be removable"
+					},
+					{
+						"id": "r4",
+						"label": "R4 – an earlier version of one overwritten file"
+					}
+				]
+			},
+			"key": {
+				"r1": "backup-smb",
+				"r2": "soft-delete",
+				"r3": "arm-lock",
+				"r4": "snap-share"
+			},
+			"explanation": {
+				"correct": "R1 asks for automatic, unattended nightly protection with managed retention on an SMB share, which is what Azure file share backup provides: it automates the capture of recovery points and handles retention for you, but only for SMB file shares. R2 needs a share that was removed to come back with all of its files and with the point-in-time copies taken of it; soft delete is the capability that retains a deleted share for the configured retention window and returns it, including its snapshots, in the state it had before deletion. R3 concerns the storage account itself, and neither snapshots nor soft delete stop an account from being deleted or modified, so an Azure Resource Manager lock on the account (or its resource group) is what applies. R4 is a single overwritten file inside a share that stays online, and a share snapshot is what allows one file to be brought back without restoring the whole share; the request explicitly excludes adding a new service for the share, so the scheduled backup capability is not what is being asked for. Azure file share backup for an NFS file share cannot be used because Azure Backup does not support NFS file shares, and geo-replication neither stops objects from being removed nor recovers an earlier version of one file.",
+				"perChoice": {
+					"snap-share": "Fits R4. A snapshot freezes the share as it was, and recovery is done per individual file, so one overwritten file can be restored while the share stays online and the rest of the share is untouched. It does not fit R2, because removing a share also removes its snapshots.",
+					"soft-delete": "Fits R2. Soft delete keeps a deleted share in a recoverable state for the configured retention window, and undeleting returns the share with all of its contents, including the snapshots taken before the deletion. It cannot serve R4, because it only acts on a share that was removed, and the share in R4 is still online.",
+					"arm-lock": "Fits R3. Snapshots only protect files and soft delete only protects file shares, so neither prevents the storage account itself from being deleted or modified; an Azure Resource Manager lock on the account or resource group is the protection that covers this request.",
+					"backup-smb": "Fits R1. Azure file share backup automates the capture of recovery points and manages retention through a policy without manual steps, and it supports SMB file shares only, which matches the SMB share in R1.",
+					"backup-nfs": "Fits no slot. Azure Backup does not support NFS file shares, so this option cannot be created for an NFS share, and the share in R1 is SMB in any case.",
+					"grs": "Fits no slot. Replication to a paired region helps when a region is unavailable, but it neither prevents a share or the storage account from being removed nor offers a way to recover an earlier version of a single file."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-snapshots-files"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-prevent-file-share-deletion"
+				}
+			],
+			"subtopics": [
+				"file-share-snapshots",
+				"file-share-soft-delete",
+				"file-share-backup"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MQGJGG8E34E9CXMHHHW72S",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You administer the file shares in storage account stcontoso for the finance department. The exhibit lists four requests from the business. Match each request to the single action that satisfies it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Request",
+						"Situation",
+						"Requirement"
+					],
+					"rows": [
+						[
+							"Request 1",
+							"The SMB share 'audit' was removed yesterday by mistake.",
+							"It must come back with every file it held."
+						],
+						[
+							"Request 2",
+							"A file inside the still-online SMB share 'vault' was overwritten by a bad deployment.",
+							"It must be put back to an earlier state without the share being offline."
+						],
+						[
+							"Request 3",
+							"The SMB share 'vault' already holds the maximum number of recovery points the service allows for one share, and every attempt to add another fails.",
+							"You must free up space so that further ones become possible."
+						],
+						[
+							"Request 4",
+							"The storage account 'stcontoso' can be removed or changed by anyone who holds the relevant permissions.",
+							"Nobody must be able to remove or change it."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Enable soft delete for file shares at the storage account level, then undelete the share."
+					},
+					{
+						"id": "b",
+						"text": "Create a snapshot of the share, then restore the affected file from that copy."
+					},
+					{
+						"id": "c",
+						"text": "Delete the oldest snapshots of that share so that additional ones can be created."
+					},
+					{
+						"id": "d",
+						"text": "Place a delete lock (canNotDelete) on the storage account so it cannot be deleted or altered."
+					},
+					{
+						"id": "e",
+						"text": "Schedule recurring backups of the share with a policy-driven lifecycle."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Request 1"
+					},
+					{
+						"id": "s2",
+						"label": "Request 2"
+					},
+					{
+						"id": "s3",
+						"label": "Request 3"
+					},
+					{
+						"id": "s4",
+						"label": "Request 4"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d"
+			},
+			"explanation": {
+				"correct": "Request 1 is satisfied by soft delete for file shares: the setting is made once at the storage account level, the removed share stays in a soft-deleted state for the retention window, and undeleting brings the share back with all of its contents (and its snapshots) as they were before removal. Request 2 is satisfied by a share snapshot: a snapshot freezes the share at a point in time and individual files are recovered from it one by one, so the share itself stays online. Request 3 is satisfied by removing the oldest snapshots: a single file share supports a maximum of 200 snapshots, and older ones must be deleted before new ones can be created. Request 4 is satisfied by an Azure Resource Manager lock on the storage account (canNotDelete): snapshots and soft delete protect file contents and removed shares only, so neither stops the account itself from being removed or changed. The recurring-backup item belongs to no request, because a policy-driven backup schedule automates taking copies of a share but does not return a removed share, does not free space under the per-share snapshot limit, and does not stop changes to the storage account.",
+				"perChoice": {
+					"a": "Request 1. Soft delete is configured once at the storage account level and applies to every file share in that account; showing deleted shares and choosing undelete returns the share with everything it contained.",
+					"b": "Request 2. A snapshot freezes the share as it existed at that moment and a single file can be recovered from it (Restore > Overwrite original file) while the share keeps running.",
+					"c": "Request 3. A file share can hold at most 200 snapshots; once that ceiling is reached, older snapshots must be deleted before additional snapshots can be created.",
+					"d": "Request 4. An Azure Resource Manager lock of type canNotDelete placed on the account prevents it from being removed or altered; this is the only option that guards the account itself.",
+					"e": "No slot. Recurring backups with a policy-driven lifecycle automate taking and retaining copies of a share (and are supported for SMB shares only), but they neither recover a share that was removed, nor clear space under the per-share snapshot ceiling, nor prevent the account from being changed."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-prevent-file-share-deletion"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-snapshots-files"
+				}
+			],
+			"subtopics": [
+				"file-share-snapshots",
+				"soft-delete-for-file-shares",
+				"storage-account-locks"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MQPHMW0YW2VXQQ54VRH43F",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have classic SMB file shares and an NFS file share in storage account stcontoso, and point-in-time copies of their data already exist. You must be able to retrieve an individual file as it was at an earlier moment, working from each of the environments shown in the exhibit. Match each environment to the mechanism that returns the file to that earlier state.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Environment",
+						"Client details"
+					],
+					"rows": [
+						[
+							"Windows workstation",
+							"Windows 11 Pro; the SMB share is mapped to drive Z:"
+						],
+						[
+							"Linux server",
+							"Ubuntu 22.04; SMB access granted to the svc_reports service account"
+						],
+						[
+							"NFS host",
+							"stcontoso.file.core.windows.net; NFS export path set to /media/nfs"
+						],
+						[
+							"Portal",
+							"Signed in with a Contributor role on the storage account"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Open Properties on the file or its parent folder, then use the Previous versions tab; Restore copies the whole directory recursively back to the original location."
+					},
+					{
+						"id": "b",
+						"text": "Mount one earlier copy with mount -t cifs by passing snapshot=@GMT-2023.01.05-00.08.20 and a credentials file (needs kernel 4.19 or later)."
+					},
+					{
+						"id": "c",
+						"text": "Mount the share, then list the stored recovery points in the hidden .snapshots directory under the mount path and take the files out with cp -r."
+					},
+					{
+						"id": "d",
+						"text": "Open the file share's Snapshots tab, right-click the file and choose Restore, then Overwrite original file."
+					},
+					{
+						"id": "e",
+						"text": "Restore the file from a scheduled backup policy in a Recovery Services vault."
+					},
+					{
+						"id": "f",
+						"text": "Select the file share, show the deleted shares, and undelete it so that the earlier state reappears."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Windows workstation"
+					},
+					{
+						"id": "s2",
+						"label": "Linux server"
+					},
+					{
+						"id": "s3",
+						"label": "NFS host"
+					},
+					{
+						"id": "s4",
+						"label": "Portal"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d"
+			},
+			"explanation": {
+				"correct": "The Windows workstation uses the Previous versions tab reached through the item's Properties, where Open browses one point in time and Restore copies the entire directory recursively back to its original location. The Linux server mounts one point in time by passing snapshot=@GMT-year.month.day-hour.minutes.seconds to mount -t cifs together with a credentials file, an option the kernel supports from version 4.19. The NFS host lists the stored points in the hidden .snapshots directory under its mount path, enters the one it wants, and copies the files out with cp -r. The portal path is the file share's Snapshots tab, then right-click the file, Restore, and Overwrite original file. The Recovery Services vault policy and the undelete operation belong to neither client path.",
+				"perChoice": {
+					"a": "Fits the Windows workstation slot. A Windows client reaches the stored points through the Previous versions tab of the item's Properties; Open browses a point in time and Restore copies the entire directory recursively to the original location.",
+					"b": "Fits the Linux server slot. On Linux a single point in time is attached to the share with mount -t cifs by passing snapshot=@GMT-year.month.day-hour.minutes.seconds plus a credentials file, and the kernel supports this option only from version 4.19.",
+					"c": "Fits the NFS host slot. An NFS client lists the stored points in the hidden .snapshots directory under the mount path, changes into the directory it wants, and copies the files out with cp -r; the hidden directory is hidden by default and can take about 30 seconds to appear after a new point in time is taken.",
+					"d": "Fits the Portal slot. In the portal you open the file share's Snapshots tab, right-click the file you want back, choose Restore, and then Overwrite original file.",
+					"e": "Fits no slot. Restoring from a scheduled policy in a Recovery Services vault is the Azure file share backup capability, a separate service that keeps and manages its own copies and is not supported for NFS shares; it does not read the points in time that already exist on these shares.",
+					"f": "Fits no slot. Undeleting applies only to a share that was deleted, and it brings back that share with the contents it held at the moment of deletion; it cannot return an earlier state of a file inside a share that is still online."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-snapshots-files"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-prevent-file-share-deletion"
+				}
+			],
+			"subtopics": [
+				"share-snapshots",
+				"snapshot-restore",
+				"file-share-recovery"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MQYGBCGSY2VPD8AQ153ZRP",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have classic file shares in storage account stcontoso. You have recorded the results of four routine checks, shown in the exhibit. You need to determine what caused each result. Which statement accounts for each finding?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Finding",
+						"Observed result"
+					],
+					"rows": [
+						[
+							"Finding A — budget share",
+							"The share budget was deleted on 5 Oct 2026. At that moment the account's soft delete retention period was 7 days; on 8 Oct it was changed to 30 days. The share's expiry still shows 12 Oct 2026."
+						],
+						[
+							"Finding B — sales share",
+							"A share snapshot of sales was created on 1 Oct and another on 8 Oct. The 8 Oct snapshot increased the monthly storage bill by 35 GB, although the share holds 2 TB of files whose contents and metadata were identical on both dates."
+						],
+						[
+							"Finding C — inventory share",
+							"Creating a new share snapshot for inventory failed and no snapshot was added. The files in inventory remain readable and writable."
+						],
+						[
+							"Finding D — contracts share",
+							"After the share contracts was deleted, the three snapshots previously listed for it disappeared from the portal and support cannot retrieve them."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "A change to the soft delete retention period applies only to shares deleted after the change; shares deleted earlier keep the retention period that was configured when they were deleted."
+					},
+					{
+						"id": "b",
+						"text": "Each new share snapshot is incremental: only the data that differs from the previous snapshot is stored and billed, so repeated content is not charged again."
+					},
+					{
+						"id": "c",
+						"text": "Each file share supports a maximum of 200 share snapshots; once that limit is reached, an older snapshot must be deleted before another one can be created."
+					},
+					{
+						"id": "d",
+						"text": "Deleting the base file share also deletes all of its snapshots, so snapshots cannot be kept after the share is gone."
+					},
+					{
+						"id": "e",
+						"text": "A share snapshot can be retained for up to 10 years before it has to be deleted."
+					}
+				],
+				"slots": [
+					{
+						"id": "finding-a",
+						"label": "Finding A — budget share"
+					},
+					{
+						"id": "finding-b",
+						"label": "Finding B — sales share"
+					},
+					{
+						"id": "finding-c",
+						"label": "Finding C — inventory share"
+					},
+					{
+						"id": "finding-d",
+						"label": "Finding D — contracts share"
+					}
+				]
+			},
+			"key": {
+				"finding-a": "a",
+				"finding-b": "b",
+				"finding-c": "c",
+				"finding-d": "d"
+			},
+			"explanation": {
+				"correct": "Finding A is explained by the rule that a retention-period change is not retroactive: the share budget was deleted on 5 Oct while the period was 7 days, so it expires on 12 Oct, while the later change to 30 days only affects shares deleted from 8 Oct onward. Finding B is explained by incremental snapshots: because the files and metadata were the same on 1 Oct and 8 Oct, only the changed data (35 GB) is stored and billed for the second snapshot. Finding C is explained by the per-share snapshot ceiling: a share can hold at most 200 share snapshots, and after that limit is reached an older snapshot must be deleted before a new one can be created, which is why the new snapshot failed while the share itself stayed usable. Finding D is explained by the lifecycle rule that snapshots live only as long as their base share, so deleting the share contracts removed its three snapshots and they cannot be retained independently.",
+				"perChoice": {
+					"a": "Finding A — budget share. The share was deleted under a 7-day period, so it keeps that period and its 12 Oct expiry even though the account setting was later changed to 30 days.",
+					"b": "Finding B — sales share. Snapshots store and bill only the data that changed since the most recent snapshot, which is why the second snapshot cost only 35 GB rather than the full 2 TB share.",
+					"c": "Finding C — inventory share. The maximum number of share snapshots per file share is 200; once reached, an older snapshot must be deleted before another can be created, so the attempt was rejected.",
+					"d": "Finding D — contracts share. Deleting the base file share automatically removes its snapshots, so the three snapshots were destroyed with the share and cannot be recovered on their own.",
+					"e": "Fits no finding. It states how long a snapshot may be kept (up to 10 years), while the findings concern a retention-period change after deletion, incremental snapshot storage and billing, the per-share snapshot ceiling, and the removal of snapshots when the base share is deleted."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-snapshots-files"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-prevent-file-share-deletion"
+				}
+			],
+			"subtopics": [
+				"soft-delete-retention",
+				"share-snapshot-limits",
+				"snapshot-cost"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MR4H6H88KYGRM092P9ZCMZ",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You administer the file shares in storage account stcontoso. The exhibit lists four jobs you need to complete today. Match each job to the command or portal location you should use for it. One of the listed options is not usable for any of the jobs.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Job",
+						"Share",
+						"What the job requires"
+					],
+					"rows": [
+						[
+							"A",
+							"media — classic SMB, created with the Microsoft.Storage provider",
+							"Capture a point-in-time copy of the share's data using the Azure CLI."
+						],
+						[
+							"B",
+							"analytics — NFS, created with the Microsoft.Storage provider",
+							"Capture a point-in-time copy of the share's data using Azure PowerShell."
+						],
+						[
+							"C",
+							"metrics — NFS, created with the Microsoft.FileShares provider",
+							"Read the mount endpoint hostName value that the portal's JSON view displays for this share."
+						],
+						[
+							"D",
+							"metrics — NFS, created with the Microsoft.FileShares provider",
+							"Change the metadata of a point-in-time copy that already exists on this share."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "az storage share snapshot"
+					},
+					{
+						"id": "b",
+						"text": "New-AzRmStorageShare"
+					},
+					{
+						"id": "c",
+						"text": "az fileshare show"
+					},
+					{
+						"id": "d",
+						"text": "Operations > Snapshots > Properties"
+					},
+					{
+						"id": "e",
+						"text": "AzStorageShare (file data plane API family)"
+					}
+				],
+				"slots": [
+					{
+						"id": "sa",
+						"label": "Job A"
+					},
+					{
+						"id": "sb",
+						"label": "Job B"
+					},
+					{
+						"id": "sc",
+						"label": "Job C"
+					},
+					{
+						"id": "sd",
+						"label": "Job D"
+					}
+				]
+			},
+			"key": {
+				"sa": "a",
+				"sb": "b",
+				"sc": "c",
+				"sd": "d"
+			},
+			"explanation": {
+				"correct": "Job A covers a classic SMB share, and share snapshots for classic shares can be created with the portal, Azure PowerShell or the Azure CLI, so az storage share snapshot is the right tool. Job B covers an NFS share, where snapshot operations only work through the file management API family (AzRmStorageShare, for example New-AzRmStorageShare); the file data plane family (AzStorageShare) is explicitly not supported for NFS snapshots, so that leftover option fits no job here. Job C needs the mount endpoint hostName of a Microsoft.FileShares NFS share, which can be read with az fileshare show (or Get-AzFileShare). Job D needs the metadata of an existing point-in-time copy on a Microsoft.FileShares NFS share, which is updated in the portal under Operations > Snapshots > Properties.",
+				"perChoice": {
+					"a": "Fits Job A: the Azure CLI command az storage share snapshot creates and lists point-in-time copies of a classic SMB file share.",
+					"b": "Fits Job B: on NFS shares only the file management API family (AzRmStorageShare, for example New-AzRmStorageShare) supports creating point-in-time copies, and Job B asks for PowerShell.",
+					"c": "Fits Job C: az fileshare show returns the share details, including the hostName endpoint value needed to mount a Microsoft.FileShares NFS share.",
+					"d": "Fits Job D: on Microsoft.FileShares NFS shares the metadata of an existing point-in-time copy is updated in the portal at Operations > Snapshots > Properties.",
+					"e": "Fits no job: the file data plane API family (AzStorageShare) is not supported for NFS snapshot operations, and the remaining jobs are already covered by the CLI, PowerShell and portal options listed."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-snapshots-files"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-prevent-file-share-deletion"
+				}
+			],
+			"subtopics": [
+				"share-snapshots",
+				"nfs-snapshots",
+				"snapshot-commands"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5N63KR5RGD16ZZTGHA8V64M",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have carried out the four administrative actions listed in the exhibit against the file shares in storage account stcontoso. You need to know what each action actually produced. Match each step to the outcome that follows from it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Step",
+						"Action carried out"
+					],
+					"rows": [
+						[
+							"S1",
+							"Deleted the oldest of the five snapshots of the classic file share 'ledger'"
+						],
+						[
+							"S2",
+							"Tried to copy a whole snapshot of the share 'ledger' into a different storage account all at once"
+						],
+						[
+							"S3",
+							"Copied a file out of a snapshot back onto the same path in the live share 'ledger'"
+						],
+						[
+							"S4",
+							"Deleted a provisioned file share while soft delete was enabled"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "o1",
+						"text": "Only the content that existed solely in that snapshot was removed; every remaining snapshot still holds everything needed to browse and restore its point in time."
+					},
+					{
+						"id": "o2",
+						"text": "There is no single operation that does this; the content has to be moved one file at a time, for example with AzCopy."
+					},
+					{
+						"id": "o3",
+						"text": "The share now shows the earlier content, the snapshot itself stays unchanged, and later snapshots count that file as changed content."
+					},
+					{
+						"id": "o4",
+						"text": "The share keeps consuming its quota until the recovery window ends, when it is finally removed."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "S1 — first step in the exhibit"
+					},
+					{
+						"id": "s2",
+						"label": "S2 — second step in the exhibit"
+					},
+					{
+						"id": "s3",
+						"label": "S3 — third step in the exhibit"
+					},
+					{
+						"id": "s4",
+						"label": "S4 — fourth step in the exhibit"
+					}
+				]
+			},
+			"key": {
+				"s1": "o1",
+				"s2": "o2",
+				"s3": "o3",
+				"s4": "o4"
+			},
+			"explanation": {
+				"correct": "Each step produces exactly one of the listed outcomes. Deleting one snapshot of a share (S1) discards only the data that was unique to that snapshot; every other snapshot still contains everything required to browse and restore its point in time. A snapshot can never be promoted into a whole share, so it cannot be copied to a different storage account in one operation (S2); the data has to be transferred file by file, for example with AzCopy. Copying a file out of a snapshot back over the same path in the live share (S3) replaces that file in the base share while the snapshot itself remains intact, and the restored content counts as changed content for subsequent snapshots. Finally, deleting a provisioned share while soft delete is enabled (S4) leaves the share consuming its quota until the soft delete retention window expires, at which point it is fully removed.",
+				"perChoice": {
+					"o1": "S1 — deleting one snapshot removes only the data unique to that snapshot; all other snapshots remain complete for browsing and restoring their point in time.",
+					"o2": "S2 — a snapshot is never promoted into a share, so it cannot be copied to another storage account in a single operation; the files must be copied individually, for example with AzCopy.",
+					"o3": "S3 — restoring a file by copying it out of a snapshot overwrites the base share's version of that file, leaves the snapshot intact, and makes the restored content count as changed content in later snapshots.",
+					"o4": "S4 — a soft-deleted provisioned share keeps consuming its provisioned quota in the account's total quota calculation until the soft delete expiry, when it is fully deleted."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-snapshots-files"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-prevent-file-share-deletion"
+				}
+			],
+			"subtopics": [
+				"share-snapshots",
+				"snapshot-deletion",
+				"soft-delete"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5N68BTAEGKB0DS8TQKRCFVH",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a classic SMB file share named contracts that holds the company's contract documents, and three older versions of its contents exist. You need the version captured on 20 October 2026 copied into a new share named contracts-dr in a second storage account, so that the older data can be used for a recovery exercise. Which approach should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Source share",
+							"contracts - classic, SMB, created with the Microsoft.Storage provider"
+						],
+						[
+							"Captured versions",
+							"3; the newest is reachable as https://stcontoso.file.core.windows.net/contracts?sharesnapshot=2026-10-20T04:15:00.0000000Z"
+						],
+						[
+							"Destination",
+							"contracts-dr - a new share in the stcontosodr storage account (East US)"
+						],
+						[
+							"Source state",
+							"Online; clients continue to write to it"
+						]
+					]
+				},
+				"statement": "To place the captured version into the destination share, the transfer must run {{transfer}}, and the destination share ends up with {{outcome}}.",
+				"slots": [
+					{
+						"id": "transfer",
+						"options": [
+							{
+								"id": "a",
+								"text": "one file at a time with AzCopy, because a snapshot cannot be moved to another storage account as a single unit"
+							},
+							{
+								"id": "b",
+								"text": "as one snapshot with AzCopy, because a snapshot already holds every file in the share at that point in time"
+							},
+							{
+								"id": "c",
+								"text": "by promoting the snapshot to replace the source share, and then copying the replaced share to the destination"
+							},
+							{
+								"id": "d",
+								"text": "by capturing a new snapshot of the source share inside the destination storage account"
+							}
+						]
+					},
+					{
+						"id": "outcome",
+						"options": [
+							{
+								"id": "a",
+								"text": "ordinary writable files, and the source share keeps its current contents"
+							},
+							{
+								"id": "b",
+								"text": "new snapshots that remain immutable, and the source share keeps its current contents"
+							},
+							{
+								"id": "c",
+								"text": "ordinary writable files, and the source share's contents are replaced by the captured version"
+							},
+							{
+								"id": "d",
+								"text": "new snapshots that remain immutable, and the source share's contents are replaced by the captured version"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"transfer": "a",
+				"outcome": "a"
+			},
+			"explanation": {
+				"correct": "A share snapshot is never promoted to replace its base share, and a whole-share restore is done file by file; an entire snapshot also cannot be copied to another storage account in one operation. The captured version therefore has to be moved out file by file with AzCopy (or another copy mechanism), which is the first slot's keyed option. Content taken out of a snapshot and written to a different destination is written as an ordinary writable file rather than as a new snapshot, and copying it out leaves the base share's own contents untouched, which is the second slot's keyed option.",
+				"perChoice": {
+					"transfer:b": "Wrong: there is no single-unit copy of a snapshot into a different storage account. The captured content must be transferred per file (for example with AzCopy), because an entire snapshot cannot be copied to another storage account in one operation.",
+					"transfer:c": "Wrong: a snapshot is never promoted to replace the base share, so no promotion step exists. Restoring a whole share from a captured version is done file by file, not by turning the capture into the live share.",
+					"transfer:d": "Wrong: snapshots are created inside a file share in the account where that share lives, so a snapshot of the source share cannot be captured from the destination account, and nothing of the captured version would be transferred by doing so.",
+					"outcome:b": "Wrong: content copied out of a snapshot into another destination arrives as ordinary writable files; copying does not create new snapshots and the transferred items are not immutable.",
+					"outcome:c": "Wrong: copying content out of a snapshot leaves the base share untouched, so the source share's contents are not replaced by the captured version.",
+					"outcome:d": "Wrong on both counts: the transferred content arrives as ordinary writable files rather than as new snapshots, and the source share keeps its current contents instead of being overwritten by the captured version."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-snapshots-files"
+				}
+			],
+			"subtopics": [
+				"share-snapshots",
+				"snapshot-restore"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5N6MRSE3T36SKYS8Y2FWGC9",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your classic SMB file share named invoices sits in storage account stcontoso, provisioned with 100 GiB of capacity under the account's Provisioned v2 billing model. You deleted that share on 22 October 2026, yet the account's quota report still shows the same amount of space in use as before the deletion. Which statement explains the quota result?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Share",
+							"invoices"
+						],
+						[
+							"Share type",
+							"Classic SMB (Microsoft.Storage provider)"
+						],
+						[
+							"Share size",
+							"100 GiB provisioned"
+						],
+						[
+							"Account's total provisioned quota",
+							"900 GiB"
+						],
+						[
+							"Space currently in use",
+							"900 GiB"
+						],
+						[
+							"Soft delete",
+							"Enabled, 30 days"
+						],
+						[
+							"Share status",
+							"Deleted on 22 October 2026"
+						]
+					]
+				},
+				"statement": "The deleted share {{quotaEffect}}.",
+				"slots": [
+					{
+						"id": "quotaEffect",
+						"options": [
+							{
+								"id": "a",
+								"text": "keeps consuming its provisioned capacity until the retention period ends"
+							},
+							{
+								"id": "b",
+								"text": "stops consuming its provisioned capacity as soon as the deletion completes"
+							},
+							{
+								"id": "c",
+								"text": "keeps consuming its provisioned capacity until the retention period is changed"
+							},
+							{
+								"id": "d",
+								"text": "keeps consuming its provisioned capacity until the share is undeleted"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"quotaEffect": "a"
+			},
+			"explanation": {
+				"correct": "For a provisioned file share, soft delete keeps the deleted share in the account's quota calculation: the share continues to consume its provisioned capacity until its soft-delete expiry, when it is finally fully deleted and the capacity is released. Deleting invoices on 22 October 2026 therefore leaves the account showing 900 GiB of the 900 GiB provisioned quota in use rather than freeing the 100 GiB immediately. Share snapshots do not change this, because deleting the base share also removes its snapshots.",
+				"perChoice": {
+					"quotaEffect:b": "Capacity is not handed back at the moment of deletion. A soft-deleted provisioned share keeps counting toward the account's total quota until its soft-delete expiry, so the reported usage stays at 900 GiB.",
+					"quotaEffect:c": "Changing the recovery setting does not restart or cancel the clock for a share that has already been deleted. Shares deleted before a retention change expire according to the retention period that was in force when they were deleted, so the share keeps consuming capacity until that original window completes.",
+					"quotaEffect:d": "Undeleting the share brings it back as an active share; it has no bearing on when the account's quota is relieved. The provisioned capacity stops counting only when the soft-delete window completes and the share is fully deleted."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-prevent-file-share-deletion"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-snapshots-files"
+				}
+			],
+			"subtopics": [
+				"soft-delete",
+				"provisioned-quota"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5N704BK1G9H46PAFT73HG1C",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You administer the file shares in storage account stcontoso. The exhibit lists the two shares and the recovery requirement that the business has raised for each of them. You need to identify the Azure Files capability that can satisfy each requirement.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "File share : designdata\nProtocol   : NFS\nProvider   : Microsoft.FileShares\nRequirement R1 - Copies of the contents must be taken on a schedule, so that a file\n               can later be restored to the version it had at an earlier moment.\n\nFile share : policies\nProtocol   : SMB\nProvider   : Microsoft.Storage\nRequirement R2 - Copies of the contents must be taken automatically on a schedule, and\n               the retention of the copies must be governed by policy rather than\n               maintained by hand."
+				},
+				"statement": "For the requirement on designdata you should choose {{req1}}, and for the requirement on policies you should choose {{req2}}.",
+				"slots": [
+					{
+						"id": "req1",
+						"options": [
+							{
+								"id": "a",
+								"text": "Share snapshots of the file share"
+							},
+							{
+								"id": "b",
+								"text": "Azure file share backup for the file share"
+							},
+							{
+								"id": "c",
+								"text": "Soft delete for file shares in the storage account"
+							},
+							{
+								"id": "d",
+								"text": "An Azure Resource Manager lock on the storage account"
+							}
+						]
+					},
+					{
+						"id": "req2",
+						"options": [
+							{
+								"id": "a",
+								"text": "Share snapshots of the file share"
+							},
+							{
+								"id": "b",
+								"text": "Azure file share backup for the file share"
+							},
+							{
+								"id": "c",
+								"text": "Soft delete for file shares in the storage account"
+							},
+							{
+								"id": "d",
+								"text": "An Azure Resource Manager lock on the storage account"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"req1": "a",
+				"req2": "b"
+			},
+			"explanation": {
+				"correct": "Requirement R1 applies to designdata, which is an NFS share. Azure file share backup is supported for SMB file shares only, and Azure Backup does not support NFS file shares, so the only in-service protection available for an NFS share is share snapshots; these can be created for a schedule with the REST API, client SDKs, Azure PowerShell (New-AzRmStorageShare) or the CLI (az storage share snapshot), and the earlier version of a file can then be restored from them. Requirement R2 applies to policies, a classic SMB share. A scheduled, policy-driven service that automates the taking of copies and manages their retention exists for SMB shares: Azure file share backup, which is supported for SMB file shares only.",
+				"perChoice": {
+					"req1:b": "Azure file share backup supports SMB file shares only, and Azure Backup does not support NFS file shares, so it cannot protect the NFS share designdata.",
+					"req1:c": "Soft delete retains a file share after it has been removed and can return it with all of its contents; it does not create point-in-time copies of the files in a share that is still online, so it cannot satisfy R1.",
+					"req1:d": "An Azure Resource Manager lock prevents changes to or removal of the storage account it is placed on; it stores no copies of the data and provides no way to restore an earlier version of a file.",
+					"req2:a": "Share snapshots are point-in-time copies whose creation and removal you control; they do not give the scheduled, policy-driven retention management that R2 asks for.",
+					"req2:c": "Soft delete is the recovery mechanism for a file share that has been removed, and it keeps the share for the configured retention window; it does not keep scheduled copies of the share's contents.",
+					"req2:d": "An Azure Resource Manager lock protects the storage account against changes or deletion; it neither creates copies of the data nor provides restore points."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-snapshots-files"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-prevent-file-share-deletion"
+				}
+			],
+			"subtopics": [
+				"file-share-backup",
+				"share-snapshots",
+				"nfs-file-shares"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5N762JX1EWFCZQMDFTTM223",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a classic SMB file share named archive in storage account stcontoso. You created a share snapshot of that share today, and you did not supply any metadata of your own when you created it. Your compliance team wants a written description of two aspects of that snapshot: where its data is kept relative to the account's replication configuration, and what happens to the files' system properties and to the share's metadata. Which statement describes the snapshot?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Storage account",
+							"stcontoso"
+						],
+						[
+							"Replication configuration",
+							"Geo-redundant storage (GRS)"
+						],
+						[
+							"Paired region",
+							"West US 2"
+						],
+						[
+							"File share",
+							"archive (classic, SMB)"
+						],
+						[
+							"Share metadata on the live share",
+							"dept=finance; retention=7y"
+						],
+						[
+							"Metadata supplied at snapshot creation",
+							"none"
+						]
+					]
+				},
+				"statement": "A share snapshot of the file share in this account {{dataLocation}}, and it {{metadataHandling}}.",
+				"slots": [
+					{
+						"id": "dataLocation",
+						"options": [
+							{
+								"id": "a",
+								"text": "stores the data in the paired region and in the primary region"
+							},
+							{
+								"id": "b",
+								"text": "stores the data in the primary region and not in the paired region"
+							},
+							{
+								"id": "c",
+								"text": "stores the data in a separate storage account in the paired region and not in the primary region"
+							},
+							{
+								"id": "d",
+								"text": "stores the data in the paired region and in the primary region, but only after the base share is deleted"
+							}
+						]
+					},
+					{
+						"id": "metadataHandling",
+						"options": [
+							{
+								"id": "a",
+								"text": "carries over the files' system properties and the share metadata with the values recorded when the snapshot was taken"
+							},
+							{
+								"id": "b",
+								"text": "carries over the files' system properties but not the share metadata, and the share metadata is dropped when the snapshot was taken"
+							},
+							{
+								"id": "c",
+								"text": "carries over the files' system properties and the share metadata with the values read from the live share at restore time"
+							},
+							{
+								"id": "d",
+								"text": "carries over the files' system properties and the share metadata with the values reset to their defaults"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"dataLocation": "a",
+				"metadataHandling": "a"
+			},
+			"explanation": {
+				"correct": "A share snapshot inherits the redundancy of the base share, so in a geo-redundant storage account such as stcontoso the snapshot's data is held in the account's primary region and is also stored redundantly in the paired region (West US 2); no second storage account is involved. The snapshot also carries the files' system properties and the file share metadata with the values they had when the snapshot was taken, and because no separate metadata was supplied at creation in this scenario, those are the values that come back on restore.",
+				"perChoice": {
+					"dataLocation:b": "The snapshot inherits the redundancy of the base share, so in a geo-redundant account its data is also stored in the paired region; it is not confined to the primary region.",
+					"dataLocation:c": "A snapshot is held inside the same storage account as the base share. No separate storage account is created to hold snapshot data, so the data is never written to another account in the paired region.",
+					"dataLocation:d": "A snapshot is created alongside the share and its data is protected from that moment onward; it is not held back until the base share is deleted.",
+					"metadataHandling:b": "Share metadata is captured with the snapshot, so it is not dropped at creation time; restoring from the snapshot brings back the metadata that was stored with it.",
+					"metadataHandling:c": "The values stored with the snapshot are the ones in effect when it was taken. Reading the metadata from the live share at restore time would show today's values instead of the point-in-time ones.",
+					"metadataHandling:d": "The files' system properties and the share metadata are carried into the snapshot with their existing values; they are not reset to defaults."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-snapshots-files"
+				}
+			],
+			"subtopics": [
+				"share-snapshots",
+				"storage-redundancy",
+				"snapshot-metadata"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5N8H56YR6QF5KC3GJR634ZR",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You administer storage account stcontoso and its classic SMB file share invoices. You deleted invoices on 15 October 2026 while soft delete for file shares was enabled, then disabled soft delete for the account on 20 October 2026. The business now wants the deleted share, its files, and its snapshots back. Which statement describes the result?",
+				"statement": "The outcome of your actions is {{outcome}}.",
+				"slots": [
+					{
+						"id": "outcome",
+						"options": [
+							{
+								"id": "a",
+								"text": "The share stays recoverable, because disabling the setting does not immediately destroy shares deleted while it was on."
+							},
+							{
+								"id": "b",
+								"text": "The share is gone for good, because disabling the setting immediately destroys shares deleted while it was on."
+							},
+							{
+								"id": "c",
+								"text": "The share stays recoverable, but only after the setting is enabled again for the account."
+							},
+							{
+								"id": "d",
+								"text": "The share and its snapshots are gone for good, because deleting a share also removes its snapshots."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"outcome": "a"
+			},
+			"explanation": {
+				"correct": "Switching soft delete off does not immediately destroy shares that were deleted while it was on, so invoices stays recoverable and can still be undeleted, returning the share with all of its contents, including its snapshots.",
+				"perChoice": {
+					"outcome:b": "Incorrect: disabling the setting does not immediately destroy shares deleted while it was on, so they remain recoverable.",
+					"outcome:c": "Incorrect: the ability to undelete shares deleted while the setting was on persists after it is switched off, so it need not be enabled again first.",
+					"outcome:d": "Incorrect: soft delete retains the share and its snapshots; snapshots disappear only when the share is permanently deleted.",
+					"outcome:a": "Correct: the share stays recoverable and can still be undeleted with all of its contents and snapshots."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-prevent-file-share-deletion"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-snapshots-files"
+				}
+			],
+			"subtopics": [
+				"soft-delete",
+				"deleted-share-recovery",
+				"share-snapshots"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5N8MYMEJE6SRGGJY38N42WD",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a classic SMB file share named contracts in storage account stcontoso, mounted on a Windows workstation as drive Z:. A snapshot of the share was taken on 20 October 2026 at 18:00 UTC. When a user opens the Properties dialog for a folder in the mounted share and selects the Previous versions tab, the 20 October snapshot is listed and entries appear for several files in that folder, but the file 'readme.txt' has no entry at all. You must explain the missing entry to the user, and you must also tell the user what choosing Restore on that tab does to the live folder and to the snapshot itself.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Share",
+							"contracts, classic SMB, Microsoft.Storage resource provider"
+						],
+						[
+							"Workstation",
+							"Windows 11, share mounted as drive Z:"
+						],
+						[
+							"Snapshot taken",
+							"20 October 2026, 18:00 UTC"
+						],
+						[
+							"readme.txt - last modified",
+							"19 October 2026, 09:14 UTC"
+						],
+						[
+							"Legal-hold.txt - last modified",
+							"21 October 2026, 08:02 UTC"
+						],
+						[
+							"Files with open handles at 18:00 UTC",
+							"none"
+						],
+						[
+							"Share space in use",
+							"40 GiB of 100 GiB"
+						],
+						[
+							"Snapshots currently on the share",
+							"3"
+						]
+					]
+				},
+				"statement": "The missing entry for 'readme.txt' appears because {{noEntryReason}}, and choosing Restore on that tab {{restoreOutcome}}.",
+				"slots": [
+					{
+						"id": "noEntryReason",
+						"options": [
+							{
+								"id": "a",
+								"text": "the file was not written to since the snapshot was taken, so the copy held in the snapshot is the same as the one on the share and no earlier version of that file is offered to the user"
+							},
+							{
+								"id": "b",
+								"text": "the file was open in another application when the snapshot was taken, so the copy held in the snapshot is the same as the one on the share and no earlier version of that file is offered to the user"
+							},
+							{
+								"id": "c",
+								"text": "the share had no free space left for another copy of the file, so the copy held in the snapshot is the same as the one on the share and no earlier version of that file is offered to the user"
+							},
+							{
+								"id": "d",
+								"text": "the share was not mounted with the snapshot's DateTime value, so the copy held in the snapshot is the same as the one on the share and no earlier version of that file is offered to the user"
+							}
+						]
+					},
+					{
+						"id": "restoreOutcome",
+						"options": [
+							{
+								"id": "a",
+								"text": "copies the contents of the entire directory recursively back to the original location, leaves the snapshot intact, and the restored files count as changed content in later snapshots"
+							},
+							{
+								"id": "b",
+								"text": "copies the contents of the entire directory recursively back to the original location, deletes the snapshot, and the restored files count as unchanged content in later snapshots"
+							},
+							{
+								"id": "c",
+								"text": "promotes the snapshot into a new base share in one operation, leaves the snapshot intact, and the restored files count as changed content in later snapshots"
+							},
+							{
+								"id": "d",
+								"text": "copies only the files that differ from the snapshot back to the original location, leaves the snapshot intact, and the restored files count as unchanged content in later snapshots"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"noEntryReason": "a",
+				"restoreOutcome": "a"
+			},
+			"explanation": {
+				"correct": "'readme.txt' was last modified on 19 October, before the 20 October snapshot was taken, so it was not touched after that point in time and the copy held in the snapshot is identical to the file on the share. Windows therefore shows no earlier version for it, which is the same behavior you get on a Windows file server. Choosing Restore on the Previous versions tab copies the contents of the entire directory recursively back to the original location as it was when the snapshot was created; the snapshot itself is not consumed or promoted to the base share, and the restored files are then treated as changed content by later snapshots.",
+				"perChoice": {
+					"noEntryReason:b": "A snapshot captures the share as it exists at that moment, and no rule leaves out files merely because an application still has them open. The exhibit also records no open handles at 18:00 UTC.",
+					"noEntryReason:c": "Snapshot data does not count towards the maximum share size limit and there is no overall cap on the space snapshots occupy, so a file is not dropped for lack of space. The exhibit also shows only 40 GiB of 100 GiB in use.",
+					"noEntryReason:d": "The DateTime value is how a particular snapshot is addressed in the share URI, and it is used as a mount option on Linux. A mounted Windows share lists its snapshots in the Previous versions tab without any special mount, and the 20 October snapshot is visible there.",
+					"restoreOutcome:b": "A restore never deletes a snapshot (existing snapshots are never overwritten, and snapshots persist until you delete them), and restored files are treated as changed content, so both the 'deletes the snapshot' and 'unchanged content' parts of this option are wrong.",
+					"restoreOutcome:c": "A snapshot is never promoted to replace the base share; restoring a complete share is done file by file from the snapshot.",
+					"restoreOutcome:d": "Restore copies the contents of the entire directory recursively to the original location, not only the files that differ, and the restored files count as changed content in later snapshots."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-snapshots-files"
+				}
+			],
+			"subtopics": [
+				"previous-versions-tab",
+				"restore-from-share-snapshot",
+				"share-snapshot-semantics"
+			],
+			"reviewed": false
+		}
+	]
+}

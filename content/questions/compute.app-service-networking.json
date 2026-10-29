@@ -1,0 +1,1788 @@
+{
+	"skill": "compute.app-service-networking",
+	"questions": [
+		{
+			"id": "q_01M5V2P0068XH5CA0GS8YSRRS6",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an Azure Linux web app named contoso-portal on a Standard plan, and a GitHub Actions runner that publishes the app's deployment package to it from the address range 20.240.10.0/24. After your security team tightened the app's inbound filtering, every publish attempt fails with HTTP 403, although users in the corporate range 198.51.100.0/24 can still open the site. You need the pipeline working again: the runner's range must be able to publish, the main site must remain reachable only from the corporate range, and the deployment path must not be opened up to arbitrary internet addresses. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"App access",
+							"Enabled"
+						],
+						[
+							"Main site rules",
+							"1 allow rule - 198.51.100.0/24"
+						],
+						[
+							"Main site unmatched rule",
+							"Deny"
+						],
+						[
+							"Advanced tools site (scm/kudu) rules",
+							"1 allow rule - 203.0.113.0/28"
+						],
+						[
+							"Advanced tools site unmatched rule",
+							"Deny"
+						],
+						[
+							"Private endpoints on the app",
+							"None"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add an allow rule for 20.240.10.0/24 to the advanced tools site's rule collection"
+					},
+					{
+						"id": "b",
+						"text": "Add an allow rule for 20.240.10.0/24 to the main site's rule collection"
+					},
+					{
+						"id": "c",
+						"text": "Set the advanced tools site's unmatched rule to Allow"
+					},
+					{
+						"id": "d",
+						"text": "Set App access to Disabled"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Every app has two sites: the main site and the advanced tools site (scm/kudu). Each one keeps its own rules collection and its own unmatched rule, and the rules of one are not evaluated for the other. In the state shown, the advanced tools site has one allow rule (203.0.113.0/28) and an unmatched rule of Deny, so the runner's range 20.240.10.0/24 matches no rule and its publish request is rejected at the front ends with 403. Adding an allow rule for 20.240.10.0/24 to the advanced tools site's rule collection admits the runner, leaves the main site's approved rules untouched (so the site stays reachable only from the corporate range), and keeps unmatched traffic denied so the deployment path is not opened to arbitrary internet addresses.",
+				"perChoice": {
+					"b": "Rules in the main site's collection are evaluated only for requests to the main site. The advanced tools site has an individual rules collection with its own unmatched rule, which is Deny here, so adding the runner's range to the main site would not change the outcome of the publish request - it would keep failing with 403.",
+					"c": "The unmatched rule is the last rule of a collection and decides what happens to requests that match nothing. Setting it to Allow would admit every unmatched request to the deployment path, exposing the scm/kudu site to the internet and violating the requirement that only the runner's range may publish.",
+					"d": "App access (the publicNetworkAccess property) controls whether the app can be reached through the default public endpoint. Disabling it removes the public path entirely: the internet-based runner could no longer publish, and the corporate range would lose access to the main site as well, which the stated requirements forbid."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-access-restrictions"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/networking-features"
+				}
+			],
+			"subtopics": [
+				"access-restrictions",
+				"advanced-tools-site",
+				"unmatched-rule"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V2TH69NQFHA0SNDE9Y2FS6",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an Azure web app named contoso-orders running on a Premium v3 App Service plan in East US. Regional virtual network integration is already active with the vnet-app-prod virtual network in the same region, and the app calls a database inside that network successfully. However, staff on the corporate network cannot open the app over any address inside their own network, and the app still answers on its public hostname from arbitrary internet connections. You need staff to reach the app over an address inside the corporate network, and you want the app to stop responding on its public hostname, while the existing database calls keep working. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Current value"
+					],
+					"rows": [
+						[
+							"App Service plan SKU",
+							"PremiumV3"
+						],
+						[
+							"App region",
+							"East US"
+						],
+						[
+							"Virtual network",
+							"vnet-app-prod (East US)"
+						],
+						[
+							"Virtual network integration",
+							"Regional, joined to snet-apps"
+						],
+						[
+							"Integration subnet delegation",
+							"Microsoft.Web/serverFarms"
+						],
+						[
+							"WEBSITE_VNET_ROUTE_ALL",
+							"0"
+						],
+						[
+							"publicNetworkAccess",
+							"Enabled"
+						],
+						[
+							"Address the app answers on inside vnet-app-prod",
+							"None"
+						],
+						[
+							"Address used by corporate staff to open the app",
+							"The app's public hostname"
+						],
+						[
+							"Corporate address range",
+							"10.20.0.0/16"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Enable the Microsoft.Web service endpoint on the source subnets of the virtual network and add an access restriction rule for them, with the unmatched rule set to deny."
+					},
+					{
+						"id": "b",
+						"text": "Add an allow rule in the app's access restrictions for the corporate address range and set the unmatched rule to deny."
+					},
+					{
+						"id": "c",
+						"text": "Set public network access to Disabled for the app and add an allow rule for the corporate address range."
+					},
+					{
+						"id": "d",
+						"text": "Add a private endpoint for the app in the virtual network and set public network access to Disabled."
+					}
+				]
+			},
+			"key": {
+				"optionId": "d"
+			},
+			"explanation": {
+				"correct": "A private endpoint binds the app to an address inside vnet-app-prod over Azure Private Link, and only the app that is bound to that endpoint is reachable across that network — this is what gives staff an address inside the corporate network. Setting public network access to Disabled stops the app from answering on its shared public front ends, so nothing responds on the public hostname any more. The regional virtual network integration already in place handles the outbound direction only, so the existing database calls continue to work unchanged.",
+				"perChoice": {
+					"a": "Service endpoints plus access restriction rules only decide which source subnets may reach the app through the shared front ends; the app still has no address inside the corporate network, so staff cannot open it over an in-network address. Service-endpoint-based rules are also not supported on an app that has a private endpoint.",
+					"b": "An allow rule for the corporate range simply permits traffic that already arrives at the public front ends, so the app would still be reachable only on its public hostname and would gain no address inside the corporate network.",
+					"c": "Turning public network access off closes the public front end completely, so an allow rule for the corporate range has nothing left to act on, and no in-network address is created — the app becomes unreachable from staff rather than reachable over a corporate-network address."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/networking-features"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-access-restrictions"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-vnet-integration"
+				}
+			],
+			"subtopics": [
+				"private-endpoint",
+				"access-restrictions",
+				"virtual-network-integration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V2XZE95VBJ06HQDA0RARRD",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have two App Service plans in the East US subscription, and the apps on both plans call an internal API that lives in the virtual network vnet-prod. You need both plans to reach vnet-prod for their outbound calls by using one shared integration subnet. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Current value"
+					],
+					"rows": [
+						[
+							"contoso-plan-a",
+							"P1v3, 10 instances, 4 apps, East US"
+						],
+						[
+							"contoso-plan-b",
+							"P1v3, 5 instances, 3 apps, East US"
+						],
+						[
+							"Target virtual network",
+							"vnet-prod, East US, same subscription as both plans"
+						],
+						[
+							"Proposed integration subnet",
+							"10.20.0.0/27, delegated to Microsoft.Web/serverFarms, not yet joined"
+						],
+						[
+							"Application dependency",
+							"Outbound calls to an internal API hosted in vnet-prod"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Create a new 10.20.64.0/26 subnet in vnet-prod and join both plans to it."
+					},
+					{
+						"id": "b",
+						"text": "Create a new 10.20.64.0/28 subnet in vnet-prod and join both plans to it."
+					},
+					{
+						"id": "c",
+						"text": "Keep the 10.20.0.0/27 subnet for contoso-plan-a and join contoso-plan-b to a separate 10.20.64.0/26 subnet in vnet-prod."
+					},
+					{
+						"id": "d",
+						"text": "Move contoso-plan-b to another subscription and create a new 10.20.64.0/26 subnet in vnet-prod."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Letting several App Service plans share one integration subnet is multi plan subnet join (MPSJ), and that scenario requires a subnet of /26 or larger, with all of the participating plans in the same subscription. Both plans here are P1v3 in one subscription and vnet-prod is in that same subscription and region, so creating a 10.20.64.0/26 subnet in vnet-prod and joining both plans satisfies the requirement while giving each plan's apps outbound reach into the virtual network. The size also fits the workload: 64 addresses comfortably cover the 15 plan instances (one address per instance) plus the additional addresses needed while scaling operations temporarily double usage.",
+				"perChoice": {
+					"b": "A subnet shared by several plans must be /26 or larger, so /28 is too small. The /27 minimum that the portal enforces for a newly created integration subnet applies to a regular single-plan integration, not to a subnet that several plans will share.",
+					"c": "This gives each plan its own subnet rather than one shared subnet, which does not meet the stated requirement. Separate integrations per plan are otherwise possible for outbound reach, but they are not the design requested here.",
+					"d": "Multi plan subnet join requires every participating plan to be in the same subscription. Moving contoso-plan-b into a different subscription breaks that condition, even though the shared subnet itself is allowed to live in a different subscription from the plans."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-vnet-integration"
+				}
+			],
+			"subtopics": [
+				"regional-vnet-integration",
+				"multi-plan-subnet-join",
+				"subnet-requirements"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V31DPWQ5PQ32DMNNZ7Y296",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an Azure web app named contoso-reporting that runs on a Standard App Service plan in West Europe. It has to send HTTPS requests to a reporting server that runs in your own datacenter, and no network path currently exists between Azure and that datacenter. The app must reach that server over a single host and port, and it must keep serving its existing public inbound traffic unchanged. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "App:                         contoso-reporting (Windows, Standard plan, West Europe)\nRequired outbound call:      https://198.51.100.25:8443/reports\nWhere the target runs:       Customer datacenter, outside Azure\nNetwork path from Azure\n  to the datacenter:         None\nTarget hosts and ports\n  to reach:                  1\nOutbound reach today:        Internet-hosted endpoints only"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add a Hybrid Connection to the App Service plan."
+					},
+					{
+						"id": "b",
+						"text": "Add regional virtual network integration to the App Service plan."
+					},
+					{
+						"id": "c",
+						"text": "Add gateway-required virtual network integration to the App Service plan."
+					},
+					{
+						"id": "d",
+						"text": "Add a private endpoint for the app in the virtual network."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A Hybrid Connection tunnels outbound TCP traffic from the app to a single host and port per connection, doesn't depend on an Azure virtual network, and is the feature intended for reaching on-premises or otherwise disconnected targets over a small number of endpoints. Because it only affects calls leaving the app, the app's public inbound exposure stays exactly as it is today.",
+				"perChoice": {
+					"b": "Regional virtual network integration routes the app's outbound traffic into an Azure virtual network, where it can reach resources in and through that network. It creates no path to a datacenter that has no link to Azure, so the reporting server remains unreachable.",
+					"c": "Gateway-required virtual network integration is a Windows-only fallback that uses a point-to-site VPN into the app's virtual network and cannot be used with ExpressRoute-connected virtual networks; it mainly helps with another region or a classic virtual network, and it still does not reach a datacenter with no link to Azure.",
+					"d": "A private endpoint assigns the app a private IP address for inbound traffic arriving over Azure Private Link. It provides no outbound reach, so the app still cannot call the on-premises reporting server."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/networking-features"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-vnet-integration"
+				}
+			],
+			"subtopics": [
+				"hybrid-connections",
+				"outbound-connectivity",
+				"virtual-network-integration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V37FN0M23JF8WP9CVKB384",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Linux web app named contoso-edge on a Premium v3 App Service plan in West US. Regional VNet integration is already active with the vnet-hub network, and the app calls an internal API as well as an external payment endpoint. The security team now requires every outbound request from the app to leave Azure through the firewall appliance that runs in vnet-hub, so the appliance can inspect and log the traffic. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Current configuration"
+					],
+					"rows": [
+						[
+							"App",
+							"contoso-edge (Linux web app), Premium v3 plan, West US"
+						],
+						[
+							"VNet integration",
+							"Active — vnet-hub / snet-appint (regional)"
+						],
+						[
+							"Internal API in vnet-hub",
+							"10.210.30.15"
+						],
+						[
+							"Firewall appliance in vnet-hub",
+							"10.210.30.40"
+						],
+						[
+							"WEBSITE_VNET_ROUTE_ALL",
+							"0"
+						],
+						[
+							"Route table on snet-appint",
+							"None"
+						],
+						[
+							"NSG on snet-appint",
+							"Outbound allow to Internet"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set WEBSITE_VNET_ROUTE_ALL to 1 and attach a route table to snet-appint with a 0.0.0.0/0 route to the firewall appliance."
+					},
+					{
+						"id": "b",
+						"text": "Set WEBSITE_VNET_ROUTE_ALL to 0 and attach a route table to snet-appint with a 0.0.0.0/0 route to the firewall appliance."
+					},
+					{
+						"id": "c",
+						"text": "Set WEBSITE_VNET_ROUTE_ALL to 1 and add an outbound NSG rule on snet-appint that allows the firewall appliance address."
+					},
+					{
+						"id": "d",
+						"text": "Set WEBSITE_VNET_ROUTE_ALL to 1 and attach a route table to snet-appint with a 10.0.0.0/8 route to the firewall appliance."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Setting WEBSITE_VNET_ROUTE_ALL to 1 sends every outbound connection from the app into the integrated network, so the route table on the integration subnet applies to that traffic. A 0.0.0.0/0 route pointing at the firewall appliance then makes the app's outbound requests exit Azure through the appliance, which meets the requirement that all outbound traffic be inspected and logged there.",
+				"perChoice": {
+					"b": "With the setting left at 0, only RFC1918 private traffic and service-endpoint traffic enter the integrated network; internet-bound requests leave directly from the app, so the route table never applies to them and the appliance is bypassed.",
+					"c": "An NSG attached to the integration subnet filters outbound traffic but cannot redirect it to another next hop. Allowing the appliance's address leaves the default route in place, so requests still exit over the normal internet path instead of passing through the appliance.",
+					"d": "A route for 10.0.0.0/8 covers only private address space. Requests to public endpoints match no such route and follow the subnet's default route, so they leave Azure without traversing the appliance."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-vnet-integration"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/networking-features"
+				}
+			],
+			"subtopics": [
+				"outbound-traffic-routing",
+				"virtual-network-integration",
+				"route-tables"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V3AT8YH8NZT9WN8A8360GK",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an Azure web app named contoso-portal on a Premium v3 App Service plan in East US. Regional virtual network integration is active with the virtual network vnet-app, and a private endpoint puts the app on a private IP inside that network. The main site currently accepts only the corporate range 198.51.100.0/24 and rejects other public requests, yet a tester machine inside vnet-app can still open the app on its private IP even though it is not part of the corporate range. You need the private path to accept only the corporate range, while public requests keep their current behavior. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "App Service plan                        : Premium v3 (East US)\nRegional virtual network integration     : vnet-app, subnet 10.2.1.0/24\nPrivate endpoint                         : pe-portal, private IP 10.2.0.6, subnet 10.2.0.0/24\nNetwork security group on 10.2.0.0/24     : none\nNetwork security group on 10.2.1.0/24     : nsg-outbound\nMain site access restrictions            : allow 198.51.100.0/24; unmatched action: deny\nAdvanced tools site access restrictions  : no rules; unmatched action: allow\nApp access                               : Enabled"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add network security group inbound rules to the private endpoint's subnet, allowing 198.51.100.0/24 and denying all other inbound traffic"
+					},
+					{
+						"id": "b",
+						"text": "Add network security group inbound rules to the subnet used for regional virtual network integration, allowing 198.51.100.0/24 and denying all other inbound traffic"
+					},
+					{
+						"id": "c",
+						"text": "Add block rules for 0.0.0.0/0 to the main site access restrictions and set the unmatched action to deny"
+					},
+					{
+						"id": "d",
+						"text": "Add service endpoint rules for the private endpoint's subnet to the main site access restrictions"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The app's inbound filtering list is applied at the App Service front ends, in front of the workers, so it governs public requests only; it never filters requests that arrive over a private endpoint. That is why the tester inside vnet-app reaches the app on its private IP despite the corporate-only rule. The path that must be controlled is the private link path into the subnet that holds the private endpoint's address, so the change is to apply network security group inbound rules there: allow 198.51.100.0/24 and deny the rest. Public behavior is untouched, because public requests are still handled by the existing access restriction list.",
+				"perChoice": {
+					"b": "A network security group attached to the integration subnet filters outbound traffic only; its inbound rules do not apply to requests that arrive over a private endpoint, and the private link path does not traverse the integration subnet. Adding inbound rules there would therefore leave the private path open to the tester machine.",
+					"c": "Rules in the main site's access restriction list are evaluated on the front ends and never filter traffic arriving over a private endpoint, so this change cannot control who opens the app on its private IP. It would also cut off the corporate range from the public hostname, contradicting the requirement to keep public behavior as it is.",
+					"d": "Service endpoint based rules are not supported on an app that has a private endpoint, and enabling the service endpoint on that subnet would additionally break remote debugging from it. The private path has to be controlled with network security group rules on the private endpoint's subnet."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-access-restrictions"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-vnet-integration"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/networking-features"
+				}
+			],
+			"subtopics": [
+				"private-endpoints",
+				"access-restrictions",
+				"network-security-groups"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V3M2AZKEAM83KHE49WT4HF",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Windows web app named contoso-fleet that runs on a Premium v3 App Service plan in East US with regional virtual network integration to the virtual network vnet-fleet. The app calls a pricing service and a telemetry service inside that network, and it also calls a currency-rate endpoint on the public internet. Since the integration was enabled, requests to the pricing service fail with a socket error, while the telemetry call and the currency call both succeed. The app has to stay on Windows and on its current plan, and the team that owns the pricing service can change the address range that service uses. You need the pricing request to succeed. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Address or range",
+						"Where it is used"
+					],
+					"rows": [
+						[
+							"10.40.0.0/28",
+							"vnet-fleet subnet delegated to Microsoft.Web; the app's integration subnet"
+						],
+						[
+							"10.50.7.3",
+							"Telemetry service in vnet-fleet, subnet 10.50.0.0/24"
+						],
+						[
+							"10.71.40.5",
+							"Pricing service private endpoint in the peered network hub-prod, subnet 10.71.40.0/24"
+						],
+						[
+							"10.71.32.0/19",
+							"App Service worker infrastructure range for Premium v3, Layout B"
+						],
+						[
+							"10.71.96.0/19",
+							"App Service worker infrastructure range for Premium v3, Layout A"
+						],
+						[
+							"172.22.0.0/19",
+							"App Service worker infrastructure range for Premium v3"
+						],
+						[
+							"172.23.0.0/19",
+							"App Service worker infrastructure range for Premium v3"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Move the pricing service to an address range that doesn't overlap the App Service worker infrastructure ranges for Premium v3"
+					},
+					{
+						"id": "b",
+						"text": "Move the pricing service into 172.22.0.0/19, an App Service worker infrastructure range for Premium v3"
+					},
+					{
+						"id": "c",
+						"text": "Leave the pricing service address unchanged and add a user-defined route on the integration subnet that sends traffic for 10.71.40.0/24 to the virtual network gateway"
+					},
+					{
+						"id": "d",
+						"text": "Leave the pricing service address unchanged and enable all outbound traffic routing so every request from the app leaves through the integration subnet"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "On a Windows worker, a destination address that falls inside one of the App Service worker infrastructure ranges is handled by the operating system as an address of the worker itself, so the connection is never routed through the virtual network and the call fails. The pricing service address 10.71.40.5 sits inside 10.71.32.0/19, one of the ranges listed for Premium v3 (Layout B), while the telemetry address 10.50.7.3 and the integration subnet 10.40.0.0/28 fall outside every listed range, which is why those calls succeed. Putting the pricing service in a range that stays clear of the listed worker ranges restores the request. Because a worker can move to a different infrastructure layout during scaling or platform maintenance, keep destination ranges clear of every listed range for the tiers in use rather than only the range observed today.",
+				"perChoice": {
+					"b": "172.22.0.0/19 is itself one of the App Service worker infrastructure ranges for Premium v3, so placing the pricing service there reproduces exactly the same failure on the Windows worker instead of fixing it.",
+					"c": "A user-defined route only affects traffic that is actually routed. Because the worker treats 10.71.40.5 as one of its own addresses, the connection never becomes routed traffic, so the route toward the gateway has nothing to act on.",
+					"d": "Turning on all outbound traffic routing changes which path outbound calls take and subjects them to the integration subnet's network security group and route table, but it does not change how the worker classifies 10.71.40.5. The address still falls inside the worker's infrastructure range, so the request keeps failing."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-vnet-integration"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/networking-features"
+				}
+			],
+			"subtopics": [
+				"virtual-network-integration",
+				"windows-worker-ip-overlap"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V3QDMNCTCPN0JSKW3B4WBF",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a web app named contoso-shop that runs on a Premium v3 App Service plan in North Europe and is published through an Azure Front Door profile. A security review found that requests are reaching the app from Front Door deployments other than the one that sits in front of it, and the team wants the app to accept requests only from its own Front Door instance while continuing to serve customers through that instance. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "App service plan ................. Premium v3, North Europe\nFront Door profile ............... fd-contoso\nFront Door instance identifier ... 4c1b8e70-9a2d-4f6b-b8c3-51d0e7f2a9b4\nMain site access restriction rule . Allow, service tag AzureFrontDoor.Backend, no header filter\nUnmatched action ................ Deny\nObserved behavior ............... Requests sent through other Front Door deployments reach the app successfully"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Keep the allow rule for the AzureFrontDoor.Backend service tag and add a header filter that matches the X-Azure-FDID header value against the identifier of the fd-contoso instance."
+					},
+					{
+						"id": "b",
+						"text": "Replace the allow rule's service tag with the Front Door subnet address range and add a header filter that matches the X-Forwarded-Host header value against the identifier of the fd-contoso instance."
+					},
+					{
+						"id": "c",
+						"text": "Keep the allow rule for the AzureFrontDoor.Backend service tag and add a header filter that matches the X-Forwarded-For header value against the identifier of the fd-contoso instance."
+					},
+					{
+						"id": "d",
+						"text": "Replace the allow rule's service tag with the AppService service tag and add a header filter that matches the X-Azure-FDID header value against the identifier of the fd-contoso instance."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The service tag on its own admits traffic from every Front Door deployment. To admit only one deployment, the documented pattern is to combine the AzureFrontDoor.Backend service tag with a header filter on X-Azure-FDID that holds that instance's GUID. The existing allow rule already carries the AzureFrontDoor.Backend service tag, so the change is to add an X-Azure-FDID header filter whose value is the identifier shown for fd-contoso. Requests forwarded by any other Front Door deployment carry a different identifier, so they fail the filter and fall through to the unmatched action, which denies them, while traffic through fd-contoso still matches and is allowed.",
+				"perChoice": {
+					"b": "The X-Forwarded-Host header carries the requested host name, not the Front Door instance identifier, and any client reaching the app can set it. Filtering it against the instance GUID either never matches a genuine Front Door request or can be satisfied by a crafted request, so it does not confine traffic to a single Front Door deployment. The subnet address range of the Front Door deployment is also not the documented way to admit Front Door traffic to an App Service app.",
+					"c": "X-Forwarded-For carries the end user's IP address, not the identity of the Front Door deployment. Matching that header against the instance identifier would never match a real request, so every legitimate request from fd-contoso would be rejected and the app would stop serving customers.",
+					"d": "The AppService service tag covers the inbound addresses of the App Service platform, not the addresses Front Door uses to call the app, so requests routed through Front Door would not be admitted by that rule. Combining it with the X-Azure-FDID filter still leaves the app unable to serve customers through fd-contoso."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-access-restrictions"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/networking-features"
+				}
+			],
+			"subtopics": [
+				"access-restrictions",
+				"azure-front-door",
+				"service-tags"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V3WX5EJNYB164VSB5C39CN",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have six apps running on Azure App Service plans in the East US subscription, and each one has a different networking requirement. You need to assign exactly one App Service networking capability to each app so that every requirement listed below is met, without changing the hosting model of any plan. Drag each capability into the slot of the app it belongs to.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"App",
+						"Plan and hosting",
+						"Current state",
+						"Requirement"
+					],
+					"rows": [
+						[
+							"contoso-legacy",
+							"Standard, Windows",
+							"The plan is not connected to any Azure VNet today.",
+							"Must open a TCP session to a SQL Server that runs in the on-premises datacenter, which has no path back to Azure."
+						],
+						[
+							"contoso-portal",
+							"Premium v3",
+							"Answers on its public hostname to every client; no inbound filtering is configured.",
+							"Must accept requests only from two partner IP ranges and from one named Azure service tag, and must turn away every other public request."
+						],
+						[
+							"contoso-api",
+							"Standard, multitenant hosting",
+							"Answers on its public hostname to every client; no inbound filtering is configured.",
+							"Must accept requests only from hosts inside two chosen subnets of the corporate VNet, and no request arriving over the open internet may reach it."
+						],
+						[
+							"contoso-internal",
+							"Premium v3, already joined to the corporate VNet",
+							"Still answers on its public hostname to arbitrary internet clients.",
+							"Must be reachable only over an IP inside the corporate VNet and must stop answering on its public hostname."
+						],
+						[
+							"contoso-scale",
+							"Premium v3",
+							"Several apps share one plan today.",
+							"Many apps must run in one isolated tenant inside the corporate VNet, on Isolated SKUs."
+						],
+						[
+							"contoso-cert",
+							"Premium v3",
+							"Traffic reaches the shared front ends of the scale unit; the app has no inbound address of its own.",
+							"Must present a certificate that is bound to one IP that belongs to this app alone."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "access-restrictions",
+						"text": "Access restrictions"
+					},
+					{
+						"id": "service-endpoints",
+						"text": "Service endpoints"
+					},
+					{
+						"id": "private-endpoint",
+						"text": "Private endpoint"
+					},
+					{
+						"id": "hybrid-connections",
+						"text": "Hybrid Connections"
+					},
+					{
+						"id": "app-assigned-address",
+						"text": "App-assigned address"
+					},
+					{
+						"id": "app-service-environment",
+						"text": "App Service Environment"
+					},
+					{
+						"id": "regional-vnet-integration",
+						"text": "Regional virtual network integration"
+					}
+				],
+				"slots": [
+					{
+						"id": "contoso-legacy",
+						"label": "contoso-legacy (on-premises database)"
+					},
+					{
+						"id": "contoso-portal",
+						"label": "contoso-portal (partner traffic filtering)"
+					},
+					{
+						"id": "contoso-api",
+						"label": "contoso-api (VNet subnet traffic)"
+					},
+					{
+						"id": "contoso-internal",
+						"label": "contoso-internal (VNet-only reachability)"
+					},
+					{
+						"id": "contoso-scale",
+						"label": "contoso-scale (isolated tenant)"
+					},
+					{
+						"id": "contoso-cert",
+						"label": "contoso-cert (certificate on its own IP)"
+					}
+				]
+			},
+			"key": {
+				"contoso-legacy": "hybrid-connections",
+				"contoso-portal": "access-restrictions",
+				"contoso-api": "service-endpoints",
+				"contoso-internal": "private-endpoint",
+				"contoso-scale": "app-service-environment",
+				"contoso-cert": "app-assigned-address"
+			},
+			"explanation": {
+				"correct": "Each app's requirement maps to exactly one capability. contoso-legacy needs an outbound tunnel to a single on-premises host and port in a datacenter with no Azure path, which Hybrid Connections provides because it doesn't depend on an Azure virtual network. contoso-portal needs filtering of inbound requests by known IP ranges and a named Azure service tag, done by access restrictions, whose allow/deny rules are evaluated on the front ends upstream of the workers, with unmatched traffic denied once any rule exists. contoso-api must admit only chosen subnets of the corporate VNet while running in the multitenant service, which requires service endpoints combined with matching allow rules, because IP-based rules cover virtual network address ranges only inside an App Service Environment. contoso-internal must be exposed on an IP from the corporate VNet, which a private endpoint delivers over Azure Private Link, and its public hostname stops answering once App access is set to Disabled. contoso-scale needs single-tenant hosting inside the VNet on Isolated SKUs, which an App Service Environment provides. contoso-cert needs an address used only by that app so a certificate can be bound to it, which the app-assigned address feature provides for IP-based SSL, with traffic still travelling through the scale unit's shared front ends. Regional virtual network integration satisfies none of the six requirements.",
+				"perChoice": {
+					"access-restrictions": "Belongs with contoso-portal: allow and deny rules for well-defined IP ranges and for a named Azure service tag are evaluated on the front ends before traffic reaches the workers, and unmatched traffic is denied once any rule exists. These rules cannot cover virtual network subnets while the app runs in the multitenant service, so they don't solve contoso-api, and they never govern traffic that arrives over a private endpoint.",
+					"app-assigned-address": "Belongs with contoso-cert: the feature gives an app a dedicated inbound address used only by it, which is the basis for IP-based SSL, so a certificate can be bound to that IP. Traffic still travels through the shared front ends of the scale unit, so it is not a way to reach the app over an IP inside the corporate VNet.",
+					"app-service-environment": "Belongs with contoso-scale: an App Service Environment is a single-tenant deployment that runs inside your virtual network, uses Isolated SKUs, supports much larger scale than the multitenant service, and is the standard answer for hosting many isolated apps.",
+					"hybrid-connections": "Belongs with contoso-legacy: the feature tunnels outbound TCP to one host and port per connection, commonly to on-premises targets, and doesn't depend on going through an Azure virtual network, so it reaches an on-premises SQL Server even where no path to Azure exists. It is not appropriate when an app opens many connections.",
+					"private-endpoint": "Belongs with contoso-internal: a private endpoint connects the app to an IP from the corporate VNet over Azure Private Link, and only the app bound to that endpoint is reachable across it. To make the public hostname stop answering, also set App access to Disabled; note that filtering rules never apply to traffic arriving over the private endpoint.",
+					"regional-vnet-integration": "Fits no slot: this capability only carries outbound requests from an app into a virtual network in the app's region. It never grants inbound reachability to the app, so it can't give contoso-internal an address inside the corporate VNet, and it can't open a path to an on-premises datacenter that has no Azure connection, so it can't serve contoso-legacy either.",
+					"service-endpoints": "Belongs with contoso-api: enabling service endpoints on the chosen subnets of the corporate VNet and pairing them with matching allow rules admits only those subnets, which is the way to restrict subnet-based inbound traffic in the multitenant service. Such rules aren't supported on apps that use an app-assigned address, so they don't apply to contoso-cert."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/networking-features"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-access-restrictions"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-vnet-integration"
+				}
+			],
+			"subtopics": [
+				"app-service-networking-features",
+				"inbound-traffic-filtering",
+				"outbound-traffic-connectivity"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V4C9RYAAJXZYAZZWRGG91J",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have four Azure App Service apps in the West US subscription, and the notes below show the current state of each app together with the outcome its owner needs. You need each app to reach the outcome listed for it with a single configuration change, and exactly one of the configurations in the list fits each app. Drag the configuration that delivers the required outcome into the slot of the app that needs it.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "contoso-branch  |  Premium v3, West US\nCurrent state:   Branch staff connect from several subnets of az-hub, and the Microsoft.Web service endpoint is turned on in each of those subnets. The app has no filtering configured today.\nRequired outcome: Every subnet that has the Microsoft.Web service endpoint turned on must be able to reach the app, without having to record every subnet one by one.\n\ncontoso-admin   |  Standard, West US\nCurrent state:   The front end accepts callers only from 198.51.100.0/24. The Kudu console keeps its own separate list, and that list is empty, so anyone on the internet can open the console today.\nRequired outcome: The Kudu console must accept exactly the same callers as the front end, and the team wants one shared list instead of two separate ones.\n\ncontoso-deploy  |  Premium v3, West US\nCurrent state:   The deployment agent runs inside az-hub and publishes through the private endpoint that already points at the app. The console keeps no filtering of its own, so it is open to internet callers today. Customers reach the front end over the internet.\nRequired outcome: No caller on the internet may reach the deployment console, while the private path from az-hub and the customer-facing front end both keep working.\n\ncontoso-labs     |  Standard, West US\nCurrent state:   The app has no filtering configured today, so every caller on the internet can open it. One contractor, at 203.0.113.77, must no longer reach the app.\nRequired outcome: The contractor's address must be rejected, and every other caller must keep reaching the app, even after that rejection is added to the app's filtering."
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "AnyVnets"
+					},
+					{
+						"id": "b",
+						"text": "Let the advanced tools site reuse the main site's rules"
+					},
+					{
+						"id": "c",
+						"text": "Set the advanced tools site's unmatched rule to Deny"
+					},
+					{
+						"id": "d",
+						"text": "Set the main site's unmatched rule to Allow"
+					},
+					{
+						"id": "e",
+						"text": "publicNetworkAccess = Disabled"
+					},
+					{
+						"id": "f",
+						"text": "Set the main site's unmatched rule to Deny"
+					}
+				],
+				"slots": [
+					{
+						"id": "s_branch",
+						"label": "contoso-branch"
+					},
+					{
+						"id": "s_admin",
+						"label": "contoso-admin"
+					},
+					{
+						"id": "s_deploy",
+						"label": "contoso-deploy"
+					},
+					{
+						"id": "s_labs",
+						"label": "contoso-labs"
+					}
+				]
+			},
+			"key": {
+				"s_admin": "b",
+				"s_branch": "a",
+				"s_deploy": "c",
+				"s_labs": "d"
+			},
+			"explanation": {
+				"correct": "Each app needs a different inbound filtering setting. contoso-branch needs the AnyVnets value, which replaces the address range in an entry so that every subnet with the Microsoft.Web service endpoint enabled is accepted without one entry per subnet. contoso-admin needs the advanced tools site switched to the main site's rules so that the Kudu console accepts exactly the same callers from one shared list. contoso-deploy needs the advanced tools site's unmatched rule set to Deny, which blocks all public traffic to that endpoint while public app access stays enabled for the customer-facing front end. contoso-labs needs the main site's unmatched rule explicitly set to Allow, because once an entry rejecting the contractor's address exists the implicit default flips to rejecting everything, and only an explicit Allow keeps the other callers working.",
+				"perChoice": {
+					"a": "Belongs in contoso-branch: AnyVnets replaces the address range in an entry so that traffic from any subnet with the service endpoint enabled is accepted, which is precisely the outcome that app requires. Such an entry can't be created in the portal, so an existing one has to be edited.",
+					"b": "Belongs in contoso-admin: making the advanced tools site reuse the main site's rules replaces the console's own separate list, so the console accepts exactly the same callers as the front end from one shared list.",
+					"c": "Belongs in contoso-deploy: setting the advanced tools site's unmatched rule to Deny blocks all public traffic to that endpoint while the front end keeps serving customers, which is the pattern for deploying through a private endpoint with public app access left enabled.",
+					"d": "Belongs in contoso-labs: once an entry rejecting the contractor's address is added, the default for unmatched traffic flips from allow to deny, so the unmatched rule must be explicitly set to Allow for every other caller to keep reaching the app.",
+					"e": "Fits no slot: turning public access off would remove the customer-facing front end of contoso-deploy from the internet, and it does nothing for the outcomes required by contoso-branch, contoso-admin or contoso-labs.",
+					"f": "Fits no slot: setting the main site's unmatched rule to Deny rejects every caller that isn't explicitly listed, which would cut off all callers of contoso-labs other than the contractor and would stop the front ends of the other apps from serving the internet."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-access-restrictions"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/networking-features"
+				}
+			],
+			"subtopics": [
+				"access-restrictions",
+				"unmatched-rule",
+				"service-endpoints"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V4GXYX7Q87F7QHA201BP3P",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have five Azure App Service apps in the West Europe subscription, and the listing below shows the network configuration each one currently runs with. The owner of each app wrote a short note describing what the app currently does, but the notes were shuffled and nobody can tell which app each note belongs to. You need every note matched to the app whose configuration actually produces that behavior. Which note belongs to each app? Drag the note into the slot of the app it belongs to.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "App             Plan        Configuration in place today\n--------------- ----------- -----------------------------------------------------------------------------------------\ncontoso-alpha   Premium v3  Regional virtual network integration with vnet-app in the same region; app setting WEBSITE_VNET_ROUTE_ALL is off; the app calls a payment API hosted on the public internet\ncontoso-beta    Premium v3  Regional virtual network integration with vnet-app in the same region; app setting WEBSITE_VNET_ROUTE_ALL is on; the app calls the same public payment API\ncontoso-gamma   Standard    Access restrictions: a single allow rule for 203.0.113.0/24; no other rules and no explicit unmatched action configured\ncontoso-delta   Standard    Access restrictions: the main site list holds one allow rule for 198.51.100.0/24; the advanced tools site (scm/kudu) keeps its own empty list and the option to reuse the main site's rules is turned off\ncontoso-epsilon Premium v3  A private endpoint is attached to the app; the publicNetworkAccess property has never been set"
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Calls to the payment API hosted on the public internet leave Azure directly from the app and never enter the virtual network, while calls to private addresses inside that network still travel through the integration."
+					},
+					{
+						"id": "i2",
+						"text": "Every outbound call the app makes, including the one to the payment API on the public internet, is sent through the virtual network integration."
+					},
+					{
+						"id": "i3",
+						"text": "Only clients in 203.0.113.0/24 get through; requests from other addresses are turned away at the front end before they reach the app's code."
+					},
+					{
+						"id": "i4",
+						"text": "The main site refuses clients outside 198.51.100.0/24, but the advanced tools site (scm/kudu) still accepts connections from any address."
+					},
+					{
+						"id": "i5",
+						"text": "The app no longer answers on its public hostname, but it can still be opened on the private IP address from inside the virtual network."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "contoso-alpha"
+					},
+					{
+						"id": "s2",
+						"label": "contoso-beta"
+					},
+					{
+						"id": "s3",
+						"label": "contoso-gamma"
+					},
+					{
+						"id": "s4",
+						"label": "contoso-delta"
+					},
+					{
+						"id": "s5",
+						"label": "contoso-epsilon"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "Each note follows from the configuration shown for that app. With WEBSITE_VNET_ROUTE_ALL off (contoso-alpha), only private and service-endpoint traffic enters the virtual network and internet-bound calls are routed directly from the app, so the payment API call never touches the network. With WEBSITE_VNET_ROUTE_ALL on (contoso-beta), all outbound traffic, including the public payment API call, is sent through the virtual network integration. For contoso-gamma, one allow rule exists, so the unmatched behavior implicitly becomes deny and other addresses are rejected at the front end, upstream of the workers. For contoso-delta, the main site list and the advanced tools site list are separate collections with their own unmatched behavior: the main site list holds one allow rule (so unmatched traffic is denied), while the empty advanced tools list allows every client. For contoso-epsilon, the publicNetworkAccess property was never set, and because a private endpoint exists the default is disabled, so the app no longer answers on its public hostname while it remains reachable on the private IP inside the virtual network.",
+				"perChoice": {
+					"i1": "This is contoso-alpha: with WEBSITE_VNET_ROUTE_ALL turned off, only private (RFC1918) and service-endpoint traffic is sent into the virtual network, while traffic to the internet is routed directly from the app, so the public payment API call never enters vnet-app.",
+					"i2": "This is contoso-beta: with WEBSITE_VNET_ROUTE_ALL turned on, all outbound traffic from the app is sent into the virtual network, so even the call to the public payment API goes through the integration.",
+					"i3": "This is contoso-gamma: as soon as one allow rule exists, the unmatched behavior implicitly changes to deny, and allow and deny rules are evaluated on the front ends upstream of the workers, so only 203.0.113.0/24 reaches the app.",
+					"i4": "This is contoso-delta: the main site and the advanced tools site each keep their own rules collection and their own unmatched rule, and reuse of the main site's rules is turned off, so the main site denies unmatched clients while the empty advanced tools collection still permits every client.",
+					"i5": "This is contoso-epsilon: when publicNetworkAccess is not set, access is enabled by default unless a private endpoint exists, which flips the default to disabled; the private IP inside the virtual network keeps working for the app bound to that private endpoint."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-vnet-integration"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-access-restrictions"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/networking-features"
+				}
+			],
+			"subtopics": [
+				"vnet-integration-routing",
+				"access-restrictions",
+				"private-endpoints"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V4NXTB656B68NAEYGKTMXW",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have four Azure App Service apps in the East US subscription, and each app owner has raised one complaint about how traffic behaves on their app. The platform team has also identified four components that exist in the current network setup, and exactly one of them is the reason behind each complaint. You need to pair every complaint with its cause. Drag each component into the slot of the complaint it explains.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"App",
+						"App Service plan",
+						"Traffic involved in the complaint"
+					],
+					"rows": [
+						[
+							"contoso-sales",
+							"Premium v3, East US",
+							"Requests arriving over the public hostname"
+						],
+						[
+							"contoso-hr",
+							"Premium v3, East US",
+							"Requests arriving over an internal address inside vnet-hr"
+						],
+						[
+							"contoso-billing",
+							"Premium v3, East US",
+							"Calls the app makes into vnet-fin"
+						],
+						[
+							"contoso-media",
+							"Premium v3, East US",
+							"Calls the app makes into vnet-media"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Inbound access restriction rules"
+					},
+					{
+						"id": "b",
+						"text": "Network security group on the private endpoint subnet"
+					},
+					{
+						"id": "c",
+						"text": "Network security group on the integration subnet"
+					},
+					{
+						"id": "d",
+						"text": "Route table on the integration subnet"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "contoso-sales — the site must accept internet traffic only from the corporate address range, but today any client can open it."
+					},
+					{
+						"id": "s2",
+						"label": "contoso-hr — a machine inside the company's network reaches the site over the internal address created for it, even though that machine's address is not on the approved list."
+					},
+					{
+						"id": "s3",
+						"label": "contoso-billing — the site is integrated with vnet-fin, and its calls to a database inside that network fail, while the same calls from other machines in that network succeed."
+					},
+					{
+						"id": "s4",
+						"label": "contoso-media — the site is integrated with vnet-media, and its calls to the reporting service inside that network must be inspected by the firewall appliance that sits there, so the traffic has to be sent to the appliance instead of straight to the service."
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d"
+			},
+			"explanation": {
+				"correct": "Each complaint is governed by a different component. contoso-sales sits behind the shared App Service front ends, so only the inbound access restriction rules on the app can narrow internet traffic down to a set of address ranges. contoso-hr is reached over an internal address, and access restriction rules never filter traffic that arrives over a private endpoint, so the network security group on the private endpoint subnet is what allows or blocks that client. contoso-billing's calls leave the app through the integration subnet, and an NSG on that subnet filters outbound traffic only, which is why the app's calls can be dropped while the rest of the network keeps working. contoso-media needs its outbound traffic steered to the firewall appliance before it reaches the reporting service, and only a route table on the integration subnet can send traffic via a firewall; NSGs can block traffic but cannot redirect it, and only traffic that actually flows through the integration is affected by these components.",
+				"perChoice": {
+					"a": "Fits contoso-sales. Access restriction rules are evaluated on the App Service front ends, upstream of the workers running the code, so they are the component that filters inbound requests arriving over the public hostname and limits them to a set of address ranges or service tags.",
+					"b": "Fits contoso-hr. Traffic that arrives over a private endpoint is never evaluated against access restriction rules, so the only thing that can block or allow that client is a network security group on the subnet that holds the private endpoint.",
+					"c": "Fits contoso-billing. An NSG on the integration subnet filters outbound traffic only (its inbound rules do not apply), so it is the component that can drop the app's outbound calls to the database while calls from other machines in the same network continue to succeed.",
+					"d": "Fits contoso-media. A route table (UDR) on the integration subnet is used to send traffic via a firewall appliance; paired with virtual network integration, it steers the app's outbound calls toward the appliance instead of delivering them directly. NSGs can only block traffic, not steer it, and route tables and NSGs affect only traffic actually routed through the integration, never replies to inbound requests."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/networking-features"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-access-restrictions"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-vnet-integration"
+				}
+			],
+			"subtopics": [
+				"app-service-networking",
+				"access-restrictions",
+				"vnet-integration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V4VE5FAJ0BXD8AXQ16WS71",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have an Azure web app named contoso-insights that runs on a Premium v3 App Service plan in East US. Regional virtual network integration connects the app to the virtual network vnet-prod, and a private endpoint gives the app an address inside that network. The security team has written down five traffic goals for this app, and exactly one of the controls listed below satisfies each goal. Drag each control into the slot of the goal it satisfies.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Resource or setting",
+						"Current state"
+					],
+					"rows": [
+						[
+							"App",
+							"contoso-insights, Web app on a Premium v3 plan in East US"
+						],
+						[
+							"Regional virtual network integration",
+							"Connected to vnet-prod through delegated subnet snet-app"
+						],
+						[
+							"Private endpoint",
+							"pe-insights, address 10.20.4.9 in vnet-prod"
+						],
+						[
+							"Internal API",
+							"api-prod, private address 10.20.5.20 in vnet-prod"
+						],
+						[
+							"Firewall appliance",
+							"fw-01, deployed in vnet-prod"
+						],
+						[
+							"Route table",
+							"None attached to snet-app"
+						],
+						[
+							"Public inbound traffic",
+							"Reaches the app from any internet address"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "c1",
+						"text": "Network security group on the integration subnet"
+					},
+					{
+						"id": "c2",
+						"text": "Route table on the integration subnet"
+					},
+					{
+						"id": "c3",
+						"text": "NAT gateway on the integration subnet"
+					},
+					{
+						"id": "c4",
+						"text": "Network security group on the private endpoint subnet"
+					},
+					{
+						"id": "c5",
+						"text": "Access restrictions on the site"
+					}
+				],
+				"slots": [
+					{
+						"id": "g1",
+						"label": "Block the app's outbound calls to an address it is not allowed to use"
+					},
+					{
+						"id": "g2",
+						"label": "Make the app's calls to the internal API pass through the firewall appliance"
+					},
+					{
+						"id": "g3",
+						"label": "Give the app one dedicated source address for the outbound connections it opens"
+					},
+					{
+						"id": "g4",
+						"label": "Limit which machines on the corporate side may open the app on its internal address"
+					},
+					{
+						"id": "g5",
+						"label": "Reject public requests that arrive from addresses you did not authorize"
+					}
+				]
+			},
+			"key": {
+				"g1": "c1",
+				"g2": "c2",
+				"g3": "c3",
+				"g4": "c4",
+				"g5": "c5"
+			},
+			"explanation": {
+				"correct": "The network security group on the integration subnet belongs with the goal of blocking outbound calls to a disallowed address, because a group attached to the integration subnet filters only the outbound traffic that leaves the app through the integration and can deny a specific destination. The route table on the integration subnet belongs with the goal of sending calls to the internal API through the firewall appliance, because a route table steers traffic that flows through the integration to fw-01 instead of delivering it straight to api-prod. The NAT gateway on the integration subnet belongs with the goal of one dedicated source address, because a NAT gateway supplies a single dedicated outbound IP for the app's connections and relieves SNAT pressure. The network security group on the private endpoint subnet belongs with the goal of limiting who may open the app on its internal address, because access restrictions never filter traffic arriving over a private endpoint, so that path is governed by a group on the private endpoint. Access restrictions on the site belong with the goal of rejecting public requests from unauthorized addresses, because they are evaluated on the App Service front ends, upstream of the app's code.",
+				"perChoice": {
+					"c1": "Belongs in the slot about blocking the app's outbound calls to a disallowed address. A network security group on the integration subnet filters the outbound traffic of the app only; its inbound rules do not apply to requests coming in, and it stays effective even when a route table is attached to the same subnet.",
+					"c2": "Belongs in the slot about sending calls to the internal API through the firewall appliance. A route table steers the traffic that actually flows through the integration to the appliance's private address; it never affects replies to inbound requests and does not block destinations by itself.",
+					"c3": "Belongs in the slot about giving the app one dedicated source address. A NAT gateway on the integration subnet provides a single stable outbound IP for the app's connections; with all-traffic routing on, the source address otherwise remains one of the app's listed outbound addresses unless a firewall or NAT gateway supplies it.",
+					"c4": "Belongs in the slot about limiting which machines may open the app on its internal address. Access restrictions never filter traffic arriving over a private endpoint, so that inbound path is controlled with a network security group on the private endpoint instead.",
+					"c5": "Belongs in the slot about rejecting public requests from addresses that were not authorized. Access restrictions are evaluated on the App Service front ends before a request reaches the app's code, and they never apply to traffic arriving over a private endpoint."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-vnet-integration"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-access-restrictions"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/networking-features"
+				}
+			],
+			"subtopics": [
+				"app-service-networking",
+				"vnet-integration",
+				"private-endpoint"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V58316W0CYE0MM4X22P5X7",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have five apps on Azure App Service plans in the East US subscription, and each one is showing one of the problems described below after a recent network review. You may make only the five changes listed below, and each change resolves exactly one of the five problems. Drag each change into the slot of the problem it fixes.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "App | Plan | Current setup\ncontoso-shop | Standard | The site answers on its public hostname. One filtering entry permits 198.51.100.0/24, and no other entries exist.\ncontoso-log | Premium v3 | The site answers on its public hostname. Callers outside 198.51.100.0/24 are turned away, and the team watches live logs in the Azure portal.\ncontoso-api | Premium v3 | The site is joined to the corporate virtual network, and a private endpoint gives it an address inside that network. Filtering entries cover 198.51.100.0/24 only.\ncontoso-worker | Premium v3 | The site is joined to the corporate virtual network, and every request it makes is sent through that link. It reads files kept in a globally replicated file repository.\ncontoso-debug | Premium v3 | The part of the corporate virtual network that holds the developer machines was switched to use service endpoints."
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Set the unmatched rule action to Allow"
+					},
+					{
+						"id": "i2",
+						"text": "Allow the AppService service tag in the access restriction list"
+					},
+					{
+						"id": "i3",
+						"text": "Block unwanted private endpoint traffic with an NSG"
+					},
+					{
+						"id": "i4",
+						"text": "Give the storage account a service endpoint, a private endpoint, or a location in the same region"
+					},
+					{
+						"id": "i5",
+						"text": "Remove the service endpoint from the subnet"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "contoso-shop: After the team added one filtering entry for the corporate range, visitors from other public addresses started getting HTTP 403, although the site is supposed to keep serving everyone else."
+					},
+					{
+						"id": "s2",
+						"label": "contoso-log: After public requests were narrowed down, the Azure portal stopped showing the live log stream for the site, even though the site itself still answers normally."
+					},
+					{
+						"id": "s3",
+						"label": "contoso-api: Requests that arrive on the private IP address inside the corporate network are still accepted, even though that source address does not appear among the site's filtering entries."
+					},
+					{
+						"id": "s4",
+						"label": "contoso-worker: With every request now sent through the link to the corporate network, the program can no longer read files kept in a globally replicated file repository."
+					},
+					{
+						"id": "s5",
+						"label": "contoso-debug: Since service endpoints were turned on where the developer machines sit, remote debugging of the program from those machines no longer connects."
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "Each problem has one root cause and one remedy. contoso-shop's fallback decision changed as soon as its first filtering entry was created, so the unmatched action has to be set to allow explicitly (i1). contoso-log's log stream is cut off by the same entries that block callers, and the App Service addresses (covered by the AppService service tag) must be allowed for streaming to work (i2). contoso-api's private endpoint path is never screened by access restriction entries, so that path has to be controlled with an NSG (i3). contoso-worker's globally replicated file repository fails because all of its requests are routed through the virtual network integration while the account has no service endpoint, private endpoint, or route table, so it needs a service endpoint, a private endpoint, or a location in the same region (i4). contoso-debug's remote debugging broke because service endpoints were enabled on the segment holding the developer machines, so the service endpoint must be removed from that subnet (i5).",
+				"perChoice": {
+					"i1": "Belongs in contoso-shop. Once any filtering entry exists, the fallback decision for requests that match no entry becomes deny unless you pick allow or deny explicitly, which is why visitors outside 198.51.100.0/24 started getting HTTP 403 after the single entry was added. Choosing allow for the unmatched entry restores the intended behavior for everyone else.",
+					"i2": "Belongs in contoso-log. Entries that block public callers also block log streaming, and inbound App Service addresses are covered by the AppService service tag, so allowing that tag in the list restores the live log stream without opening the site to other public addresses.",
+					"i3": "Belongs in contoso-api. Access restriction entries never screen requests that arrive over a private endpoint, so the source address inside the corporate network keeps being accepted no matter what the list says; that path is controlled with a network security group instead.",
+					"i4": "Belongs in contoso-worker. With every request routed through the virtual network integration and no service endpoint, private endpoint, or route table in place, a globally replicated storage account can become unreachable; giving the account a service endpoint, a private endpoint, or a location in the same region restores access.",
+					"i5": "Belongs in contoso-debug. Service endpoints break remote debugging from the subnets that use them, which is exactly the segment holding the developer machines, so removing the service endpoint from that subnet restores the debugging session."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-access-restrictions"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-vnet-integration"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/networking-features"
+				}
+			],
+			"subtopics": [
+				"access-restrictions",
+				"private-endpoints",
+				"virtual-network-integration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5WBWM30AK3VTD18YKCP9HGM",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an Azure web app named contoso-api that runs on a Premium v3 plan in East US. Incoming traffic is filtered so that only the corporate range 198.51.100.0/24 and the partner range 203.0.113.0/24 are served, and every other internet address is rejected. Both of those ranges keep getting normal responses, but the operations team can no longer stream the app's logs from the Azure portal: the streaming attempt comes back with HTTP 403 while the app itself stays reachable. The team wants log streaming working again without making the app reachable from arbitrary internet addresses, and it does not want to keep a hand-maintained list of addresses, because the platform changes those addresses over time. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Current value"
+					],
+					"rows": [
+						[
+							"App access",
+							"Enabled"
+						],
+						[
+							"Main site access restriction rules",
+							"Allow 198.51.100.0/24 (priority 100); Allow 203.0.113.0/24 (priority 200)"
+						],
+						[
+							"Unmatched request action (main site)",
+							"Deny"
+						],
+						[
+							"Advanced tools site access restriction rules",
+							"None"
+						]
+					]
+				},
+				"statement": "To restore log streaming for the app, {{slot1}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "add an allow rule whose source is the AppService service tag"
+							},
+							{
+								"id": "b",
+								"text": "add an allow rule whose source is the AppServiceManagement service tag"
+							},
+							{
+								"id": "c",
+								"text": "add an allow rule whose source is the AzureFrontDoor.Backend service tag"
+							},
+							{
+								"id": "d",
+								"text": "add an allow rule whose source is the AnyVnets service tag"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a"
+			},
+			"explanation": {
+				"correct": "Rules that block public access can also block services such as log streaming, so the addresses that App Service uses for those calls have to be allowed in the restriction list. The inbound addresses of App Service are tracked in the AppService service tag, so adding an allow rule with that tag admits the blocked streaming traffic while every other address is still handled by the existing rules, including the unmatched request action that denies the rest. Using the tag also keeps working when the platform changes those addresses, which a hand-maintained list of individual addresses would not.",
+				"perChoice": {
+					"slot1:b": "The AppServiceManagement tag covers the App Service management addresses, which are used mainly in an App Service Environment, not the inbound addresses that the rejected streaming traffic comes from, so the streaming request would still be blocked.",
+					"slot1:c": "The AzureFrontDoor.Backend tag covers the addresses Azure Front Door uses to reach apps that it fronts. This app is not published through Front Door, so a rule with that source would not admit the streaming traffic.",
+					"slot1:d": "AnyVnets admits traffic from any subnet that has service endpoints enabled, and it can only be produced by editing an existing rule rather than creating one in the portal. It has no relationship to the platform addresses the streaming request originates from."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-access-restrictions"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/networking-features"
+				}
+			],
+			"subtopics": [
+				"access-restrictions",
+				"inbound-traffic-filtering",
+				"log-streaming"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5WCR3J4JN7K1JJEH0GJVTFG",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an Azure web app named contoso-sync that runs on a Premium v3 App Service plan in West Europe. Regional virtual network integration is active with the virtual network vnet-we, and the app's Route All setting is turned on, so all of its outbound traffic leaves through that network. The app writes generated reports to a storage account named contosostore, which was created in East US. Since Route All was switched on, every write to contosostore fails, while writes to a storage account in West Europe still succeed. Three limits apply to your solution: compliance keeps contosostore in East US, the networking standard for this workload forbids creating private endpoints for storage accounts, and the app's outbound traffic must keep leaving through vnet-we so that the outbound filtering rules on that subnet continue to apply. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"App Service plan",
+							"Premium v3 (West Europe)"
+						],
+						[
+							"Virtual network",
+							"vnet-we (West Europe)"
+						],
+						[
+							"Integration subnet",
+							"snet-we-app"
+						],
+						[
+							"Route All",
+							"On"
+						],
+						[
+							"Route table on snet-we-app",
+							"None"
+						],
+						[
+							"Private endpoints for contosostore",
+							"None"
+						],
+						[
+							"Storage account contosostore",
+							"East US"
+						]
+					]
+				},
+				"statement": "The change to make is {{change}}.",
+				"slots": [
+					{
+						"id": "change",
+						"options": [
+							{
+								"id": "a",
+								"text": "Enable the storage service endpoint on the contosostore account for the integration subnet in vnet-we."
+							},
+							{
+								"id": "b",
+								"text": "Create a private endpoint for the contosostore storage service in vnet-we and enable DNS lookups to return its private address."
+							},
+							{
+								"id": "c",
+								"text": "Move the contosostore storage account to West Europe so it matches the region of the integration subnet in vnet-we."
+							},
+							{
+								"id": "d",
+								"text": "Turn off Route All on the app so writes to the contosostore storage account leave the worker over the public internet."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"change": "a"
+			},
+			"explanation": {
+				"correct": "With Route All enabled, all outbound traffic from the app leaves through the integration subnet, and a storage account that lives in another region is reached over its global endpoint. Microsoft documents that this combination can fail for a virtual-network-integrated app unless the traffic uses service endpoints, private endpoints, or user-defined routes. Two of those three remedies are ruled out here: the networking standard forbids private endpoints for storage accounts, and compliance keeps contosostore in East US, so it cannot be moved into the region of vnet-we. Route All must also stay on so the outbound filtering on the integration subnet keeps applying, which rules out switching the traffic back to the public path. That leaves configuring the service endpoint for the storage account against the app's integration subnet, which is the documented way to reach a service-endpoint-secured service: integrate the app, then configure the service endpoint on the destination service for the integration subnet.",
+				"perChoice": {
+					"change:b": "A private endpoint for the storage service would also restore reachability, but the networking standard for this workload forbids creating private endpoints for storage accounts, and the app would in addition have to resolve the private address through DNS.",
+					"change:c": "Relocating the account into the region of vnet-we is the third remedy Microsoft lists for this failure, but compliance rules keep contosostore in East US, so this change is not permitted here.",
+					"change:d": "Turning Route All off sends internet-bound traffic straight out from the worker instead of through the integration, which would bypass the outbound filtering rules on the integration subnet and violate the requirement that traffic keeps leaving through vnet-we."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-vnet-integration"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/networking-features"
+				}
+			],
+			"subtopics": [
+				"service-endpoints",
+				"virtual-network-integration",
+				"outbound-routing"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5WD0M1N8X88KSC0WBM1WMY3",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an Azure web app named contoso-billing running on a Premium v3 App Service plan in East US. It must call a database server that runs inside a virtual network named vnet-data, which is also located in East US. You already prepared a dedicated subnet named snet-apps for this purpose; it holds no other resources and is not yet connected to the app, and the app still cannot reach the database at all. The plan can be scaled out to many instances, so the subnet must hold enough addresses for every instance the plan may run, and you want to keep the subnet as small as that allows. The app's public inbound behavior must stay as it is today. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Resource",
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Web app contoso-billing",
+							"Plan SKU",
+							"Premium v3"
+						],
+						[
+							"Web app contoso-billing",
+							"Region",
+							"East US"
+						],
+						[
+							"Virtual network vnet-data",
+							"Region",
+							"East US"
+						],
+						[
+							"Subnet snet-apps",
+							"Address prefix",
+							"10.20.1.0/28"
+						],
+						[
+							"Subnet snet-apps",
+							"Delegation",
+							"Microsoft.Web/serverFarms"
+						],
+						[
+							"Subnet snet-apps",
+							"Other resources present",
+							"None"
+						]
+					]
+				},
+				"statement": "You should apply {{slot1}}, and you should set the subnet prefix size to {{slot2}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "Regional virtual network integration that joins contoso-billing to vnet-data with subnet snet-apps"
+							},
+							{
+								"id": "b",
+								"text": "Gateway-required virtual network integration that joins contoso-billing to vnet-data with subnet snet-apps"
+							},
+							{
+								"id": "c",
+								"text": "A private endpoint that places contoso-billing on a private address inside vnet-data"
+							},
+							{
+								"id": "d",
+								"text": "A service endpoint for the database on snet-apps plus an allow rule for the database address range"
+							}
+						]
+					},
+					{
+						"id": "slot2",
+						"options": [
+							{
+								"id": "a",
+								"text": "/26 (64 addresses)"
+							},
+							{
+								"id": "b",
+								"text": "/28 (16 addresses)"
+							},
+							{
+								"id": "c",
+								"text": "/25 (128 addresses)"
+							},
+							{
+								"id": "d",
+								"text": "/24 (256 addresses)"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a",
+				"slot2": "a"
+			},
+			"explanation": {
+				"correct": "Regional virtual network integration is the outbound-only capability that gives the app a route into vnet-data. It is supported on the Premium v3 plan, requires the virtual network to sit in the same region as the app (both are in East US), and needs a dedicated, unused subnet of /28 or larger delegated to Microsoft.Web/serverFarms. On address capacity, five addresses are consumed at creation and one per plan instance, usage temporarily doubles during scaling, and a /26 covers one multitenant plan's maximum scale, so /26 is the smallest prefix that satisfies the scale-out requirement. The database sits on a private address, so with the default routing behavior that traffic enters the virtual network while internet traffic still leaves directly from the app, leaving public inbound behavior unchanged.",
+				"perChoice": {
+					"slot1:b": "Gateway-required virtual network integration is Windows-only, uses a point-to-site VPN, cannot be used with ExpressRoute-connected networks, and exists mainly to help with a network in another region or a classic virtual network. Because vnet-data is in the same region as the app, the regional option is the appropriate one.",
+					"slot1:c": "A private endpoint gives the app a private address for inbound access to the app from inside the network. It does not give the app an outbound route into that network, so it would not fix the failing calls to the database.",
+					"slot1:d": "Service endpoints and the matching access restriction rules filter inbound traffic toward service-endpoint-enabled subnets; they do not route the app's outbound calls to a database server.",
+					"slot2:b": "/28 is the smallest prefix the integration itself accepts and is fine for a fixed small number of instances, but five addresses are consumed at creation and each instance needs one more, with usage temporarily doubling during scaling, so it cannot cover the plan's maximum scale-out.",
+					"slot2:c": "/25 with 128 addresses would work, but it is larger than necessary; the smallest prefix that covers one multitenant plan's maximum scale is /26.",
+					"slot2:d": "/24 with 256 addresses would also work, but it is larger than necessary for a single plan's maximum scale-out, so it does not satisfy the goal of keeping the subnet as small as possible."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-vnet-integration"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/networking-features"
+				}
+			],
+			"subtopics": [
+				"virtual-network-integration",
+				"subnet-sizing",
+				"outbound-connectivity"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5WD41D16YDAR6J9GM25DP8Q",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Linux web app named contoso-orders running on a Premium v3 App Service plan in East US. Regional virtual network integration is active with the virtual network vnet-east, and the app calls an internal API in that network successfully. Another internal API has just been deployed in a different virtual network, vnet-west, which sits in the same region, and the app must call that API as well. The team does not want to change the app's plan or hosting model, and it does not want any traffic leaving Azure through an external tunnel. You need the app to call each of the two APIs successfully. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"App Service plan SKU",
+							"Premium v3"
+						],
+						[
+							"Regional virtual network integration",
+							"Active with vnet-east"
+						],
+						[
+							"Outbound call to the API in vnet-east",
+							"Succeeds"
+						],
+						[
+							"Outbound call to the API in vnet-west",
+							"Fails with a connection error"
+						]
+					]
+				},
+				"statement": "You should {{s1}}.",
+				"slots": [
+					{
+						"id": "s1",
+						"options": [
+							{
+								"id": "a",
+								"text": "Peer vnet-east with vnet-west so the app's current integration reaches resources in vnet-west"
+							},
+							{
+								"id": "b",
+								"text": "Add a second virtual network integration to the app so it reaches vnet-west and vnet-east"
+							},
+							{
+								"id": "c",
+								"text": "Move the app to a second App Service plan whose integration reaches vnet-west and vnet-east"
+							},
+							{
+								"id": "d",
+								"text": "Use a Hybrid Connections tunnel so the app reaches vnet-west and vnet-east"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"s1": "a"
+			},
+			"explanation": {
+				"correct": "An app supports only one active virtual network integration at a time, so the app cannot simply be joined to a second virtual network. Linking the two virtual networks with peering lets the single regional integration the app already uses traverse the link and reach resources in vnet-west, which satisfies the requirement without changing the plan, the hosting model, or sending traffic outside Azure.",
+				"perChoice": {
+					"s1:b": "An app can hold only one active integration at a time, and a plan supports at most two integrations, so a second integration for the same app is not possible.",
+					"s1:c": "Moving the app to another plan does not help, because the limit of one active integration applies to each app regardless of which plan hosts it.",
+					"s1:d": "Hybrid Connections tunnels outbound TCP to a single host and port and does not depend on an Azure virtual network; it is meant for reaching on-premises or disconnected targets, not for reaching a peered Azure virtual network."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-vnet-integration"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/networking-features"
+				}
+			],
+			"subtopics": [
+				"vnet-integration",
+				"virtual-network-peering"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5WD8S75MZA6EXTV789A1RD6",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a web app named contoso-internal that runs on a Premium v3 plan in East US on the shared multi-tenant hosting that most customers use. Two development teams work inside your virtual network vnet-corp, one in the subnet snet-app-team (10.20.1.0/24) and the other in the subnet snet-app-qa (10.20.2.0/24), and each team opens the app from its own subnet. You need the app to serve those two teams and the existing partner range 203.0.113.0/24, while every other source on the internet is refused. The app must keep running on its current plan and must keep answering on its public hostname. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Hosting",
+							"Multi-tenant Premium v3 plan in East US"
+						],
+						[
+							"Inbound filtering",
+							"One allow rule for 203.0.113.0/24; requests that match no rule are refused"
+						],
+						[
+							"Private address inside vnet-corp",
+							"None"
+						],
+						[
+							"Dedicated inbound address",
+							"None"
+						],
+						[
+							"Client locations that must be served",
+							"snet-app-team (10.20.1.0/24) and snet-app-qa (10.20.2.0/24), both in vnet-corp"
+						]
+					]
+				},
+				"statement": "To meet the requirement, you should {{slot1}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "enable the service endpoint for the two subnets and add access restriction rules that allow the two subnets"
+							},
+							{
+								"id": "b",
+								"text": "add the private address ranges of the two subnets as allow rules to the access restriction list"
+							},
+							{
+								"id": "c",
+								"text": "create a private endpoint for the app in each of the two subnets and add network security group rules to them"
+							},
+							{
+								"id": "d",
+								"text": "enable an app-assigned address for the app and allow that address in the access restriction list"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a"
+			},
+			"explanation": {
+				"correct": "On the shared multi-tenant hosting, requests from clients inside a virtual network arrive at the app through the shared front ends, so their source address is not the private range of the subnet they sit in. Rules that key off virtual network address ranges are only honored for apps hosted in an App Service Environment, so listing 10.20.1.0/24 and 10.20.2.0/24 would never match the two teams. Enabling the service endpoint on the two subnets registers those subnets with the platform, and access restriction rules that point at the subnets then match exactly those two teams, while the existing partner rule for 203.0.113.0/24 keeps working and requests that match no rule continue to be refused.",
+				"perChoice": {
+					"slot1:b": "In the multi-tenant hosting, traffic from a client inside a virtual network reaches the shared front ends, so the source address seen by the rule list is not the subnet's private range and a rule for 10.20.1.0/24 or 10.20.2.0/24 never matches. Rules based on virtual network address ranges only apply to apps hosted in an App Service Environment, so both teams would remain locked out.",
+					"slot1:c": "A private endpoint gives the app an address inside your virtual network; it does not filter which clients may connect, and traffic arriving over a private endpoint is never evaluated by the app's rule list, so it cannot produce the required per-subnet filter on the public hostname. It also changes the access model: once a private endpoint exists and the app access setting is left unset, the public entry point is disabled by default, so the partner range would stop being served.",
+					"slot1:d": "An app-assigned address gives the app one dedicated inbound address, mainly used for IP-based SSL. Traffic still arrives through the shared front ends, so the address identifies the app rather than the client that sent the request and it cannot express 'only these two subnets'. Apps that use an app-assigned address also cannot use rules based on service endpoints, which rules this option out."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-access-restrictions"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/networking-features"
+				}
+			],
+			"subtopics": [
+				"access-restrictions",
+				"service-endpoints"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5WDZ8YW9250X5E82RYBPWC7",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an Azure web app named contoso-partner that runs on a Standard App Service plan in West Europe, and it must stay on the shared hosting that serves customers from many tenants. A trading partner opens the app over the internet, and their firewall can allow only one IP. The certificate that the partner uses must be bound to that IP rather than to the app's hostname, and the app has to keep serving its current public traffic through the same entry points that other apps on the plan use. Which inbound feature should you configure?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"App property",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Plan",
+							"Standard, shared multi-tenant hosting"
+						],
+						[
+							"Public inbound IP",
+							"None dedicated; requests arrive on the scale unit front ends"
+						],
+						[
+							"Partner TLS certificate",
+							"Bound to the default hostname"
+						],
+						[
+							"Partner firewall",
+							"Accepts a single IP only"
+						]
+					]
+				},
+				"statement": "The inbound feature you should configure on contoso-partner is {{slot1}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "App-assigned address"
+							},
+							{
+								"id": "b",
+								"text": "Private endpoint with a static private IP address"
+							},
+							{
+								"id": "c",
+								"text": "Service endpoint"
+							},
+							{
+								"id": "d",
+								"text": "App Service Environment"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a"
+			},
+			"explanation": {
+				"correct": "The partner needs an inbound IP of its own that the firewall can allow, and the certificate must be tied to that IP instead of a hostname, which is exactly what an app-assigned address provides on the shared (multitenant) service: it gives one app an app-specific inbound address and supports IP-based SSL. Traffic for an app-assigned address still travels through the shared front ends of the scale unit, so the app keeps serving its public traffic the same way as the other apps on the plan and the hosting model is unchanged. Service endpoints do not hand the app a dedicated inbound address, a private endpoint moves the app onto a private address in your own virtual network and away from the public front ends the partner uses, and an App Service Environment would replace the shared hosting model with single-tenant isolated hosting.",
+				"perChoice": {
+					"slot1:b": "A private endpoint puts the app on a private address inside your virtual network over Azure Private Link. The app would then be reachable on that private path instead of on the public front-end address that the partner's firewall and its IP-bound certificate depend on, so this does not deliver a dedicated public inbound IP on the shared service.",
+					"slot1:c": "A service endpoint is used to limit inbound traffic to service-endpoint-enabled subnets of your own virtual network. It never gives an app a dedicated inbound address, and service-endpoint-based filtering is not supported on apps that bind a certificate to an IP, so it cannot satisfy this requirement.",
+					"slot1:d": "An App Service Environment is single-tenant hosting on Isolated SKUs that runs inside your virtual network. It would replace the shared hosting model that this app must keep, and it is not needed to obtain a dedicated inbound address or an IP-bound certificate."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/networking-features"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/overview-access-restrictions"
+				}
+			],
+			"subtopics": [
+				"inbound-networking",
+				"ip-based-ssl",
+				"shared-hosting"
+			],
+			"reviewed": false
+		}
+	]
+}

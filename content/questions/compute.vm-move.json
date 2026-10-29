@@ -1,0 +1,1884 @@
+{
+	"skill": "compute.vm-move",
+	"questions": [
+		{
+			"id": "q_01M5R57F0P7F98BGHB9MCAKHRY",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You need the virtual machine vm-app01 and its two managed disks to be billed to subscription sub-billing-02, because the customer reorganized billing ownership. The VM sits in resource group rg-app of subscription sub-prod-01, and both subscriptions belong to the same Microsoft Entra ID tenant. You plan to relocate the VM and both managed disks in a single move request targeting a resource group in sub-billing-02. Which action do you take first?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "VM name .................: vm-app01\nSource group / subscription : rg-app / sub-prod-01\nTarget group / subscription : rg-app (new) / sub-billing-02\nMicrosoft Entra ID tenant  : same tenant in both subscriptions\nPower state .............: Stopped (deallocated)\nAzure Disk Encryption ...: Enabled on OS disk and data disk\nManaged disks ...........: OS disk and data disk, both stored in rg-app\nProvider registration ...: Microsoft.Compute registered in sub-billing-02\nRestore Point Collection .: none"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "az vm encryption disable --resource-group rg-app --name vm-app01 --volume-type all"
+					},
+					{
+						"id": "b",
+						"text": "az vm encryption disable --resource-group rg-app --name vm-app01 --volume-type OS"
+					},
+					{
+						"id": "c",
+						"text": "az provider register --namespace Microsoft.Compute --subscription sub-billing-02"
+					},
+					{
+						"id": "d",
+						"text": "az resource move --destination-group rg-app --destination-subscription-id <sub-billing-02-id> --ids <vm-app01-id> <os-disk-id> <data-disk-id>"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A virtual machine protected by Azure Disk Encryption must have encryption removed before it can be moved to a different subscription, and the documented way to do that is `az vm encryption disable --resource-group <rg> --name <vm> --volume-type all`. The VM here is already stopped and deallocated, so decryption is the remaining preparation step. After it completes, submit one move request that carries the VM and both of its managed disks together, because the disks are dependent resources that must reside in one resource group and travel in the same request to the destination subscription.",
+				"perChoice": {
+					"b": "Decrypting only the OS volume leaves the data disk encrypted, so the cross-subscription move is still refused. Every volume attached to the VM must be decrypted, which is why the documented command uses `--volume-type all` rather than a single volume type.",
+					"c": "Registering Microsoft.Compute in the destination subscription is a general prerequisite for receiving resources, and the provider is already registered there, so this command changes nothing for this scenario. It also does nothing about the encrypted disks, and the move request is rejected while the disks remain encrypted.",
+					"d": "This is the move request itself rather than the preparation the move depends on. Running it while Azure Disk Encryption is still enabled fails the cross-subscription move; the disks must be decrypted first. The request shape is otherwise sound, since the VM and both managed disks must be included together in one request."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-limitations/virtual-machines-move-limitations"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+				}
+			],
+			"subtopics": [
+				"cross-subscription-move",
+				"azure-disk-encryption",
+				"managed-disks"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R5BG5A0M775S02S0Y3PW9K",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have the virtual machine vm-erp01 in resource group rg-erp, and Azure Backup is configured for it in the recovery services vault rs-vault-01. The customer wants this VM relocated into resource group rg-erp-prod in the same subscription. Attempts to move the VM are rejected while the backup configuration is still attached to it. What should you do to make the relocation succeed?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Virtual machine",
+							"vm-erp01"
+						],
+						[
+							"Current resource group",
+							"rg-erp"
+						],
+						[
+							"Planned resource group",
+							"rg-erp-prod"
+						],
+						[
+							"Recovery services vault",
+							"rs-vault-01"
+						],
+						[
+							"Restore point collection",
+							"AzureBackup_vm-erp01_1729384756"
+						],
+						[
+							"Resource group holding the collection",
+							"AzureBackupRG_eastus_1"
+						],
+						[
+							"Soft delete for recovery points",
+							"Disabled"
+						],
+						[
+							"Backup policy",
+							"Daily, 7 days retention"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Stop backup protection on the VM, delete the restore point collection AzureBackup_vm-erp01_1729384756, and reconfigure the backup in the resource group rg-erp-prod after the move completes."
+					},
+					{
+						"id": "b",
+						"text": "Delete the recovery services vault rs-vault-01 that holds the backup of vm-erp01, and move the virtual machine into resource group rg-erp-prod afterwards."
+					},
+					{
+						"id": "c",
+						"text": "Re-protect the virtual machine with Azure Backup in resource group rg-erp-prod first, and start the move once that new backup configuration is active."
+					},
+					{
+						"id": "d",
+						"text": "Delete the restore point collection AzureBackup_vm-erp01_1729384756 and request the move while backup protection stays enabled on the VM."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A virtual machine that is protected by Azure Backup cannot be relocated until the restore point collection that belongs to it is deleted; deleting that collection removes only the instant recovery points and leaves the vault data intact. The backup protection on the VM must also be stopped temporarily while the move runs, and the backup configuration is then re-established in the resource group the VM ends up in (rg-erp-prod here).",
+				"perChoice": {
+					"b": "Deleting the recovery services vault is not required and destroys data. Only the restore point collection has to be removed, and removing it clears just the instant recovery points rather than the vault's stored backup data. The vault can stay where it is and keep serving the VM after the move.",
+					"c": "The order is reversed. Backup is reconfigured once the VM already sits in its new resource group; while the VM is still in rg-erp there is no virtual machine in rg-erp-prod that could be protected. Instead, protection on the source VM is stopped temporarily so the move can proceed.",
+					"d": "Deleting the collection is necessary but not sufficient on its own. Backup protection on the VM must be stopped temporarily for the relocation to succeed, and it has to be reconfigured in rg-erp-prod afterwards. Leaving protection enabled keeps the VM in the blocked state the customer is reporting."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-limitations/virtual-machines-move-limitations"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+				}
+			],
+			"subtopics": [
+				"vm-move-limitations",
+				"azure-backup",
+				"restore-point-collection"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R5MCFA5J5FZY47P29J8QJ7",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have resource group rg-legacy in subscription sub-dev-01, which holds a virtual machine together with its managed disks and networking resources. The platform team wants these workloads relocated into subscription sub-corp-01, which belongs to the same tenant, and the governance that applies to them there must match what they have today. Which approach do you use?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Resource or configuration                           | Current location\nVirtual machine vm-legacy01                        | rg-legacy (sub-dev-01)\nManaged disks for vm-legacy01 (2)                  | rg-legacy\nNetwork interface nic-legacy01                     | rg-legacy\nNetwork security group nsg-legacy                  | rg-legacy\nDeployment templates (ARM JSON) for vm-legacy01   | rg-legacy\nTags on rg-legacy                                  | env=dev, costcenter=CC-4412, owner=platform\nRole assignments on rg-legacy                      | Contributor for group ops-team; Reader for service principal svc-audit\nPolicy assignments on rg-legacy                    | 1 assignment that denies resource deployment outside approved regions"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Move the rg-legacy resource group itself into subscription sub-corp-01, so the tags, role assignments, and policy assignments that were defined on it travel with it."
+					},
+					{
+						"id": "b",
+						"text": "Move the resources in rg-legacy into a target resource group in sub-corp-01, then recreate the tags, role assignments, and policy assignments that were defined on rg-legacy."
+					},
+					{
+						"id": "c",
+						"text": "Move the resources in rg-legacy into a target resource group in sub-corp-01, then recreate the role assignments that were defined on rg-legacy and rely on the default tags and policy assignments of the destination subscription."
+					},
+					{
+						"id": "d",
+						"text": "Recreate the workloads in sub-corp-01 from the templates that were stored in rg-legacy, then delete the resources in rg-legacy and recreate the tags, role assignments, and policy assignments that were defined on it."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "A resource group itself cannot be moved to another subscription; only the resources inside it can be relocated. The supported approach is to move the resources of rg-legacy into a target resource group in sub-corp-01 and then recreate the group-level tags, role assignments, and policy assignments in the destination, because those scope-level artifacts do not travel with the moved resources (active role assignments are orphaned and then removed automatically, so they must be recreated afterwards).",
+				"perChoice": {
+					"a": "The container cannot be relocated between subscriptions. A resource group has to stay in its own subscription; only its resources can be moved into a target group in the destination subscription, so this option cannot be executed and the scope-level artifacts would not travel either.",
+					"c": "Recreating only the role assignments is not enough. The tags and the policy assignment defined at the rg-legacy scope are group-level configurations that do not follow the resources, and the default tags and policy assignments of the destination subscription are different from what the group has today, so the governance would no longer match.",
+					"d": "Recreating the workloads from the ARM templates is unnecessary and risky: it produces new resources with new disks and new identities instead of relocating the existing ones, and the supported way to change the scope of these workloads is an ARM move of the resources themselves."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-limitations/virtual-machines-move-limitations"
+				}
+			],
+			"subtopics": [
+				"resource-group-move",
+				"cross-subscription-move",
+				"scope-level-governance"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R5PFZ9VB40FXVP1DR01FN1",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your company requires the application tier that runs on vm-app01 to be hosted in West US 2 for latency and data-residency reasons. You are preparing that workload for a region move in the portal, and the collection of resources is already in the Prepare pending state. The current configuration is shown below. Which adjustment do you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Setting"
+					],
+					"rows": [
+						[
+							"Source workload",
+							"vm-app01 in resource group rg-app, subscription sub-01"
+						],
+						[
+							"Source region / target region",
+							"East US / West US 2"
+						],
+						[
+							"Source VM size",
+							"Standard_D8s_v5 (8 vCPUs)"
+						],
+						[
+							"Target VM size in the target configuration",
+							"Standard_D4s_v5 (4 vCPUs)"
+						],
+						[
+							"Target resource group",
+							"rg-app-westus2"
+						],
+						[
+							"Source VM power state",
+							"Running"
+						],
+						[
+							"Data disks targeted for the destination region",
+							"2 of 2 attached and initialized"
+						],
+						[
+							"Guest OS certificates",
+							"Latest trusted root certificates installed; certificate revocation list refreshed"
+						],
+						[
+							"Outbound connectivity",
+							"Required URLs allowed through the URL-based proxy; NSG service tag rules in place"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Open the link in the Destination configuration column and change the target VM size to a value that is not smaller than the source VM size."
+					},
+					{
+						"id": "b",
+						"text": "Open the link in the Destination configuration column and leave the target VM size as configured, because the target VM size may be smaller than the source VM size for a region move."
+					},
+					{
+						"id": "c",
+						"text": "Open the link in the Destination configuration column and reduce the target VM size below the source VM size to keep the cost in the target region lower."
+					},
+					{
+						"id": "d",
+						"text": "Open the link in the Destination configuration column, set the target VM size to match the source VM size, and also deallocate the source VM before the move is initiated."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Target settings for a region move are edited from the Destination configuration column, and the target VM size can never be set below the size of the source VM. The exhibit shows a source VM of Standard_D8s_v5 (8 vCPUs) against a target configuration of Standard_D4s_v5 (4 vCPUs), so the target size has to be raised to at least the source size before the resources are prepared and the move is initiated. All the other prerequisites shown in the table (the VM turned on, every destination disk attached and initialized, current trusted root certificates with a fresh certificate revocation list, and outbound connectivity for replication) are already satisfied.",
+				"perChoice": {
+					"b": "A region move may not carry a target VM size that is below the size of the source VM. Leaving Standard_D4s_v5 as the target for a Standard_D8s_v5 source is therefore rejected, so the target size must be raised to the source size or higher.",
+					"c": "Lowering the target size below the source size is exactly what the target configuration disallows, so cutting the size to save money in the target region prevents the move from being prepared.",
+					"d": "The size part is right, but stopping the source VM first is wrong. The VMs selected for a region move have to be turned on before the move starts, and during the move the source VM is shut down automatically while a replica is built in the target region, so an extra deallocation is neither required nor valid."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/resource-mover/tutorial-move-region-virtual-machines"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+				}
+			],
+			"subtopics": [
+				"region-move",
+				"resource-mover",
+				"target-configuration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R5SA0P7AG9PH0ZZMS50FRE",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have virtual machine vm-sec01 in resource group rg-sec of subscription sub-prod-01, and the customer wants that VM relocated to subscription sub-cust-02, which belongs to the same Microsoft Entra ID tenant. Every relocation attempt so far has been rejected. The current configuration of the workload is shown below. What should you do to relocate it?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Virtual machine",
+							"vm-sec01"
+						],
+						[
+							"Resource group",
+							"rg-sec"
+						],
+						[
+							"Subscription",
+							"sub-prod-01"
+						],
+						[
+							"Disk encryption",
+							"Enabled on the operating system disk and both data disks"
+						],
+						[
+							"Power state",
+							"Running"
+						],
+						[
+							"Managed disks",
+							"2, both attached to vm-sec01"
+						],
+						[
+							"Destination group and subscription",
+							"rg-sec-new in sub-cust-02 (same Microsoft Entra ID tenant)"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Disable Azure Disk Encryption on vm-sec01 in sub-prod-01, move the VM and its managed disks to sub-cust-02, and re-enable encryption for the VM in the new subscription."
+					},
+					{
+						"id": "b",
+						"text": "Deallocate vm-sec01 in sub-prod-01 and move it to a new resource group in the same subscription, keeping Azure Disk Encryption enabled on the VM and its managed disks."
+					},
+					{
+						"id": "c",
+						"text": "Grant the operator Owner on both sub-prod-01 and sub-cust-02 and retry the move with Azure Disk Encryption still enabled on the VM and its managed disks."
+					},
+					{
+						"id": "d",
+						"text": "Disable Azure Disk Encryption on vm-sec01 in sub-prod-01 but move only the VM to sub-cust-02, leaving the managed disks behind in sub-prod-01."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A VM that is integrated with a key vault for Azure Disk Encryption can be relocated to another resource group while it is deallocated, but moving it to a different subscription requires the encryption to be turned off first. Run `az vm encryption disable --resource-group rg-sec --name vm-sec01 --volume-type all` in sub-prod-01, then move the VM together with both managed disks in one request to sub-cust-02 (the disks are dependent resources and must travel with the VM), and switch encryption back on for the VM once it is in the new subscription.",
+				"perChoice": {
+					"b": "This is the flow for a relocation inside a single subscription: deallocate the VM and move it to another resource group while the encryption stays on. It does not achieve the customer's goal, because the workload still ends up in sub-prod-01 rather than in sub-cust-02, and a move to another subscription needs the encryption disabled first.",
+					"c": "Extra permissions do not remove the encryption restriction. Even with Owner on both subscriptions, a VM whose disk encryption is still enabled cannot be moved to another subscription; the encryption has to be disabled before the move is accepted.",
+					"d": "Disabling the encryption is only half of the work. The managed disks are dependent resources of the virtual machine and have to be included in the same move request; leaving them behind in sub-prod-01 leaves the VM without its storage and breaks the dependency."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-limitations/virtual-machines-move-limitations"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+				}
+			],
+			"subtopics": [
+				"azure-disk-encryption",
+				"cross-subscription-move",
+				"vm-move-prerequisites"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R5VQJ0A79DNG3DY9YAV5D8",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have virtual machine vm-erp05 together with its network interface nic-erp05 in resource group rg-erp of subscription sub-prod-01 in East US. A data-residency rule requires that workload to run in West Europe, so you create an Azure Resource Mover collection for the relocation and start adding the resources to it. The step that adds the resources fails with an access-denied error and the notification never confirms that the resources were added. The current configuration and your access are shown below. What should you do?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Source subscription",
+							"sub-prod-01"
+						],
+						[
+							"Source region",
+							"East US"
+						],
+						[
+							"Destination region",
+							"West Europe"
+						],
+						[
+							"Destination subscription",
+							"sub-dr-02"
+						],
+						[
+							"Resources being added to the collection",
+							"vm-erp05, nic-erp05"
+						],
+						[
+							"Result of the add-resources step",
+							"Access denied; resources were not added to the collection"
+						],
+						[
+							"Your role at /subscriptions/sub-prod-01",
+							"Reader"
+						],
+						[
+							"Your role at /subscriptions/sub-prod-01/resourceGroups/rg-erp",
+							"Contributor"
+						],
+						[
+							"Your role at /subscriptions/sub-dr-02",
+							"Contributor"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Request an Owner role assignment at the source subscription, so the account can add resources to the collection and Resource Mover can create its system-assigned managed identity and grant it the required access."
+					},
+					{
+						"id": "b",
+						"text": "Request a Reader role assignment at the source subscription, so the account can add resources to the collection and Resource Mover can create its system-assigned managed identity and grant it the required access."
+					},
+					{
+						"id": "c",
+						"text": "Request an Owner role assignment at the destination subscription, so the account can add resources to the collection and Resource Mover can create its system-assigned managed identity and grant it the required access."
+					},
+					{
+						"id": "d",
+						"text": "Request a User Access Administrator role assignment at the destination subscription, so the account can add resources to the collection and Resource Mover can create its system-assigned managed identity and grant it the required access."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Azure Resource Mover requires the account that adds resources to the move collection to hold Owner on the subscription that contains the source resources. The first time a given source/destination pair is used in a subscription, Resource Mover creates a system-assigned managed identity in that subscription and has to grant it Contributor or User Access Administrator there, and creating that identity and assigning those roles requires ownership of the subscription. In this scenario the account only holds Reader at sub-prod-01 (plus Contributor at the resource group and at the destination subscription), so the add-resources step is rejected with access denied. Requesting an Owner assignment at sub-prod-01 resolves the failure and lets the collection proceed.",
+				"perChoice": {
+					"b": "Reader is read-only: it can neither create the managed identity in the source subscription nor assign roles to it, so the add-resources step would still be denied. The documented prerequisite for adding resources is ownership of the subscription that holds them, not read access.",
+					"c": "The scope is wrong. Owner at the destination subscription does not cover sub-prod-01, which is where the source resources live and where the managed identity has to be created and given the required access. The prerequisite applies to the subscription containing the resources being moved.",
+					"d": "Two problems: the assignment is made at the destination subscription rather than the subscription holding the source resources, and User Access Administrator is the kind of role Resource Mover grants to the managed identity it creates, not the role the adding account needs in order to create that identity and grant those roles."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/resource-mover/tutorial-move-region-virtual-machines"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+				}
+			],
+			"subtopics": [
+				"region-move",
+				"move-permissions",
+				"azure-resource-mover"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R5YYQKY4356DN8GB01NGFZ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have virtual machine vm-fin01 in resource group rg-fin of subscription sub-prod-01. You need the VM relocated into resource group rg-fin-prod of subscription sub-fin-02, which belongs to the same Microsoft Entra ID tenant, and every relocation attempt so far has been rejected. The current configuration of the workload is shown below. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Azure Disk Encryption",
+							"Enabled on the OS volume and both data volumes"
+						],
+						[
+							"Key vault integration",
+							"Yes"
+						],
+						[
+							"Power state",
+							"Deallocated"
+						],
+						[
+							"Managed disks",
+							"2, both stored in rg-fin"
+						],
+						[
+							"Source scope",
+							"rg-fin in sub-prod-01"
+						],
+						[
+							"Target scope",
+							"rg-fin-prod in sub-fin-02 (same tenant)"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Run `az vm encryption disable --resource-group rg-fin --name vm-fin01 --volume-type all`, then move vm-fin01 and both of its managed disks to sub-fin-02 in one request."
+					},
+					{
+						"id": "b",
+						"text": "Run `az vm encryption disable --resource-group rg-fin --name vm-fin01 --volume-type all`, then move only vm-fin01 to sub-fin-02 and leave its managed disks in rg-fin."
+					},
+					{
+						"id": "c",
+						"text": "Run `az vm encryption disable --resource-group rg-fin --name vm-fin01 --volume-type OS`, then move vm-fin01 and both of its managed disks to sub-fin-02 in one request."
+					},
+					{
+						"id": "d",
+						"text": "Move vm-fin01 and both of its managed disks to sub-fin-02 in one request without changing its encryption settings."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A virtual machine that uses Azure Disk Encryption cannot be moved to another subscription until encryption is turned off, and the documented way to do that decrypts every volume with `--volume-type all`. Because the destination is a different subscription, the VM and its dependent managed disks must then be relocated together in a single move request, which is exactly what the correct option does.",
+				"perChoice": {
+					"b": "Across a subscription boundary, the resource and its dependent resources must be in the same resource group and must travel in the same request. Leaving vm-fin01's managed disks behind in rg-fin breaks that dependency, so the relocation is rejected.",
+					"c": "This decrypts only the OS volume. The published workaround for a cross-subscription relocation turns off encryption for all volumes (`--volume-type all`), so the encrypted data volumes would still prevent the VM from being moved.",
+					"d": "A virtual machine integrated with a key vault for Azure Disk Encryption cannot be moved to another subscription while its encryption remains enabled; the encryption setting has to be changed before the cross-subscription move."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-limitations/virtual-machines-move-limitations"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+				}
+			],
+			"subtopics": [
+				"cross-subscription-move",
+				"azure-disk-encryption",
+				"dependent-managed-resources"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R63Z8A4KGH86B1EG51V9D0",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have virtual machine vm-web03 with its managed OS disk and its network interface in resource group rg-web of subscription sub-01, and that group also holds the virtual network the interface is connected to. You need the workload to run from resource group rg-web-prod in the same subscription, which you have already created, so you start a move with the Azure CLI. The operation is rejected with the error shown below. Which change do you make so the relocation succeeds?",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "$ az resource list --resource-group rg-web --query \"[].{name:name,type:type}\" --output table\nName          Type\nvm-web03      Microsoft.Compute/virtualMachines\ndisk-web03-os Microsoft.Compute/disks\nnic-web03     Microsoft.Network/networkInterfaces\nvnet-web      Microsoft.Network/virtualNetworks\n\n$ az vm show -g rg-web -n vm-web03 --query \"{nics:networkProfile.networkInterfaces[0].id, osDisk:storageProfile.osDisk.name}\"\n{\n  \"nics\": \"/subscriptions/sub-01/resourceGroups/rg-web/providers/Microsoft.Network/networkInterfaces/nic-web03\",\n  \"osDisk\": \"disk-web03-os\"\n}\n\n$ az resource move --destination-group rg-web-prod \\\n    --ids /subscriptions/sub-01/resourceGroups/rg-web/providers/Microsoft.Compute/virtualMachines/vm-web03 \\\n          /subscriptions/sub-01/resourceGroups/rg-web/providers/Microsoft.Compute/disks/disk-web03-os\n{\n  \"status\": \"Failed\",\n  \"error\": {\n    \"code\": \"MissingMoveDependentResources\",\n    \"message\": \"The move request was rejected because dependent resources of the listed resources were not found.\"\n  }\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add the network interface to the request, then retry the move."
+					},
+					{
+						"id": "b",
+						"text": "Add the virtual network to the request, then retry the move."
+					},
+					{
+						"id": "c",
+						"text": "Create a new network interface in rg-web-prod and attach it to the virtual machine, then retry the move."
+					},
+					{
+						"id": "d",
+						"text": "Move the virtual machine and the managed disk to rg-web-prod first, then move the network interface in a separate request."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The request listed only the virtual machine and its managed OS disk. The network interface that is attached to vm-web03 was neither part of the request nor already present in rg-web-prod, which is what the MissingMoveDependentResources error reports. A virtual machine and the resources it depends on (here the attached network interface, alongside the managed disk) must be moved in a single request and end up in the same resource group, so the interface has to be added to the request before retrying.",
+				"perChoice": {
+					"b": "The virtual network is not the item that is missing. The interface attached to vm-web03 would still be absent from the request and would not be found in rg-web-prod, so the operation would be rejected again with the same error.",
+					"c": "Creating a replacement interface does not satisfy the failed request. The interface already attached to the VM has to be relocated together with the VM, because a network interface shares the resource group of the virtual machine it is attached to, so it cannot simply be re-created in the destination.",
+					"d": "Dependents of a virtual machine cannot be relocated in a later request: the attached network interface must move in the same request as the VM, and splitting the work leaves the same missing dependency error on the second request."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-limitations/virtual-machines-move-limitations"
+				}
+			],
+			"subtopics": [
+				"move-dependencies",
+				"resource-group-move",
+				"move-errors"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R68SVT2XTHE6TKM7KHQD5G",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have virtual machines vm-a1 through vm-a5 that must be relocated as part of a consolidation project, and the teams working on them have reported the outcomes below. Every workload stays in its current region, and every subscription involved belongs to one Microsoft Entra ID tenant. You need each relocation to finish successfully and to leave each workload reachable for its operators. Match each corrective action to the relocation it belongs to.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Virtual machine",
+						"Planned scope",
+						"What the team observed"
+					],
+					"rows": [
+						[
+							"vm-a1",
+							"rg-shared-prod",
+							"The relocation is refused and the message says a linked resource was neither included in the submission nor already present in the receiving scope."
+						],
+						[
+							"vm-a2",
+							"rg-shared-prod",
+							"A governance rule in the receiving scope refuses resources, and the validation response states that the operation is not allowed."
+						],
+						[
+							"vm-a3",
+							"rg-shared-prod",
+							"The scope being vacated and the scope being populated each carry a protection setting that prevents changes and deletions on their contents, and the attempt is refused."
+						],
+						[
+							"vm-a4",
+							"sub-hub-01",
+							"The receiving account offers only 4 vCPU cores of capacity while the workload needs 8, and the attempt is refused."
+						],
+						[
+							"vm-a5",
+							"rg-shared-prod",
+							"The relocation finished, but the operations team lost the permissions it had before, and the earlier grants no longer appear anywhere."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Move the virtual machine on its own and let Azure pull in the dependencies afterwards."
+					},
+					{
+						"id": "i2",
+						"text": "Request a quota increase in the destination subscription, then retry the move."
+					},
+					{
+						"id": "i3",
+						"text": "Add the network interface, its virtual network and the network security groups to the same move request."
+					},
+					{
+						"id": "i4",
+						"text": "Raise the timeout to let the move run longer than four hours."
+					},
+					{
+						"id": "i5",
+						"text": "Re-create the role assignments that were active on the virtual machine so access is restored in its new home."
+					},
+					{
+						"id": "i6",
+						"text": "Create a new group in the destination subscription and copy the virtual machine's disks to it."
+					},
+					{
+						"id": "i7",
+						"text": "Review the Azure Policy assignment that blocks resource creation in that group and resolve it before retrying."
+					},
+					{
+						"id": "i8",
+						"text": "Remove the read-only lock from both resource groups before the move can run."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Relocating vm-a1 into rg-shared-prod"
+					},
+					{
+						"id": "s2",
+						"label": "Relocating vm-a2 into rg-shared-prod"
+					},
+					{
+						"id": "s3",
+						"label": "Relocating vm-a3 into rg-shared-prod"
+					},
+					{
+						"id": "s4",
+						"label": "Relocating vm-a4 into sub-hub-01"
+					},
+					{
+						"id": "s5",
+						"label": "Relocating vm-a5 into rg-shared-prod"
+					}
+				]
+			},
+			"key": {
+				"s1": "i3",
+				"s2": "i7",
+				"s3": "i8",
+				"s4": "i2",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "Each reported outcome maps to a different blocker, and each blocker has one remedy. vm-a1 was refused because a linked resource was neither part of the submission nor already present in the receiving scope, so the network interface, its virtual network and the network security groups must travel in the same move request as the virtual machine. vm-a2 was denied during validation by an organizational rule, so the Azure Policy assignment that blocks resource creation in that group has to be reviewed and resolved before the attempt is repeated. vm-a3 was refused because both scopes carry a protection setting that prevents changes and deletions, so the read-only lock on the source and destination resource groups must be removed first. vm-a4 exceeded the capacity available in the receiving account, and the destination subscription quota has to cover the incoming resources, which means a quota increase is needed before retrying. vm-a5 completed but lost the permissions the operations team had, because active role assignments do not travel with the resource; they are orphaned and then removed, so they must be created again in the new scope.",
+				"perChoice": {
+					"i1": "Fits no slot: the linked resources of a virtual machine must either travel in the same submission or already exist at the destination. The platform does not pull them across in a later step, so vm-a1 keeps failing with a missing-dependency error.",
+					"i2": "Belongs with vm-a4: the destination subscription quota must cover the resources that arrive, and the receiving account only has 4 of the 8 vCPU cores the workload needs, so the quota has to be increased there before the move is retried.",
+					"i3": "Belongs with vm-a1: the network interface, the virtual network and the network security groups are part of what a virtual machine depends on, so they must be included in the same request or already be present in the destination scope.",
+					"i4": "Fits no slot: the platform caps a move at four hours and that cap cannot be raised. When the limit is reached the groups are released, the resources that succeeded stay at the destination and the failures stay behind in the source.",
+					"i5": "Belongs with vm-a5: active role assignments do not travel with the resource, they are orphaned and then removed automatically, so they have to be created again in the scope the resource now sits in.",
+					"i6": "Fits no slot: a resource group itself cannot be relocated to another subscription and copying disks by hand is not a supported path. The group-level items such as tags, role assignments and policies are recreated in the destination after the move instead.",
+					"i7": "Belongs with vm-a2: when an Azure Policy rule denies the move during validation, for example a rule that blocks resource creation in the target group, the assignment enforcing that rule has to be changed before the move can proceed.",
+					"i8": "Belongs with vm-a3: a read-only lock on the source group, the destination group or the subscription blocks a move, so the lock has to be removed before the attempt is repeated."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-limitations/virtual-machines-move-limitations"
+				}
+			],
+			"subtopics": [
+				"move-troubleshooting",
+				"move-dependencies",
+				"post-move-governance"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R6BFF4518M8HKMX221CZ95",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have four virtual machine relocations to complete, and one of them has already finished but still needs follow-up. You need every workload to end up in the state its owner requires. Which action should you take for each relocation? Drag each action to its matching case.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Case",
+						"Requirement",
+						"Current facts"
+					],
+					"rows": [
+						[
+							"Case 1",
+							"vm-alpha must be relocated from rg-alpha to rg-alpha-prod in subscription sub-01. The region does not change.",
+							"Azure Disk Encryption is enabled for all volumes. vm-alpha is currently running."
+						],
+						[
+							"Case 2",
+							"vm-bravo must be relocated from subscription sub-01 to subscription sub-02, which is in the same Microsoft Entra ID tenant.",
+							"The image used to create vm-bravo comes from a Marketplace plan."
+						],
+						[
+							"Case 3",
+							"vm-charlie must be relocated from rg-charlie to rg-charlie-new in subscription sub-03.",
+							"The move request lists only vm-charlie and fails with MissingMoveDependentResources. Its managed disks and network interface stay in rg-charlie."
+						],
+						[
+							"Case 4",
+							"vm-delta was relocated from rg-old to rg-new in subscription sub-04 and must remain usable by its operators.",
+							"The move completed successfully. Since then the operators have lost their access, and rg-new lacks the tags and assignments that rg-old carried."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Deallocate vm-alpha, then move it to rg-alpha-prod."
+					},
+					{
+						"id": "i2",
+						"text": "Deprovision vm-bravo and redeploy it in subscription sub-02."
+					},
+					{
+						"id": "i3",
+						"text": "Include vm-charlie's dependent resources in the same move request."
+					},
+					{
+						"id": "i4",
+						"text": "Recreate the role assignments and group-level tags in rg-new."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Case 1"
+					},
+					{
+						"id": "s2",
+						"label": "Case 2"
+					},
+					{
+						"id": "s3",
+						"label": "Case 3"
+					},
+					{
+						"id": "s4",
+						"label": "Case 4"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Each relocation needs a different action: an encrypted VM can change resource groups only while it is deallocated, a Marketplace-plan VM cannot be moved across subscriptions and must be deprovisioned and redeployed, a request that omits dependencies fails with MissingMoveDependentResources, and access assignments plus group-level configuration do not travel with a moved resource and must be recreated at the destination.",
+				"perChoice": {
+					"i1": "Case 1. With Azure Disk Encryption enabled, the VM can be moved to another resource group in the same subscription only while it is deallocated, and vm-alpha is currently running, so it must be deallocated before the move.",
+					"i2": "Case 2. Marketplace-plan VMs cannot be moved across subscriptions, so vm-bravo has to be deprovisioned in sub-01 and redeployed in sub-02, for example by cloning the OS disk.",
+					"i3": "Case 3. MissingMoveDependentResources means a dependency was neither included in the request nor already present at the destination; the VM's managed disks, network interface, and other dependencies must travel in the same request from the same resource group.",
+					"i4": "Case 4. Active role assignments do not move with the resource and are removed automatically afterward, and group-level tags and policies belong to the resource group, so the operators' access and the group-level configuration must be recreated in rg-new."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-limitations/virtual-machines-move-limitations"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+				}
+			],
+			"subtopics": [
+				"vm-move-limitations",
+				"resource-group-moves",
+				"cross-subscription-moves"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R6HK4235FTV2M0MSHX05RF",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Four virtual machine relocations are on your change plan, and each one is blocked or has follow-up work left for a different reason. The current state of each workload and the outcome of the last attempt are shown below. Drag each corrective action onto the workload it applies to.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Virtual machine",
+						"Current state",
+						"Planned relocation",
+						"Result of the last attempt"
+					],
+					"rows": [
+						[
+							"vm-bulk02",
+							"Resource group rg-bulk-01 holds 1,140 virtual machines together with their managed disks and network interfaces",
+							"Resource group rg-bulk-02 in subscription sub-core-01",
+							"The request is rejected straight away and no workload changes place"
+						],
+						[
+							"vm-lock01",
+							"Virtual machine with its managed disks in rg-lock-01, which carries a read-only lock; the target group rg-lock-02 carries a read-only lock as well",
+							"Resource group rg-lock-02 in subscription sub-core-01",
+							"The relocation is refused with an access-denied error"
+						],
+						[
+							"vm-ops04",
+							"Virtual machine and its two managed disks in rg-ops-01; the built-in Reader role is assigned to group grp-ops-readers at the scope of rg-ops-01",
+							"Resource group rg-ops-02 in subscription sub-hr-02, same Microsoft Entra ID tenant",
+							"The relocation finished, but the operators in grp-ops-readers can no longer read the virtual machine"
+						],
+						[
+							"vm-net03",
+							"Virtual machine and its network interface in rg-net-01; sub-hr-02 does not list Microsoft.Network among its supported resource providers",
+							"Resource group rg-net-02 in subscription sub-hr-02, same Microsoft Entra ID tenant",
+							"Rejected with an error stating that the resource type is not supported in that subscription"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Split the move into requests of at most 800 resources"
+					},
+					{
+						"id": "i2",
+						"text": "Remove the read-only locks from the source and destination resource groups"
+					},
+					{
+						"id": "i3",
+						"text": "Register the missing resource provider in the target subscription"
+					},
+					{
+						"id": "i4",
+						"text": "Re-create the role assignments in the destination resource group"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Virtual machine vm-net03"
+					},
+					{
+						"id": "s2",
+						"label": "Virtual machine vm-bulk02"
+					},
+					{
+						"id": "s3",
+						"label": "Virtual machine vm-lock01"
+					},
+					{
+						"id": "s4",
+						"label": "Virtual machine vm-ops04"
+					}
+				]
+			},
+			"key": {
+				"s1": "i3",
+				"s2": "i1",
+				"s3": "i2",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Each action belongs to one workload. vm-net03 fails because the target subscription sub-hr-02 has no resource provider registered for the networking resource type, so that provider must be registered in the target subscription (i3). vm-bulk02's group holds far more than the maximum of 800 resources a single move request can carry, and a request above that limit is rejected immediately, so the work has to be split into several requests of at most 800 resources each (i1). vm-lock01 is refused because a read-only lock sits on the source group and on the target group, and such a lock blocks a move, so the read-only locks have to be removed from both groups first (i2). vm-ops04's relocation already completed, but active role assignments do not travel with the resource and are removed automatically, so they must be re-created in the destination resource group (i4).",
+				"perChoice": {
+					"i1": "Belongs to vm-bulk02: the group contains well over the 800 resources that one request can carry, and such a request is rejected immediately, so the relocation has to be broken into smaller requests.",
+					"i2": "Belongs to vm-lock01: a read-only lock on the source group, the destination group, or the subscription blocks a move, so those locks must be removed before the relocation can run.",
+					"i3": "Belongs to vm-net03: the destination subscription has no provider for the networking resource type, which is why the move is refused; registering that provider in the target subscription clears the blocker.",
+					"i4": "Belongs to vm-ops04: role assignments do not follow the resource across a move and are cleaned up automatically, so the same assignments must be re-created at the destination resource group once the move completes."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+				}
+			],
+			"subtopics": [
+				"move-limitations",
+				"resource-group-move",
+				"cross-subscription-move"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R6MFC3K8MXTV1NWQ8V20TQ",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Four virtual machine relocations are queued for tonight's change window: three are being rejected and one completed but left the operations team without the access it had before. You need all four to finish with every workload usable. Which single action resolves each relocation?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "WORKLOAD            CURRENT LOCATION            RELOCATION TARGET        LAST ATTEMPT\nvm-hr01             rg-hr / sub-prod-01        sub-corp-01              The request carried 1,146 resources and was rejected the moment it\n(plus managed       (managed disks, NICs,      (same tenant)            moment it was submitted; nothing changed location.\ndisks, NICs,        public IP addresses)\npublic IP\naddresses)\n\nvm-hr02             rg-hr / sub-prod-01        rg-hr-prod               Failed immediately: the scope does not allow changes while a\n                                             (same subscription)       lock is in place.\n\nvm-hr03             rg-hr / sub-prod-01        sub-cust-02              Finished: the virtual machine runs in the target subscription now.\n                                             (same tenant)            The engineers who administered it before the move can no\n                                                                        longer open it in the portal.\n\nvm-hr04             rg-hr / sub-prod-01        sub-cust-03              Failed with an error saying the target subscription is not\n                                             (same tenant)            registered for the resource type of the virtual machine."
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Split the move into several smaller requests of no more than 800 resources each"
+					},
+					{
+						"id": "b",
+						"text": "Remove the read-only lock from the affected scope, then resubmit the move"
+					},
+					{
+						"id": "c",
+						"text": "Recreate the operations team's role assignments in the target subscription"
+					},
+					{
+						"id": "d",
+						"text": "Register Microsoft.Compute in the target subscription, then resubmit the move"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "vm-hr01 - relocation to sub-corp-01"
+					},
+					{
+						"id": "s2",
+						"label": "vm-hr02 - relocation to rg-hr-prod"
+					},
+					{
+						"id": "s3",
+						"label": "vm-hr03 - relocation to sub-cust-02"
+					},
+					{
+						"id": "s4",
+						"label": "vm-hr04 - relocation to sub-cust-03"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d"
+			},
+			"explanation": {
+				"correct": "Each relocation needs a different remedy. vm-hr01 hit the per-request ceiling of 800 resources (1,146 were submitted), so the move has to be split into smaller requests. vm-hr02 was blocked by a read-only lock on the scope, which must be removed before the move can run. vm-hr03's move completed, but role assignments do not travel with the relocated resources - the orphaned assignments are removed automatically, so the operations team's access must be recreated in the target subscription. vm-hr04 was rejected because the target subscription has no registration for the virtual machine's resource type, so the provider must be registered there before retrying.",
+				"perChoice": {
+					"a": "Belongs to vm-hr01. A single move request can hold at most 800 resources; a larger submission such as this 1,146-resource request is rejected immediately, so the move must be split into several smaller requests.",
+					"b": "Belongs to vm-hr02. A read-only lock on the source group, the destination group, or the subscription blocks the move, so the lock must be removed before the request is sent again.",
+					"c": "Belongs to vm-hr03. The relocation itself succeeded, but active role assignments do not travel with the moved resources; they are orphaned and later removed automatically, so the access the operations team had must be recreated in the target subscription.",
+					"d": "Belongs to vm-hr04. The target subscription must have the resource provider registered (az provider register --namespace Microsoft.Compute); otherwise the move fails with an error saying the subscription is not registered for that resource type."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-limitations/virtual-machines-move-limitations"
+				}
+			],
+			"subtopics": [
+				"vm-move",
+				"move-request-limits",
+				"cross-subscription-move"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R6SP14WM547BJ10JEJ1M0D",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have virtual machine vm-core12 together with its managed disks and network interface in resource group rg-core of subscription sub-prod-01, running in East US. A data-residency rule requires this workload to run in West Europe, so you created an Azure Resource Mover collection, added the workload's resources, and the collection now sits in the Prepare pending state. You need the relocation to succeed and to leave the source and target environments in the state the operations team expects afterwards. The current state of the workload and of the move is shown below. Drag each task to the part of the workload it applies to.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Collection",
+							"movecollection-eastus-westeurope - Prepare pending"
+						],
+						[
+							"Source virtual machine",
+							"vm-core12 in rg-core (sub-prod-01), East US"
+						],
+						[
+							"Target region",
+							"West Europe"
+						],
+						[
+							"Target resource group",
+							"rg-core-westeurope (auto-generated name)"
+						],
+						[
+							"Operating system in the source machine",
+							"Windows Server 2022, last patched 18 months ago"
+						],
+						[
+							"Copied volumes in the target region",
+							"Provisioned; setup inside the virtual machine not completed"
+						],
+						[
+							"Outbound path from the source subnet",
+							"Web proxy drops the replication endpoints; the subnet has no egress rules"
+						],
+						[
+							"Source-and-target pair",
+							"First pair handled by this move; nothing has been provisioned for it yet"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Bring the guest trust store up to date with current trusted root certificates and a fresh certificate revocation list"
+					},
+					{
+						"id": "i2",
+						"text": "Attach and initialize every destination disk before the relocation"
+					},
+					{
+						"id": "i3",
+						"text": "Allow the required URLs through the URL-based firewall proxy and add NSG service-tag rules for outbound traffic"
+					},
+					{
+						"id": "i4",
+						"text": "Grant the system-assigned managed identity the Contributor or User Access Administrator role and confirm the destination subscription has enough quota for the incoming resources"
+					},
+					{
+						"id": "i5",
+						"text": "Uninstall the Azure Site Recovery Mobility agent unless another relocation is planned"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "The operating system inside the source machine"
+					},
+					{
+						"id": "s2",
+						"label": "The storage volumes copied to the new region"
+					},
+					{
+						"id": "s3",
+						"label": "The network route used to copy data to the target region"
+					},
+					{
+						"id": "s4",
+						"label": "The first source-and-target pair processed by this move"
+					},
+					{
+						"id": "s5",
+						"label": "The software left behind on the source machine after the relocation"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "The five tasks map one-to-one onto the five parts of the workload: the guest trust data inside the source machine, the volumes copied to the target region, the outbound path used to replicate to the target region, the first source-and-target pair that the move tooling sets up, and the software that remains on the source machine once the relocation has been committed. Azure Resource Mover requires each of these to be addressed: the source guest must carry current trusted root certificates and an updated certificate revocation list, every disk that must be available in the destination region has to be attached and initialized in the VM, replication needs outbound access through the URL-based firewall proxy and NSG service-tag rules, the first time resources are added for a given source/destination pair the tooling creates a system-assigned managed identity that is granted Contributor or User Access Administrator while the destination subscription must have quota for the incoming resources, and the Mobility agent stays on the VMs after the commit so it must be uninstalled manually unless the server will be moved again.",
+				"perChoice": {
+					"i1": "This belongs to the operating system inside the source machine: before a region move the guest has to be brought up to date with the latest trusted root certificates and an updated certificate revocation list, and this machine was last patched 18 months ago.",
+					"i2": "This belongs to the storage volumes copied to the new region: all disks that must be available in the destination region must be attached and initialized in the VM, which is exactly what the copied volumes still need.",
+					"i3": "This belongs to the network route used to copy data to the target region: replication needs outbound connectivity, so the required URLs must pass the URL-based firewall proxy and the NSG service-tag rules must exist, which the dropped endpoints and missing egress rules show is not the case yet.",
+					"i4": "This belongs to the first source-and-target pair processed by this move: the first time resources are added for a specific source and destination pair, Resource Mover creates a system-assigned managed identity and grants it the Contributor or User Access Administrator role, and the destination subscription needs enough quota to create the incoming resources.",
+					"i5": "This belongs to the software left behind on the source machine after the relocation: the Mobility agent installed to replicate the VMs is not uninstalled automatically when the move is committed, so it has to be removed manually unless the server is going to be moved again."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/resource-mover/tutorial-move-region-virtual-machines"
+				}
+			],
+			"subtopics": [
+				"region-move",
+				"resource-mover",
+				"move-prerequisites"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R72J19CHPMR5QJ2A93VN11",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have five virtual machine relocations on tonight's change plan. The current placement and configuration of every workload is shown below, and all of the subscriptions involved belong to the same Microsoft Entra ID tenant. You need each workload to end up exactly where its owner requires, and no workload may start running in a different location unless its owner asked for that. Match each workload to the move that satisfies its requirement.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Workload",
+						"Subscription",
+						"Resource group",
+						"Location",
+						"Configuration"
+					],
+					"rows": [
+						[
+							"vm-hr03",
+							"sub-hr-01",
+							"rg-hr",
+							"Central US",
+							"Standard plan, two managed disks"
+						],
+						[
+							"vm-pay02",
+							"sub-pay-01",
+							"rg-pay",
+							"Central US",
+							"Standard plan, managed disks and one network interface"
+						],
+						[
+							"vm-eu07",
+							"sub-eu-01",
+							"rg-eu",
+							"East US",
+							"Standard plan"
+						],
+						[
+							"vm-mkt04",
+							"sub-mkt-01",
+							"rg-mkt",
+							"Central US",
+							"Created from a marketplace plan"
+						],
+						[
+							"vm-spot01",
+							"sub-spot-01",
+							"rg-spot",
+							"Central US",
+							"Low-priority instance"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "The HR team wants vm-hr03 to live in rg-hr-prod, which has already been created for it in sub-hr-01. The tenant, the billing owner and the place it runs from all stay as they are."
+					},
+					{
+						"id": "i2",
+						"text": "After the billing reorganization, the finance team wants vm-pay02 to be charged to subscription sub-pay-02, and the workload must keep answering from Central US."
+					},
+					{
+						"id": "i3",
+						"text": "A data-residency rule means vm-eu07 has to run in West Europe. Where it sits inside its subscription must not change."
+					},
+					{
+						"id": "i4",
+						"text": "The platform team wants vm-mkt04 to be counted against subscription sub-mkt-02 once the billing reorganization finishes."
+					},
+					{
+						"id": "i5",
+						"text": "The platform team also wants the workload vm-spot01 to be counted against subscription sub-spot-02 as part of the same billing reorganization."
+					}
+				],
+				"slots": [
+					{
+						"id": "s-rg",
+						"label": "Move to another resource group"
+					},
+					{
+						"id": "s-sub",
+						"label": "Move to another subscription"
+					},
+					{
+						"id": "s-region",
+						"label": "Move to another region"
+					},
+					{
+						"id": "s-redeploy",
+						"label": "Redeploy the workload in the target subscription"
+					}
+				]
+			},
+			"key": {
+				"s-rg": "i1",
+				"s-sub": "i2",
+				"s-region": "i3",
+				"s-redeploy": "i4"
+			},
+			"explanation": {
+				"correct": "vm-hr03 only changes where it is managed inside its own subscription, so a move to another resource group satisfies it. vm-pay02 has to be billed by another subscription in the same tenant, so a move to another subscription satisfies it, with the virtual machine, its managed disks and its network interface placed in one group and sent in a single request. vm-eu07 has to run in a different location, and only a move to another region changes where the workload actually runs; an ordinary resource move never relocates the region. vm-mkt04 was created from a marketplace plan, and such virtual machines cannot be moved across subscriptions, so it is redeployed in the target subscription instead. vm-spot01 is low-priority, and low-priority virtual machines are not supported for moves across resource groups or subscriptions, so it matches none of the four listed moves.",
+				"perChoice": {
+					"i1": "Belongs with \"Move to another resource group\": sub-hr-01, the tenant, the billing owner and Central US all stay unchanged, and only the containing resource group differs, so this is a scope change within one subscription.",
+					"i2": "Belongs with \"Move to another subscription\": the requirement is billing under sub-pay-02 in the same tenant with the region unchanged, which is a cross-subscription move. The virtual machine, its managed disks and its network interface must sit in one resource group and travel in the same request, and role assignments are recreated afterwards because they do not travel with the resource.",
+					"i3": "Belongs with \"Move to another region\": the data-residency rule changes the location the workload runs in, and a standard resource-group or subscription move re-associates the virtual machine with a different scope without shifting the region, so only a region move satisfies this requirement.",
+					"i4": "Belongs with \"Redeploy the workload in the target subscription\": marketplace-plan virtual machines cannot be moved across subscriptions. The supported route is to deprovision the virtual machine in its current subscription and deploy it again in sub-mkt-02 after accepting the plan terms, cloning the OS disk or moving the original disk after deleting the source virtual machine.",
+					"i5": "Fits no slot: low-priority virtual machines are listed as unsupported for moves across resource groups or subscriptions, and unlike the marketplace-plan case the documentation offers no redeployment route for them, so this requirement matches none of the four moves."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-limitations/virtual-machines-move-limitations"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/resource-mover/tutorial-move-region-virtual-machines"
+				}
+			],
+			"subtopics": [
+				"move-scope-options",
+				"cross-subscription-move",
+				"move-limitations"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R76W96JNDEMJP5WR682DRW",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have virtual machine vm-billing01 with Azure Disk Encryption turned on for its disks, and it is running in resource group rg-billing of subscription sub-fin-01. Finance wants this workload relocated into resource group rg-billing-prod, which sits in the same subscription, but every relocation attempt is refused by Azure. The operations team also reports that, once the relocation is done, the monitoring queries and automation templates that address the virtual machine by its resource ID stop returning data. Which action should you take, and what should you do about those queries and templates?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Virtual machine          : vm-billing01\nCurrent resource group   : rg-billing\nTarget resource group    : rg-billing-prod\nTarget subscription      : sub-fin-01 (same subscription)\nAzure Disk Encryption    : Enabled\nPower state              : Running\n"
+				},
+				"statement": "The correct approach is to {{action}}, and then to {{idfix}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Deallocate the virtual machine and then move it to the destination resource group."
+							},
+							{
+								"id": "b",
+								"text": "Disable Azure Disk Encryption on the virtual machine and then move it to the destination resource group."
+							},
+							{
+								"id": "c",
+								"text": "Move the virtual machine to the destination resource group and leave it running."
+							},
+							{
+								"id": "d",
+								"text": "Delete the virtual machine and redeploy it from its managed disks in the destination resource group."
+							}
+						]
+					},
+					{
+						"id": "idfix",
+						"options": [
+							{
+								"id": "a",
+								"text": "Change the resource ID in the monitoring queries and the automation templates to the destination scope."
+							},
+							{
+								"id": "b",
+								"text": "Keep the resource ID in the monitoring queries and the automation templates as it is, because the destination scope resolves to the same virtual machine."
+							},
+							{
+								"id": "c",
+								"text": "Recreate the virtual machine in the source resource group so that the resource ID in the monitoring queries and the automation templates remains valid."
+							},
+							{
+								"id": "d",
+								"text": "Copy the original resource ID from the source resource group into the monitoring queries and the automation templates so that the virtual machine can still be addressed."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a",
+				"idfix": "a"
+			},
+			"explanation": {
+				"correct": "A virtual machine that uses Azure Disk Encryption can be moved to another resource group only while it is in a deallocated state, so the first step is to stop the machine and then run the move into rg-billing-prod inside the same subscription; encryption does not have to be turned off for a move that stays within one subscription. Moving the workload rewrites its resource ID, so every monitoring query and automation template that references the old ID has to be pointed at the destination scope.",
+				"perChoice": {
+					"action:b": "Turning encryption off is only required when the virtual machine is moved to a different subscription. Here the target group is in sub-fin-01 as well, and because the machine is still running the relocation would keep being refused.",
+					"action:c": "The workload must be in a deallocated state before it can be moved to another resource group, so a move performed while the machine is running is refused.",
+					"action:d": "Deleting and recreating the workload is not needed for a relocation inside a single subscription and would destroy the existing virtual machine and its disks; that pattern is the workaround for Marketplace-plan virtual machines that cannot be moved across subscriptions.",
+					"idfix:b": "The move rewrites the resource ID, so the previous value no longer resolves. The destination scope is addressed by a different resource ID, and the virtual machine cannot be reached with the old one.",
+					"idfix:c": "Recreating the virtual machine in the source resource group would produce a new machine and lose the workload rather than deliver the relocation that was requested.",
+					"idfix:d": "Copying the old resource ID leaves the queries and templates pointing at a path that no longer exists after the move, so they would keep failing."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-limitations/virtual-machines-move-limitations"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+				}
+			],
+			"subtopics": [
+				"resource-group-move",
+				"azure-disk-encryption"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R7B14MYYBAHY118GN48C3P",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your team has to relocate the workload in resource group rg-fleet of subscription sub-prod-01 into resource group rg-fleet-prod of subscription sub-fin-02, which sits in the tenant that already hosts sub-prod-01. You submit one move that lists the IDs of the 1,240 virtual machines; the service rejects the request straight away and nothing is relocated. What should you do?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Source resource group",
+							"rg-fleet (subscription sub-prod-01)"
+						],
+						[
+							"Target resource group",
+							"rg-fleet-prod (subscription sub-fin-02)"
+						],
+						[
+							"Tenant",
+							"Both subscriptions belong to one Microsoft Entra ID tenant"
+						],
+						[
+							"Virtual machines in rg-fleet",
+							"1,240"
+						],
+						[
+							"Managed disks in rg-fleet",
+							"2,480 (one OS disk plus one data disk per virtual machine)"
+						],
+						[
+							"Network interfaces in rg-fleet",
+							"1,240 (one per virtual machine)"
+						],
+						[
+							"Microsoft.Compute registration in sub-fin-02",
+							"Registered"
+						],
+						[
+							"Virtual machine quota in sub-fin-02",
+							"Sufficient for the incoming workload"
+						],
+						[
+							"Read-only lock on either group",
+							"Not present"
+						],
+						[
+							"Azure Backup configuration on these machines",
+							"Not present"
+						]
+					]
+				},
+				"statement": "You should {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "submit the move in several batches, each limited to no more than 800 resources, keeping each virtual machine with the resources it depends on"
+							},
+							{
+								"id": "b",
+								"text": "submit the move again as a single request after registering the Microsoft.Compute resource provider for virtual machines in the target subscription"
+							},
+							{
+								"id": "c",
+								"text": "submit the move again as a single request after raising the virtual machine quota in the target subscription so the incoming resources fit"
+							},
+							{
+								"id": "d",
+								"text": "submit a move of resource group rg-fleet itself into the target subscription so the virtual machines and their resources travel with the group"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "A single move operation can carry at most 800 resources, and this request lists 1,240 virtual machines, so Resource Manager returns an error immediately and nothing is relocated. The work must therefore be separated into several smaller move operations, each with no more than 800 resources. Because this move crosses a subscription boundary, a virtual machine and the resources it depends on, such as its managed disks and network interface, must be located in the same resource group and travel together in the same request, so each batch should carry a complete workload rather than splitting a machine from its dependencies. Keep batches moderate in size, since even a move with fewer than 800 resources can fail by timing out. The other prerequisites are already satisfied here: both subscriptions are in the same tenant, Microsoft.Compute is registered in the target subscription, the target quota is sufficient, and neither group carries a read-only lock.",
+				"perChoice": {
+					"action:b": "Registering the Microsoft.Compute resource provider matters only when the target subscription has never hosted that resource type, and the exhibit shows the registration is already in place. The request was refused because it exceeded what one move operation can carry, so registering the provider and resubmitting the same oversized request is rejected again.",
+					"action:c": "Destination subscription quota must cover the incoming resources, but the quota here is already sufficient. Raising the quota does not resolve a rejection caused by the number of resources in a single request; the request has to be divided into smaller operations.",
+					"action:d": "A resource group cannot be moved to another subscription. Its resources have to be moved into a resource group in the target subscription instead, and group-level settings such as tags, role assignments, and policies do not travel and must be re-created there."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+				}
+			],
+			"subtopics": [
+				"move-request-limits",
+				"cross-subscription-move",
+				"dependent-resources"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R7E8R9YAECZ1ASP0HDYZEW",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have virtual machine vm-portal12, its network interface nic-portal12 and the two managed disks that belong to it, all in resource group rg-portal of subscription sub-prod-01, where the workload is serving customer traffic today. The customer wants that workload relocated into resource group rg-portal-prod of subscription sub-cust-02, which belongs to the same Microsoft Entra ID tenant, so you submit the relocation with the Azure CLI, listing the virtual machine, its network interface and both managed disks:\n\n```\n$ az resource move \\\n    --ids /subscriptions/sub-prod-01/resourceGroups/rg-portal/providers/Microsoft.Compute/virtualMachines/vm-portal12 \\\n           /subscriptions/sub-prod-01/resourceGroups/rg-portal/providers/Microsoft.Network/networkInterfaces/nic-portal12 \\\n           /subscriptions/sub-prod-01/resourceGroups/rg-portal/providers/Microsoft.Compute/disks/osdisk-portal12 \\\n           /subscriptions/sub-prod-01/resourceGroups/rg-portal/providers/Microsoft.Compute/disks/datadisk-portal12 \\\n    --destination-group rg-portal-prod \\\n    --destination-subscription-id sub-cust-02\n\n(AzCliError) Code=MissingSubscriptionRegistration\nMessage=The subscription is not registered to use namespace 'Microsoft.Network'.\n```\n\nThe service rejects the request and nothing is relocated. Which change makes the relocation succeed, and which permissions must the identity that runs the command hold?",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "$ az resource move \\\n    --ids /subscriptions/sub-prod-01/resourceGroups/rg-portal/providers/Microsoft.Compute/virtualMachines/vm-portal12 \\\n           /subscriptions/sub-prod-01/resourceGroups/rg-portal/providers/Microsoft.Network/networkInterfaces/nic-portal12 \\\n           /subscriptions/sub-prod-01/resourceGroups/rg-portal/providers/Microsoft.Compute/disks/osdisk-portal12 \\\n           /subscriptions/sub-prod-01/resourceGroups/rg-portal/providers/Microsoft.Compute/disks/datadisk-portal12 \\\n    --destination-group rg-portal-prod \\\n    --destination-subscription-id sub-cust-02\n\n(AzCliError) Code=MissingSubscriptionRegistration\nMessage=The subscription is not registered to use namespace 'Microsoft.Network'."
+				},
+				"statement": "The relocation succeeds once you {{fix}}, and the identity that runs the command must have {{permissions}}.",
+				"slots": [
+					{
+						"id": "fix",
+						"options": [
+							{
+								"id": "a",
+								"text": "Register the Microsoft.Network namespace in the destination subscription, wait for it to complete, then rerun the move."
+							},
+							{
+								"id": "b",
+								"text": "Register the Microsoft.Network namespace in the source subscription, wait for it to complete, then rerun the move."
+							},
+							{
+								"id": "c",
+								"text": "Register the Microsoft.Compute namespace in the destination subscription, wait for it to complete, then rerun the move."
+							},
+							{
+								"id": "d",
+								"text": "Leave the network interface out of the request so the destination does not need the networking namespace, then rerun the move."
+							}
+						]
+					},
+					{
+						"id": "permissions",
+						"options": [
+							{
+								"id": "a",
+								"text": "Microsoft.Resources/subscriptions/resourceGroups/moveResources/action on the source resource group and Microsoft.Resources/subscriptions/resourceGroups/write on the destination resource group."
+							},
+							{
+								"id": "b",
+								"text": "Microsoft.Resources/subscriptions/resourceGroups/moveResources/action on the destination resource group and Microsoft.Resources/subscriptions/resourceGroups/write on the source resource group."
+							},
+							{
+								"id": "c",
+								"text": "Microsoft.Compute/virtualMachines/write on the source resource group and Microsoft.Resources/subscriptions/resourceGroups/write on the destination resource group."
+							},
+							{
+								"id": "d",
+								"text": "Microsoft.Resources/subscriptions/resourceGroups/write on the source resource group and Microsoft.Resources/subscriptions/resourceGroups/read on the destination resource group."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"fix": "a",
+				"permissions": "a"
+			},
+			"explanation": {
+				"correct": "The failure reported by the service is that the subscription receiving the resources is not registered for the Microsoft.Network resource type, so the move is rejected before anything relocates. The provider namespace must be registered in the destination subscription (for example with az provider register --namespace Microsoft.Network, then confirm the registration has completed) and the move retried; the source subscription already hosts the running workload, so its registration is in place. Independently of the registration, the identity that submits the move needs Microsoft.Resources/subscriptions/resourceGroups/moveResources/action on the source resource group and Microsoft.Resources/subscriptions/resourceGroups/write on the destination resource group.",
+				"perChoice": {
+					"fix:b": "This changes nothing: the source subscription already runs the virtual machine, so the provider is available there. The registration that is missing is in the subscription that will receive the resources, so registering it in the source leaves the move failing with the same error.",
+					"fix:c": "The service message names Microsoft.Network as the namespace that is not registered, and the network interface travels with the virtual machine, so the destination must have the networking provider available. Registering Microsoft.Compute does not satisfy the check the service performs.",
+					"fix:d": "Omitting a dependent does not remove the requirement, because the network interface and its settings are moved along with the virtual machine; a request that leaves out a required dependent fails with a missing-dependent error instead. The destination still needs the networking provider registered.",
+					"permissions:b": "The two actions are not interchangeable. A move is authorized by moveResources/action on the source resource group and write on the destination resource group; granting them the other way round leaves the operation unauthorized.",
+					"permissions:c": "Write access to the virtual machine resource type does not authorize the group-scoped move operation. The move is authorized by the resource group actions, not by write permission on the virtual machine itself.",
+					"permissions:d": "Write on the source group is not the operation that permits resources to be taken out of it; that group requires moveResources/action. Read on the destination group does not let resources be created there either, so this combination is still rejected."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-limitations/virtual-machines-move-limitations"
+				}
+			],
+			"subtopics": [
+				"cross-subscription-move",
+				"provider-registration",
+				"move-permissions"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R7HP04B9ZMED9B74SB37HY",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have virtual machine vm-hub01, its managed disks and its network interface in resource group rg-hub of subscription sub-prod-01, where the workload is serving customer requests today. The platform team wants the workload relocated into resource group rg-hub-new of the same subscription, which was created for a new deployment standard, but every relocation attempt is rejected. Tonight's change window requires the workload to keep answering customer requests while it is relocated. Which action should you take to let the relocation succeed, and what happens to the workload while it runs?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Virtual machine",
+							"vm-hub01 (running, East US)"
+						],
+						[
+							"Current resource group",
+							"rg-hub"
+						],
+						[
+							"Group the workload must end up in",
+							"rg-hub-new"
+						],
+						[
+							"Lock on rg-hub-new",
+							"Read-only"
+						],
+						[
+							"Lock on rg-hub",
+							"None"
+						],
+						[
+							"Lock on sub-prod-01",
+							"None"
+						],
+						[
+							"Subscription holding both groups",
+							"sub-prod-01"
+						]
+					]
+				},
+				"statement": "To let the relocation succeed you should {{action}}, and while it runs the workload {{behavior}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Remove the read-only lock from the destination resource group and resubmit the move."
+							},
+							{
+								"id": "b",
+								"text": "Remove the read-only lock from the source resource group and resubmit the move."
+							},
+							{
+								"id": "c",
+								"text": "Remove the read-only lock from the subscription that owns both groups and resubmit the move."
+							},
+							{
+								"id": "d",
+								"text": "Wait for the four-hour limit to elapse so that Azure releases the group locks automatically, then resubmit the move."
+							}
+						]
+					},
+					{
+						"id": "behavior",
+						"options": [
+							{
+								"id": "a",
+								"text": "keeps answering requests throughout the move, and resizing is blocked while the groups are locked"
+							},
+							{
+								"id": "b",
+								"text": "keeps answering requests throughout the move, and resizing is allowed while the groups are locked"
+							},
+							{
+								"id": "c",
+								"text": "is stopped for the whole move and resumes once the resources reach their new group"
+							},
+							{
+								"id": "d",
+								"text": "is deallocated and restarted automatically in the group it is being moved to"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a",
+				"behavior": "a"
+			},
+			"explanation": {
+				"correct": "The rejection is caused by the read-only lock on rg-hub-new, the group the workload must end up in. Azure cannot move resources while a read-only lock exists on the source resource group, the destination resource group, or the subscription, so the read-only lock on rg-hub-new has to be removed and the move resubmitted; the exhibit shows no lock on rg-hub or on sub-prod-01. Once the relocation runs, both the source and the destination resource group are locked, which prevents creating, deleting or updating resources in them, including changing the virtual machine's size, yet the running machine continues to operate normally and the services that rely on it experience no downtime.",
+				"perChoice": {
+					"action:b": "rg-hub carries no lock, so removing one there changes nothing; the lock that stops the relocation is the read-only lock on rg-hub-new, the group the workload must end up in.",
+					"action:c": "There is no read-only lock on sub-prod-01, and a lock has to be removed at the scope where it was applied; the exhibit places the lock on rg-hub-new.",
+					"action:d": "The four-hour allowance and the automatic release govern the lock that the move operation itself places on the two groups. A read-only lock that you applied is not removed for you, and the request is refused before the move even starts, so waiting changes nothing.",
+					"behavior:b": "While the move runs, both groups are locked, which blocks updating resources in them, and changing the virtual machine's size is exactly such an update, so resizing is not allowed during the move.",
+					"behavior:c": "A resource group move does not stop the workload. Existing resources stay fully operational while the groups are locked, and the services that depend on them experience no downtime.",
+					"behavior:d": "The virtual machine is not deallocated or restarted by a resource group move. Only a relocation to another region through Azure Resource Mover stops the source machine while a replica is built in the target region."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-limitations/virtual-machines-move-limitations"
+				}
+			],
+			"subtopics": [
+				"resource-group-move",
+				"move-locks",
+				"vm-availability-during-move"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R7P8ZGEX037FE7A8HA9QAS",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have virtual machine vm-core01 with its two managed disks and its network interface in resource group rg-core of subscription sub-prod-01. You need that workload relocated into resource group rg-core-new, and the request you sent ran for as long as the platform permits for a single move and then concluded without a success notice, while creates and deletes are accepted again in both groups. The service owner needs one clear account of what the platform did, and the workload owner needs every resource from the original request to sit in rg-core-new. Which account of the outcome is correct, and what is your next step?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Source resource group",
+							"rg-core (subscription sub-prod-01)"
+						],
+						[
+							"Destination resource group",
+							"rg-core-new (subscription sub-prod-01)"
+						],
+						[
+							"Resources in the request",
+							"vm-core01, osdisk-core01, datadisk-core01, nic-core01"
+						],
+						[
+							"Time the request ran",
+							"4 hours and 6 minutes"
+						],
+						[
+							"Portal message",
+							"The move operation concluded. Verify the state of the resources in both resource groups."
+						],
+						[
+							"Success confirmation",
+							"None received"
+						],
+						[
+							"Write access in rg-core and rg-core-new",
+							"Available"
+						]
+					]
+				},
+				"statement": "Your conclusion about the request is that {{outcome}}, and your next step is to {{nextstep}}.",
+				"slots": [
+					{
+						"id": "outcome",
+						"options": [
+							{
+								"id": "a",
+								"text": "the request is still running in the background and will keep rg-core and rg-core-new locked until every resource has been relocated"
+							},
+							{
+								"id": "b",
+								"text": "the service stopped the operation and released the locks on rg-core and rg-core-new; the resources that relocated are in rg-core-new and the resources that failed are in rg-core"
+							},
+							{
+								"id": "c",
+								"text": "the service rolled the operation back entirely, so every resource in the request is again in rg-core and none of them are in rg-core-new"
+							},
+							{
+								"id": "d",
+								"text": "the service released the locks on rg-core and rg-core-new after deleting the resources that failed, so rg-core now holds only the resources that relocated"
+							}
+						]
+					},
+					{
+						"id": "nextstep",
+						"options": [
+							{
+								"id": "a",
+								"text": "run the original request again unchanged and let the service continue with it"
+							},
+							{
+								"id": "b",
+								"text": "submit a move request with only the resources that are still in rg-core, together with the resources they depend on"
+							},
+							{
+								"id": "c",
+								"text": "delete the resources that are still in rg-core and create equivalent ones in rg-core-new"
+							},
+							{
+								"id": "d",
+								"text": "move the resource group rg-core itself into another subscription so the two groups are combined"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"outcome": "b",
+				"nextstep": "b"
+			},
+			"explanation": {
+				"correct": "A single move can run for up to four hours, and the source and destination resource groups stay locked for that whole time. When that limit is reached, Resource Manager ends the operation and unlocks both groups: the resources that completed the move are in the destination group (rg-core-new), while the resources that hit an error stay in the source group (rg-core). Nothing is rolled back and nothing is deleted, so the remaining resources are still intact and can be relocated with a new move request that names them together with the resources they need.",
+				"perChoice": {
+					"outcome:a": "The request does not keep running in the background: four hours is the longest a single move may take, and at that point the service ends the operation and releases the locks on both groups, so there is nothing left to wait for.",
+					"outcome:c": "There is no automatic rollback when the time limit is reached. The service simply unlocks both groups and leaves the completed moves in place in the destination, so the resources that already relocated stay in rg-core-new.",
+					"outcome:d": "Ending a move never deletes resources. The ones that hit an error remain in the source group and stay usable, so the workload is not lost and the copy in the source must not be destroyed.",
+					"nextstep:a": "Re-running the same request does not resume anything: the resources that already completed are no longer in rg-core, so a new request must name only the resources that are still there.",
+					"nextstep:c": "Deleting the workload is unnecessary and destructive, because the resources that hit an error are still intact in rg-core and can be relocated by another request.",
+					"nextstep:d": "A resource group cannot be moved to another subscription at all; its resources must be moved one by one into a target group, and group-level tags, role assignments and policies would have to be recreated there."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-limitations/virtual-machines-move-limitations"
+				}
+			],
+			"subtopics": [
+				"vm-move-limits",
+				"resource-group-move"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RRPH62MT9WRVA85Z3Y6G0J",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have virtual machines vm-a07 and vm-a08, both members of availability set as-a07, in resource group rg-a07 of subscription sub-prod-01. The virtual machine vm-a07 also runs a custom script extension, vm-a07/ConfigureMonitoring. The platform team wants this workload relocated into resource group rg-a07-new of the same subscription, with the extension still in place afterwards. You submit a move request that lists three entries, and the service refuses the request. Which entries should the request contain?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Source resource group",
+							"rg-a07 (subscription sub-prod-01)"
+						],
+						[
+							"Target resource group",
+							"rg-a07-new (subscription sub-prod-01)"
+						],
+						[
+							"Virtual machines",
+							"vm-a07, vm-a08"
+						],
+						[
+							"Availability set",
+							"as-a07 (contains vm-a07 and vm-a08)"
+						],
+						[
+							"Child resource of vm-a07",
+							"Microsoft.Compute/virtualMachines/extensions/ConfigureMonitoring"
+						],
+						[
+							"Entries in the submitted request",
+							"vm-a07, vm-a08, vm-a07/ConfigureMonitoring"
+						],
+						[
+							"Service response",
+							"Request refused"
+						]
+					]
+				},
+				"statement": "The request should list {{slot1}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "the virtual machines vm-a07 and vm-a08 and the extension vm-a07/ConfigureMonitoring, but no availability set entry"
+							},
+							{
+								"id": "b",
+								"text": "the availability set as-a07 and the virtual machines vm-a07 and vm-a08, and no extension entry"
+							},
+							{
+								"id": "c",
+								"text": "the availability set as-a07 and the extension entry vm-a07/ConfigureMonitoring"
+							},
+							{
+								"id": "d",
+								"text": "only the virtual machine vm-a07, after removing it from the availability set as-a07 and submitting it on its own"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "b"
+			},
+			"explanation": {
+				"correct": "Two rules decide the content of the request. First, a virtual machine that belongs to an availability set cannot be moved on its own, so the availability set as-a07 and both of its virtual machines, vm-a07 and vm-a08, must travel in the same request. Second, a move request lists top-level resources only: Microsoft.Compute/virtualMachines carries Microsoft.Compute/virtualMachines/extensions along with it, and a child resource such as vm-a07/ConfigureMonitoring cannot be requested on its own. The extension therefore stays out of the request and is relocated along with vm-a07 automatically, so the workload keeps its custom script extension in the target resource group.",
+				"perChoice": {
+					"slot1:a": "This is the request that was already refused: it lists the child extension resource as a separate entry, which is not allowed, and it leaves the availability set behind, so the two virtual machines would still be moved individually out of an availability set.",
+					"slot1:c": "Listing the availability set together with the extension entry still requests the child resource separately, which the service rejects, and it omits the two virtual machines that actually have to be relocated.",
+					"slot1:d": "A virtual machine that is part of an availability set cannot be moved individually, removing it from the set is not a supported way to work around that, and the request also leaves vm-a08 and the extension behind."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-limitations/virtual-machines-move-limitations"
+				}
+			],
+			"subtopics": [
+				"availability-set-move",
+				"extension-child-resource-move",
+				"move-request-contents"
+			],
+			"reviewed": false
+		}
+	]
+}

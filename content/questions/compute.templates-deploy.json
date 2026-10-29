@@ -1,0 +1,1511 @@
+{
+	"skill": "compute.templates-deploy",
+	"questions": [
+		{
+			"id": "q_01M5Q84N24PZXNPK1270M33CVK",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your team manages the infrastructure of an existing resource group, rg-app, with a Bicep file named main.bicep. The file currently describes fewer resources than the group actually holds, and the environment must end up containing only what the file describes. You also want to see exactly which resources would be added, changed, or removed before anything is applied. Which Azure CLI commands should you run?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Resource",
+						"Type",
+						"Present in rg-app today",
+						"Defined in main.bicep"
+					],
+					"rows": [
+						[
+							"web-01",
+							"Microsoft.Web/sites",
+							"Yes",
+							"Yes"
+						],
+						[
+							"api-01",
+							"Microsoft.Web/sites",
+							"Yes",
+							"Yes"
+						],
+						[
+							"legacy-cache",
+							"Microsoft.Cache/Redis",
+							"Yes",
+							"No"
+						],
+						[
+							"worker-01",
+							"Microsoft.Compute/virtualMachines",
+							"No",
+							"Yes"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "az deployment group create --resource-group rg-app --template-file main.bicep --mode Incremental"
+					},
+					{
+						"id": "b",
+						"text": "az deployment group what-if --resource-group rg-app --template-file main.bicep --mode Complete, then az deployment group create --resource-group rg-app --template-file main.bicep --mode Complete"
+					},
+					{
+						"id": "c",
+						"text": "az deployment sub create --location eastus --template-file main.bicep --mode Complete"
+					},
+					{
+						"id": "d",
+						"text": "az deployment group create --resource-group rg-app --template-file main.bicep"
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "Only Complete mode removes resources that exist in the target resource group but are absent from the template, so it is what deletes legacy-cache while adding worker-01 and leaving web-01 and api-01 in place. Because Complete can also remove resources that were deliberately kept (for example conditionally skipped resources or ones dropped after a copy loop expands), Microsoft recommends running a what-if first so you can see which resources would be created, deleted, or modified, and only then applying the deployment with the same mode. Complete mode is valid for a root-level template such as main.bicep and is supported for a resource-group scoped deployment, and the group rg-app already exists, so no separate group creation is needed.",
+				"perChoice": {
+					"a": "The Incremental mode never removes anything. It creates what the template defines (worker-01) and updates existing resources whose properties changed (web-01, api-01), but legacy-cache, which the file no longer describes, stays in rg-app. It also reapplies every property, and any property left out of the template is reset to its default.",
+					"c": "az deployment sub create operates at subscription scope, and Complete mode is not supported for subscription-level deployments (nor for portal deployments). Deletion under Complete mode is also limited to the resource group named by the deployment operation, so a subscription-scoped run would not prune rg-app the way the requirement demands.",
+					"d": "Omitting --mode means the deployment runs in the default mode, which is Incremental. The command would create worker-01 and leave web-01, api-01, and legacy-cache in place, so the group would still contain a resource the file does not describe."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deployment-modes"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-cli"
+				}
+			],
+			"subtopics": [
+				"deployment-modes",
+				"bicep-deployment",
+				"azure-cli"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q87XYV4RTM077YTZWC5P6D",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an ARM template that creates two new resource groups and a virtual network inside one of them. You need the deployment to be recorded at the subscription level, so that the resource groups it creates are tracked in that scope, and the virtual network has to end up in the eastus region. Which Azure CLI command should you run?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"$schema\": \"https://schema.management.azure.com/schemas/2019-08-01/subscriptionDeploymentTemplate.json#\",\n  \"contentVersion\": \"1.0.0.0\",\n  \"targetScope\": \"subscription\",\n  \"resources\": [\n    {\n      \"type\": \"Microsoft.Resources/resourceGroups\",\n      \"apiVersion\": \"2021-04-01\",\n      \"name\": \"rg-apps-prod\",\n      \"location\": \"eastus\"\n    },\n    {\n      \"type\": \"Microsoft.Resources/resourceGroups\",\n      \"apiVersion\": \"2021-04-01\",\n      \"name\": \"rg-apps-data\",\n      \"location\": \"eastus\"\n    },\n    {\n      \"type\": \"Microsoft.Network/virtualNetworks\",\n      \"apiVersion\": \"2023-05-01\",\n      \"name\": \"rg-apps-prod/vnet-apps\",\n      \"location\": \"eastus\",\n      \"properties\": {\n        \"addressSpace\": { \"addressPrefixes\": [ \"10.0.0.0/16\" ] }\n      }\n    }\n  ]\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "az deployment sub create --name planDeploy --location eastus --template-file main.bicep"
+					},
+					{
+						"id": "b",
+						"text": "az deployment group create --name planDeploy --resource-group rg-platform --template-file main.bicep"
+					},
+					{
+						"id": "c",
+						"text": "az deployment sub create --name planDeploy --template-file main.bicep"
+					},
+					{
+						"id": "d",
+						"text": "az deployment mg create --name planDeploy --location eastus --template-file main.bicep"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The template's targetScope is subscription and it creates resource groups, so it must be deployed with the subscription-scope command `az deployment sub create`. Subscription-level deployments (unlike resource-group deployments) also require `--location` to tell Resource Manager where the deployment itself runs, so the correct invocation is `az deployment sub create --name planDeploy --location eastus --template-file main.bicep`. The resources in the template carry their own location (eastus), and the deployer needs resource-creation rights at the subscription scope.",
+				"perChoice": {
+					"b": "This is the resource-group scope command: it deploys into one existing resource group (rg-platform) and records the deployment there. The template targets the subscription and creates its own resource groups, so a group-scoped deployment does not satisfy the requirement, and the deployment history would not be recorded at the requested scope.",
+					"c": "The scope is right, but the command omits `--location`. Deployments at subscription, management-group, and tenant scope all require `--location`, so this command fails instead of deploying.",
+					"d": "This is the management-group scope command, so the deployment is recorded under the management group rather than the subscription, and it does not match a template whose targetScope is subscription."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-cli"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deploy-cli"
+				}
+			],
+			"subtopics": [
+				"deployment-scope",
+				"azure-cli-deployment",
+				"bicep-deployment"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q89M5BE94FH3B334P5EQNE",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a reusable Bicep parameter file, prod.bicepparam, that is tied to a Bicep template. The deployment is rejected before Azure evaluates the resources, and you need it to succeed without changing either file. Which Azure CLI change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "# Contents of prod.bicepparam\nusing './main.bicep'\nparam environment = 'prod'\nparam vmSize = 'Standard_D2s_v5'\n\n# Command currently used\naz deployment group create \\\n  --resource-group rg-web \\\n  --name deploy-web \\\n  --template-file main.bicep \\\n  --parameters prod.bicepparam\n\n# Outcome: validation error; no resources were created"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Keep both --template-file main.bicep and --parameters prod.bicepparam."
+					},
+					{
+						"id": "b",
+						"text": "Keep --parameters prod.bicepparam and omit --template-file."
+					},
+					{
+						"id": "c",
+						"text": "Keep --template-file main.bicep and add --parameters prod.json."
+					},
+					{
+						"id": "d",
+						"text": "Keep --parameters prod.bicepparam and add --template-uri https://example.invalid/main.bicep."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "The prod.bicepparam file contains a using statement, so it already identifies the Bicep template to deploy. Supplying both that parameter file and --template-file creates an invalid combination. Omitting --template-file allows Azure CLI to use the template referenced by the parameter file.",
+				"perChoice": {
+					"a": "This retains the conflicting inputs: a .bicepparam file with a using statement cannot be combined with --template-file.",
+					"c": "This leaves --template-file in the command, which conflicts with the .bicepparam file, and it also bypasses the required reusable parameter set by substituting a different parameter file.",
+					"d": "Azure CLI cannot deploy a remote .bicep file directly. The Bicep file would first need to be built into ARM JSON; in addition, the --parameters prod.bicepparam and --template-uri combination remains invalid for this parameter file."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-cli"
+				}
+			],
+			"subtopics": [
+				"bicep-parameter-files",
+				"azure-cli-deployment"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q8EXHCG666XJC818J4VEPN",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your infrastructure source is stored only at https://raw.githubusercontent.com/contoso/infra/main/main.bicep, and the working folder of your pipeline holds just the parameter file params.json. The deployment must create the resources described by the source in the existing resource group rg-app, and no resource currently in rg-app may be removed. The deploy step fails before anything is created. Which approach should the pipeline take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "# Pipeline script (azure-pipelines.yml, Bash task)\n\nset -e\n\n# --- Prepare step ---\n#   Download the source archive from the GitHub repository into a temp folder\n#   Copy params.json into the working directory\n#   Result: Succeeds\n\n# --- Deploy step ---\naz deployment group create \\\n  --resource-group rg-app \\\n  --template-uri https://raw.githubusercontent.com/contoso/infra/main/main.bicep \\\n  --parameters params.json\n#   Result: Fails - no resource is created in rg-app\n"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Run az deployment group create with --resource-group rg-app and --template-uri pointing to the main.bicep file in GitHub, and pass params.json with --parameters."
+					},
+					{
+						"id": "b",
+						"text": "Run az deployment group create with --resource-group rg-app and --template-file pointing to the main.bicep file in GitHub, and pass params.json with --parameters."
+					},
+					{
+						"id": "c",
+						"text": "Run the Bicep CLI to produce the main.json file, put that file somewhere it can be fetched over the web, and then run az deployment group create with --resource-group rg-app and --template-uri, passing params.json with --parameters."
+					},
+					{
+						"id": "d",
+						"text": "Run az deployment group create with --resource-group rg-app and --template-file pointing to the main.bicep file in the working directory, and pass params.json with --parameters and --mode Complete."
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "Azure CLI cannot deploy a remote .bicep file. The source has to be compiled to an ARM JSON template with the Bicep CLI, that JSON file has to be placed where it can be fetched, and the JSON is then deployed with --template-uri, which is the option for a remote ARM template. The local parameter file is still supplied with --parameters, and the default incremental deployment leaves the resources already present in rg-app in place, so the requirement to keep existing resources is met.",
+				"perChoice": {
+					"a": "--template-uri deploys a remote ARM template, and the CLI cannot deploy a remote .bicep file. Pointing --template-uri at the main.bicep file in GitHub is exactly what fails in the deploy step; the file must first be turned into ARM JSON with the Bicep CLI and hosted separately.",
+					"b": "--template-file points to a file on the machine or in the working directory that runs the command, not to a web address. The CLI cannot resolve the GitHub URL passed to it, and the working directory holds only params.json, so no local main.bicep is available.",
+					"d": "--template-file again expects a local copy of the source, which the pipeline does not have, and --mode Complete removes every resource in the target resource group that is absent from the template, which violates the requirement that no existing resource in rg-app may be removed."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deploy-cli"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-cli"
+				}
+			],
+			"subtopics": [
+				"bicep-compilation",
+				"azure-cli-deployment",
+				"template-sources"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q8GZTC3WF70VEJ1D9QHCDP",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have the virtual machine deployment shown below. You need to move the workload to `westus2` while keeping the existing virtual machine available during a migration. Which approach should you take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "resource appVm 'Microsoft.Compute/virtualMachines@2024-11-01' = {\n  name: 'app-vm-01'\n  location: 'eastus'\n  properties: {\n    hardwareProfile: {\n      vmSize: 'Standard_D2s_v5'\n    }\n  }\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Change `location` to `westus2` and redeploy the same resource."
+					},
+					{
+						"id": "b",
+						"text": "Remove `location` from the template and redeploy the same resource."
+					},
+					{
+						"id": "c",
+						"text": "Change the resource `type` and redeploy the same resource."
+					},
+					{
+						"id": "d",
+						"text": "Create a new resource in `westus2` and update the resources that reference it."
+					}
+				]
+			},
+			"key": {
+				"optionId": "d"
+			},
+			"explanation": {
+				"correct": "An Azure Resource Manager deployment cannot change the location of an existing resource. To relocate the workload, define a different resource in `westus2` and then redirect dependent resources to it, leaving the original virtual machine intact during the migration.",
+				"perChoice": {
+					"a": "Changing the `location` on an already deployed resource causes the deployment to fail. Azure Resource Manager does not relocate the resource when that property changes.",
+					"b": "Removing `location` does not move the virtual machine. The resource still needs a valid target location, and an absent location can also cause template validation to fail.",
+					"c": "An existing resource's type cannot be changed by a template deployment either. That change causes a deployment failure rather than replacing the virtual machine."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deployment-modes"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-cli"
+				}
+			],
+			"subtopics": [
+				"template-deployment-modes",
+				"resource-relocation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q8KKP665SJ3XFS4Q2R2RM6",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Bicep template that creates a virtual machine, a JSON parameter file holding the baseline settings, and a pipeline step that also supplies some settings inline. The pipeline step must run without errors, and the machine must be created with the settings the pipeline step supplies. Which settings are applied to the virtual machine?",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "# params.json\n{\n  \"parameters\": {\n    \"vmSize\":        { \"value\": \"Standard_B2s\" },\n    \"location\":      { \"value\": \"eastus\" },\n    \"instanceCount\": { \"value\": \"2\" }\n  }\n}\n\n# pipeline step\naz deployment group create \\\n  --resource-group rg-app \\\n  --template-file main.bicep \\\n  --parameters @params.json \\\n  --parameters vmSize=Standard_D2s_v5 \\\n  --parameters location=westus2 \\\n  --parameters location=westeurope"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "vmSize = Standard_D2s_v5 and location = westeurope"
+					},
+					{
+						"id": "b",
+						"text": "vmSize = Standard_D2s_v5 and location = westus2"
+					},
+					{
+						"id": "c",
+						"text": "vmSize = Standard_B2s and location = westeurope"
+					},
+					{
+						"id": "d",
+						"text": "vmSize = Standard_B2s and location = eastus"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Parameter values are evaluated in sequence: the values in the parameter file are supplied first, and the inline KEY=VALUE arguments that follow replace the matching file entries. When the same parameter is assigned more than once, only the last assigned value is used, and repeating a parameter is not an error. Here the file's vmSize of Standard_B2s and location of eastus are both replaced by the inline settings, and because location is supplied twice inline, the value passed last, westeurope, is the one that takes effect. The result is vmSize = Standard_D2s_v5 and location = westeurope.",
+				"perChoice": {
+					"b": "This uses the first of the two inline location values. The parameter is assigned more than once, so the later assignment (westeurope) replaces the earlier one (westus2).",
+					"c": "This keeps the vmSize value that comes from the parameter file. The pipeline supplies vmSize inline after the file is processed, so the inline value replaces Standard_B2s with Standard_D2s_v5.",
+					"d": "This ignores every inline setting and uses only the parameter file. Inline KEY=VALUE arguments are applied after the file and override the corresponding entries, so the file's vmSize and location do not survive."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-cli"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deploy-cli"
+				}
+			],
+			"subtopics": [
+				"deployment-parameters",
+				"azure-cli-deployment"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q8T9P4D068KAFRRAF420ME",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You keep the definition of a storage account in a Bicep file, main.bicep, and your pipeline deploys that file into the existing resource group rg-app with `az deployment group create --mode Incremental`. The file lists the account's name, location, and SKU, while two settings were tightened by hand in the portal after the last deployment. Going forward, each pipeline run must succeed and leave the account holding exactly the values that are configured in the portal today, and the file is where any future change is made. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"main.bicep",
+						"Value configured in the portal"
+					],
+					"rows": [
+						[
+							"Account name",
+							"stcontosoapp01",
+							"stcontosoapp01"
+						],
+						[
+							"Location",
+							"eastus",
+							"eastus"
+						],
+						[
+							"SKU",
+							"Standard_LRS",
+							"Standard_LRS"
+						],
+						[
+							"Allow shared key access",
+							"not listed",
+							"Disabled"
+						],
+						[
+							"Public network access",
+							"not listed",
+							"Disabled"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add the two settings to main.bicep so that the file declares every property of the account, because a deployment applies the properties in the file and resets properties the file omits to their defaults."
+					},
+					{
+						"id": "b",
+						"text": "Move the two settings into a separate JSON parameter file and pass that file with --parameters when deploying main.bicep, so the values are supplied at deployment time instead of being written in the file."
+					},
+					{
+						"id": "c",
+						"text": "Add --mode Complete to the deployment of main.bicep so that resources and settings in rg-app that the file does not describe are removed from the resource group."
+					},
+					{
+						"id": "d",
+						"text": "Add a read-only lock to the storage account created by main.bicep so that the pipeline is blocked from changing any of its properties."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "In incremental mode a redeployment is not a partial update: it reapplies all the properties that the template contains, and any property the template leaves out returns to its default value. main.bicep currently states only the name, location, and SKU, so the two values set by hand in the portal (allowSharedKeyAccess and publicNetworkAccess) are wiped on each pipeline run. Declaring those settings in the file makes the file the complete desired state of the account, so each run succeeds and leaves the account holding the values that are configured today.",
+				"perChoice": {
+					"b": "A parameter file only supplies values for parameters that the template declares. main.bicep declares no parameters for these two settings, so values handed to --parameters never reach the resource definition; the account's settings are still applied from the resource block in the file, and the two values are still reset. Passing them this way only works once the file itself declares and references those parameters, which means editing the file anyway.",
+					"c": "Complete mode is about deletions: it removes resources that exist in the target resource group but are absent from the template. It does not keep or restore property values on resources that remain, so the two settings would still be overwritten, and unrelated resources in rg-app would be deleted. Complete mode is also limited to root-level templates and is being superseded by deployment stacks.",
+					"d": "A read-only lock blocks changes to the resource, so the deployment that reapplies the template would be rejected instead of completing; pipeline runs would fail rather than succeed. Locks guard against modification or deletion, they do not make the contents of the file authoritative for the account's settings."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deployment-modes"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-cli"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deploy-cli"
+				}
+			],
+			"subtopics": [
+				"incremental-deployment-mode",
+				"template-resource-properties",
+				"deployment-modes"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q8VXSCPJVZTCGS42H08Z5B",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a root-level ARM template that spans two resource groups. You need to run it with `--mode Complete` against rg-primary so that resources no longer described by the template are removed and the environment matches the template. Which outcome should you expect?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Resource group",
+						"Described by the template"
+					],
+					"rows": [
+						[
+							"vnet-hub",
+							"rg-primary",
+							"Yes"
+						],
+						[
+							"stprod001",
+							"rg-secondary",
+							"Yes"
+						],
+						[
+							"vnet-old",
+							"rg-primary",
+							"No"
+						],
+						[
+							"stold001",
+							"rg-secondary",
+							"No"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "vnet-old is deleted, and stold001 is retained."
+					},
+					{
+						"id": "b",
+						"text": "vnet-old is deleted, and stold001 is also deleted."
+					},
+					{
+						"id": "c",
+						"text": "vnet-old is retained, and stold001 is deleted."
+					},
+					{
+						"id": "d",
+						"text": "Both vnet-old and stold001 are retained."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "With complete mode, resources that exist in the resource group targeted by the deployment operation but are absent from the template are deleted. Deletions are limited to that target group, so vnet-old in rg-primary is removed, while stold001 in rg-secondary is retained even though the template does not describe it.",
+				"perChoice": {
+					"b": "stold001 is in rg-secondary, not in the target resource group rg-primary. Complete mode does not delete resources in secondary resource groups, so stold001 remains even though it is absent from the template.",
+					"c": "The opposite outcome is incorrect. Because vnet-old exists in the target resource group and is not described by the template, it is deleted; stold001 is the resource that is retained.",
+					"d": "vnet-old is not retained. It exists in the group targeted by the deployment operation and is absent from the template, so complete mode deletes it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deployment-modes"
+				}
+			],
+			"subtopics": [
+				"deployment-modes",
+				"complete-mode",
+				"resource-groups"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q8Z38SDNDRMEYTZQV8P89H",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a Bicep deployment that is applied to an existing resource group with the current Azure CLI and incremental mode. You need to determine the result for each resource after the deployment finishes. Which outcome should you select for each resource?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Template: main.bicep\n\nparam deployConditional bool = false\n\nresource existingApp 'Microsoft.Storage/storageAccounts' = {\n  name: 'stexisting001'\n  location: 'eastus'\n  sku: { name: 'Standard_LRS' }\n  tags: { workload: 'new' }\n}\n\nresource conditionalApp 'Microsoft.Storage/storageAccounts' = if (deployConditional) {\n  name: 'stconditional001'\n  location: 'eastus'\n  sku: { name: 'Standard_LRS' }\n}\n\nCommand:\naz deployment group create --resource-group rg-app --template-file main.bicep --mode Incremental\n\nCurrent contents of rg-app:\n- existingApp: tags: { workload: 'old' }\n- conditionalApp: created by an earlier deployment\n- outOfScopeApp: created by an earlier deployment and not declared in main.bicep"
+				},
+				"items": [
+					{
+						"id": "update",
+						"text": "Its properties are updated to match the template."
+					},
+					{
+						"id": "remove",
+						"text": "It is removed from the resource group."
+					},
+					{
+						"id": "keep",
+						"text": "It remains in the resource group without changes."
+					}
+				],
+				"slots": [
+					{
+						"id": "existing",
+						"label": "existingApp"
+					},
+					{
+						"id": "conditional",
+						"label": "conditionalApp"
+					},
+					{
+						"id": "outside",
+						"label": "outOfScopeApp"
+					}
+				]
+			},
+			"key": {
+				"existing": "update",
+				"conditional": "remove",
+				"outside": "keep"
+			},
+			"explanation": {
+				"correct": "In incremental mode, the template redeclares existingApp with a different tag, so Azure Resource Manager updates that resource to the template's desired properties. The condition for conditionalApp evaluates to false; with the current Azure CLI, a previously deployed conditional resource that is skipped is removed. outOfScopeApp is not described by the template, and incremental mode leaves resources that are absent from the template in the target resource group.",
+				"perChoice": {
+					"update": "Belongs to existingApp. The deployment changes its workload tag from 'old' to 'new', so Resource Manager updates the resource to match the template.",
+					"remove": "Belongs to conditionalApp. Its condition is false because deployConditional defaults to false, and the current Azure CLI removes a previously deployed conditional resource when it is skipped.",
+					"keep": "Belongs to outOfScopeApp. Incremental mode does not remove a resource from the target group merely because the template does not describe it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deployment-modes"
+				}
+			],
+			"subtopics": [
+				"incremental-mode",
+				"conditional-resources",
+				"resource-updates"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q92KGV1B5MYZZD585CBW3J",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a Bicep template and several parameter inputs to pass during a resource-group deployment. You need to support Bash, PowerShell, and a local file without changing the template. Which CLI syntax should you place in each slot?",
+				"items": [
+					{
+						"id": "a",
+						"text": "az deployment group create --template-file main.bicep --parameters '(\"value1\", \"value2\")'"
+					},
+					{
+						"id": "b",
+						"text": "az deployment group create --template-file main.bicep --parameters \"['value1','value2']\""
+					},
+					{
+						"id": "c",
+						"text": "az deployment group create --template-file main.bicep --parameters '{\"adminUsername\":\"contoso\"}'"
+					},
+					{
+						"id": "d",
+						"text": "az deployment group create --template-file main.bicep --parameters @settings.json"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Several text parameters from Bash"
+					},
+					{
+						"id": "s2",
+						"label": "Several text parameters from PowerShell"
+					},
+					{
+						"id": "s3",
+						"label": "An object-shaped parameter in Bash"
+					},
+					{
+						"id": "s4",
+						"label": "The contents of a local file"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d"
+			},
+			"explanation": {
+				"correct": "Bash uses the form with the array enclosed in single quotes and double-quoted elements. PowerShell uses the form with the array enclosed in double quotes and single-quoted elements. In Bash, an object is supplied as JSON inside double quotes, while the @ prefix causes Azure CLI to read and inject the contents of a local file.",
+				"perChoice": {
+					"a": "This is the Bash form for passing an array of text parameters.",
+					"b": "This is the Command Prompt or PowerShell form for passing an array of text parameters.",
+					"c": "This passes one object-shaped parameter from Bash, with its JSON enclosed in double quotes.",
+					"d": "The @ prefix causes Azure CLI to inject the contents of the local JSON file into the --parameters argument."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deploy-cli"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-cli"
+				}
+			],
+			"subtopics": [
+				"parameter-syntax",
+				"azure-cli-deployment",
+				"shell-quoting"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q9A0YNA5EPEQ8W852WP058",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Your platform team ships every infrastructure change through the Azure CLI from a pipeline workspace, and five deployments are queued for tonight. Each one carries a different constraint. Drag the command that satisfies the constraint onto its slot.",
+				"items": [
+					{
+						"id": "g1",
+						"text": "az deployment group create --resource-group rg-app --template-file main.bicep"
+					},
+					{
+						"id": "g2",
+						"text": "az deployment group create --resource-group rg-app --template-file main.bicep --parameters @settings.json --parameters location='eastus'"
+					},
+					{
+						"id": "g4",
+						"text": "az deployment group create --resource-group rg-app --template-file main.bicep --mode Complete"
+					},
+					{
+						"id": "m1",
+						"text": "az deployment mg create --location eastus --template-file main.bicep"
+					},
+					{
+						"id": "m2",
+						"text": "az deployment mg create --location eastus --template-uri https://contoso.blob.core.windows.net/tpl/azuredeploy.json"
+					},
+					{
+						"id": "t1",
+						"text": "az deployment tenant create --location eastus --template-file main.bicep"
+					},
+					{
+						"id": "t2",
+						"text": "az deployment tenant create --location eastus --template-uri https://contoso.blob.core.windows.net/tpl/azuredeploy.json"
+					}
+				],
+				"slots": [
+					{
+						"id": "a",
+						"label": "Deploy the workspace definition and record the deployment at the management group level, placing the created resources in the region you choose."
+					},
+					{
+						"id": "b",
+						"label": "Deploy the workspace definition and record the deployment at the tenant level, placing the created resources in the region you choose."
+					},
+					{
+						"id": "c",
+						"label": "Deploy the workspace definition into the existing resource group rg-app without supplying any values, leaving every resource already in that group in place."
+					},
+					{
+						"id": "d",
+						"label": "Deploy the workspace definition into the existing resource group rg-app so that the group ends up holding exactly what the definition describes, removing anything the definition no longer includes."
+					},
+					{
+						"id": "e",
+						"label": "Deploy the workspace definition into the existing resource group rg-app, taking the values from the saved settings file in the pipeline workspace and overriding one of them directly on the command line."
+					}
+				]
+			},
+			"key": {
+				"a": "m1",
+				"b": "t1",
+				"c": "g1",
+				"d": "g4",
+				"e": "g2"
+			},
+			"explanation": {
+				"correct": "The scope decides the command family: work recorded at the management group level runs through the management-group deployment command and at the tenant level through the tenant deployment command, and both of those need a location so the resources the definition creates can be placed in the chosen region. For the group-level work, the plain command against the existing group runs in the default mode, which creates or updates resources but leaves everything already in the group alone, so it satisfies the constraint about keeping what is there. The only switch that removes resources the definition no longer describes is the complete-mode switch, which is what makes the group match the definition exactly. The last constraint is met by the command that reads the saved values file and then applies one key=value override on the command line, because values are evaluated in order and the last assignment wins.",
+				"perChoice": {
+					"g1": "This one deploys the local definition into the already existing group rg-app and passes no values, so the default deployment behaviour applies and nothing already in the group is deleted.",
+					"g2": "The values file is read with the @ prefix and the single command-line override follows it, so the overridden value is the one that takes effect; this satisfies the constraint about combining a saved set of values with one inline change.",
+					"g4": "The complete-mode switch is the only option here that deletes resources that exist in the group but are absent from the definition, which is exactly what the constraint about the group matching the definition requires.",
+					"m1": "Deployments recorded at the management group level use this command family, and a location must be supplied because the resources created by the definition need a region.",
+					"m2": "It points at a definition published at a public address rather than the copy held in the pipeline workspace, so it does not meet the constraint for this slot.",
+					"t1": "Deployments recorded at the tenant level use this command family, and a location must be supplied so the resources the definition creates can be placed in the chosen region.",
+					"t2": "Like the other tenant-level command it supplies a location, but it takes the definition from a published address rather than from the pipeline workspace, so it does not meet the constraint for this slot."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-cli"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deployment-modes"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deploy-cli"
+				}
+			],
+			"subtopics": [
+				"deployment-scopes",
+				"deployment-modes",
+				"cli-parameters"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q9DPNRARBXZABKGJBVVGV5",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a Bicep template, `main.bicep`, that creates one virtual machine in an existing resource group named `rg-app`. A reviewer must inspect the proposed effects before the pipeline applies the template. You need to identify the resource-group activity and the permissions required for both the review and application. Which activity or permission should you place in each slot?",
+				"items": [
+					{
+						"id": "a",
+						"text": "What-if"
+					},
+					{
+						"id": "b",
+						"text": "`az deployment group create`"
+					},
+					{
+						"id": "c",
+						"text": "`Microsoft.Resources/deployments/*`"
+					},
+					{
+						"id": "d",
+						"text": "`Microsoft.Compute/virtualMachines/write`"
+					},
+					{
+						"id": "e",
+						"text": "`az deployment sub create`"
+					},
+					{
+						"id": "f",
+						"text": "`az group create`"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Review activity"
+					},
+					{
+						"id": "s2",
+						"label": "Apply activity"
+					},
+					{
+						"id": "s3",
+						"label": "Shared permission for both activities"
+					},
+					{
+						"id": "s4",
+						"label": "Additional permission for the workload"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d"
+			},
+			"explanation": {
+				"correct": "The reviewer uses what-if to inspect the proposed changes, while `az deployment group create` applies the template at resource-group scope. Both activities require access to all operations on the deployment resource type, represented by `Microsoft.Resources/deployments/*`, and write access to the resources being deployed. Because this template creates a virtual machine, `Microsoft.Compute/virtualMachines/write` is also required; the what-if operation has the same permission requirements as deployment.",
+				"perChoice": {
+					"a": "The what-if operation is used before deployment to preview the changes that the template would make.",
+					"b": "This command applies the template at resource-group scope, which matches the target `rg-app`.",
+					"c": "Access to all operations on `Microsoft.Resources/deployments` is required for both deployment and what-if.",
+					"d": "Creating the virtual machine described by the template also requires write access to `Microsoft.Compute/virtualMachines`.",
+					"e": "This command applies a deployment at subscription scope rather than to the resource group `rg-app`.",
+					"f": "This command creates a resource group; it does not apply the template to the existing resource group."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-cli"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deploy-cli"
+				}
+			],
+			"subtopics": [
+				"deployment-permissions",
+				"what-if",
+				"azure-cli"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q9HAHKEKGD69WXF0Y78KK7",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Your platform team ships every infrastructure change through a pipeline workspace. Five deployment steps are queued for tonight, and each one has its own constraint about where the definition comes from or how the values are supplied. Drag the Azure CLI option that satisfies each constraint onto its slot.",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "az deployment group create --resource-group rg-app --name pipelineDeploy \\\n  <add the option that satisfies the constraint>"
+				},
+				"items": [
+					{
+						"id": "item-file",
+						"text": "--template-file main.bicep"
+					},
+					{
+						"id": "item-uri-github",
+						"text": "--template-uri https://raw.githubusercontent.com/contoso/infra/main/azuredeploy.json"
+					},
+					{
+						"id": "item-spec",
+						"text": "--template-spec contosoSpec"
+					},
+					{
+						"id": "item-uri-sas",
+						"text": "--template-uri https://contoso.blob.core.windows.net/templates/linked.json --query-string $sasToken"
+					},
+					{
+						"id": "item-params",
+						"text": "--parameters ./params.jsonc"
+					}
+				],
+				"slots": [
+					{
+						"id": "slot-workspace",
+						"label": "Definition kept in the pipeline workspace alongside the source code"
+					},
+					{
+						"id": "slot-repo",
+						"label": "Definition published as ARM JSON in a code repository, reached over HTTPS, with credentials kept out of the definition"
+					},
+					{
+						"id": "slot-spec",
+						"label": "Definition published into the organization's own subscription and shared under Azure RBAC control"
+					},
+					{
+						"id": "slot-storage",
+						"label": "Definition kept in cloud object storage that needs a time-limited credential to download"
+					},
+					{
+						"id": "slot-values",
+						"label": "Values for the deployment supplied from a local document that includes comments"
+					}
+				]
+			},
+			"key": {
+				"slot-repo": "item-uri-github",
+				"slot-spec": "item-spec",
+				"slot-storage": "item-uri-sas",
+				"slot-values": "item-params",
+				"slot-workspace": "item-file"
+			},
+			"explanation": {
+				"correct": "The five constraints differ only in where the definition comes from or how the values arrive, so each maps to a different option. The definition sitting in the pipeline workspace is passed with --template-file, which accepts a local Bicep file, .json, or .jsonc. The definition published as JSON in a code repository is fetched with --template-uri, and any credentials must travel as secure parameters rather than inside the remote file. The definition published into the organization's own subscription, where Azure RBAC decides who may use it, is deployed as a template spec with --template-spec. The definition kept in cloud object storage that needs a time-limited credential is fetched with --template-uri plus --query-string $sasToken, the way a SAS token is supplied for a remote linked template in storage. Finally, a local document of values carrying // comments must be handed over as a parameter file whose name ends in .jsonc, so --parameters ./params.jsonc is the matching option.",
+				"perChoice": {
+					"item-file": "Fits the slot about the definition kept in the pipeline workspace: --template-file points to a local Bicep file, .json, or .jsonc file on the machine running the command, so the team's own source is deployed as-is.",
+					"item-uri-github": "Fits the slot about the definition published as ARM JSON in a code repository: --template-uri deploys a remote ARM template such as a publicly accessible GitHub address, and sensitive values belong in secure parameters rather than in the template.",
+					"item-spec": "Fits the slot about the definition published into the organization's own subscription: a template spec is a subscription resource that contains an ARM template, and Azure RBAC controls who can use it, so the shared copy is referenced by name with --template-spec.",
+					"item-uri-sas": "Fits the slot about the definition kept in cloud object storage: for a remote linked template with a relative path in storage, the SAS token is supplied with --query-string $sasToken, which is exactly what this option does.",
+					"item-params": "Fits the slot about the values supplied from a local document that includes comments: a parameter file that contains // comments must end in .jsonc, since the plain .json extension is for comment-free files only."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deploy-cli"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-cli"
+				}
+			],
+			"subtopics": [
+				"template-sources",
+				"template-specs",
+				"parameter-files"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R47K095786NPMA67MHD4YM",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a virtual machine definition that your team publishes in a public code repository, and you are deploying it entirely through the Azure portal. The resource group that will hold the machine does not exist yet, one of the settings in the definition has to be changed before the run, and the remaining settings should keep the values the definition carries. Drag each portal action into the slot where it belongs.",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"parameters\": {\n    \"storageAccountType\": {\n      \"type\": \"string\",\n      \"defaultValue\": \"Standard_LRS\"\n    },\n    \"vmSize\": {\n      \"type\": \"string\",\n      \"defaultValue\": \"Standard_D2s_v3\"\n    }\n  }\n}"
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Create a resource, search for template, choose Template deployment, select Create"
+					},
+					{
+						"id": "i2",
+						"text": "Load a quickstart template"
+					},
+					{
+						"id": "i3",
+						"text": "Edit template, adjust the definition, then Save"
+					},
+					{
+						"id": "i4",
+						"text": "Select template to deploy the loaded definition unchanged"
+					},
+					{
+						"id": "i5",
+						"text": "Create new so the resource group is created during the deployment"
+					},
+					{
+						"id": "i6",
+						"text": "Accept the agreement on the terms and conditions, then select Purchase"
+					},
+					{
+						"id": "i7",
+						"text": "Check the parameter list, where camelCase names appear as spaced-out words and a default value is offered"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "The definition to run is hosted outside Azure and must be brought into the portal workflow."
+					},
+					{
+						"id": "s2",
+						"label": "The definition brought in from the hosting site must be changed before the run."
+					},
+					{
+						"id": "s3",
+						"label": "The place that will hold the virtual machine must be brought into existence by the run itself rather than existing beforehand."
+					},
+					{
+						"id": "s4",
+						"label": "The run must be authorized and submitted once the required fields are filled in."
+					},
+					{
+						"id": "s5",
+						"label": "The deployment must begin from the portal with a definition of your own rather than from a marketplace item."
+					},
+					{
+						"id": "s6",
+						"label": "Each setting the definition exposes must show on the form as a readable label instead of the raw identifier from the file."
+					}
+				]
+			},
+			"key": {
+				"s1": "i2",
+				"s2": "i3",
+				"s3": "i5",
+				"s4": "i6",
+				"s5": "i1",
+				"s6": "i7"
+			},
+			"explanation": {
+				"correct": "Each placement follows the portal's custom-template workflow. You reach that workflow from Create a resource, search for template, choose Template deployment, and select Create (i1 in s5). A definition hosted outside Azure is brought in with the quickstart-template loading option (i2 in s1). When the definition must be changed before the run, you edit it and then save it (i3 in s2); the option that deploys the loaded definition unchanged does not apply here. The destination that does not exist yet is created as part of the run by choosing Create new (i5 in s3). The run is authorized and submitted by accepting the agreement on the terms and conditions and then selecting Purchase (i6 in s4). Finally, the form surfaces the template's settings as readable labels, so a camelCased identifier such as storageAccountType is shown as spaced-out words and each parameter can offer its default value (i7 in s6).",
+				"perChoice": {
+					"i1": "This is the entry path into the portal's own template deployment workflow, so it belongs in the slot about starting from the portal with your own definition rather than from a marketplace item.",
+					"i2": "This is the option that pulls in a definition hosted in a public code repository, so it belongs in the slot about where the definition comes from.",
+					"i3": "This is how a required change is applied to the definition before it runs, so it belongs in the slot about changing the definition.",
+					"i4": "This fits no slot: it deploys the loaded definition exactly as it was downloaded, which contradicts the requirement that one setting be changed before the run; the edit-then-save path applies instead.",
+					"i5": "This is what creates the missing destination as part of the deployment, so it belongs in the slot about the destination coming into existence during the run.",
+					"i6": "This is the authorization and submission step that ends the deployment, so it belongs in the slot about authorizing and submitting the run.",
+					"i7": "This describes how the template's settings appear on the form, so it belongs in the slot about the readable labels for each setting."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deploy-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deploy-cli"
+				}
+			],
+			"subtopics": [
+				"custom-template-deployment",
+				"portal-deployment-workflow"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R4CB97BEWZVFJYRANNGY45",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your central platform team maintains infrastructure definitions written in Bicep that four application teams must each apply in resource groups they own. The definitions have to sit in one governed location so that nobody copies files around by hand, and use of them has to stay limited to the teams that are meant to have them. Which Azure artifact should the platform team publish, and how should access to it be managed?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Application team",
+						"Resource group it owns",
+						"What it must apply"
+					],
+					"rows": [
+						[
+							"Payments",
+							"rg-payments-prod",
+							"Linux virtual machine with a virtual network"
+						],
+						[
+							"Retail",
+							"rg-retail-prod",
+							"Storage account with a Linux virtual machine"
+						],
+						[
+							"Logistics",
+							"rg-logistics-prod",
+							"Linux virtual machine with a virtual network"
+						],
+						[
+							"Reporting",
+							"rg-reporting-prod",
+							"Storage account with a Linux virtual machine"
+						]
+					]
+				},
+				"statement": "The platform team should publish {{artifact}} and control access to it with {{access}}.",
+				"slots": [
+					{
+						"id": "artifact",
+						"options": [
+							{
+								"id": "a",
+								"text": "a template spec"
+							},
+							{
+								"id": "b",
+								"text": "a public raw link to the Bicep source"
+							},
+							{
+								"id": "c",
+								"text": "a container in Azure Storage that holds the Bicep file"
+							},
+							{
+								"id": "d",
+								"text": "a copy of the ARM JSON pasted into the teams' wiki"
+							}
+						]
+					},
+					{
+						"id": "access",
+						"options": [
+							{
+								"id": "a",
+								"text": "Azure RBAC role assignments"
+							},
+							{
+								"id": "b",
+								"text": "a shared Azure administrator account that every team uses"
+							},
+							{
+								"id": "c",
+								"text": "an Azure service principal whose credential sits in each pipeline workspace"
+							},
+							{
+								"id": "d",
+								"text": "an Azure Storage SAS token that each team pastes into its deployment script"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"artifact": "a",
+				"access": "a"
+			},
+			"explanation": {
+				"correct": "A template spec is an Azure resource that holds an ARM template, so a single maintained definition can be shared from one location instead of being copied to each team, and Azure RBAC decides which teams are allowed to use it. That matches both requirements in the scenario: one governed home for the definitions and access limited per team. Keep in mind that this feature is still in preview, so validate it against your scenario before standardizing on it.",
+				"perChoice": {
+					"artifact:b": "A publicly reachable raw link can be deployed with --template-uri, but it exposes the definition to anyone who finds the address and offers no way to limit usage to particular teams.",
+					"artifact:c": "A storage container only holds files: every team would need a hand-issued SAS token or shared credentials, and a .bicep file kept remotely still has to be built into ARM JSON with the Bicep CLI before the Azure CLI can deploy it, so it is not a per-team controlled artifact.",
+					"artifact:d": "Hand-copied JSON in a wiki drifts away from the maintained source and gives no per-team access control, which is exactly the manual distribution the team wants to avoid.",
+					"access:b": "One shared administrator credential lets any team that holds it deploy, so it does not tie usage to the teams that are meant to have the definition.",
+					"access:c": "A service principal credential identifies the identity that runs a deployment, but by itself it does not decide which teams may use the shared artifact.",
+					"access:d": "A SAS token pasted into scripts is hand-distributed, can expire, and cannot be mapped to team membership, whereas access assignments on the artifact are the documented way to control who may use a template spec."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deploy-cli"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-cli"
+				}
+			],
+			"subtopics": [
+				"template-specs",
+				"azure-rbac",
+				"bicep-deployment"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R4GSX28Z0VP0RBJ6RH0MCJ",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your platform team rolls out infrastructure changes with the Azure CLI every night, and the build agents run the current version of the CLI. The Bicep template used for this change pulls in a second template from a separate repository through a module, and it declares a monitoring resource that is only created when a parameter is true. After the change, the environment must hold exactly the resources that the template describes, and the team wants to standardize on an approach that stays supported as the tooling evolves. They also want to know what happens to the monitoring resource that earlier runs created when the parameter is switched to false. Which method should the team choose, and what outcome should they expect?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "param monitoringEnabled bool = true\n\nresource sa 'Microsoft.Storage/storageAccounts' = {\n  name: 'stgapp001'\n  location: resourceGroup().location\n}\n\nresource monitor 'Microsoft.Insights/components' = {\n  condition: monitoringEnabled\n  name: 'app-monitor'\n  location: resourceGroup().location\n}\n\nmodule network './network.bicep' = {\n  name: 'networkDeploy'\n}"
+				},
+				"statement": "For this change, the team should choose {{method}}, and after the run they should find that {{outcome}}.",
+				"slots": [
+					{
+						"id": "method",
+						"options": [
+							{
+								"id": "a",
+								"text": "deployment stacks"
+							},
+							{
+								"id": "b",
+								"text": "the deployment mode Complete for the root template"
+							},
+							{
+								"id": "c",
+								"text": "the deployment mode Complete for the nested template as well"
+							},
+							{
+								"id": "d",
+								"text": "the deployment mode Incremental"
+							}
+						]
+					},
+					{
+						"id": "outcome",
+						"options": [
+							{
+								"id": "a",
+								"text": "the monitoring resource from the earlier run is deleted"
+							},
+							{
+								"id": "b",
+								"text": "the monitoring resource from the earlier run is left in place"
+							},
+							{
+								"id": "c",
+								"text": "the monitoring resource from the earlier run is updated with the template's default properties"
+							},
+							{
+								"id": "d",
+								"text": "the monitoring resource from the earlier run keeps the properties it already had"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"method": "a",
+				"outcome": "a"
+			},
+			"explanation": {
+				"correct": "Two separate rules decide this. First, the release has to make the environment match the template exactly, and the template pulls in a nested template. Complete mode is only supported by root-level templates, and a linked or nested template always runs in incremental mode, so complete mode cannot deliver the removals this template needs; because complete mode is also gradually being deprecated, the recommended way to make a Bicep or ARM template deployment perform deletions is to use deployment stacks. Second, the monitoring resource is conditional on monitoringEnabled. When that parameter is false the resource is not created, and with deployment REST API versions from 2019-05-10 onwards - which the current Azure CLI and Azure PowerShell use - a conditional resource that is skipped is deleted instead of being left in place. The copy created by earlier runs therefore goes away.",
+				"perChoice": {
+					"method:b": "Complete mode is limited to root-level templates. The template in this scenario pulls in a nested template, and that nested template is always run in incremental mode, so resources it created that are no longer described would survive the run; complete mode is also gradually being deprecated, so it is not a durable choice for a template that must perform deletions.",
+					"method:c": "Linked and nested templates do not support complete mode at all, so requesting it for the nested template makes the deployment fail instead of pruning anything.",
+					"method:d": "Incremental mode adds the resources the template declares and updates the ones whose properties changed, but it never removes resources that the template no longer describes, so the stale resources would remain in the environment and the requirement would not be met.",
+					"outcome:b": "Leaving the resource in place is the behavior of deployment REST API versions before 2019-05-10. With the current Azure CLI and Azure PowerShell, a conditional resource whose condition evaluates to false is deleted.",
+					"outcome:c": "Resetting omitted properties to their defaults applies to resources that the template still declares and deploys. Here the condition is false, so the resource is not deployed at all and the copy from the earlier run is removed rather than updated.",
+					"outcome:d": "Nothing is preserved unchanged in this scenario: once the condition evaluates to false, the resource that earlier runs created is removed by the current Azure CLI, so its previous properties are not kept."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deployment-modes"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-cli"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deploy-cli"
+				}
+			],
+			"subtopics": [
+				"deployment-modes",
+				"deployment-stacks",
+				"conditional-resources"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R4MZFGNKBBT90023KH7Y2N",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a parent ARM template in Azure Storage that references a child template by a relative path. The storage container is private, so the child file cannot be fetched during the deployment. You need the pipeline to provide the access credential for that child file without downloading it locally. Which Azure CLI argument should you add?",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "az deployment group create \\\n  --resource-group rg-app \\\n  --template-uri https://contoso.blob.core.windows.net/templates/parent.json"
+				},
+				"statement": "Add {{argument}} to the deployment command.",
+				"slots": [
+					{
+						"id": "argument",
+						"options": [
+							{
+								"id": "a",
+								"text": "--query-string $sasToken"
+							},
+							{
+								"id": "b",
+								"text": "--query-string $resourceGroup"
+							},
+							{
+								"id": "c",
+								"text": "--parameters $sasToken"
+							},
+							{
+								"id": "d",
+								"text": "--template-file $sasToken"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"argument": "a"
+			},
+			"explanation": {
+				"correct": "For a linked template in Azure Storage that is referenced by a relative path, the deployment command must supply the storage SAS token in the query string. `--query-string $sasToken` provides that access credential while keeping both templates remote.",
+				"perChoice": {
+					"argument:b": "`--query-string $resourceGroup` appends the resource-group value to the request instead of the SAS token, so it does not grant the deployment access to the private child template.",
+					"argument:c": "`--parameters $sasToken` supplies a deployment parameter value and does not provide the query-string credential needed to retrieve the linked template.",
+					"argument:d": "`--template-file $sasToken` treats the credential as a local template path and therefore does not provide it for the remote linked-template request."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-cli"
+				}
+			],
+			"subtopics": [
+				"linked-templates",
+				"remote-template-deployment",
+				"storage-access"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R4T9G6P8B68DPJFZYX2B78",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Bicep file that declares a virtual network and one subnet, and your pipeline applies that file to an existing resource group every night with incremental mode. After each run, the subnet described by the file is reported as missing and has to be recreated by hand, even though the deployment itself reports success. You need to update the file so that the subnet survives every run. Which update should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "resource vnet 'Microsoft.Network/virtualNetworks@2023-05-01' = {\n  name: 'vnet-app'\n  location: resourceGroup().location\n  properties: {\n    addressSpace: {\n      addressPrefixes: ['10.0.0.0/16']\n    }\n  }\n}\n\nresource snet 'Microsoft.Network/virtualNetworks/subnets@2023-05-01' = {\n  parent: vnet\n  name: 'snet-app'\n  properties: {\n    addressPrefix: '10.0.1.0/24'\n  }\n}"
+				},
+				"statement": "The subnet should be {{s1}}.",
+				"slots": [
+					{
+						"id": "s1",
+						"options": [
+							{
+								"id": "a",
+								"text": "Declared inside the virtual network resource rather than as a child resource"
+							},
+							{
+								"id": "b",
+								"text": "Declared as a child resource with an explicit dependency on the virtual network"
+							},
+							{
+								"id": "c",
+								"text": "Declared in a separate template that applies the virtual network and its subnets in two runs"
+							},
+							{
+								"id": "d",
+								"text": "Declared in the same file but after the virtual network resource declaration"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"s1": "a"
+			},
+			"explanation": {
+				"correct": "Microsoft's guidance for redeploying resources notes that subnet values should be specified through the `subnets` property on the Microsoft.Network/virtualNetworks resource and not through the Microsoft.Network/virtualNetworks/subnets child resource; while the subnets are defined on the virtual network, you can redeploy the virtual network without losing them. The file shown declares the subnet only as a child resource, which is exactly the pattern that makes the subnet disappear on each redeployment, so the subnet must be moved into the virtual network resource itself.",
+				"perChoice": {
+					"s1:b": "An explicit dependency only controls the order in which resources are created. The subnet would still be declared solely as a child resource, and redeployment can still drop it, so this does not address the symptom.",
+					"s1:c": "Splitting the network and its subnet across two deployments leaves the subnet outside the virtual network's own definition, so the same loss on redeployment can still occur. The subnet has to be part of the virtual network resource.",
+					"s1:d": "The position of a declaration within the file does not change how the subnet is tracked. The subnet must be defined through the virtual network resource, not through a separate child declaration placed after it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deployment-modes"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-cli"
+				}
+			],
+			"subtopics": [
+				"bicep-virtual-network-subnets",
+				"incremental-redeployment"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R50Q5GABTDEHCQ4M1EXB2K",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your infrastructure is written in Bicep, and one part of it creates a set of identical virtual machines with a copy loop whose count comes from a parameter. The earlier pipeline run used a count of five, while the run you are preparing uses a count of three. You need to know what happens to the two machines that this run leaves out, and what your team should do first.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "// main.bicep\nparam vmCount int = 3\n\nresource vms 'Microsoft.Compute/virtualMachines@2024-07-01' = [for i in range(0, vmCount): {\n  name: 'vm${i}'\n  location: resourceGroup().location\n  properties: {\n    hardwareProfile: {\n      vmSize: 'Standard_D2s_v5'\n    }\n    osProfile: {\n      computerName: 'vm${i}'\n      adminUsername: 'azureuser'\n    }\n  }\n}]\n\n// pipeline step\naz deployment group create \\\n  --resource-group rg-app \\\n  --template-file main.bicep \\\n  --mode Complete \\\n  --parameters vmCount=3"
+				},
+				"statement": "After the run finishes, {{slot1}}; and before the pipeline runs again, the team should {{slot2}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "the two machines are deleted, because the copy loop stops producing them and this mode removes anything the template does not describe"
+							},
+							{
+								"id": "b",
+								"text": "the two machines are kept, because the template describes a copy loop that only creates and updates the instances it still produces"
+							},
+							{
+								"id": "c",
+								"text": "the two machines are kept, because this mode only removes resources that the template never described at all"
+							},
+							{
+								"id": "d",
+								"text": "the two machines are deleted, but only after you remove them by hand from the resource group"
+							}
+						]
+					},
+					{
+						"id": "slot2",
+						"options": [
+							{
+								"id": "a",
+								"text": "run the what-if preview for the deployment and read the list of changes before going ahead"
+							},
+							{
+								"id": "b",
+								"text": "run nothing extra, because the deployment mode already reports every planned change before it makes any"
+							},
+							{
+								"id": "c",
+								"text": "export the current configuration of the resource group for later comparison with the template"
+							},
+							{
+								"id": "d",
+								"text": "have a second engineer approve the change in the portal before the pipeline runs again"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a",
+				"slot2": "a"
+			},
+			"explanation": {
+				"correct": "Complete mode deletes resources that exist in the target resource group but are not specified in the template, and the documentation calls out copy loops specifically: any resources that are not specified in the template after the copy loop resolves are deleted. Because the loop now resolves to three instances instead of five, the two extra virtual machines fall outside the resolved template, so the deployment itself removes them; no manual cleanup is needed. The documentation also says to always run what-if before a complete mode deployment, because the preview identifies resources that will be created, deleted, or modified and helps prevent accidental deletion.",
+				"perChoice": {
+					"slot1:b": "A copy loop that resolves to fewer instances gives no protection to the extra machines. Once the loop resolves, the instances it no longer produces are treated as unspecified, so in complete mode they are deleted rather than kept.",
+					"slot1:c": "This mixes up the two conditions. Complete mode removes resources that are absent from the template, and the instances that fall away when the copy loop resolves count as absent, so the two extra machines are deleted.",
+					"slot1:d": "No manual cleanup is required. The deployment itself deletes the instances the copy loop no longer produces, so the team doesn't have to remove them by hand before or during the run.",
+					"slot2:b": "The deployment mode doesn't list the changes it is about to make; it performs the deletions as part of the run. The what-if preview is the documented way to see the planned changes first.",
+					"slot2:c": "Exporting the group's current configuration and comparing it with the template doesn't reveal which resources the run would delete. The what-if preview reports the resources that will be created, deleted, or modified.",
+					"slot2:d": "A second approval in the portal doesn't enumerate the resources that the run would delete, so it can't stand in for the what-if preview that the documentation requires before a complete mode deployment."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deployment-modes"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deploy-cli"
+				}
+			],
+			"subtopics": [
+				"complete-mode",
+				"copy-loop-resources",
+				"what-if-preview"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R55E6D70AWAXY1R1TBZNJT",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your nightly pipeline applies a Bicep file to the resource group rg-app with the command shown below, and it always passes the same deployment name on every run.\n\nThe team wants to know what the Azure portal list of deployments will show after the pipeline has run several times, and what happens when two pipeline runs carrying the same name overlap in time. Which outcome should you expect in each situation?",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "az deployment group create \\\n  --resource-group rg-app \\\n  --template-file main.bicep \\\n  --name release-0424"
+				},
+				"statement": "After the pipeline has run several times, the Azure portal list of deployments for rg-app shows {{slot1}}; and when two runs carrying the same name overlap in time, {{slot2}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "a single entry for release-0424, because the later run replaces the earlier entry"
+							},
+							{
+								"id": "b",
+								"text": "two entries for release-0424, one for each run, because sequential runs are recorded separately"
+							},
+							{
+								"id": "c",
+								"text": "one entry for release-0424 plus a separate entry for every earlier run, because each run adds a record"
+							},
+							{
+								"id": "d",
+								"text": "no entry for release-0424, because a deployment name can be used only once in a resource group"
+							}
+						]
+					},
+					{
+						"id": "slot2",
+						"options": [
+							{
+								"id": "a",
+								"text": "only the resources from the run that finishes last are created; the other run is replaced"
+							},
+							{
+								"id": "b",
+								"text": "the resources of both runs are created, one set from each run"
+							},
+							{
+								"id": "c",
+								"text": "neither run creates resources, because the shared name blocks both deployments"
+							},
+							{
+								"id": "d",
+								"text": "the resources from the run that starts first are created, and the later run adds nothing"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a",
+				"slot2": "a"
+			},
+			"explanation": {
+				"correct": "The deployment name is the key of the deployment history. Each run adds an entry named after the deployment, and running the pipeline again with the same name (release-0424) does not add a second record: the later run replaces the earlier entry, so the portal list shows one entry for that name. Runs that reuse a name one after the other still create the resources of both runs, but only one entry is retained in the history. When two runs carrying the same name overlap in time, only the last one completes; the run that has not finished yet is replaced by that last deployment, so its resources are never created. Appending a date or a random number to the name avoids both the replaced history entry and the conflict between overlapping runs.",
+				"perChoice": {
+					"slot1:b": "Runs that reuse the same name one after the other do not leave two records behind. The later run replaces the earlier entry, so the list shows one entry for release-0424, even though the resources of both runs are created.",
+					"slot1:c": "Every run in this pipeline supplies the same name, so the runs are not recorded under separate names. Reusing a name replaces the earlier entry instead of adding another one to the list.",
+					"slot1:d": "A deployment name can be reused in a resource group; the second run is accepted and executed normally. The effect on the history is that the earlier entry is replaced, not that the deployment is refused or that no record appears.",
+					"slot2:b": "Two overlapping runs that carry the same name cannot both complete, so the resources of the run that has not finished are not created. Only the resources of the run that finishes last appear.",
+					"slot2:c": "Overlapping runs that share a name do not block each other completely; the last one to finish completes and its resources are created, while the other run is replaced.",
+					"slot2:d": "The run that starts first is not the one that wins. When two runs with the same name overlap, the last one to finish completes and the earlier one is replaced, so the resources of the earlier run do not appear."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-cli"
+				}
+			],
+			"subtopics": [
+				"deployment-name",
+				"deployment-history"
+			],
+			"reviewed": false
+		}
+	]
+}

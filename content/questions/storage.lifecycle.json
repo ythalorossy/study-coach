@@ -1,0 +1,1657 @@
+{
+	"skill": "storage.lifecycle",
+	"questions": [
+		{
+			"id": "q_01M5MPKHJQS2MDJVT4M4RP1F0V",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a general-purpose v2 storage account named contosodata that holds daily application logs in a container named sample-container. You want the lifecycle policy to age out log files that are no longer being read, rather than reacting only to write activity.\n\nA colleague opens the storage account in the portal, goes to Lifecycle management under Data management, and starts adding a rule that moves unused log files to the cool tier after 30 days. On the Base blobs page, no Last accessed condition is offered. The account and the rule in progress look like this:\n\n| Setting | Value |\n| --- | --- |\n| Storage account type | General-purpose v2 |\n| Access time tracking | Disabled |\n| Rule name | CoolUnusedLogs |\n| Rule scope | Containers (sample-container) |\n| Blob type | Append blobs |\n| Blob subtype | Base blobs |\n| Prefix filter | log |\n\nWhich change should be made so the rule can be based on read activity?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Storage account type",
+							"General-purpose v2"
+						],
+						[
+							"Access time tracking",
+							"Disabled"
+						],
+						[
+							"Rule name",
+							"CoolUnusedLogs"
+						],
+						[
+							"Rule scope",
+							"Containers (sample-container)"
+						],
+						[
+							"Blob type",
+							"Append blobs"
+						],
+						[
+							"Blob subtype",
+							"Base blobs"
+						],
+						[
+							"Prefix filter",
+							"log"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Enable access time tracking on the storage account and change the rule's blob type to Block blobs"
+					},
+					{
+						"id": "b",
+						"text": "Enable access time tracking on the storage account and change the rule's blob subtype to Previous versions and snapshots"
+					},
+					{
+						"id": "c",
+						"text": "Enable access time tracking on the storage account and change the rule's blob type to Append blobs"
+					},
+					{
+						"id": "d",
+						"text": "Enable access time tracking on the storage account and change the rule's blob type to Page blobs"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A read-based condition on the Base blobs page appears only when both prerequisites are met: access time tracking is turned on for the account (Enable access tracking on the Lifecycle management blade under Data management) and the rule's blob type is Block blobs. With tracking disabled there is no last accessed time to evaluate, and with Append blobs selected the option is still hidden. Turning tracking on and switching the blob type to Block blobs makes the Last accessed condition available; this also matches the tiering limitation, since moving data to cool applies only to block blobs and never to append or page blobs.",
+				"perChoice": {
+					"b": "Changing the blob subtype only changes which versions of a blob a rule targets (current version, previous versions, snapshots). It does not affect whether a read-based condition is offered. Because access tracking would still be enabled but the blob type would remain Append blobs, the Last accessed condition would continue to be unavailable.",
+					"c": "This changes nothing that the condition depends on: the blob type stays Append blobs, and the Last accessed option is offered only for Block blobs. Cool-tier tiering actions also do not apply to append blobs, so the rule could not move these files to cool.",
+					"d": "With the blob type set to Page blobs, the read-based condition is still not offered, because it is limited to Block blobs. Page blobs are also excluded from tiering actions, so the cool-tier move would not apply."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-configure"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-overview"
+				}
+			],
+			"subtopics": [
+				"lifecycle-policy-rules",
+				"access-time-tracking",
+				"blob-types"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MPSJMWQBV6BMQ402GTZB1X",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a general-purpose v2 storage account named contosomedia that stores final video packages under the releases/ path, plus a set of renditions flagged with a blob index tag. You edited the account's lifecycle policy in Code View, and the saved policy applies a rule that matches candidate blobs by path prefix and by blob index tag before moving them to the cool tier after 45 days without modification.\n\n```json\n{\n  \"rules\": [\n    {\n      \"name\": \"RetirePackages\",\n      \"enabled\": true,\n      \"type\": \"Lifecycle\",\n      \"definition\": {\n        \"filters\": {\n          \"blobTypes\": [\"BlockBlob\"],\n          \"prefixes\": [\"releases/\"],\n          \"tagMatches\": [\n            { \"name\": \"expire\", \"op\": \"eq\", \"value\": \"true\" }\n          ]\n        },\n        \"actions\": {\n          \"baseBlob\": {\n            \"tierToCool\": { \"daysAfterModificationGreaterThan\": 45 }\n          }\n        }\n      }\n    }\n  ]\n}\n```\n\nYour team wants the policy to manage every blob under the releases/ path, and also every blob carrying the expire=true tag, including blobs that match just the path prefix or just the tag. Which change to the policy should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"rules\": [\n    {\n      \"name\": \"RetirePackages\",\n      \"enabled\": true,\n      \"type\": \"Lifecycle\",\n      \"definition\": {\n        \"filters\": {\n          \"blobTypes\": [\"BlockBlob\"],\n          \"prefixes\": [\"releases/\"],\n          \"tagMatches\": [\n            { \"name\": \"expire\", \"op\": \"eq\", \"value\": \"true\" }\n          ]\n        },\n        \"actions\": {\n          \"baseBlob\": {\n            \"tierToCool\": { \"daysAfterModificationGreaterThan\": 45 }\n          }\n        }\n      }\n    }\n  ]\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Split the rule into two rules: one that filters on the path prefix alone and one that filters on the blob index tag alone."
+					},
+					{
+						"id": "b",
+						"text": "Add the blob index tag to the filter set of the current rule, so the path prefix and the tag both have to match."
+					},
+					{
+						"id": "c",
+						"text": "Remove the path prefix from the filter set, so the rule matches only blobs carrying the blob index tag alone."
+					},
+					{
+						"id": "d",
+						"text": "Add a second action to the rules in the policy so that blobs carrying the expire tag move to the cool tier, and leave the filters in place."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Filters inside a single rule are combined with a logical AND, so the saved rule only reaches blobs that carry the releases/ path prefix and the expire=true tag at the same time. The packages stored under releases/ without the tag, and the tagged renditions sitting outside that path, are therefore never processed. Splitting the rule into a rule filtered on the path prefix and a rule filtered on the blob index tag brings both groups under management, and a blob that satisfies both characteristics is simply picked up by each rule.",
+				"perChoice": {
+					"b": "Stacking more filters in one rule keeps the AND behaviour, so the rule still matches only the intersection of the prefix and the tag. Nothing changes for the two groups that match a single characteristic, and stacking filters can never widen a rule's reach; that requires separate rules.",
+					"c": "This narrows the rule down to tagged blobs only, which leaves the packages stored under releases/ without the expire tag unmanaged — the opposite of what the team needs. It solves the tag side of the requirement by abandoning the path side.",
+					"d": "Actions decide what happens to blobs a rule already matches; they do not change which blobs match. The filter set still requires the path prefix and the tag together, so adding another tiering action adds no coverage for either group."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-configure"
+				}
+			],
+			"subtopics": [
+				"lifecycle-rule-filters",
+				"blob-index-tags",
+				"policy-json"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MPY6E6MK14HVT7A3BJ6RQ3",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a premium block blob storage account named contosabuild that holds finished CI build artifacts. The team wants the account's lifecycle policy to reduce the storage consumed by artifacts that have aged out, and they have observed that the policy runs to completion without changing where the artifacts are stored or how much capacity they use.\n\nThe policy, maintained in Code View, currently reads:\n\n```json\n{\n  \"rules\": [\n    {\n      \"name\": \"AgeArtifacts\",\n      \"enabled\": true,\n      \"type\": \"Lifecycle\",\n      \"definition\": {\n        \"filters\": {\n          \"blobTypes\": [\"BlockBlob\"]\n        },\n        \"actions\": {\n          \"baseBlob\": {\n            \"tierToCool\": { \"daysAfterModificationGreaterThan\": 30 }\n          }\n        }\n      }\n    }\n  ]\n}\n```\n\nWhich change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"rules\": [\n    {\n      \"name\": \"AgeArtifacts\",\n      \"enabled\": true,\n      \"type\": \"Lifecycle\",\n      \"definition\": {\n        \"filters\": {\n          \"blobTypes\": [\"BlockBlob\"]\n        },\n        \"actions\": {\n          \"baseBlob\": {\n            \"tierToCool\": { \"daysAfterModificationGreaterThan\": 30 }\n          }\n        }\n      }\n    }\n  ]\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Replace the tierToCool action with a delete action for base blobs."
+					},
+					{
+						"id": "b",
+						"text": "Replace the tierToCool action with a tierToArchive action for base blobs."
+					},
+					{
+						"id": "c",
+						"text": "Replace the tierToCool action with a tierToHot action for base blobs."
+					},
+					{
+						"id": "d",
+						"text": "Keep the tierToCool action and add a tierToArchive action for base blobs."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "On a premium block blob storage account, tiering is not supported, so the tierToCool action never relocates the artifacts and the policy run completes without changing them. Lifecycle management policies are still supported on premium block blob accounts, and for this account type a delete action is the way a policy can stop aged-out artifacts from continuing to consume storage.",
+				"perChoice": {
+					"b": "tierToArchive is a tiering action, and tiering is not supported on premium block blob storage accounts, so this action would not move the artifacts anywhere. Archive tiering is a tiering operation for account types that support tiering, not this one.",
+					"c": "tierToHot is also a tiering action, which is unavailable on premium block blob storage accounts. In addition, blobs in this account type are already stored in the Hot tier, so this action would not reduce the storage consumed by aged-out artifacts even where tiering is supported.",
+					"d": "Keeping tierToCool leaves an action that cannot run on this account type, and adding tierToArchive introduces a second tiering action that is likewise unavailable. Because no tiering action executes on premium block blob storage, the aged-out artifacts would keep consuming storage."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-configure"
+				}
+			],
+			"subtopics": [
+				"lifecycle-actions",
+				"premium-block-blob-accounts",
+				"tiering-support"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MQ0ZK31C2KSXPB5N2BKNYC",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a general-purpose v2 storage account named contosoreports that holds finished monthly report packages. The account carries a lifecycle policy with a single rule that moves report blobs to the cool tier after 30 days and deletes them after 365 days. A policy execution began this morning and has already moved more than a thousand blobs.\n\n| Setting | Value |\n| --- | --- |\n| Storage account | contosoreports (general-purpose v2) |\n| Rules in policy | 1 (AgeReports), enabled |\n| Blob types in scope | Block blobs |\n| Actions | tierToCool after 30 days, delete after 365 days |\n| Activity right now | A policy execution is in progress |\n| Team requirement | Freeze the policy for two weeks, then remove it from the account, without paying for further tier moves and without the current execution touching any more blobs |\n\nWhich sequence of steps should the team follow?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Storage account",
+							"contosoreports (general-purpose v2)"
+						],
+						[
+							"Rules in policy",
+							"1 (AgeReports), enabled"
+						],
+						[
+							"Blob types in scope",
+							"Block blobs"
+						],
+						[
+							"Actions",
+							"tierToCool after 30 days, delete after 365 days"
+						],
+						[
+							"Activity right now",
+							"A policy execution is in progress"
+						],
+						[
+							"Team requirement",
+							"Freeze the policy for two weeks, then remove it from the account, without paying for further tier moves and without the current execution touching any more blobs"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Delete the policy from the account right away, then re-create it later if the pause is lifted"
+					},
+					{
+						"id": "b",
+						"text": "Set the rule's enabled property to false, wait 24 hours, then delete the policy from the account"
+					},
+					{
+						"id": "c",
+						"text": "Set the rule's enabled property to false and delete the policy from the account right away"
+					},
+					{
+						"id": "d",
+						"text": "Set the rule's enabled property to false, delete the policy from the account right away, then wait 24 hours"
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "Turning off the rule's enabled property makes the policy inactive, and an in-flight execution is stopped within 24 hours. Waiting that period before removing the policy document therefore leaves no execution still moving or deleting blobs and no additional Set Blob Tier charges, which is the recommended order: disable, wait 24 hours, then delete.",
+				"perChoice": {
+					"a": "Removing the policy only stops new executions from being scheduled. An execution already running still finishes, and you are billed for the actions it completes, so blobs can keep being moved during the pause and the requirement to freeze the current execution is not met.",
+					"c": "Disabling the rule is correct, but deleting the policy straight away undoes the benefit: an execution already in progress continues and its completed actions are still charged for.",
+					"d": "Deleting the policy right away has the same flaw as deleting first. The 24-hour pause has to come before the policy is removed, because only disabling the rules stops the in-flight execution."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-configure"
+				}
+			],
+			"subtopics": [
+				"disable-before-delete",
+				"in-flight-policy-execution"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MQ4TAN82QMXYJCZZ42PN4D",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a general-purpose v2 storage account named contosorecords that stores regulated record datasets as block blobs. Blob versioning is enabled on the account, and the export job takes a snapshot of a dataset each time that dataset is refreshed. The account's lifecycle policy is maintained in Code View and currently reads:\n\n```json\n{\n  \"rules\": [\n    {\n      \"name\": \"CoolCurrentBlobs\",\n      \"enabled\": true,\n      \"type\": \"Lifecycle\",\n      \"definition\": {\n        \"filters\": {\n          \"blobTypes\": [\"BlockBlob\"]\n        },\n        \"actions\": {\n          \"baseBlob\": {\n            \"tierToCool\": { \"daysAfterModificationGreaterThan\": 60 },\n            \"delete\": { \"daysAfterModificationGreaterThan\": 365 }\n          }\n        }\n      }\n    }\n  ]\n}\n```\n\nOnly one rule is present, and its action block applies to the current version of each blob rather than to previous versions or snapshots. The records team wants old previous versions and old snapshots removed once they are 30 days old, while the current version of every blob must keep the treatment it has today. Which change to the policy should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"rules\": [\n    {\n      \"name\": \"CoolCurrentBlobs\",\n      \"enabled\": true,\n      \"type\": \"Lifecycle\",\n      \"definition\": {\n        \"filters\": {\n          \"blobTypes\": [\"BlockBlob\"]\n        },\n        \"actions\": {\n          \"baseBlob\": {\n            \"tierToCool\": { \"daysAfterModificationGreaterThan\": 60 },\n            \"delete\": { \"daysAfterModificationGreaterThan\": 365 }\n          }\n        }\n      }\n    }\n  ]\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add a rule that targets previous versions and snapshots with a delete condition of 30 days after creation, leaving the existing rule as it is."
+					},
+					{
+						"id": "b",
+						"text": "Change the existing rule's delete condition from 365 days to 30 days after modification, keeping its scope on the current version of each blob."
+					},
+					{
+						"id": "c",
+						"text": "Add a rule that targets previous versions and snapshots with a tierToArchive condition of 30 days after creation, leaving the existing rule as it is."
+					},
+					{
+						"id": "d",
+						"text": "Add a rule that targets the current version of each blob with a delete condition of 30 days after modification, leaving the existing rule as it is."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Previous versions and snapshots are separate objects from the current version of a blob, and each of them can be tiered or deleted independently, so a rule that only carries actions for the current version never reaches them. The correct change is to add a second rule that targets previous versions and snapshots and that carries a delete run condition of 30 days after creation, while leaving the existing rule unchanged so current blobs keep being moved to the cool tier after 60 days without modification and deleted after 365 days. In the portal this is done by adding a rule whose Blob subtype is set to snapshots and versions and then defining its delete condition.",
+				"perChoice": {
+					"b": "This edit only changes when the current version of each blob is deleted. The rule still has no actions for previous versions or snapshots, so those objects would remain in the account, and current blobs would lose the 365-day retention the records team asked to keep.",
+					"c": "Tiering to the archive tier moves the old previous versions and snapshots into a cheaper tier but keeps the data in place, and it generates billable Set Blob Tier operations. The requirement is to remove that data, and a delete action is the right action once data has reached the end of its life.",
+					"d": "This targets the current version of each blob, so current blobs would be deleted after 30 days and the previous versions and snapshots that should have been removed at that age would stay in the account, which is the opposite of the requested outcome."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-configure"
+				}
+			],
+			"subtopics": [
+				"delete-actions",
+				"blob-versions-and-snapshots",
+				"policy-json-structure"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MQABAY8GM250FY4TSM25ZT",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a general-purpose v2 storage account named contosopackages that stores finished product packages as block blobs in a container named packages. The account's lifecycle policy contains one enabled rule that moves those blobs to the archive tier 60 days after their last modification, and the most recent policy run reported success. Every blob in the container was written with the account's default encryption scope, and after that run the packages are still in the hot tier, so the storage bill for the container has not dropped. The packages must remain retrievable for audit for several more years, and the team wants the policy to lower the per-blob cost of these packages. Which change should be made to the policy?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Storage account type",
+							"General-purpose v2"
+						],
+						[
+							"Default encryption scope",
+							"contoso-kv-scope (customer-managed key in Azure Key Vault)"
+						],
+						[
+							"Container",
+							"packages"
+						],
+						[
+							"Blob type stored in the container",
+							"Block blobs"
+						],
+						[
+							"Lifecycle policy rules",
+							"1 (ArchivePackages), enabled"
+						],
+						[
+							"Filters on the rule",
+							"None"
+						],
+						[
+							"Action on the rule",
+							"tierToArchive after 60 days without modification"
+						],
+						[
+							"Last policy run",
+							"Completed with no errors reported"
+						],
+						[
+							"State of the package blobs after the run",
+							"Hot tier, unchanged"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Keep the archive action and add a blob index tag filter so the rule selects only the blobs written with the encryption scope."
+					},
+					{
+						"id": "b",
+						"text": "Replace the archive action with a cool-tier action for the blobs that use the encryption scope."
+					},
+					{
+						"id": "c",
+						"text": "Change the delete action so that blobs using the encryption scope are removed 90 days after their last modification instead of being moved to a tier."
+					},
+					{
+						"id": "d",
+						"text": "Keep the archive action but base it on the creation time rather than the last modified time, so the policy moves the blobs to the archive tier sooner."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "A lifecycle management policy cannot change the tier of a blob that uses an encryption scope to the archive tier. Every package blob was written with the account's default encryption scope, so the rule's archive action can never apply to them; that is why the run finished cleanly while every package stayed in the hot tier and the bill did not move. Swapping the archive action for a cool-tier action keeps the packages online and retrievable for audit while lowering their per-blob cost, which is what the team asked for.",
+				"perChoice": {
+					"a": "Selecting the scoped blobs more precisely cannot help: the restriction applies to the archive tier itself, no matter how the rule picks its blobs, and the rule already carried no filters, so it was already evaluating these packages. The action still has no effect on them.",
+					"c": "Removing the packages would reduce storage consumption, but the packages must stay retrievable for audit for several more years, so deleting them contradicts the stated requirement and discards data that is still needed.",
+					"d": "Switching the age basis from last modified time to creation time only changes when the rule fires. The packages are already well past any threshold the policy uses, yet they never reached the archive tier, so the timing of the condition is not the cause."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-configure"
+				}
+			],
+			"subtopics": [
+				"encryption-scope-limits",
+				"lifecycle-tier-actions"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MQCH5HY2WXAB4K5N1CFRPN",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a general-purpose v2 storage account named contosovault that stores encrypted backup artifacts in many containers. The operations team wants the account's lifecycle policy to govern only the artifact sets listed below, and the policy is maintained in Code View. The saved policy currently holds a single enabled rule whose filters the team wants to extend so that every listed value is covered.\n\nWhich change should the team make to the policy?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Filter type",
+						"Values the team wants to add",
+						"Count"
+					],
+					"rows": [
+						[
+							"Path prefixes",
+							"logs/, audit/, exports/, media/, finance/, legal/, marketing/, hr/, sales/, ops/, backups/, images/, videos/, docs/",
+							"14"
+						],
+						[
+							"Blob index tag conditions",
+							"status=expired, owner=finance, owner=legal, owner=marketing, owner=hr, owner=sales, owner=ops, owner=it, owner=helpdesk, owner=facilities, owner=security, owner=procurement",
+							"12"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add all of the listed path prefixes and blob index tag conditions to the existing rule, so the service evaluates every filter together each time the policy runs."
+					},
+					{
+						"id": "b",
+						"text": "Split the intended matches across multiple rules, keeping each rule within the number of path prefixes and blob index tag conditions that one rule supports."
+					},
+					{
+						"id": "c",
+						"text": "Replace the path prefixes with a single prefix that matches the container root, and rely on the blob index tag conditions to select the artifacts."
+					},
+					{
+						"id": "d",
+						"text": "Add the values through the portal's Add a rule form instead of Code View, so the portal distributes the path prefixes and blob index tag conditions among the saved rules."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "A single lifecycle rule can carry at most 10 case-sensitive path prefixes and at most 10 blob index tag conditions. The planned configuration needs 14 path prefixes and 12 tag conditions, so one rule cannot hold it and the service will reject the policy with those filters. Because the team must govern every listed artifact set while leaving other blobs in the account untouched, the intended values have to be distributed across several rules, each staying within the per-rule filter limits.",
+				"perChoice": {
+					"a": "Adding all 14 path prefixes and all 12 blob index tag conditions to the existing rule exceeds the per-rule maximums of 10 path prefixes and 10 blob index tag conditions, so the policy cannot be saved in that form.",
+					"c": "Widening the prefix to the container root would make the rule apply to blobs the team did not list, and the 12 tag conditions still exceed the per-rule maximum of 10 tag conditions.",
+					"d": "The portal's Add a rule form creates one rule at a time and does not redistribute filters across rules; the same per-rule limits on path prefixes and blob index tag conditions apply to every rule it creates."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-configure"
+				}
+			],
+			"subtopics": [
+				"blob-lifecycle-policy",
+				"rule-filters",
+				"policy-limits"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MQS36QJ4JXAPX06HSVEH3Z",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have three storage accounts that hold data for the same platform team, and each account carries its own lifecycle policy with a single rule that moves blobs to the cool tier 30 days after their last modification.\n\nThe three policies keep drifting apart, because every time someone adjusts the aging rules, three separate policies have to be edited. The team needs one scheduled mechanism that applies the same tiering operation to blobs in all three accounts, so that the operation can be maintained and audited in a single place. The blobs must stay in the accounts where they are today: data residency rules and the sheer volume rule out copying or relocating them.\n\nWhich approach should the team take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"contosotelemetry\": {\n    \"subscription\": \"Sub-T\",\n    \"region\": \"East US\",\n    \"contents\": \"Raw sensor events (block blobs)\",\n    \"lifecycleRule\": \"Move to cool tier 30 days after last modification\"\n  },\n  \"contosomedia\": {\n    \"subscription\": \"Sub-M\",\n    \"region\": \"West Europe\",\n    \"contents\": \"Uploaded photo and video masters (block blobs)\",\n    \"lifecycleRule\": \"Move to cool tier 30 days after last modification\"\n  },\n  \"contosobackup\": {\n    \"subscription\": \"Sub-B\",\n    \"region\": \"Southeast Asia\",\n    \"contents\": \"Nightly database backups (block blobs)\",\n    \"lifecycleRule\": \"Move to cool tier 30 days after last modification\"\n  }\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add path prefix filters for the containers in the other two Azure Storage accounts to the rule in contosotelemetry, so that the tier operation runs across the other accounts."
+					},
+					{
+						"id": "b",
+						"text": "Use the whole account rule scope in the policy on contosomedia, so that the tier operation runs across the other accounts."
+					},
+					{
+						"id": "c",
+						"text": "Use Azure Storage Actions so that the tier operation runs across the three accounts."
+					},
+					{
+						"id": "d",
+						"text": "Enable access time tracking on each of the three accounts and add a last accessed condition to every rule, so that the tier operation runs across the three accounts based on read activity."
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "A lifecycle policy always belongs to the storage account in which it is defined: its rule scope can be the whole account, selected containers, or a subset of that account's blobs picked out by name prefix or blob index tag, and prefix and tag filters only narrow the blobs inside that same account. No scope or filter choice therefore reaches objects that live in another account. Azure Storage Actions is the supported way to carry out the same data operation on objects across multiple storage accounts at once, and it works on the data where it already sits, which fits the residency and volume constraints in this scenario.",
+				"perChoice": {
+					"a": "Path prefix filters match blob names inside the account where the policy is saved, so prefixes naming containers in the other two accounts never select their blobs; the rule in contosotelemetry still operates only on that one account.",
+					"b": "The rule scope choices are the whole account, selected containers, or a subset of the account's blobs selected by prefix or blob index tag, so a whole-account scope in contosomedia covers only contosomedia and nothing in the other two accounts.",
+					"d": "Access time tracking is switched on per account and only makes a last accessed condition available to a rule; it changes which condition is tested, not which accounts a policy can act on, and the team would still have to edit a separate rule in each of the three accounts."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-configure"
+				}
+			],
+			"subtopics": [
+				"cross-account-data-operations",
+				"lifecycle-policy-scope"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MRB9EYVQ56ZHWZ6FA775H5",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a general-purpose v2 storage account named contosastudio that stores video project files and rendered output. The account carries a lifecycle policy with one enabled rule that moves block blobs to the cool tier and deletes them at the end of their useful life.\n\nWhile reviewing the account, you noted four behaviors that need an explanation. Five candidate explanations are on your list: four of them account for one of the behaviors, and one accounts for none of them. Drag each explanation to the matching behavior.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account type",
+							"General-purpose v2"
+						],
+						[
+							"Blob types in scope",
+							"Block blobs"
+						],
+						[
+							"Rule scope",
+							"Applies account-wide"
+						],
+						[
+							"Rule state",
+							"Enabled"
+						],
+						[
+							"Rule actions",
+							"Move to the cool tier after 30 days of no writes; delete after 365 days"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Because a container carries immutability, the policy delete action does not remove anything inside it, since immutability blocks modification and deletion."
+					},
+					{
+						"id": "i2",
+						"text": "Because a rule change is not instant, the policy can take up to 24 hours to apply a newly saved rule, and the service then runs that rule once every 24 hours."
+					},
+					{
+						"id": "i3",
+						"text": "Because system containers are skipped, the policy never touches content in $logs and $web, even when a rule covers the whole storage account."
+					},
+					{
+						"id": "i4",
+						"text": "Because soft delete is turned on, the policy leaves a blob in a soft-deleted state for the retention period, so that blob keeps occupying capacity."
+					},
+					{
+						"id": "i5",
+						"text": "Because Set Blob Tier calls are billable, a policy run on a storage account incurs a charge for every move to a cooler tier, while deletions carry no charge."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "One area of the account was configured so that the contents cannot be altered; after the policy finished, each file in that area is still listed."
+					},
+					{
+						"id": "s2",
+						"label": "A second rule, added by the team this morning, still sits idle: the files written for that rule have gone nowhere, and the files sat unused for months, without writes from anyone."
+					},
+					{
+						"id": "s3",
+						"label": "Two named areas of the account hold data generated by the platform itself; nothing there is ever affected, and the policy applies to everything in the account."
+					},
+					{
+						"id": "s4",
+						"label": "Material the team stored long past the point of any use still shows as listed and still consumes space, well after the policy completed."
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "i1 belongs with s1: the area whose contents cannot be altered is an immutable container, and immutability blocks both modification and deletion, so the policy's delete action cannot remove anything there. i2 belongs with s2: a rule change is never instant — it can take up to 24 hours to take effect and for the first execution to start, and an active policy is evaluated once per day, so a rule added this morning has not moved anything yet. i3 belongs with s3: containers that the service manages itself, $logs and $web, are always skipped, even by a rule whose scope covers the entire account, which is why the platform-generated data in those two areas is never affected. i4 belongs with s4: with soft delete turned on, the delete action leaves the blob in a soft-deleted state for the soft-delete retention period, so the data is still listed and still occupies capacity well after the policy finished. i5 explains cost only, so it accounts for none of the four observed behaviors.",
+				"perChoice": {
+					"i1": "Slot s1 — the behavior describes an area whose contents cannot be altered; immutability allows creates and reads but blocks modification and deletion, so the delete action cannot clear that area.",
+					"i2": "Slot s2 — the behavior describes a rule that was added moments ago and has not acted yet; changes take up to 24 hours to take effect and an active policy runs once per day, so nothing happens until the first execution.",
+					"i3": "Slot s3 — the behavior describes two platform-generated areas that no rule touches; system containers such as $logs and $web are always skipped, even when a rule covers the whole account.",
+					"i4": "Slot s4 — the behavior describes data that should have been cleared but is still listed and still consuming space; with soft delete turned on, the delete action leaves the blob in a soft-deleted state for the retention period.",
+					"i5": "Fits no slot — it describes what a run costs (billable Set Blob Tier calls, free deletions), and none of the four behaviors is about billing."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-configure"
+				}
+			],
+			"subtopics": [
+				"lifecycle-policy-rules",
+				"policy-execution-timing",
+				"blob-retirement-actions"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5N68QRE09QHNCZPEXMFCHXS",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a general-purpose v2 storage account named contosotelemetry that holds four sets of block blobs: nightly telemetry exports in the telemetry container, finished release packages in the releases container, quarterly reports in the reports container, and signed evidence files in the evidence container. Some files across the account carry a marker that the compliance group applies.\n\nThe account currently runs a single lifecycle rule that moves every block blob to the cool tier after 45 days without modification. The platform team has four separate requirements, and each requirement is met by one change to the account's lifecycle policy. Drag each change to the requirement it satisfies.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account type",
+							"General-purpose v2, standard LRS replication"
+						],
+						[
+							"Hierarchical namespace",
+							"Disabled (flat namespace)"
+						],
+						[
+							"Encryption scope",
+							"None; the blobs are written without an encryption scope"
+						],
+						[
+							"Blob versioning",
+							"Not enabled"
+						],
+						[
+							"Blob types in use",
+							"Block blobs only"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "f_read",
+						"text": "Tick Enable access tracking, choose Block blobs, and set a Last accessed condition of 30 days with a move to the cool tier action."
+					},
+					{
+						"id": "f_archive",
+						"text": "Set a move to the archive tier action in the rule and a condition of 180 days after the Last Modified Time."
+					},
+					{
+						"id": "f_delete",
+						"text": "Set a delete action in the rule with a condition of 365 days after the Last Modified Time."
+					},
+					{
+						"id": "f_filter",
+						"text": "Set a blob index tag filter in the Filter set tab."
+					}
+				],
+				"slots": [
+					{
+						"id": "s_read",
+						"label": "Nightly telemetry that is rarely opened should be moved to cheaper storage after a month without being opened; the account has to record when files were opened before that can happen."
+					},
+					{
+						"id": "s_archive",
+						"label": "Release packages that will never be written again should move to the cheapest long-term storage; they must still be retrievable for inspection."
+					},
+					{
+						"id": "s_expire",
+						"label": "When a quarterly report reaches the end of its legal retention period it must be gone from the account; the account must not be billed for clearing it out."
+					},
+					{
+						"id": "s_scope",
+						"label": "Only the files that the compliance group has marked should be governed by the policy; everything else across the account must be left untouched."
+					}
+				]
+			},
+			"key": {
+				"s_archive": "f_archive",
+				"s_expire": "f_delete",
+				"s_read": "f_read",
+				"s_scope": "f_filter"
+			},
+			"explanation": {
+				"correct": "Each requirement maps to one change. The requirement about telemetry that is rarely opened (s_read) needs access time tracking so that read activity is recorded, a block blob target, and a last-access condition that cools a blob after 30 days without being opened (f_read). The requirement about the cheapest long-term storage for release packages (s_archive) is met by the archive action, which is cheaper per blob than the cool tier and is allowed for this account (f_archive). The requirement about reports that must disappear at the end of their retention period without cost (s_expire) is met by the delete action on the current version (f_delete). The requirement that only the marked files are governed (s_scope) is met by the blob index tag filter (f_filter).",
+				"perChoice": {
+					"f_read": "This belongs with s_read. A rule can only use a last-access condition once access time tracking is turned on, and that option is offered only for block blobs. With tracking enabled, a blob that has not been read for 30 days is moved to the cool tier, and a blob in the cool tier returns to hot storage when it is accessed again.",
+					"f_archive": "This belongs with s_archive. The archive action applies to the current version of a block blob and is cheaper per blob than the cool tier, which suits data that is kept long term but rarely read. It is valid for this account because the replication is LRS and the blobs carry no encryption scope, and archived data can be rehydrated when it needs to be inspected.",
+					"f_delete": "This belongs with s_expire. The delete action removes the current version of a block blob 365 days after its last modification, and delete operations are free of charge, so clearing out expired reports adds no cost to the account.",
+					"f_filter": "This belongs with s_scope. Filters limit a rule to part of an account, and a blob index tag filter selects only the blobs carrying the given tag, so the marked files are governed while every other file is untouched. The filter is supported here because the account has a flat namespace."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-configure"
+				}
+			],
+			"subtopics": [
+				"lifecycle-policy-actions",
+				"run-conditions",
+				"policy-filters"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5N6FESB881NXR4D57DW0321",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a general-purpose v2 storage account named contosoarchive that holds record files, chart files, nightly copies of the record files, and an append-only log feed. Blob versioning is enabled on the account, and access time tracking is turned on for it.\n\nThe platform team has four requirements for the account's lifecycle policy, and five candidate rules are on the list: four of them satisfy one requirement each, and one of them satisfies none of them. Drag each rule to the requirement it satisfies.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Data set held in the account        Blob type                      How the team treats it\nRecord files                        Block blobs                    Kept for seven years and still read regularly\nChart files                         Block blobs                    Read occasionally; some are opened rarely\nNightly copies of the record files  Snapshots of the record files  Taken by a scheduled job each night\nLog feed                            Append blobs                   Written continuously by a monitoring agent"
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Move base blobs to the cool tier 90 days after their last modification (block blobs)"
+					},
+					{
+						"id": "i2",
+						"text": "Move base blobs to the cool tier 40 days after their last access time (block blobs)"
+					},
+					{
+						"id": "i3",
+						"text": "Delete snapshots 30 days after they were created (block blobs)"
+					},
+					{
+						"id": "i4",
+						"text": "Move base blobs to the cool tier 60 days after their last modification (append blobs)"
+					},
+					{
+						"id": "i5",
+						"text": "Delete base blobs 365 days after their last modification (append blobs)"
+					}
+				],
+				"slots": [
+					{
+						"id": "req1",
+						"label": "Record files that have not been rewritten for three months should become cheaper, even while they keep being read"
+					},
+					{
+						"id": "req2",
+						"label": "Chart files that nobody has opened for about six weeks should become cheaper, judged by read activity rather than by writes"
+					},
+					{
+						"id": "req3",
+						"label": "The nightly copies of the record files should be removed about a month after they were taken, leaving the file in use today untouched"
+					},
+					{
+						"id": "req4",
+						"label": "The log feed should be removed from the account once its entries are a year old"
+					}
+				]
+			},
+			"key": {
+				"req1": "i1",
+				"req2": "i2",
+				"req3": "i3",
+				"req4": "i5"
+			},
+			"explanation": {
+				"correct": "Each requirement maps to the one candidate rule that uses the right condition and the right action for the data set named in it. Record files that have not been rewritten for three months correspond to a last-modified condition of 90 days with a move to a cooler tier (i1). Chart files that nobody has opened for about six weeks correspond to a last-access condition of 40 days with a move to a cooler tier (i2). The nightly copies to be removed a month after they were taken correspond to a delete action scoped to snapshots and keyed on creation time (i3). The log feed to be removed after a year corresponds to a delete action on append blobs after 365 days (i5). Rule i4 belongs to no requirement, because on every account except premium block blob storage, tiering applies only to block blobs and never to append or page blobs, so moving append blobs to a cooler tier never takes effect.",
+				"perChoice": {
+					"i1": "Requirement \"Record files that have not been rewritten for three months\": a Last Modified Time condition reacts to write activity only, and 90 days equals three months, so the record files are moved to a cheaper tier while they remain readable, no matter how often they are read.",
+					"i2": "Requirement \"Chart files that nobody has opened for about six weeks\": a Last Accessed Time condition is what makes the policy react to read activity rather than to writes, and 40 days is about six weeks. Such a condition is only offered for block blobs and requires access time tracking, which this account has.",
+					"i3": "Requirement \"The nightly copies of the record files should be removed about a month after they were taken\": the action is scoped to snapshots and keyed on creation time, so only the copies made by the nightly job are removed after 30 days while the current version of each record file is left as it is.",
+					"i4": "This rule fits no requirement. Tiering is available only for block blobs, never for append or page blobs, so a rule that moves append blobs to a cooler tier has no effect and satisfies none of the four requirements.",
+					"i5": "Requirement \"The log feed should be removed from the account once its entries are a year old\": the log feed is stored as append blobs, and a delete action after 365 days (one year) removes the data at end of life, which also costs nothing in transaction charges."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-configure"
+				}
+			],
+			"subtopics": [
+				"lifecycle-policy-rules",
+				"tiering-and-deletion",
+				"blob-subtypes"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5N6K8XZZ6APB59GFJ16WEPR",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have four storage accounts in one subscription and five candidate lifecycle rules. Each account needs one of the rules applied to it, and one of the rules is not needed by any account. The table below shows what each account holds today and what its platform team wants the account's lifecycle policy to achieve.\n\nDrag each candidate rule to the account it belongs on.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Account",
+						"Account platform",
+						"What the account holds",
+						"What the platform team wants"
+					],
+					"rows": [
+						[
+							"contosolab",
+							"Premium block blob",
+							"Finished CI build outputs (block blobs)",
+							"Outputs older than 90 days should stop occupying capacity"
+						],
+						[
+							"contosoevidence",
+							"General-purpose v2; its single container has immutability enabled",
+							"Signed evidence blobs (block blobs)",
+							"The evidence must never be removed; the team wants to spend less on each blob it stores"
+						],
+						[
+							"contosofeeds",
+							"General-purpose v2; blob versioning is enabled",
+							"Datasets that are rewritten often, with a snapshot taken at each rewrite (block blobs)",
+							"Superseded copies of a dataset should be removed 30 days after they were taken, while the live copy keeps the tiering it has today (moved to the cool tier after 60 days)"
+						],
+						[
+							"contosolight",
+							"General-purpose v2",
+							"Contract documents under the path 'contracts/' and unrelated files stored elsewhere",
+							"Only the contract documents should be managed; the other files in the account must be left alone"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Delete base blobs 90 days after their last modification."
+					},
+					{
+						"id": "b",
+						"text": "Delete snapshots and previous versions 30 days after they were taken, leaving the live copy's tiering action unchanged."
+					},
+					{
+						"id": "c",
+						"text": "Move only the block blobs under the path 'contracts/' to the cool tier 30 days after their last modification."
+					},
+					{
+						"id": "d",
+						"text": "Move every block blob in the account to the cool tier 30 days after their last modification."
+					},
+					{
+						"id": "e",
+						"text": "Move append blobs to the cool tier 30 days after their last modification."
+					}
+				],
+				"slots": [
+					{
+						"id": "s_lab",
+						"label": "contosolab"
+					},
+					{
+						"id": "s_evidence",
+						"label": "contosoevidence"
+					},
+					{
+						"id": "s_feeds",
+						"label": "contosofeeds"
+					},
+					{
+						"id": "s_light",
+						"label": "contosolight"
+					}
+				]
+			},
+			"key": {
+				"s_lab": "a",
+				"s_evidence": "d",
+				"s_feeds": "b",
+				"s_light": "c"
+			},
+			"explanation": {
+				"correct": "contosolab takes the base-blob delete rule because moving data between access tiers is not available on premium block blob storage accounts, so a delete action is the only way to release the capacity held by outputs older than 90 days. contosoevidence takes the account-wide tiering rule because the delete action cannot run against blobs in a container with immutability enabled, and since that account holds nothing but evidence, no path or tag filter is needed. contosofeeds takes the rule that expires snapshots and previous versions after 30 days while leaving the live copy's current action in place, matching the requirement that only superseded copies disappear. contosolight takes the rule narrowed by the path prefix, which limits management to the contract documents and leaves the other files untouched. The append-blob tiering rule is used on none of the accounts.",
+				"perChoice": {
+					"a": "Belongs on contosolab: tiering is not available on premium block blob storage accounts, so the policy can only release the capacity of outputs older than 90 days by deleting base blobs.",
+					"b": "Belongs on contosofeeds: the account has versioning and takes a snapshot on every rewrite, so the rule expires snapshots and previous versions 30 days after they were taken while the live copy keeps its current action.",
+					"c": "Belongs on contosolight: the path prefix narrows the rule to the contract documents, so the unrelated files stored elsewhere in the account are not managed.",
+					"d": "Belongs on contosoevidence: the delete action cannot remove blobs in a container with immutability enabled, and the account holds only evidence blobs, so an account-wide tiering rule lowers their cost without ever removing them.",
+					"e": "Fits no slot: tiering applies only to block blobs, never to append or page blobs, and none of the four accounts has append blobs that need to be managed."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-configure"
+				}
+			],
+			"subtopics": [
+				"lifecycle-policy-rules",
+				"blob-tiering-and-delete-actions",
+				"policy-filters-and-scope"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5N6PK246T1WQ6ZEMN0XHV7M",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a general-purpose v2 storage account named contosometrics that keeps analytics data in a single container named analytics. Blob versioning is not enabled on the account and soft delete for blobs is turned off. The account's lifecycle policy is maintained in Code View and currently reads:\n\n```json\n{\n  \"rules\": [\n    {\n      \"name\": \"CoolMetrics\",\n      \"enabled\": true,\n      \"type\": \"Lifecycle\",\n      \"definition\": {\n        \"filters\": {\n          \"blobTypes\": [\"BlockBlob\"],\n          \"prefixes\": [\"metrics/\"]\n        },\n        \"actions\": {\n          \"baseBlob\": {\n            \"tierToCool\": { \"daysAfterModificationGreaterThan\": 30 }\n          }\n        }\n      }\n    },\n    {\n      \"name\": \"ArchiveReports\",\n      \"enabled\": true,\n      \"type\": \"Lifecycle\",\n      \"definition\": {\n        \"filters\": {\n          \"blobTypes\": [\"BlockBlob\"],\n          \"prefixes\": [\"reports/\"]\n        },\n        \"actions\": {\n          \"baseBlob\": {\n            \"tierToArchive\": { \"daysAfterModificationGreaterThan\": 120 }\n          }\n        }\n      }\n    },\n    {\n      \"name\": \"ExpireReports\",\n      \"enabled\": true,\n      \"type\": \"Lifecycle\",\n      \"definition\": {\n        \"filters\": {\n          \"blobTypes\": [\"BlockBlob\"],\n          \"prefixes\": [\"reports/\"]\n        },\n        \"actions\": {\n          \"baseBlob\": {\n            \"delete\": { \"daysAfterModificationGreaterThan\": 365 }\n          }\n        }\n      }\n    }\n  ]\n}\n```\n\nThe portal lists the blobs that currently exist in the container:\n\n| Blob name in container analytics | Blob type | Encryption scope | Last modified |\n| metrics/annual-2024.bin | Block blob | None | 150 days ago |\n| metrics/ingest-events.log | Append blob | None | 90 days ago |\n| reports/q1-2024.pdf | Block blob | Customer-managed key scope | 200 days ago |\n| reports/q2-2025.pdf | Block blob | Customer-managed key scope | 400 days ago |\n\nThe team wants to know what the saved policy does to each of these blobs once it has run against them, so that they can judge whether the policy still needs adjusting. Drag each outcome to the blob it applies to.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Blob name in container analytics",
+						"Blob type",
+						"Encryption scope",
+						"Last modified"
+					],
+					"rows": [
+						[
+							"metrics/annual-2024.bin",
+							"Block blob",
+							"None",
+							"150 days ago"
+						],
+						[
+							"metrics/ingest-events.log",
+							"Append blob",
+							"None",
+							"90 days ago"
+						],
+						[
+							"reports/q1-2024.pdf",
+							"Block blob",
+							"Customer-managed key scope",
+							"200 days ago"
+						],
+						[
+							"reports/q2-2025.pdf",
+							"Block blob",
+							"Customer-managed key scope",
+							"400 days ago"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Stored in the cool tier"
+					},
+					{
+						"id": "i2",
+						"text": "Left in the hot tier, because the policy cannot move it to the archive tier"
+					},
+					{
+						"id": "i3",
+						"text": "Deleted by the policy"
+					},
+					{
+						"id": "i4",
+						"text": "Left untouched by the policy"
+					},
+					{
+						"id": "i5",
+						"text": "Restored to the hot tier by a policy action"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "metrics/annual-2024.bin"
+					},
+					{
+						"id": "s2",
+						"label": "metrics/ingest-events.log"
+					},
+					{
+						"id": "s3",
+						"label": "reports/q1-2024.pdf"
+					},
+					{
+						"id": "s4",
+						"label": "reports/q2-2025.pdf"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i4",
+				"s3": "i2",
+				"s4": "i3"
+			},
+			"explanation": {
+				"correct": "The saved rules match on blob type plus a path prefix, and each rule carries its own action and threshold. metrics/annual-2024.bin is a block blob under the metrics/ path, so CoolMetrics applies and, having been unmodified for 150 days (more than the 30 day threshold), it is stored in the cool tier. metrics/ingest-events.log is an append blob, so no rule matches it and, in addition, tiering is only available to block blobs; nothing in the policy touches it. reports/q1-2024.pdf matches ArchiveReports, but a policy cannot change the tier of a blob that uses an encryption scope to the archive tier, so it stays where it is in the hot tier, and the delete threshold of 365 days has not been reached for a file modified 200 days ago. reports/q2-2025.pdf has been unmodified for 400 days, so ExpireReports deletes it, and with soft delete turned off the blob is removed rather than kept in a soft-deleted state. The remaining outcome fits none of the blobs because a lifecycle policy cannot rehydrate blobs into an online tier; the cool-to-hot move that happens on access is a storage behavior, not a policy action.",
+				"perChoice": {
+					"i1": "This is the outcome for metrics/annual-2024.bin: it is a block blob whose name starts with metrics/, so the cool tier rule applies and its 150 days of inactivity is well past the 30 day threshold.",
+					"i2": "This is the outcome for reports/q1-2024.pdf: the archive tier rule matches its path and it is old enough, but the policy is not allowed to move a blob that uses an encryption scope to the archive tier, so the blob stays in the hot tier and the delete threshold has not yet passed.",
+					"i3": "This is the outcome for reports/q2-2025.pdf: its 400 days since last modification exceeds the 365 day delete threshold, and soft delete is off, so the policy removes it.",
+					"i4": "This is the outcome for metrics/ingest-events.log: the saved rules only select block blobs and tiering never applies to append blobs, so no rule changes or removes it.",
+					"i5": "This belongs to no blob. A lifecycle policy cannot rehydrate blobs into an online tier, and the move from cool back to hot that occurs when data is accessed is a storage behavior rather than something a policy action performs."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-configure"
+				}
+			],
+			"subtopics": [
+				"lifecycle-rule-actions",
+				"blob-tiering-constraints",
+				"policy-filters"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5N6VYH74C4RNY4Q0K7RK10S",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a general-purpose v2 storage account named contosaclinical that stores clinical trial results for a research sponsor. The sponsor's retention terms are still being negotiated, so the platform team must know precisely what the account's lifecycle policy does to the blobs it holds before the policy is approved. The account is configured as follows.\n\n| Account setting | Value |\n| --- | --- |\n| Storage account type | General-purpose v2 |\n| Soft delete for blobs | Enabled, 30-day retention |\n| Immutable container | records, retained until 2028-12-31 |\n| Access time tracking | Disabled |\n\nThe portal lists the four blobs that the team asked about.\n\n| Blob | Container | Blob type | Current tier | Last modified |\n| --- | --- | --- | --- | --- |\n| trial/alpha.dat | trial | Block blob | Hot | 120 days ago |\n| trial/beta.dat | trial | Block blob | Hot | 400 days ago |\n| records/gamma.dat | records | Block blob | Hot | 500 days ago |\n| $web/index.html | $web | Block blob | Hot | 400 days ago |\n\nThe policy document shown below is what the account currently carries, and it is edited in Code View.\n\nWhich outcome applies to each blob once the policy has run? Drag each blob to the outcome that describes it.",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"rules\": [\n    {\n      \"name\": \"CoolTrialData\",\n      \"enabled\": true,\n      \"type\": \"Lifecycle\",\n      \"definition\": {\n        \"filters\": {\n          \"blobTypes\": [\"BlockBlob\"],\n          \"prefixes\": [\"trial/\"]\n        },\n        \"actions\": {\n          \"baseBlob\": {\n            \"tierToCool\": { \"daysAfterModificationGreaterThan\": 90 }\n          }\n        }\n      }\n    },\n    {\n      \"name\": \"PurgeOldData\",\n      \"enabled\": true,\n      \"type\": \"Lifecycle\",\n      \"definition\": {\n        \"filters\": {\n          \"blobTypes\": [\"BlockBlob\"]\n        },\n        \"actions\": {\n          \"baseBlob\": {\n            \"delete\": { \"daysAfterModificationGreaterThan\": 365 }\n          }\n        }\n      }\n    }\n  ]\n}"
+				},
+				"items": [
+					{
+						"id": "blob-alpha",
+						"text": "trial/alpha.dat"
+					},
+					{
+						"id": "blob-beta",
+						"text": "trial/beta.dat"
+					},
+					{
+						"id": "blob-gamma",
+						"text": "records/gamma.dat"
+					},
+					{
+						"id": "blob-web",
+						"text": "$web/index.html"
+					}
+				],
+				"slots": [
+					{
+						"id": "slot-cooled",
+						"label": "Moved to the cool tier and still present in the container"
+					},
+					{
+						"id": "slot-softdeleted",
+						"label": "Placed in the soft-deleted state and recoverable for 30 days"
+					},
+					{
+						"id": "slot-immutable",
+						"label": "Still in the hot tier; the request to remove it is rejected"
+					},
+					{
+						"id": "slot-excluded",
+						"label": "Left untouched; the container is excluded from policy processing"
+					}
+				]
+			},
+			"key": {
+				"slot-cooled": "blob-alpha",
+				"slot-softdeleted": "blob-beta",
+				"slot-immutable": "blob-gamma",
+				"slot-excluded": "blob-web"
+			},
+			"explanation": {
+				"correct": "Each blob is decided by a different part of the saved policy. The blob under the trial/ prefix that is 120 days old is past the 90-day tiering condition but not the 365-day deletion condition, so the tiering rule moves it to the cool tier and it stays in the container. The second trial blob is 400 days old, so it satisfies both rules; with soft delete enabled and a 30-day retention period, the delete action does not remove the data outright but puts the object into the soft-deleted state for the retention period. The blob that sits in the immutable container is old enough for the delete rule to fire, but the delete action of a lifecycle policy does not work on blobs in an immutable container, and the tiering rule's trial/ prefix filter does not match its path, so it remains in the hot tier. The last blob is in a system container, and lifecycle management never affects system containers such as $web, so no rule action is carried out on it even though its age exceeds the deletion threshold.",
+				"perChoice": {
+					"blob-alpha": "Fits the slot \"Moved to the cool tier and still present in the container\". It is a block blob whose path starts with trial/, so the tiering rule applies once more than 90 days have passed since the last modification, and 120 days have passed. The delete rule needs more than 365 days, so nothing is removed and the blob remains readable in the container.",
+					"blob-beta": "Fits the slot \"Placed in the soft-deleted state and recoverable for 30 days\". At 400 days since the last modification it satisfies the tiering rule and also the delete rule. Because the account has soft delete enabled with a 30-day retention period, a delete performed by the policy puts the object into the soft-deleted state and retains it for that period rather than destroying the data, so the blob is recoverable for 30 days.",
+					"blob-gamma": "Fits the slot \"Still in the hot tier; the request to remove it is rejected\". At 500 days it is old enough for the delete rule to apply on age and blob type, but the delete action of a lifecycle policy does not work on a blob that is in an immutable container, so the removal is refused. The tiering rule cannot move it either, because that rule is limited to the trial/ path prefix and the blob lives elsewhere, so it stays in the hot tier.",
+					"blob-web": "Fits the slot \"Left untouched; the container is excluded from policy processing\". The blob is in a system container, and lifecycle management does not affect system containers such as $logs or $web. No rule action is carried out on it even though it is old enough for the delete rule to match on age and blob type."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-configure"
+				}
+			],
+			"subtopics": [
+				"delete-actions",
+				"soft-delete",
+				"rule-filters"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5N71W2QBQGJNPPQJZZ5GC04",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a general-purpose v2 storage account named contosofiles that stores quarterly financial workbooks. The account already runs a lifecycle policy with two enabled rules, and you need to add a third rule that moves workbook blobs to the cool tier based on the time since their last modification.\n\nA colleague opens the storage account in the portal, goes to Lifecycle management under Data management, switches to Code View, and pastes a JSON fragment that holds just the new rule. The portal rejects the save, and the colleague expects the new rule to start moving blobs right after the policy is accepted.\n\nWhich approach should the colleague take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Storage account type: General-purpose v2\nRules already saved on the account: CoolStaleWorkbooks (enabled), ExpireClosedPeriods (enabled)\nRule to add: TierCurrentWorkbooks - moves block blobs to the cool tier based on the time since their last modification\nPasted into Code View: a JSON fragment containing only TierCurrentWorkbooks\nSave outcome: the portal reported that the request was rejected"
+				},
+				"statement": "The colleague should {{submission}}, and should expect the new rule to {{timing}}.",
+				"slots": [
+					{
+						"id": "submission",
+						"options": [
+							{
+								"id": "a",
+								"text": "submit the whole policy document with every rule, including the new one"
+							},
+							{
+								"id": "b",
+								"text": "submit only the new rule and let the service keep the policy it already has"
+							},
+							{
+								"id": "c",
+								"text": "submit the new rule in one document and the remaining rules in a second document"
+							},
+							{
+								"id": "d",
+								"text": "submit the new rule with the remaining rules turned off so that only the new rule runs"
+							}
+						]
+					},
+					{
+						"id": "timing",
+						"options": [
+							{
+								"id": "a",
+								"text": "take effect within up to 24 hours, because the service runs an active policy once per day"
+							},
+							{
+								"id": "b",
+								"text": "take effect immediately, because the service applies a policy as soon as the save succeeds"
+							},
+							{
+								"id": "c",
+								"text": "take effect within up to seven days, because a newly added rule waits for a weekly maintenance window"
+							},
+							{
+								"id": "d",
+								"text": "take effect only after the request-rate limit on the account is raised, because policy runs share that limit"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"submission": "a",
+				"timing": "a"
+			},
+			"explanation": {
+				"correct": "A lifecycle policy is read and written as one complete document, and the service rejects partial submissions. That is why the fragment holding only TierCurrentWorkbooks was refused: the colleague has to resubmit the whole policy document with every rule, including the new one, so the rules already saved on the account travel in that same document. Even after the save succeeds, a rule change is not applied instantly - the service runs an active policy once per day, and a newly added or edited rule can take up to 24 hours to take effect and for the first execution to start. So the colleague should expect the new rule to start moving workbooks later, not right after the save.",
+				"perChoice": {
+					"submission:b": "Submitting only the new rule is exactly the partial update the service refuses; the account's policy must be resubmitted with all of its rules present in the same document.",
+					"submission:c": "A storage account carries a single policy, so there is no second document to submit; every rule has to travel in the one document that replaces the saved policy.",
+					"submission:d": "Turning the existing rules off does not make the submission complete - the document still has to carry every rule - and switching all rules off also leaves the policy inactive.",
+					"timing:b": "A saved change is never applied on the spot; the service schedules the policy to run once per day, so the first execution with the new rule starts later.",
+					"timing:c": "There is no weekly maintenance window for lifecycle policies; the policy runs daily, and a rule change can take effect within up to 24 hours.",
+					"timing:d": "The request-rate limit influences how long a run takes once it has started, not when a saved change first takes effect; the policy still runs once per day regardless of the limit."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-configure"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-overview"
+				}
+			],
+			"subtopics": [
+				"lifecycle-policy-json",
+				"policy-change-timing"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5N7AWQNVK0B4VW7SV2R1E40",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a general-purpose v2 storage account named contosohub. It stores partner exports spread across 14 containers, and it also stores unrelated application blobs that the platform team must leave untouched. The team needs the account's lifecycle policy to move every partner export to the cool tier 30 days after its last modification, and it wants the policy to select some exports by blob index tag as well. A colleague drafted a single rule that lists one path prefix for each container plus one tag condition for each export family. Which change should the team make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Storage account type: General-purpose v2\nContainers holding partner exports: 14\nUnrelated application blobs in the same account: Yes\nPath prefixes in the drafted rule: 14\nBlob index tag conditions in the drafted rule: 12"
+				},
+				"statement": "The team should {{ruleAction}}, with each rule listing at most {{prefixLimit}} path prefixes and at most {{tagLimit}} blob index tag conditions.",
+				"slots": [
+					{
+						"id": "ruleAction",
+						"options": [
+							{
+								"id": "a",
+								"text": "divide the drafted rule into several rules"
+							},
+							{
+								"id": "b",
+								"text": "keep the drafted rule and express the extra prefixes as tag filters"
+							},
+							{
+								"id": "c",
+								"text": "keep the drafted rule and widen its scope to the whole storage account"
+							},
+							{
+								"id": "d",
+								"text": "keep the drafted rule and leave the remaining containers unmanaged"
+							}
+						]
+					},
+					{
+						"id": "prefixLimit",
+						"options": [
+							{
+								"id": "a",
+								"text": "10"
+							},
+							{
+								"id": "b",
+								"text": "5"
+							},
+							{
+								"id": "c",
+								"text": "20"
+							},
+							{
+								"id": "d",
+								"text": "50"
+							}
+						]
+					},
+					{
+						"id": "tagLimit",
+						"options": [
+							{
+								"id": "a",
+								"text": "10"
+							},
+							{
+								"id": "b",
+								"text": "5"
+							},
+							{
+								"id": "c",
+								"text": "15"
+							},
+							{
+								"id": "d",
+								"text": "25"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"prefixLimit": "a",
+				"ruleAction": "a",
+				"tagLimit": "a"
+			},
+			"explanation": {
+				"correct": "A single rule in a lifecycle policy can hold at most 10 case-sensitive path prefixes and at most 10 blob index tag conditions. The colleague's one rule carries 14 path prefixes and 12 tag conditions, so it cannot express what the team needs, and the team must divide that drafted rule into several rules, each staying within the 10-prefix and 10-tag-condition limits. Dividing is also the only way to keep the unrelated application blobs out of scope, because filters inside one rule are combined with a logical AND and a whole-account scope would age out those blobs too. The extra rules are added to the same policy document, which the service runs once per day.",
+				"perChoice": {
+					"ruleAction:b": "A path prefix cannot be turned into a blob index tag condition: tag conditions match on blob index tags, so the 10-prefix limit for one rule would still be exceeded and every blob would first have to be tagged.",
+					"ruleAction:c": "A whole-account scope would also move the unrelated application blobs to the cool tier, which the team must leave untouched, and the 12 tag conditions would still exceed the 10-condition limit for one rule.",
+					"ruleAction:d": "Leaving the remaining containers out of the policy means those partner exports never move to the cool tier, so the team's requirement is not met.",
+					"prefixLimit:b": "A rule may list up to 10 case-sensitive path prefixes; 5 is not the limit that applies.",
+					"prefixLimit:c": "The limit for path prefixes in one rule is 10, so 20 is above what a rule can hold.",
+					"prefixLimit:d": "Each rule may list up to 10 case-sensitive path prefixes; 50 is far above that limit.",
+					"tagLimit:b": "A rule may hold up to 10 blob index tag conditions; 5 is not the value that applies.",
+					"tagLimit:c": "The limit for blob index tag conditions in one rule is 10, so 15 is above it.",
+					"tagLimit:d": "Each rule may hold up to 10 blob index tag conditions; 25 exceeds the limit."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-configure"
+				}
+			],
+			"subtopics": [
+				"per-rule-limits",
+				"policy-filters",
+				"blob-index-tags"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5N7M0P9KEAB2PFX68QYTQ2G",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a general-purpose v2 storage account named contosobulk that holds about 75 million objects spread across 210 containers, and the same account serves a line-of-business application that issues a steady stream of read and write requests. One enabled rule in the account's lifecycle policy moves block blobs to the cool tier 30 days after their last modification. The first policy execution took more than twenty hours and moved only part of the account, and later executions take the longest on working days when the application's traffic is heaviest. The platform team wants every eligible object to reach the cool tier eventually without holding back the application's own activity.\n\nWhich statement best explains what the team is seeing?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Account type:            General-purpose v2\nObjects held:            About 75 million, spread across 210 containers\nWorkload on the account: Line-of-business application issuing a steady stream of read and write requests\nLifecycle policy:        One enabled rule: move block blobs to the cool tier 30 days after last modification\nObserved:                First execution took 22 hours and moved only part of the account; later executions take longest on the busiest working days"
+				},
+				"statement": "The behaviour the platform team is seeing is best explained by the fact that {{cause}}.",
+				"slots": [
+					{
+						"id": "cause",
+						"options": [
+							{
+								"id": "a",
+								"text": "The execution shares the account's request-rate limit with the application's traffic, and application requests are prioritised, so the execution slows when the account approaches that limit and the total duration grows with the number of objects evaluated."
+							},
+							{
+								"id": "b",
+								"text": "Each execution can act on only a fixed number of objects, and the objects it does not reach are never managed when the application's requests keep the account busy."
+							},
+							{
+								"id": "c",
+								"text": "The duration of an execution depends on the volume of data the policy copies between tiers, and the application's requests are served with that work in progress."
+							},
+							{
+								"id": "d",
+								"text": "Every execution must wait through the 24-hour delay that follows a policy change before it can start, so the account stays a day behind the application's traffic."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"cause": "a"
+			},
+			"explanation": {
+				"correct": "Policy processing and the workload draw on the same per-second request budget of the account, and workload requests are prioritised over policy requests. As the account approaches its request-rate limit, policy evaluation slows down, and the length of an execution also grows with the number of blobs that are evaluated. With roughly 75 million objects and heavy application traffic, the first execution therefore ran for many hours and progressed only part way through the account, and later executions behave the same way, taking longest on the busiest working days.",
+				"perChoice": {
+					"cause:b": "There is no fixed per-execution cap on the number of blobs a run evaluates. Run duration scales with the number of blobs evaluated, so every eligible blob is eventually processed, just more slowly on a busy account.",
+					"cause:c": "The length of a run is not set by the volume of data moved between tiers. A tier change is a Set Blob Tier operation on each blob, and the factor that changes with the account's traffic is the shared per-second request limit.",
+					"cause:d": "The up-to-24-hour delay applies after a policy is added or edited, so the change can take effect and the first execution can start. It is not a wait that precedes every execution, and it does not vary with how busy the workload is."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-configure"
+				}
+			],
+			"subtopics": [
+				"policy-run-performance",
+				"shared-request-limits"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5N7P4HHEWW27GAPT9XFVN6Y",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a general-purpose v2 storage account named contosofinance that stores quarterly billing extracts and invoice images as block blobs. Access time tracking is turned on for the account, and the account's lifecycle policy holds a single enabled rule that moves block blobs to the cool tier 30 days after their last modification and deletes them 365 days after their last modification.\n\nThe finance team is preparing the storage cost forecast for next quarter and has to capture every charge that this policy adds to the account's bill.\n\n| Item | Value |\n| --- | --- |\n| Storage account type | General-purpose v2 |\n| Access time tracking | Enabled |\n| Blob types in scope | Block blobs |\n| Rules in policy | 1 (enabled) |\n| Rule actions | Move to cool tier after 30 days without modification; delete after 365 days without modification |\n| Microsoft Defender for Storage | Enabled, paid plan |",
+				"statement": "The team's forecast should record that {{policyCost}}, and it should record that {{addonCost}}.",
+				"slots": [
+					{
+						"id": "policyCost",
+						"options": [
+							{
+								"id": "a",
+								"text": "no charge for the policy itself, no charge for deletions, a charge for each Set Blob Tier operation, and a charge for each last access time update as an other transaction billed at most once every 24 hours per object"
+							},
+							{
+								"id": "b",
+								"text": "no charge for the policy itself, no charge for deletions, a charge for each Set Blob Tier operation, and no charge for last access time updates"
+							},
+							{
+								"id": "c",
+								"text": "a charge for the policy itself, no charge for deletions, a charge for each Set Blob Tier operation, and a charge for each last access time update as an other transaction billed at most once every 24 hours per object"
+							},
+							{
+								"id": "d",
+								"text": "no charge for the policy itself, a charge for deletions, a charge for each Set Blob Tier operation, and a charge for each last access time update as an other transaction billed at most once every 24 hours per object"
+							}
+						]
+					},
+					{
+						"id": "addonCost",
+						"options": [
+							{
+								"id": "a",
+								"text": "Microsoft Defender for Storage can charge for operations carried out by the lifecycle policy"
+							},
+							{
+								"id": "b",
+								"text": "Microsoft Defender for Storage cannot charge for operations carried out by the lifecycle policy"
+							},
+							{
+								"id": "c",
+								"text": "Microsoft Defender for Storage can charge only for read operations issued by applications"
+							},
+							{
+								"id": "d",
+								"text": "Microsoft Defender for Storage charges a fixed fee for each lifecycle policy run"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"policyCost": "a",
+				"addonCost": "a"
+			},
+			"explanation": {
+				"correct": "A lifecycle policy document itself is not billed, and the delete action it performs is free of charge. The billable work is the operation charge for the Set Blob Tier calls a policy run makes, plus each last access time update, which counts as an 'other transaction' billed at most once every 24 hours per object and separately from read transactions (which is why access time tracking is enabled on this account). On top of that, add-on services such as Microsoft Defender for Storage can charge for the operations a lifecycle policy performs, so the forecast must allow for charges from that service as well.",
+				"perChoice": {
+					"policyCost:b": "Last access time updates are not free. With access time tracking enabled, every update counts as an 'other transaction' billed at most once every 24 hours per object, separately from read transactions.",
+					"policyCost:c": "The policy document itself generates no charge; only the work it performs (Set Blob Tier calls and last access time updates) is billed.",
+					"policyCost:d": "Deletions are free of charge, so the delete action in the rule does not add a charge to the bill.",
+					"addonCost:b": "Add-on services such as Microsoft Defender for Storage can charge for the operations carried out through a lifecycle policy, so this statement is incorrect.",
+					"addonCost:c": "The add-on service is not limited to application read operations; it can also charge for the operations carried out through the lifecycle policy.",
+					"addonCost:d": "The add-on service bills for operations carried out through the lifecycle policy rather than a fixed fee per policy run."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-configure"
+				}
+			],
+			"subtopics": [
+				"lifecycle-policy-cost",
+				"blob-tiering-charges"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5N85MVYK1ZWC536E0RABAQ8",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a general-purpose v2 storage account named contosoops that stores an operational event feed in a container named opsfeed, and every blob in that container is an append blob. Access time tracking is turned off for the account, soft delete for blobs is turned off, and Microsoft Defender for Storage is off for this account. The platform team retains each feed copy for 45 days, after which the copies held in Blob Storage are past their usefulness, since the content is already replicated to the analytics platform. The team wants those retained copies to stop consuming hot-tier capacity once the retention window passes. A colleague saved the lifecycle policy below in Code View, and the daily run reports success, but the feed blobs are still billed at the hot rate.\n\nWhich change should you make to the policy?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"rules\": [\n    {\n      \"name\": \"OpsFeedLifecycle\",\n      \"enabled\": true,\n      \"type\": \"Lifecycle\",\n      \"definition\": {\n        \"filters\": {\n          \"blobTypes\": [\"AppendBlob\"]\n        },\n        \"actions\": {\n          \"baseBlob\": {\n            \"tierToCool\": { \"daysAfterModificationGreaterThan\": 45 }\n          }\n        }\n      }\n    }\n  ]\n}"
+				},
+				"statement": "The team should update the saved policy by {{change}}, and the expected billing effect of the revised policy is {{billing}}.",
+				"slots": [
+					{
+						"id": "change",
+						"options": [
+							{
+								"id": "a",
+								"text": "replacing the tierToCool action with a delete action on the existing age threshold"
+							},
+							{
+								"id": "b",
+								"text": "replacing the tierToCool action with a tierToArchive action on the existing age threshold"
+							},
+							{
+								"id": "c",
+								"text": "replacing the tierToCool action with a tierToHot action on the existing age threshold"
+							},
+							{
+								"id": "d",
+								"text": "replacing the tierToCool action with a delete action on a last-accessed threshold"
+							}
+						]
+					},
+					{
+						"id": "billing",
+						"options": [
+							{
+								"id": "a",
+								"text": "a zero charge for the lifecycle action"
+							},
+							{
+								"id": "b",
+								"text": "a charge for the tiering calls made by the lifecycle action"
+							},
+							{
+								"id": "c",
+								"text": "a charge for the access time updates recorded by the lifecycle action"
+							},
+							{
+								"id": "d",
+								"text": "a charge for each blob handled by the lifecycle action"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"change": "a",
+				"billing": "a"
+			},
+			"explanation": {
+				"correct": "For a general-purpose v2 account, tiering actions such as tierToCool and tierToArchive apply only to block blobs; tiering is not supported for append blobs or page blobs. Because every opsfeed blob is an append blob, the saved tierToCool action never moves anything, so the rule completes without effect and the feed blobs keep their hot-tier charges. The retained copies are past their usefulness once the 45-day window passes, so the policy should end their lifecycle rather than change their tier: replace the tierToCool action with a delete action that uses the rule's existing age threshold. Delete operations are free of charge and the policy itself is free, so the revised policy adds no charge of its own to the account bill, and with access time tracking turned off there are no last access time update charges either.",
+				"perChoice": {
+					"change:b": "Archiving is also a tiering action, and tiering is allowed only on block blobs, so this replacement would leave the rule just as ineffective for the append blobs in opsfeed.",
+					"change:c": "A lifecycle management policy cannot rehydrate a blob to an online tier; the cool-to-hot move on access is a storage behavior rather than a policy action, and tiering does not apply to append blobs in the first place.",
+					"change:d": "A last-accessed condition requires access time tracking to be enabled and is offered only when the blob type is Block blobs; this account has access time tracking turned off and the feed blobs are append blobs.",
+					"billing:b": "Tiering actions generate standard operation charges for Set Blob Tier calls, but the revised rule performs no tiering calls, so no such charge applies.",
+					"billing:c": "Last access time updates are billed as other transactions only when access time tracking is enabled, and this account has that feature turned off.",
+					"billing:d": "Delete operations are free of charge and the policy itself is free, so the revised policy does not add a per-blob charge of its own."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-configure"
+				}
+			],
+			"subtopics": [
+				"tiering-requirements",
+				"delete-action",
+				"blob-types"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5N89ZY1HR0N7XQN6Q9EK430",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a general-purpose v2 storage account named contosomedial that stores the finished master files of a streaming platform as block blobs. The account's lifecycle policy contains one enabled rule that moves block blobs to the cool tier 45 days after their last modification. The platform team must establish whether the daily executions of that policy really move the files they are supposed to move, and must also establish why some files are left behind. The account holds about 400,000 block blobs, so inspecting them one by one is not practical.\n\n| Item | Value |\n| --- | --- |\n| Storage account | contosomedial (general-purpose v2) |\n| Blob types in scope | Block blobs |\n| Policy rule | Move block blobs to the cool tier 45 days after their last modification |\n| Blob count | About 400,000 block blobs |\n| Recent observation | Two consecutive nightly executions moved files to the cool tier, but a set of files stayed in the hot tier |\n| Team's requirement | Proof of which files each daily execution processed, and the reason for the files that were left behind |\n\nWhich approach should the team take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Storage account",
+							"contosomedial (general-purpose v2)"
+						],
+						[
+							"Blob types in scope",
+							"Block blobs"
+						],
+						[
+							"Policy rule",
+							"Move block blobs to the cool tier 45 days after their last modification"
+						],
+						[
+							"Blob count",
+							"About 400,000 block blobs"
+						],
+						[
+							"Recent observation",
+							"Two consecutive nightly executions moved files to the cool tier, but a set of files stayed in the hot tier"
+						],
+						[
+							"Team's requirement",
+							"Proof of which files each daily execution processed, and the reason for the files that were left behind"
+						]
+					]
+				},
+				"statement": "The team should {{approach}}.",
+				"slots": [
+					{
+						"id": "approach",
+						"options": [
+							{
+								"id": "a",
+								"text": "subscribe to the LifecyclePolicyCompleted event and use the account's metrics and logs to review each policy run"
+							},
+							{
+								"id": "b",
+								"text": "list every blob in the account each day and compare the tier it reports with the tier recorded the day before"
+							},
+							{
+								"id": "c",
+								"text": "enable Microsoft Defender for Storage and work from the alerts it raises about blobs that were not moved"
+							},
+							{
+								"id": "d",
+								"text": "check the Activity log for the policy definition and confirm that the rule is saved and enabled"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"approach": "a"
+			},
+			"explanation": {
+				"correct": "Because a policy execution is announced through the LifecyclePolicyCompleted event, the team gets the outcome of every daily execution instead of having to enumerate the blobs itself, and the account's metrics and logs are the place where a failed operation can be traced back to its cause. Following the policy through its own event, metrics, and logs answers both of the team's requirements at a scale of 400,000 objects, which an item-by-item inspection cannot reach.",
+				"perChoice": {
+					"approach:b": "Walking every blob each day and comparing the tier it reports with the previous day's value is the manual approach the team already ruled out, and a tier difference only shows that a file was left behind; it never explains why the policy skipped it.",
+					"approach:c": "Microsoft Defender for Storage raises alerts about risky or suspicious activity on the account, not about the objects a lifecycle policy acted on, and it can even add charges for operations carried out through a lifecycle policy. It gives the team no visibility into what an execution did or why it failed.",
+					"approach:d": "The Activity log records control-plane operations such as saving or enabling the policy definition. It says nothing about the blobs an execution processed, and it cannot point to the failing transactions that explain the files left in the hot tier."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-configure"
+				}
+			],
+			"subtopics": [
+				"lifecycle-policy-monitoring",
+				"blob-lifecycle-policy"
+			],
+			"reviewed": false
+		}
+	]
+}

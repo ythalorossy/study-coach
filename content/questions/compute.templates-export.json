@@ -1,0 +1,1565 @@
+{
+	"skill": "compute.templates-export",
+	"questions": [
+		{
+			"id": "q_01M5Q86YN8E8EK8YAHHX24EEY0",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an ARM JSON template for your Azure resources and a separate file with the values that are passed each time you deploy it. You convert the JSON template to Bicep and then deploy the new file, passing the values from that second file. The deployment fails because one of the passed values does not match any parameter in the Bicep file. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "// main.json  (original ARM template - parameters section)\n{\n  \"parameters\": {\n    \"storageAccountType\": {\n      \"type\": \"string\",\n      \"defaultValue\": \"Standard_LRS\",\n      \"allowedValues\": [\"Standard_LRS\", \"Standard_GRS\", \"Standard_ZRS\", \"Premium_LRS\"]\n    },\n    \"Security.Authentication.AAD.Tenant\": {\n      \"type\": \"string\",\n      \"defaultValue\": \"00000000-0000-0000-0000-000000000000\",\n      \"metadata\": { \"description\": \"AAD tenant ID\" }\n    }\n  }\n}\n\n// main.bicep  (result of: az bicep decompile --file main.json)\n@allowed([\n  'Standard_LRS'\n  'Standard_GRS'\n  'Standard_ZRS'\n  'Premium_LRS'\n])\nparam storageAccountType string = 'Standard_LRS'\n\n@description('AAD tenant ID')\nparam Security_Authentication_AAD_Tenant string = '00000000-0000-0000-0000-000000000000'\n\n// prod.parameters.json  (values passed at deployment)\n{\n  \"parameters\": {\n    \"storageAccountType\": { \"value\": \"Standard_ZRS\" },\n    \"Security.Authentication.AAD.Tenant\": { \"value\": \"72f988bf-86f1-41af-91ab-2d7cd011db47\" }\n  }\n}\n"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Update the values file so the tenant parameter is supplied under the underscored name that the Bicep file declares."
+					},
+					{
+						"id": "b",
+						"text": "Update the Bicep file so the tenant parameter is declared with the dotted name that the values file passes."
+					},
+					{
+						"id": "c",
+						"text": "Update the Bicep file so the tenant parameter allows both the dotted and the underscored name as acceptable inputs."
+					},
+					{
+						"id": "d",
+						"text": "Re-run the conversion command with the switch that overwrites the generated file, so the original dotted names are preserved."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "When a JSON ARM template is decompiled, its parameter names are rewritten so they are legal Bicep identifiers, and periods become underscores. The tenant parameter is therefore exposed by the Bicep file as Security_Authentication_AAD_Tenant, while the values file still references Security.Authentication.AAD.Tenant, so the deployment cannot match the value to a parameter. The values file (and any other file that references that parameter) must be changed to use the underscored name.",
+				"perChoice": {
+					"b": "Bicep identifiers may contain only letters, digits and underscores, so the dotted spelling from the JSON template cannot be restored as a parameter in a Bicep file. The renamed parameter has to be referenced by its new spelling wherever values are passed.",
+					"c": "An allowed-values list only restricts which values a parameter may receive; it does not create a second, alternative spelling for the same parameter, so adding the dotted spelling there does not make the deployment match the passed value.",
+					"d": "The overwrite switch only lets the generated file replace an existing one in the same folder; it has no effect on how parameter names are generated. Names are always normalized to legal Bicep identifiers during conversion."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/decompile"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/export-template-portal"
+				}
+			],
+			"subtopics": [
+				"bicep-decompile",
+				"template-export",
+				"parameter-renaming"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q8AS8K2WDSB1VRVNAW22ND",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a resource group whose resources were mostly deployed from a template, and afterwards several of them were changed directly in the portal. Two additional resources in the same group were created outside that deployment. You need a single reusable definition that reflects the resources as they are today and that leaves out the ones you do not want to carry over. Which export should you perform?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Deployment recorded in the group's history",
+							"Deploy-webapp-2026-10-11"
+						],
+						[
+							"Resources currently in the group",
+							"12"
+						],
+						[
+							"Resources part of that deployment",
+							"10"
+						],
+						[
+							"Resources changed by hand after that deployment",
+							"3"
+						],
+						[
+							"Resources created outside that deployment",
+							"2"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Export from the resource group with the selected resources ticked"
+					},
+					{
+						"id": "b",
+						"text": "Export from the resource group with all of the resources ticked"
+					},
+					{
+						"id": "c",
+						"text": "Export the template that the original deployment used, from the resource group's history"
+					},
+					{
+						"id": "d",
+						"text": "Export each selected resource separately and combine the results by hand"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "An export started from the resource group is generated from the resources as they currently are, so the three members that were changed by hand come back with their new values, and members that are not ticked are left out of the generated definition — which also drops the two that were created outside the original deployment. Combining the two requirements (a snapshot of today's state and an explicit selection) therefore points to the group's resource view, where ticking the checkboxes and running the export produces one file covering only the wanted resources.",
+				"perChoice": {
+					"b": "Ticking every member pulls the two that were created outside the original deployment into the definition as well, so the file carries resources the team explicitly does not want to carry over.",
+					"c": "The template stored with a deployment is the exact one that was submitted at that moment: it shows the state as of the deployment, so the later manual changes are missing, and it covers only the members that belonged to that single deployment — it cannot be narrowed or widened to match the current selection.",
+					"d": "Exporting one member at a time yields a template that holds only that member, so repeating the export leaves you with a separate file per member instead of one definition covering the ticked set; the portal offers no way to merge those results."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/export-template-portal"
+				}
+			],
+			"subtopics": [
+				"template-export",
+				"deployment-history-export"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q8DSXWQPGQM83MND48D0H4",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an Azure Resource Manager JSON template saved as main.json and need to produce a Bicep version of it in the same directory so that you can edit and deploy it. Which command should you run?",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "$ ls\nmain.json  main.bicep  deploy.parameters.json\n$ az bicep decompile --file main.json\nError: A file named 'main.bicep' already exists in this directory."
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "az bicep decompile --file main.json --force"
+					},
+					{
+						"id": "b",
+						"text": "az bicep decompile --file main.bicep --force"
+					},
+					{
+						"id": "c",
+						"text": "az bicep build --file main.json --force"
+					},
+					{
+						"id": "d",
+						"text": "az bicep build --file main.bicep --force"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The decompile command converts the ARM JSON template into a Bicep file and writes it as main.bicep in the same directory as the source main.json. Because a file with that output name is already present, the command only completes when the --force switch is added to overwrite the existing Bicep file, so `az bicep decompile --file main.json --force` is the correct command.",
+				"perChoice": {
+					"b": "main.bicep is the destination of the conversion, not the ARM JSON source. Pointing decompile at main.bicep asks it to treat an existing Bicep file as the JSON template to convert, so the requested conversion of main.json never happens.",
+					"c": "The build command works in the opposite direction: it compiles Bicep into an ARM JSON template. Running it against main.json cannot produce a Bicep file for you to edit and deploy.",
+					"d": "Building from main.bicep compiles the existing Bicep file into JSON rather than producing a Bicep version of the JSON template, so the deliverable you need is still missing."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/decompile"
+				}
+			],
+			"subtopics": [
+				"bicep-decompile",
+				"arm-to-bicep-conversion"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q8GB1Y1NZS6PRFQJ4DVQES",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have exported the resources of a resource group from the portal into a template file, and that file is the basis for the deployments you plan next. The storage account definition inside it was written against an older API version than the one the resource type documentation lists for the capability your workload needs, and the file carries no setting for that capability. You need the exported file to deploy that storage account with the capability turned on. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Observed value"
+					],
+					"rows": [
+						[
+							"How the definition was produced",
+							"Export from the resource group in the portal"
+						],
+						[
+							"Resource type in the definition",
+							"Microsoft.Storage/storageAccounts"
+						],
+						[
+							"API version written in the definition",
+							"2021-04-01"
+						],
+						[
+							"API version the resource type documentation lists for the needed capability",
+							"2023-05-01"
+						],
+						[
+							"Settings written under properties",
+							"supportsHttpsTrafficOnly, minimumTlsVersion"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Update the apiVersion in the exported template so that the template includes the required capability."
+					},
+					{
+						"id": "b",
+						"text": "Download the template from the deployment history and update its apiVersion so that the template includes the required capability."
+					},
+					{
+						"id": "c",
+						"text": "Run az bicep build against the exported template so that the generated template includes the required capability with the current apiVersion."
+					},
+					{
+						"id": "d",
+						"text": "Re-export the resource group from the portal so that the exported template includes the required capability with a newer apiVersion."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Templates produced from a resource group or a single resource are generated from the published schema of each resource type, and that published schema can lag behind the newest API version. When the property or capability you need only exists in a newer API version, the fix is to edit the exported template yourself so that it uses the API version you actually need. The export screen always builds the file from the published schemas, so no portal toggle will rewrite the apiVersion for you, and the generated file therefore needs manual adjustment before deployment.",
+				"perChoice": {
+					"b": "The template taken from the deployment history is an exact copy of the template its author wrote, so it carries the API version that was used at deployment time. Editing that copy still means hand-changing the apiVersion, and the file you already exported is the one holding the resources you want to deploy.",
+					"c": "az bicep build compiles a Bicep file into ARM JSON; it does not read an exported JSON template to raise an API version, and it will not add a property that the template never declared. The apiVersion in the file has to be changed by hand.",
+					"d": "Re-exporting from the portal regenerates the definition from the same published schemas, so it will still carry the lagging API version and the same missing setting until the resource provider publishes a newer schema. The export route cannot move the definition forward on its own."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/export-template-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/decompile"
+				}
+			],
+			"subtopics": [
+				"arm-template-export",
+				"api-version"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q8N790XK7WMXG0EWHRWKRD",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You exported a template from a resource group so that you can rebuild the same environment in a test subscription. The generated file is incomplete: one of the resources in the group is missing from it, and the storage account that it does contain has no parameter for the administrator password, so the deployment cannot supply the secret. You need both gaps closed. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Observation",
+						"Detail"
+					],
+					"rows": [
+						[
+							"Resource group",
+							"contoso-prod-rg (14 resources)"
+						],
+						[
+							"Resource absent from the exported file",
+							"legacyvm01 - created with the classic deployment model"
+						],
+						[
+							"Storage account present in the file",
+							"stcontoso01 - no adminPassword parameter declared"
+						],
+						[
+							"Deployment attempt with the exported file",
+							"Fails - the template has no parameter for the storage account password"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Migrate legacyvm01 to the Resource Manager deployment model, export the group again, and add the missing password parameter to the generated template."
+					},
+					{
+						"id": "b",
+						"text": "Migrate legacyvm01 to the Resource Manager deployment model, export the group again, and write the administrator password into the generated template as a fixed value."
+					},
+					{
+						"id": "c",
+						"text": "Export the template from the deployment history of the resource group and add the missing password parameter to that template."
+					},
+					{
+						"id": "d",
+						"text": "Delete legacyvm01 from the resource group, export the group again, and re-create the virtual machine by hand afterwards."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Two separate fixes are required. legacyvm01 was created with the classic deployment model, and resources created that way cannot be exported until they are moved to the Resource Manager deployment model; once migrated, exporting the group again brings the virtual machine into the file. The export also leaves out some password parameters, so the missing password parameter has to be added to the generated template by hand - checking the template reference for the properties to include - before the file can deploy the storage account, and the value is then supplied at deployment time.",
+				"perChoice": {
+					"b": "Migrating legacyvm01 and exporting again does fix the missing resource, but embedding the administrator password as a fixed value in the template is not the documented remedy. The parameter is absent from the exported file and has to be added so the secret can be passed in at deployment time instead of being baked into a file you deploy to other environments.",
+					"c": "The history export returns only the template that was used for one specific deployment, and it cannot pick up resources that were created outside that deployment, so the virtual machine is still not covered. It also does not resolve the absent password parameter.",
+					"d": "Deleting the resource clears the blocker but destroys a running virtual machine and still leaves no declaration for it anywhere, so the deliverable - a file that rebuilds the environment - is not achieved. The blocker is cleared by moving the resource to the Resource Manager deployment model, not by removing it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/export-template-portal"
+				}
+			],
+			"subtopics": [
+				"template-export-limitations",
+				"exported-template-parameters"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q8RBF5PM20488VX7S3PS16",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You are on a build agent that prepares a Bicep version of an existing ARM template. The folder /srv/templates holds main.json together with an older main.bicep that was generated from it earlier and now has to be replaced by a freshly converted file. Your last conversion attempt exited with an error and left the old file untouched, so you still need the regenerated Bicep file to land in that same folder. Which command should you run?",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "$ ls /srv/templates\nmain.json  main.bicep  main.parameters.json\n\n$ az version\nbash: az: command not found\n\n$ bicep --version\nBicep CLI version 0.30.23\n\n$ bicep decompile --file main.json\nThe command exited with an error and no file was written."
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "bicep decompile --file main.json --force"
+					},
+					{
+						"id": "b",
+						"text": "az bicep decompile --file main.json --force"
+					},
+					{
+						"id": "c",
+						"text": "bicep decompile --file main.json"
+					},
+					{
+						"id": "d",
+						"text": "bicep build --file main.json --force"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Decompiling is the step that turns an ARM JSON template into a Bicep file, and it always writes its output as main.bicep next to the source main.json. Because main.bicep already exists in /srv/templates, the run must be told to overwrite it, which is exactly what the --force switch does. The transcript also shows that the Azure CLI (az) is not installed on this agent, so the command has to be issued with the standalone Bicep CLI, without the az prefix. Together these facts make `bicep decompile --file main.json --force` the command that replaces the stale file in the same folder.",
+				"perChoice": {
+					"b": "The transcript shows that `az` is not available on this agent (command not found), so a command that goes through the Azure CLI cannot run here. The same decompile operation must be invoked with the standalone Bicep CLI instead, keeping the --force switch so the existing main.bicep is replaced.",
+					"c": "This omits --force. The decompile command writes its output as main.bicep in the same directory as main.json, and since that file already exists there, the run stops with an error and writes nothing, leaving the stale Bicep file in place.",
+					"d": "build works in the opposite direction: it reads a Bicep file and produces ARM JSON, so it cannot yield a Bicep file from a JSON template. In addition, main.json is a JSON template rather than a Bicep input, so the build command is not usable here."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/decompile"
+				}
+			],
+			"subtopics": [
+				"bicep-decompile",
+				"template-conversion",
+				"bicep-cli"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q8X9GAWSGDPPR7A7DADT2X",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a production resource group whose six virtual machine related resources were added directly in the portal, so the group has never been deployed from a template. You export the group, and the generated file carries the current resource names, locations and SKU choices as plain text, with nothing a deployment can supply. Your team must roll the same environment out to a disaster-recovery subscription and later to a second region, each time with different names, locations and SKU choices. You need a single file that accepts those differences at deployment time. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item in the portal",
+						"Observed state"
+					],
+					"rows": [
+						[
+							"Resource group",
+							"rg-web-prod"
+						],
+						[
+							"Group contents",
+							"6 virtual machine related resources added directly in the portal"
+						],
+						[
+							"Deployments in the group's deployment history",
+							"None listed"
+						],
+						[
+							"Include parameters",
+							"Checked"
+						],
+						[
+							"Format shown for the generated template",
+							"ARM Template"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Save the template of the original deployment from the group's deployment history, so that the parameters of that resource set are already in the file."
+					},
+					{
+						"id": "b",
+						"text": "Select the Include parameters checkbox on the export screen, so that the parameters of the group are put into the file for you."
+					},
+					{
+						"id": "c",
+						"text": "Re-run the export and choose the Bicep format instead of ARM Template, so that the exported file can be deployed with different values."
+					},
+					{
+						"id": "d",
+						"text": "Put the parameters into the exported file yourself and point the resource definitions at them rather than the fixed values."
+					}
+				]
+			},
+			"key": {
+				"optionId": "d"
+			},
+			"explanation": {
+				"correct": "The resources in this group were added directly in the portal and the group has no deployments, so there are no template parameters anywhere for the export to carry over. The checkbox that adds parameters is already ticked by default, and the generated file still arrives with names, locations and SKU choices written in as fixed text, because it is built from the resources' current state. A resource-group export usually lacks the parameters you need for reuse, so you have to author them yourself in the exported file (or clear the Include parameters checkbox at export time and write your own) and point the resource definitions at them, letting each deployment supply different names, locations and SKU choices.",
+				"perChoice": {
+					"a": "There is no deployment in this group's history to save, so nothing can be taken from that route. Even where a history entry exists, it always pulls in every resource of that one deployment with no way to pick a subset, it hands back ARM JSON only, and the parameters it carries are the ones that deployment used.",
+					"b": "That checkbox is already ticked by default, and with it on the export simply carries over the template parameters that exist. This group was never deployed from a template, so there are none to carry over; clearing the checkbox is what allows you to author your own parameters.",
+					"c": "Choosing between ARM Template and Bicep only decides the syntax in which the generated definition is presented for download or deployment. It does not turn the values that are written into the file into inputs that a deployment can supply."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/export-template-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/decompile"
+				}
+			],
+			"subtopics": [
+				"template-export",
+				"template-parameters",
+				"bicep-conversion"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q90686FFRMVCSQJMWG6X5R",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an ARM JSON template that defines a virtual machine deployment, and you convert that template to Bicep so the definition can be maintained as a source file. You need the converted parameter declaration to carry over the same description, the same set of permitted values, and the same starting value as the JSON. Which Bicep declaration should the converted file contain?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"parameters\": {\n    \"vmSize\": {\n      \"type\": \"string\",\n      \"defaultValue\": \"Standard_D2s_v5\",\n      \"allowedValues\": [\n        \"Standard_D2s_v5\",\n        \"Standard_D4s_v5\",\n        \"Standard_A2_v2\"\n      ],\n      \"metadata\": {\n        \"description\": \"Size of the virtual machine to create.\"\n      }\n    }\n  }\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "@allowed([\n  'Standard_D2s_v5'\n  'Standard_D4s_v5'\n  'Standard_A2_v2'\n])\n@description('Size of the virtual machine to create.')\nparam vmSize string = 'Standard_D2s_v5'"
+					},
+					{
+						"id": "b",
+						"text": "@allowed([\n  'Standard_D2s_v5'\n  'Standard_D4s_v5'\n  'Standard_A2_v2'\n])\n@description('Size of the virtual machine to create.')\nparam vmSize string"
+					},
+					{
+						"id": "c",
+						"text": "@allowed([\n  'Standard_D2s_v5'\n  'Standard_D4s_v5'\n  'Standard_A2_v2'\n])\n@description('Size of the virtual machine to create.')\nparam vmSize secureString = 'Standard_D2s_v5'"
+					},
+					{
+						"id": "d",
+						"text": "@allowed([\n  'Standard_D2s_v5'\n  'Standard_D4s_v5'\n])\n@description('Size of the virtual machine to create.')\nparam vmSize string = 'Standard_D2s_v5'"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The JSON parameter carries a defaultValue of Standard_D2s_v5, an allowedValues array with three entries, and a metadata.description. When a JSON template is decompiled, allowedValues becomes an @allowed decorator list, metadata.description becomes an @description decorator, and defaultValue becomes the parameter's default value, so the correct option preserves all three parts as well as the string type. (The order in which the two decorators appear is not significant.)",
+				"perChoice": {
+					"b": "This declaration keeps the @allowed and @description decorators but leaves the parameter without a default, so the starting value Standard_D2s_v5 that the JSON specifies is lost and the converted file would not match the original template.",
+					"c": "This declaration changes the parameter type to secureString, while the JSON defines the parameter as a plain string; a VM size held in a secure string is not the equivalent conversion of the source template.",
+					"d": "This declaration lists only two entries in the @allowed decorator and omits Standard_A2_v2, which the JSON allowedValues array permits, so the converted file would reject a value the original template accepts."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/decompile"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/export-template-portal"
+				}
+			],
+			"subtopics": [
+				"bicep-decompile",
+				"arm-template-conversion"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q94XZ9JG7PTX3GEDGTSJV8",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Your platform team wants to reuse what exists in Azure instead of rebuilding it by hand. Five actions are listed below; place each one into the outcome it produces. One of the five produces none of these outcomes.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Detail"
+					],
+					"rows": [
+						[
+							"rg-app-prod",
+							"18 resources; created by a template deployment, with several resources edited later in the portal"
+						],
+						[
+							"Deployment history of rg-app-prod",
+							"A successful deployment is listed"
+						],
+						[
+							"Build server working folder",
+							"Holds main.json and a parameter file; no Bicep file exists yet"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Snapshot the live setup into a brand-new template, choosing which items it covers."
+					},
+					{
+						"id": "i2",
+						"text": "Retrieve the template that a finished deployment already ran with."
+					},
+					{
+						"id": "i3",
+						"text": "Convert an ARM JSON template into a Bicep template with az bicep decompile."
+					},
+					{
+						"id": "i4",
+						"text": "Open the Bicep Playground and compare one template in two notations side by side."
+					},
+					{
+						"id": "i5",
+						"text": "Take a finished deployment and have its ARM JSON turned into a Bicep template in a single step."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Outcome that reproduces what the original author wrote, so it can be applied in another subscription without edits."
+					},
+					{
+						"id": "s2",
+						"label": "Outcome that shows how things stand today, including console changes made later, and that you can limit to a subset you select."
+					},
+					{
+						"id": "s3",
+						"label": "Outcome produced from a template sitting on disk, that your team can maintain as editable source code."
+					},
+					{
+						"id": "s4",
+						"label": "Outcome that lets you examine a template expressed in different ways at the same time."
+					}
+				]
+			},
+			"key": {
+				"s1": "i2",
+				"s2": "i1",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "The resource-group or resource export (i1) generates a brand-new template from the resources as they exist right now, so it captures the later portal edits and lets you tick exactly which resources are included — that is the outcome described in s2. Saving from the deployment history (i2) hands back the exact template its author wrote, which can be applied in another subscription unchanged and therefore reproduces the author's work exactly — s1. Converting an ARM JSON template you already hold with az bicep decompile (i3) produces a Bicep file that the team can maintain as editable source code — s3. The Bicep Playground (i4) displays an ARM template and its Bicep equivalent side by side so you can examine the same definition expressed in different ways — s4. The action described in i5 belongs to no slot, because a history export only ever yields ARM JSON; the Bicep file requires an additional conversion step, so the one-step behaviour it claims does not exist.",
+				"perChoice": {
+					"i1": "Fits the outcome about showing how things stand today including later console changes and limiting the result to a selected subset: exporting from a resource group or from a single resource produces a brand-new template built from the live resources, captures manual changes made after the original deployment, and lets you choose which resources to include.",
+					"i2": "Fits the outcome about reproducing what the original author wrote so it can be applied in another subscription without edits: saving from the deployment history returns the exact template used for that deployment, which is already parameterised and can be redeployed with no changes.",
+					"i3": "Fits the outcome about turning a template you already hold on disk into maintainable editable source code: az bicep decompile converts main.json into a main.bicep file that can then be edited and deployed.",
+					"i4": "Fits the outcome about examining the same template expressed in different ways at the same time: the Bicep Playground shows an ARM template and its Bicep equivalent side by side, either from the built-in sample or from an ARM JSON file you upload for conversion.",
+					"i5": "Fits no slot: a deployment-history export always returns ARM JSON only, so obtaining a Bicep file from it needs a separate decompile step on top of the export. There is no single action that turns a finished deployment straight into a Bicep template as described here."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/export-template-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/decompile"
+				}
+			],
+			"subtopics": [
+				"template-export",
+				"bicep-decompile",
+				"export-route-choices"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q9B1W5G5EYVYRT4P3Z0GWJ",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a resource group that was partly deployed from a template and partly changed by hand afterwards, and an ARM JSON file left over from an earlier project. You need definitions of these environments that your team can keep and change, and the five actions below are all things you could run next. For every action, drag it to the slot that shows the result you get back from it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Environment",
+						"Detail"
+					],
+					"rows": [
+						[
+							"Resource group",
+							"rg-web-prod"
+						],
+						[
+							"Resources created from a template",
+							"4"
+						],
+						[
+							"Resources added or edited by hand afterwards",
+							"2"
+						],
+						[
+							"Past deployments listed for the group",
+							"2"
+						],
+						[
+							"ARM JSON file on the workstation",
+							"main.json"
+						],
+						[
+							"Shell on the workstation",
+							"Azure CLI installed"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Export the selected parts of a group in the portal"
+					},
+					{
+						"id": "i2",
+						"text": "Save the template of the past deployment from the portal history"
+					},
+					{
+						"id": "i3",
+						"text": "Export the group from the command line"
+					},
+					{
+						"id": "i4",
+						"text": "Convert the JSON file on disk into Bicep with the command line"
+					},
+					{
+						"id": "i5",
+						"text": "Convert the JSON on the clipboard into a Bicep file in Visual Studio Code"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "The result holds only the resources that you ticked in the portal list, and it includes the changes made by hand after the last rollout."
+					},
+					{
+						"id": "s2",
+						"label": "The result is the file that the earlier rollout used, carrying the parameters that let you reuse it in another environment."
+					},
+					{
+						"id": "s3",
+						"label": "The result is ARM JSON for the group, written to a file by a command run in a shell."
+					},
+					{
+						"id": "s4",
+						"label": "The result is a Bicep file written beside the JSON file that already sits on the machine, produced by a command."
+					},
+					{
+						"id": "s5",
+						"label": "The result is a Bicep file made from JSON text that you copied into a desktop editor, produced inside that editor."
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "Each action matches a distinct result. Exporting the resources you tick in the portal produces a file limited to that selection and built from the live configuration, so hand edits made after the original rollout are part of it. Taking the template of an earlier deployment from the portal history gives back the file exactly as it was submitted, together with the parameters that let it be deployed elsewhere. Exporting the group from the command line writes ARM JSON for the group to a file. Converting a JSON file that already sits on the machine from the command line writes a Bicep file into the same folder as that JSON file. Converting JSON text that you copied into a desktop editor turns that text into a Bicep file inside the editor.",
+				"perChoice": {
+					"i1": "This belongs in the slot about the ticked resources: the portal route that generates a definition from a group reflects how the selected resources are configured right now, so later manual changes are captured.",
+					"i2": "This belongs in the slot about the earlier rollout's file: this route hands back the template exactly as its author submitted it, and it keeps the parameters that make redeploying into other environments straightforward.",
+					"i3": "This belongs in the slot about ARM JSON written by a shell command: the command-line group export places the group's resources in an ARM JSON file.",
+					"i4": "This belongs in the slot about a Bicep file beside an existing JSON file: converting a JSON file from the command line writes the Bicep file into the same directory as the source JSON.",
+					"i5": "This belongs in the slot about JSON text copied into a desktop editor: the editor can convert JSON text held on the clipboard into a Bicep file, so the result is produced inside the editor."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/export-template-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/decompile"
+				}
+			],
+			"subtopics": [
+				"template-export-routes",
+				"bicep-decompile",
+				"deployment-history-template"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q9J316GEB2C3DZD4H14GD2",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have five separate requests raised by colleagues who need Azure deployments captured in forms they can keep and reuse. You need to match each request to one route. Which route should each request be assigned to?",
+				"items": [
+					{
+						"id": "a",
+						"text": "Snapshot of every ticked entry, showing the settings in place right now plus later manual changes"
+					},
+					{
+						"id": "b",
+						"text": "Definition of one entry you opened on its own, rather than everything beside it"
+					},
+					{
+						"id": "c",
+						"text": "Author's original work, returned unchanged and ready for redeployment exactly as written"
+					},
+					{
+						"id": "d",
+						"text": "Editable source generated beside an existing definition file, both deploying identically"
+					},
+					{
+						"id": "e",
+						"text": "Browser-based side-by-side comparison of one definition and its source equivalent, with upload of your own file"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Export template from a resource group"
+					},
+					{
+						"id": "s2",
+						"label": "Export template from a single resource"
+					},
+					{
+						"id": "s3",
+						"label": "Save from history"
+					},
+					{
+						"id": "s4",
+						"label": "Bicep CLI decompile command"
+					},
+					{
+						"id": "s5",
+						"label": "Bicep Playground"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d",
+				"s5": "e"
+			},
+			"explanation": {
+				"correct": "Each request points to one of the five ways of producing a reusable Azure deployment definition. A resource group export produces a snapshot of the resources that are ticked in the group and reflects manual changes made after the original rollout, so it matches the first request. Exporting from an individual resource returns only that one resource, matching the second request. Saving from history returns the author's original template exactly as it was submitted and can be redeployed without edits, matching the third request. Decompiling with the Bicep CLI writes an editable Bicep source next to the supplied JSON file, and both forms deploy the same result, matching the fourth request. The Bicep Playground shows a template and its Bicep equivalent side by side in the browser and can decompile an uploaded ARM JSON file, matching the fifth request.",
+				"perChoice": {
+					"a": "Fits 'Export template from a resource group': that route builds a fresh definition from the resources ticked in the group and captures the changes made to them after the original rollout.",
+					"b": "Fits 'Export template from a single resource': the resource-level export contains only the one resource that was opened, not the rest of the group.",
+					"c": "Fits 'Save from history': that route retrieves the exact template that was used for the deployment, so it reflects the state at deployment time and can be redeployed with no changes.",
+					"d": "Fits 'Bicep CLI decompile command': the decompile step writes main.bicep into the same directory as the source main.json, and the converted file is functionally equivalent to the original.",
+					"e": "Fits 'Bicep Playground': the playground compares a template with its Bicep equivalent side by side in the browser and can decompile an uploaded ARM JSON file to show the resulting Bicep."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/export-template-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/decompile"
+				}
+			],
+			"subtopics": [
+				"template-export-routes",
+				"bicep-decompilation",
+				"bicep-playground"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q9NEJM38T2YXMV2W11HHPP",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have an ARM JSON template with the parameter section shown below, and you run the Bicep CLI over it so that you can keep the definition as a Bicep source file. You need to work out which part of the generated Bicep file each part of the original JSON becomes, so that you can review the conversion. Which slot should each item be placed in?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"parameters\": {\n    \"storageAccountType\": {\n      \"type\": \"string\",\n      \"defaultValue\": \"Standard_LRS\",\n      \"allowedValues\": [\n        \"Standard_LRS\",\n        \"Standard_GRS\",\n        \"Standard_ZRS\",\n        \"Premium_LRS\"\n      ],\n      \"metadata\": {\n        \"description\": \"The SKU used for the storage account.\"\n      }\n    },\n    \"Security.Authentication.AAD.Tenant\": {\n      \"type\": \"string\"\n    }\n  }\n}"
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "The `\"defaultValue\"` entry of the parameter"
+					},
+					{
+						"id": "i2",
+						"text": "The `\"allowedValues\"` list of the parameter"
+					},
+					{
+						"id": "i3",
+						"text": "The `\"metadata\"` block that holds `\"description\"` for the parameter"
+					},
+					{
+						"id": "i4",
+						"text": "The `\"Security.Authentication.AAD.Tenant\"` parameter key"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "The starting setting carried by the generated Bicep parameter"
+					},
+					{
+						"id": "s2",
+						"label": "The decorator that limits which settings a deployment can pass"
+					},
+					{
+						"id": "s3",
+						"label": "The decorator that carries the explanatory wording"
+					},
+					{
+						"id": "s4",
+						"label": "The identifier that the generated Bicep parameter must take"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Decompiling the JSON turns the allowedValues array into an @allowed decorator list, the metadata.description text into an @description decorator, and the defaultValue into the value the Bicep parameter starts with (param storageAccountType string = 'Standard_LRS'). Because Bicep identifiers may contain only letters, digits, and underscores, the dotted JSON key becomes Security_Authentication_AAD_Tenant. Each item therefore matches the slot that describes that part of the generated file.",
+				"perChoice": {
+					"i1": "The defaultValue becomes the value the Bicep parameter starts with, so it belongs with the slot about the starting setting carried by the generated parameter.",
+					"i2": "The allowedValues array becomes the @allowed decorator list on the parameter, so it belongs with the slot about the decorator that limits which settings a deployment can pass.",
+					"i3": "The metadata description becomes the @description decorator on the parameter, so it belongs with the slot about the decorator that carries the explanatory wording.",
+					"i4": "Bicep identifiers allow only letters, digits, and underscores, so this key is converted to Security_Authentication_AAD_Tenant and belongs with the slot about the identifier the generated parameter must take."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/decompile"
+				}
+			],
+			"subtopics": [
+				"bicep-decompile",
+				"json-to-bicep"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R47MGBSKGW2SCZ2JB2D6J3",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a resource group that was assembled over time and your team wants a reusable definition of it. Before you run the export, you list the conditions that apply to the group and to the export screen, and you need to know what each one does to the result. Drag each condition to the outcome you should expect.",
+				"items": [
+					{
+						"id": "i1",
+						"text": "The resource group contains 215 resources."
+					},
+					{
+						"id": "i2",
+						"text": "The group contains an Azure Data Factory instance."
+					},
+					{
+						"id": "i3",
+						"text": "Two resources in the group were created by the classic deployment process."
+					},
+					{
+						"id": "i4",
+						"text": "You leave the Include parameters checkbox selected on the export screen."
+					},
+					{
+						"id": "i5",
+						"text": "You clear the Include parameters checkbox on the export screen."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "The export stops with an error about the group being too large."
+					},
+					{
+						"id": "s2",
+						"label": "The generated file omits that resource type entirely."
+					},
+					{
+						"id": "s3",
+						"label": "Those resources cannot be captured until they use the Resource Manager model."
+					},
+					{
+						"id": "s4",
+						"label": "Every parameter of the resource appears in the generated file."
+					},
+					{
+						"id": "s5",
+						"label": "The parameter values are yours to define in the generated file."
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "A resource group can hold at most 200 resources for this export, so a group with 215 resources makes the export fail with the message that exporting is not supported for resource groups with more than 200 resources. Azure Data Factory resources are outside the support of the export template feature, so that resource type is left out of the generated file and the copy or clone capability is used for those resources instead. Resources created through the classic deployment model must first be migrated to the Resource Manager deployment model before they can be exported. The Include parameters checkbox is selected by default: while it is selected, all template parameters are included in the generated template, and clearing it lets you author your own parameters instead.",
+				"perChoice": {
+					"i1": "Item i1 belongs in slot s1. Exporting a resource group that holds more than 200 resources is not supported, and the attempt ends with the error that exporting is not supported for resource groups with more than 200 resources.",
+					"i2": "Item i2 belongs in slot s2. The export template feature does not support Azure Data Factory resources, so they are left out of the generated file; for those resources the copy or clone data factory capability is used instead.",
+					"i3": "Item i3 belongs in slot s3. Resources created through the classic deployment model have to be migrated to the Resource Manager deployment model first, otherwise they cannot be exported.",
+					"i4": "Item i4 belongs in slot s4. With Include parameters selected, every template parameter of the resource is included in the generated template.",
+					"i5": "Item i5 belongs in slot s5. Clearing Include parameters leaves the parameters out of the generated template so that you can author your own parameters and their values."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/export-template-portal"
+				}
+			],
+			"subtopics": [
+				"template-export",
+				"export-constraints",
+				"export-parameters"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R4AND8ENJDWBF5QZ7W6JBK",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Your platform team is turning the environments that already run in Azure into definitions the team can keep and deploy again later. Six portal actions are listed below. Drag each action to the outcome it gives you, or to the last slot when it gives none of the outcomes shown.",
+				"items": [
+					{
+						"id": "i1",
+						"text": "Save from history on the Deployments page of a resource group"
+					},
+					{
+						"id": "i2",
+						"text": "Pick Export template from the left menu of the resource group view"
+					},
+					{
+						"id": "i3",
+						"text": "Tick the resource checkboxes in the group view, then pick Export template from the top menu"
+					},
+					{
+						"id": "i4",
+						"text": "Open a resource from its group and pick Export template from the left pane"
+					},
+					{
+						"id": "i5",
+						"text": "Leave Include parameters ticked on the export screen"
+					},
+					{
+						"id": "i6",
+						"text": "In VS Code, run the Decompile into Bicep command on an existing template"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "The definition that was used to create what is running, handed back as ARM JSON only"
+					},
+					{
+						"id": "s2",
+						"label": "A definition covering every resource the group currently holds"
+					},
+					{
+						"id": "s3",
+						"label": "A definition covering only the resources you marked in the list"
+					},
+					{
+						"id": "s4",
+						"label": "A definition describing just the one resource you were working with"
+					},
+					{
+						"id": "s5",
+						"label": "A definition carrying every value that a caller can supply"
+					},
+					{
+						"id": "s6",
+						"label": "None of the outcomes shown"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5",
+				"s6": "i6"
+			},
+			"explanation": {
+				"correct": "Save from history (i1) hands back the exact template that was used for that deployment and only as ARM JSON, so it belongs in the slot about the definition that was used to create what is running. In the resource group view, Export template in the left menu (i2) covers every resource in the group, while the same command in the top menu (i3) is enabled only once resources have been selected with their checkboxes and then exports exactly those selected resources. Export template in the left pane of a single resource's page (i4) produces a template containing only that one resource. Include parameters is selected by default on the export screen, and with it on every parameter of the source is carried into the generated template (i5). The VS Code Decompile into Bicep command (i6) turns an ARM JSON template into a Bicep file, which none of the other slots describe, so it goes to the slot for actions that produce none of the listed outcomes.",
+				"perChoice": {
+					"i1": "Save from history retrieves the exact template that was used for the deployment and returns ARM JSON only, so it matches the slot about the definition that was used to create what is running.",
+					"i2": "Export template in the left menu of the resource group view exports every resource of the group, so it matches the slot about a definition covering every resource the group currently holds.",
+					"i3": "In the resource group view the top-menu Export template button only becomes enabled once at least one resource has been selected with its checkboxes, and it then exports just the selected ones, so it matches the slot about the resources you marked in the list.",
+					"i4": "Opening a single resource and choosing Export template in its left pane yields a template that contains only that one resource, so it matches the slot about describing just the one resource you were working with.",
+					"i5": "Include parameters is selected by default on the export screen, and with that box on every parameter of the source is included in the generated template, so it matches the slot about carrying every value that a caller can supply.",
+					"i6": "The Decompile into Bicep command in VS Code converts an ARM JSON template into a Bicep file; none of the listed outcomes describe a Bicep file, so it fits the slot for actions that produce none of them."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/export-template-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/decompile"
+				}
+			],
+			"subtopics": [
+				"template-export",
+				"bicep-decompile",
+				"portal-export-workflow"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R4EN0YYP1D6AV458QR4CC9",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an Azure Data Factory in a resource group, and you want to capture its pipelines so that your team can recreate the factory in another subscription. You need a definition that you can keep and deploy again later. Which approach should you choose?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item in the resource group",
+						"Count"
+					],
+					"rows": [
+						[
+							"Azure Data Factory",
+							"1"
+						],
+						[
+							"Pipelines",
+							"3"
+						],
+						[
+							"Linked services",
+							"2"
+						],
+						[
+							"Entries in deployment history",
+							"2"
+						]
+					]
+				},
+				"statement": "To keep the factory reusable, you should {{method}}.",
+				"slots": [
+					{
+						"id": "method",
+						"options": [
+							{
+								"id": "a",
+								"text": "Copy or clone the Azure Data Factory"
+							},
+							{
+								"id": "b",
+								"text": "Export the Azure Data Factory template"
+							},
+							{
+								"id": "c",
+								"text": "Export the Azure Data Factory deployment history"
+							},
+							{
+								"id": "d",
+								"text": "Decompile the Azure Data Factory ARM JSON"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"method": "a"
+			},
+			"explanation": {
+				"correct": "The export template feature does not support Azure Data Factory resources, so neither exporting from the resource group nor saving from deployment history will hand you a definition for this factory. For these resources the documented alternative is the copy or clone capability of Azure Data Factory, which is the route that lets you duplicate the factory for another subscription. Decompiling is only a JSON-to-Bicep conversion step: it needs ARM JSON that already exists and cannot create one for a resource type that the export feature cannot handle.",
+				"perChoice": {
+					"method:b": "Exporting from the resource group builds a new template from the live resources, but Azure Data Factory resources are excluded from the export template feature, so this route cannot capture the factory and its pipelines.",
+					"method:c": "The deployment-history route returns the exact ARM JSON that a chosen deployment used, but the export template feature still does not support Azure Data Factory, so no reusable factory definition comes back from it either.",
+					"method:d": "Decompilation converts ARM JSON that already exists into a Bicep file. It does not create an ARM JSON template, and the export feature cannot supply source JSON for an Azure Data Factory, so there is nothing valid to convert here."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/export-template-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/decompile"
+				}
+			],
+			"subtopics": [
+				"azure-data-factory",
+				"template-export-limits"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R4MM0F9KZZZA1XPSWTAG8K",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a resource group named rg-orders that holds 240 resources. The group came from a template, and afterwards several of its resources changed directly in the portal. Your team wants a template file that captures the environment as it is today, so they can rebuild it in another subscription, and they start the export for the group in the portal. What should you expect from that export, and how should the team obtain the template they need?",
+				"statement": "The export for this group {{exportOutcome}}, and the team should {{approach}}.",
+				"slots": [
+					{
+						"id": "exportOutcome",
+						"options": [
+							{
+								"id": "a",
+								"text": "fails with an error message stating that a group with more than 200 resources cannot be exported"
+							},
+							{
+								"id": "b",
+								"text": "succeeds and writes the first 200 resources of the group into the exported file, with the remaining 40 listed as skipped"
+							},
+							{
+								"id": "c",
+								"text": "succeeds and writes all 240 resources of the group into the exported file, with an added note about the size of the template"
+							},
+							{
+								"id": "d",
+								"text": "succeeds and writes only the resource types of the group that have a published schema, with the others not written to the file"
+							}
+						]
+					},
+					{
+						"id": "approach",
+						"options": [
+							{
+								"id": "a",
+								"text": "write the definition as a Bicep file, an ARM template or Terraform"
+							},
+							{
+								"id": "b",
+								"text": "export the group in several batches and merge the generated template files"
+							},
+							{
+								"id": "c",
+								"text": "take the file from the group's deployment history and reuse it as the definition for the rebuild"
+							},
+							{
+								"id": "d",
+								"text": "ask the subscription owner or administrator to raise the number of resources a group can contain"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"exportOutcome": "a",
+				"approach": "a"
+			},
+			"explanation": {
+				"correct": "Two facts decide this. First, the portal export of a resource group only works for a group that holds at most 200 resources; rg-orders has 240, so the export stops with an error stating that a group with more than 200 resources cannot be exported. Second, the file the team needs has to reflect the environment as it is today, including the changes made directly in the portal after the original deployment, and the documented guidance for a definition of production quality is to write it yourself as a Bicep file, an ARM template or Terraform, because exporting existing resources is not guaranteed to succeed and is not a dependable way to produce usable templates.",
+				"perChoice": {
+					"exportOutcome:b": "The export never writes a partial file. For a resource group beyond the 200-resource ceiling the documented behaviour is that the export stops with an error; it does not write the first 200 resources and mark the remaining ones as skipped.",
+					"exportOutcome:c": "Because the group exceeds the ceiling of 200 resources, no file containing all of its resources is produced. The export stops with an error rather than writing a larger file with a note about its size.",
+					"exportOutcome:d": "Leaving resource types out of the generated file is described only for types that the export feature cannot represent at all. For a group beyond the 200-resource ceiling the export stops with an error instead of quietly trimming the file.",
+					"approach:b": "Exporting is not a dependable route to a reusable definition, and the export does not run for a group of this size, so there would be no batched files to merge. The recommended route for a definition of production quality is to write the file yourself.",
+					"approach:c": "The file kept in the deployment history is the exact template used at deployment time; it does not contain the changes that were made to the resources afterwards in the portal, so it would not capture the environment as it is today.",
+					"approach:d": "The ceiling of 200 resources belongs to the export template feature itself; it is not a subscription or resource group setting that an owner or administrator can raise, so the export would still stop with an error."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/export-template-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/decompile"
+				}
+			],
+			"subtopics": [
+				"export-template",
+				"resource-group-export-limits",
+				"authoring-definitions"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R4QXTAV13ZK50V8PV6TVA8",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You keep your infrastructure definitions as Bicep source files. A colleague hands you an ARM JSON file that your pipeline deploys today, and you convert it with the Bicep CLI so the team can work on it. The JSON declares a parameter whose name contains periods, and a separate parameter file supplies that parameter's value to the pipeline. After the conversion, the pipeline fails because the value it sends no longer matches anything in the Bicep file. The converted file also contains machine-generated names for its variables and resources.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"File",
+						"What it contains"
+					],
+					"rows": [
+						[
+							"main.json",
+							"Declares a string parameter named Security.Authentication.AAD.Tenant"
+						],
+						[
+							"deployment.parameters.json",
+							"Sets Security.Authentication.AAD.Tenant to contoso"
+						]
+					]
+				},
+				"statement": "To make the pipeline work again, the team should {{slot1}}. Before relying on the converted file, it should {{slot2}}",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "accept the renamed parameter, where periods become underscores, and update every place that passes its value, in the templates and in the parameter files"
+							},
+							{
+								"id": "b",
+								"text": "accept the renamed parameter, where periods become underscores, and update only the declaration in the converted file"
+							},
+							{
+								"id": "c",
+								"text": "keep the original parameter name, with periods as they are, and leave the existing parameter files untouched"
+							},
+							{
+								"id": "d",
+								"text": "rename the parameter by adding a _var suffix and leave the places that pass its value untouched"
+							}
+						]
+					},
+					{
+						"id": "slot2",
+						"options": [
+							{
+								"id": "a",
+								"text": "rename them to meaningful names and update the usages of the old names in the file"
+							},
+							{
+								"id": "b",
+								"text": "leave them as they are, because their generated names are already unique and valid in the file"
+							},
+							{
+								"id": "c",
+								"text": "rename them to meaningful names but leave the usages in the file untouched"
+							},
+							{
+								"id": "d",
+								"text": "replace them with the resource type identifiers from the original JSON file"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a",
+				"slot2": "a"
+			},
+			"explanation": {
+				"correct": "Converting the JSON turns the parameter name Security.Authentication.AAD.Tenant into Security_Authentication_AAD_Tenant, because Bicep identifiers may contain only letters, digits and underscores. The value the pipeline sends is keyed by the name that includes periods, so it no longer matches any parameter, and the fix is to update every place that passes or refers to that value, in the templates and in the parameter files. Separately, the converted file holds machine-generated symbolic names for its variables and resources (for example storageAccountName_var); these should be renamed to meaningful names, and the rename action in the editor updates every usage of the previous name throughout the file.",
+				"perChoice": {
+					"slot1:b": "Updating only the declaration leaves the parameter file and any other references still using the name with periods, so the pipeline keeps failing.",
+					"slot1:c": "A name with periods cannot be kept in the converted file at all, because Bicep identifiers allow only letters, digits and underscores, so keeping the original name is not an option.",
+					"slot1:d": "The _var suffix is used for generated variable names, not for parameters, and leaving the places that pass the value untouched keeps the pipeline failing.",
+					"slot2:b": "The generated names are valid and unique, but they carry no meaning for maintainers and should be reviewed and renamed before the file is relied on.",
+					"slot2:c": "Renaming only the declaration leaves the usages pointing at the previous name, which breaks the file; renaming a symbol in the editor updates every usage of it.",
+					"slot2:d": "The generated symbolic names are how the file refers to its own variables and resources; they are not values supplied by parameter files and cannot simply be replaced by resource type identifiers."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/decompile"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/export-template-portal"
+				}
+			],
+			"subtopics": [
+				"bicep-decompile",
+				"parameter-naming",
+				"generated-symbol-names"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R4X4EA1MYCPTJA33FMQW14",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your team keeps its Azure infrastructure in Azure Resource Manager template files and wants to maintain them in Bicep from now on. One developer, who cannot install the Bicep CLI on the workstation they are using, opens the Bicep Playground in the browser and wants to see the Bicep version of the template that is stored in the team's repository. A second developer has the raw text of a template on the clipboard and wants to turn it into a Bicep file inside Visual Studio Code, without first writing that text to disk.",
+				"statement": "In the Bicep Playground, the first developer should choose {{pgOption}}, and in Visual Studio Code, the second developer should run {{vsOption}}.",
+				"slots": [
+					{
+						"id": "pgOption",
+						"options": [
+							{
+								"id": "a",
+								"text": "Decompile"
+							},
+							{
+								"id": "b",
+								"text": "Sample Template"
+							},
+							{
+								"id": "c",
+								"text": "Bicep build"
+							},
+							{
+								"id": "d",
+								"text": "Import resources"
+							}
+						]
+					},
+					{
+						"id": "vsOption",
+						"options": [
+							{
+								"id": "a",
+								"text": "Paste JSON as Bicep"
+							},
+							{
+								"id": "b",
+								"text": "Bicep build"
+							},
+							{
+								"id": "c",
+								"text": "Import resources"
+							},
+							{
+								"id": "d",
+								"text": "Rename symbol"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"pgOption": "a",
+				"vsOption": "a"
+			},
+			"explanation": {
+				"correct": "For the playground, Decompile is the choice that takes your own ARM JSON file and shows the Bicep file produced from it, while Sample Template only displays the example that ships with the playground. In the editor, Paste JSON as Bicep converts template text that you have copied and performs the conversion for you. Build works in the opposite direction, turning a Bicep file into ARM JSON, importing existing resources starts from resources that already run in Azure, and renaming a symbol only changes an identifier that is already in a file.",
+				"perChoice": {
+					"pgOption:b": "Choosing Sample Template displays the ready-made example that comes with the playground, so you see a canned template and its Bicep counterpart rather than the file from your own repository.",
+					"pgOption:c": "Build runs in the opposite direction: it turns a Bicep source file into its ARM JSON equivalent, so it cannot give you the Bicep version of a template you only hold as JSON, and it also needs the tooling installed on the machine.",
+					"pgOption:d": "Importing existing resources creates resource declarations from resources that already run in Azure; it does not upload a template file you already own to the playground.",
+					"vsOption:b": "Build converts a Bicep source file into ARM JSON, so it does nothing with template text that is sitting on the clipboard.",
+					"vsOption:c": "That command builds declarations from resources that already exist in Azure, whereas the source here is text copied to the clipboard.",
+					"vsOption:d": "Renaming a symbol only changes the name of an identifier that is already present in a file; it does not create a Bicep file out of template text."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/decompile"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/export-template-portal"
+				}
+			],
+			"subtopics": [
+				"bicep-playground",
+				"vs-code-bicep-commands",
+				"template-conversion"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R4ZXCXSKD1CKFSX62DJDVB",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a resource group named rg-legacy that holds two virtual machines, their network interfaces and a network security group. Every resource in it was created years ago with the older deployment tooling, so the group has never been defined by a template. Your team wants a reusable template file that captures the whole environment, and a colleague starts an export from the portal. The export fails and no file is produced. You need the group's contents to become exportable. Which action should you take first?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Resource in rg-legacy   How it was created\nvm-app-01              classic deployment model\nvm-app-02              classic deployment model\nnic-app-01             classic deployment model\nnsg-app-01             classic deployment model"
+				},
+				"statement": "The first step is to {{s1}}.",
+				"slots": [
+					{
+						"id": "s1",
+						"options": [
+							{
+								"id": "a",
+								"text": "migrate the resources in the group to the Resource Manager deployment model"
+							},
+							{
+								"id": "b",
+								"text": "migrate the deployment records of the group to the Resource Manager deployment model"
+							},
+							{
+								"id": "c",
+								"text": "migrate the resources in the group to the classic deployment model"
+							},
+							{
+								"id": "d",
+								"text": "export each resource in the group separately from its own page and combine the files"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"s1": "a"
+			},
+			"explanation": {
+				"correct": "The export template feature cannot read resources that were created through the classic deployment model; those resources must first be migrated to the Resource Manager deployment model. After that migration the group can be exported from the portal, although the generated file is only a starting point that usually needs adjustments before it is reused for real deployments.",
+				"perChoice": {
+					"s1:b": "The migration applies to the resources themselves, not to the deployment records kept in the group's deployment history. Converting only the records leaves the classic resources untouched, so the export still cannot read them.",
+					"s1:c": "The classic deployment model is precisely what blocks the export, so converting the resources in that direction keeps the problem instead of removing it.",
+					"s1:d": "Exporting one resource from its own page uses the same export feature and reads the same live resource, so a resource that has not been migrated cannot be captured that way either."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/export-template-portal"
+				}
+			],
+			"subtopics": [
+				"arm-template-export",
+				"classic-deployment-model",
+				"resource-manager-migration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R54YVDPH1CCX8S5ERKHQ4G",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a virtual machine named vm-billing-01 in the resource group rg-prod, and you want a reusable definition that covers that virtual machine alone. The group currently holds the resources listed in the exhibit. You open the virtual machine from the Azure portal and start the export from its page. The export screen offers one checkbox. Your team plans to author its own parameter declarations in the file before rebuilding the environment in another subscription, so the export should not carry over the parameters it would otherwise include. Which actions should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Resource",
+						"Origin",
+						"Wanted in the new definition"
+					],
+					"rows": [
+						[
+							"vm-billing-01",
+							"Template deployment",
+							"Yes"
+						],
+						[
+							"vnet-hub",
+							"Template deployment",
+							"No"
+						],
+						[
+							"nsg-app",
+							"Portal",
+							"No"
+						],
+						[
+							"kv-prod",
+							"Template deployment",
+							"No"
+						]
+					]
+				},
+				"statement": "The file you download should contain {{scope}}, and on the export screen you should {{parameterAction}}.",
+				"slots": [
+					{
+						"id": "scope",
+						"options": [
+							{
+								"id": "a",
+								"text": "only that single resource"
+							},
+							{
+								"id": "b",
+								"text": "every resource in the resource group"
+							},
+							{
+								"id": "c",
+								"text": "every resource from the deployment that created it"
+							},
+							{
+								"id": "d",
+								"text": "only the resources ticked in the resource group view"
+							}
+						]
+					},
+					{
+						"id": "parameterAction",
+						"options": [
+							{
+								"id": "a",
+								"text": "clear the Include parameters checkbox"
+							},
+							{
+								"id": "b",
+								"text": "leave the Include parameters checkbox selected"
+							},
+							{
+								"id": "c",
+								"text": "select the Include parameters checkbox again after the export finishes"
+							},
+							{
+								"id": "d",
+								"text": "select the ARM Template view before reviewing the generated result"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"scope": "a",
+				"parameterAction": "a"
+			},
+			"explanation": {
+				"correct": "Starting the export from an individual resource's page produces a template that contains only that resource, which is what the team needs for vm-billing-01. The export screen's Include parameters checkbox is selected by default for this route, and while it stays selected every template parameter is carried into the generated file. Since the team intends to write its own parameter declarations, the checkbox must be cleared so the file arrives without those parameters.",
+				"perChoice": {
+					"scope:b": "Taken from the resource group, the result would also contain vnet-hub, nsg-app and kv-prod, which the team does not want.",
+					"scope:c": "A template taken from a deployment contains every resource that deployment created, so it would be wider than the one resource required here.",
+					"scope:d": "Ticking checkboxes applies to the resource-group export view, not to an export started from an individual resource's page.",
+					"parameterAction:b": "With the checkbox selected, every template parameter is included in the generated file, so the file would still carry the parameters the team wants to author itself.",
+					"parameterAction:c": "The checkbox is applied while the template is generated, so selecting it again after the export has finished cannot remove the parameters that were already included.",
+					"parameterAction:d": "Choosing the ARM Template view only changes how the generated result is displayed for download; it does not affect whether parameters are included."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/export-template-portal"
+				}
+			],
+			"subtopics": [
+				"template-export",
+				"single-resource-export",
+				"template-parameters"
+			],
+			"reviewed": false
+		}
+	]
+}

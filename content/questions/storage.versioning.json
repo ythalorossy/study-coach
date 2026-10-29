@@ -1,0 +1,1703 @@
+{
+	"skill": "storage.versioning",
+	"questions": [
+		{
+			"id": "q_01M5MPW0Y2EZ8JBMFYRPZKG590",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a storage account with blob versioning enabled plus a lifecycle management policy that removes outdated blob versions. A blob that was first created two years ago lost its earlier copy almost immediately after yesterday's overwrite, even though the policy is configured to keep versions for 30 days. You need to understand why the policy behaved this way before you change anything. Which explanation best accounts for the behavior?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Blob name",
+							"reports/2024-annual.csv"
+						],
+						[
+							"Blob first created",
+							"2024-11-02"
+						],
+						[
+							"Last write to the blob",
+							"2026-10-22"
+						],
+						[
+							"Lifecycle rule target",
+							"Blob versions"
+						],
+						[
+							"Rule condition",
+							"daysAfterCreationGreaterThan = 30"
+						],
+						[
+							"Observed result",
+							"The 2024 copy was removed on 2026-10-23"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "The rule counts the days from the time the version was written, not from the time a later write replaced it."
+					},
+					{
+						"id": "b",
+						"text": "The rule counts the days from the time a later write replaced the version, so an old blob keeps its history for the full period."
+					},
+					{
+						"id": "c",
+						"text": "The rule counts the days from the time the blob's soft delete retention period started."
+					},
+					{
+						"id": "d",
+						"text": "The rule counts the days from the time versioning was turned on for the account, not from the time each version was written."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Lifecycle management version-age rules count from the version's original creation time, not from the moment the version stopped being the live copy. The 2024 copy of reports/2024-annual.csv was created more than 30 days ago, so once yesterday's write turned it into a previous version it already satisfied daysAfterCreationGreaterThan = 30 and was removed right away. This is exactly the documented gotcha where a long-lived blob that is finally overwritten can be deleted almost immediately by a small day-based value.",
+				"perChoice": {
+					"b": "This reverses the documented behavior. The rule does not start counting when a later write replaces a version; if it did, the 2024 copy would have survived for the full 30 days after the 2026-10-22 overwrite, which is not what happened.",
+					"c": "The soft delete retention window is a separate feature that governs how long a deleted blob or version can be restored. It does not drive when the lifecycle management rule removes versions; that timing comes from each version's own creation time.",
+					"d": "The account-level enablement date does not set the clock for individual versions. Each version carries its own creation time, and the rule is evaluated against that per-version value rather than against the date the account-level setting was switched on."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-enable"
+				}
+			],
+			"subtopics": [
+				"blob-versioning",
+				"lifecycle-management",
+				"version-retention"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MPYP9V18Z4HAMH75W7NF5C",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a storage account with blob versioning and soft delete enabled for a container. After a recovery operation, all previously soft-deleted versions of reports.txt are available again, but the version written on 2026-09-01 is still not the live state. You need the September content to become the active version while the state written on 2026-10-20 remains in the version history. Which operation should you run?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Observed state"
+					],
+					"rows": [
+						[
+							"Blob",
+							"reports.txt"
+						],
+						[
+							"Version dated 2026-09-01",
+							"Readable after recovery; not the current version"
+						],
+						[
+							"Version dated 2026-10-20",
+							"Readable and currently active"
+						],
+						[
+							"Recovery result",
+							"All soft-deleted versions of reports.txt are available"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Run Copy Blob with the 2026-09-01 version as the source and reports.txt as the destination."
+					},
+					{
+						"id": "b",
+						"text": "Run Copy Blob with reports.txt as the source and the 2026-09-01 version as the destination."
+					},
+					{
+						"id": "c",
+						"text": "Run Undelete Blob again for reports.txt and specify the 2026-09-01 version."
+					},
+					{
+						"id": "d",
+						"text": "Run Set Blob Tier on the 2026-09-01 version of reports.txt."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Undelete Blob restores all soft-deleted versions of a blob but never promotes any single version to current. Since the 2026-09-01 version has already been restored, use Copy Blob with that version as the source and reports.txt as the destination. This makes the September content current, while the former current version remains available in the version history.",
+				"perChoice": {
+					"b": "This reverses the needed direction. It uses the current reports.txt as the source and the September version as the destination, so it does not make the September content the active version.",
+					"c": "The recovery operation has already restored the soft-deleted versions. Repeating Undelete Blob can restore versions, but it never promotes a chosen version to current.",
+					"d": "Set Blob Tier changes a version's access tier; it does not determine which version is current."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-overview"
+				}
+			],
+			"subtopics": [
+				"promote-previous-version",
+				"soft-delete-interaction",
+				"copy-blob"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MQ1ZF5AHZN9VCCRTG9FF8T",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a general-purpose v2 storage account with blob versioning turned on. To stop copies from accumulating, you set the tracking option on the Data protection page so that old blob versions are cleaned up after 90 days, and you can see in the account's lifecycle management policy that a rule was added for that cleanup. The Data protection page still reports versioning as enabled, but the control that sets the cleanup period is no longer shown, so you cannot switch the account back to keeping every version. You need the account to retain all versions and the tracking control to appear again on the Data protection page. What should you do?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Account setting or policy rule",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account type",
+							"General Purpose v2"
+						],
+						[
+							"Blob versioning",
+							"Enabled"
+						],
+						[
+							"Tracking option chosen when versioning was enabled",
+							"Delete versions after 90 days"
+						],
+						[
+							"Lifecycle management policy rule 1",
+							"Delete blob versions after 90 days"
+						],
+						[
+							"Lifecycle management policy rule 2",
+							"Rehydrate archived blob versions to the hot tier"
+						],
+						[
+							"Tracking control on the Data protection page",
+							"Not shown"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Delete the lifecycle management policy rule that rehydrates archived blob versions to the hot tier"
+					},
+					{
+						"id": "b",
+						"text": "Delete the lifecycle management policy rule that deletes blob versions"
+					},
+					{
+						"id": "c",
+						"text": "Change the lifecycle management policy rule that deletes blob versions so the cleanup window becomes 365 days"
+					},
+					{
+						"id": "d",
+						"text": "Add a lifecycle management policy rule that deletes blob snapshots older than 365 days"
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "Choosing the cleanup option in the portal's Data protection page adds a rule to the storage account's lifecycle management policy, and once that rule exists the option is no longer displayed on the Data protection page. The control reappears only after the rule that deletes blob versions is removed from the policy (together with any remaining rules that delete versions). Deleting that rule therefore stops the automatic removal of old versions and brings the tracking control back, while versioning itself stays enabled and existing versions are left untouched.",
+				"perChoice": {
+					"a": "That rule only moves archived versions back to the hot tier. The rule that deletes versions stays in the policy, so the tracking control remains hidden and old versions are still cleaned up on the same schedule.",
+					"c": "Editing the number of days leaves the rule in place. The tracking control returns only when the rule that deletes versions is removed from the policy, so a longer window still deletes versions and still hides the control.",
+					"d": "Adding a rule for old snapshots does not remove the existing rule that deletes blob versions, so the control stays hidden and the automatic cleanup of versions is unchanged."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-enable"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-overview"
+				}
+			],
+			"subtopics": [
+				"blob-versioning",
+				"lifecycle-management",
+				"data-protection"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MQ45CREHDXRAFXQKNG30TQ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a general-purpose v2 storage account named contosoinvoices with blob versioning enabled for the account. A nightly job that runs as the managed identity AppSync-Runner must remove one superseded copy of invoice.pdf by supplying its version ID, and the copy that customers download today must stay in place and remain the live one. You need the job's identity to be permitted to carry out that removal. Which built-in role should you assign to AppSync-Runner?",
+				"exhibit": {
+					"kind": "code",
+					"language": "powershell",
+					"text": "PS C:\\> az storage account show -n contosoinvoices --query \"{kind:kind, versioning:properties.blobServiceProperties.versioning, hns:properties.isHnsEnabled}\"\n{\n  \"kind\": \"StorageV2\",\n  \"versioning\": \"Enabled\",\n  \"hns\": false\n}\n\nPS C:\\> Get-AzRoleAssignment -ObjectId $runnerObjectId | Select-Object RoleName, Scope\n\nRoleName                       Scope\n---------                       -----\nStorage Blob Data Contributor  /subscriptions/0a1b2c3d-.../resourceGroups/rg-finance/providers/Microsoft.Storage/storageAccounts/contosoinvoices\n\nPS C:\\> az storage blob delete --account-name contosoinvoices --container documents --name invoice.pdf --version-id 2026-09-14T10:22:31.0000000Z\nStatus: 403\nMessage: This request is not authorized to perform this operation using this permission."
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Storage Blob Data Owner"
+					},
+					{
+						"id": "b",
+						"text": "Storage Blob Data Contributor"
+					},
+					{
+						"id": "c",
+						"text": "Storage Blob Data Reader"
+					},
+					{
+						"id": "d",
+						"text": "Storage Account Contributor"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Removing a specific earlier copy of a blob by its version ID requires the Azure RBAC data action Microsoft.Storage/storageAccounts/blobServices/containers/blobs/deleteBlobVersion/action, and that action is included in the built-in Storage Blob Data Owner role. Assigning that role to AppSync-Runner authorizes the job to remove the targeted version while the current version of invoice.pdf remains the live copy.",
+				"perChoice": {
+					"b": "Storage Blob Data Contributor carries the data action Microsoft.Storage/storageAccounts/blobServices/containers/blobs/delete, which authorizes removing the current version of a blob only. It does not carry deleteBlobVersion/action, so the job's call that names a version ID is rejected with the 403 shown in the exhibit, which is the symptom being reported.",
+					"c": "Storage Blob Data Reader grants read and list access to blobs and their versions but no delete permissions at all, so the nightly job would still be refused with 403 after assigning it.",
+					"d": "Storage Account Contributor is a management-plane role for administering the storage account and its resources. It contains no blob data-plane actions, so it cannot authorize a version-scoped blob removal."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-overview"
+				}
+			],
+			"subtopics": [
+				"blob-versioning",
+				"rbac-permissions",
+				"delete-blob-version"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MQ7EYCD29KBNCCJ4D7PFC5",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a general-purpose v2 storage account with blob versioning enabled for the account. A cleanup pipeline sends a Delete Blob request that names one superseded copy of report.pdf by its version ID, and the copy that clients download today must stay in place as the live one. The pipeline signs that request with a service shared access signature built from the parameters shown below. You need the signature to authorize the removal of the named copy only. Which change to the signature parameters should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Request sent by the pipeline:\nDELETE https://contoso.blob.core.windows.net/reports/report.pdf?versionid=2026-10-14T08:31:07.0000000Z\n\nService SAS parameters:\n  signedPermissions : r\n  signedResource     : b\n  signedExpiry       : 2026-11-02T00:00:00Z\n  signedVersion      : 2020-12-06"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set signedResource to \"bv\" and change signedPermissions to \"rx\""
+					},
+					{
+						"id": "b",
+						"text": "Set signedResource to \"b\" and change signedPermissions to \"rx\""
+					},
+					{
+						"id": "c",
+						"text": "Set signedResource to \"bv\" and change signedPermissions to \"rw\""
+					},
+					{
+						"id": "d",
+						"text": "Set signedResource to \"s\" and change signedPermissions to \"rx\""
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A shared access signature that is scoped to a single blob version is created with the signed resource value \"bv\", and removing a version requires the Delete permission, whose URI symbol is \"x\". The pipeline therefore needs signedResource \"bv\" and a signedPermissions string that includes x, such as \"rx\". With those values the token authorizes the operation against the version named in the request, so only the superseded copy is removed and the live copy is untouched.",
+				"perChoice": {
+					"b": "\"b\" is the signed resource value for a blob, not for one specific version of a blob. A token built that way is not scoped to a version ID, so the request cannot remove the named superseded copy by version; with the delete permission it would act on the live blob instead, which is exactly what the pipeline must avoid. The signed resource value for a version is \"bv\".",
+					"c": "\"rw\" grants read and write only. Write permission lets a client create or overwrite blob content, but removing a blob version requires the Delete permission and its URI symbol \"x\". Even though \"bv\" correctly targets a single version, the missing delete permission means the named copy is not removed.",
+					"d": "\"s\" is the signed resource value for service-level access. A token with that value is not tied to a single blob or to a specific version, so it cannot be used to remove the copy identified by the version ID in the request."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-overview"
+				}
+			],
+			"subtopics": [
+				"sas-token",
+				"blob-version-permissions"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MQD5RFPJAG1RDJNF4126A5",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a general-purpose v2 storage account with blob versioning enabled. A blob named invoices.pdf was written as a block blob and then overwritten twice, so the account now keeps a current version plus two earlier versions. An application requires invoices.pdf to be a page blob. You need to complete the conversion successfully. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account kind",
+							"General-purpose v2"
+						],
+						[
+							"Blob versioning",
+							"Enabled"
+						],
+						[
+							"Blob name",
+							"invoices.pdf"
+						],
+						[
+							"Current blob type",
+							"Block blob"
+						],
+						[
+							"Earlier versions retained",
+							"2"
+						],
+						[
+							"Type required by the application",
+							"Page blob"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Delete the blob and all of its versions, then create the page blob again."
+					},
+					{
+						"id": "b",
+						"text": "Overwrite the current version with page blob content and leave the two earlier versions unchanged."
+					},
+					{
+						"id": "c",
+						"text": "Use Set Blob Metadata on the current version to change its type and leave the two earlier versions unchanged."
+					},
+					{
+						"id": "d",
+						"text": "Copy the current version to a new blob in another container and remove only the current version."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Every version of a blob must have the same blob type, so a block blob cannot be overwritten as a page blob while earlier versions still exist. With versioning enabled, deleting the blob does not remove its earlier versions, and the deleted current state itself becomes another version. The blob and all of its versions must therefore be deleted first, after which the file can be created again as a page blob.",
+				"perChoice": {
+					"b": "An overwrite cannot change the blob type while earlier versions of the same blob exist, because the type must stay consistent across the whole version history; that request would be rejected.",
+					"c": "Set Blob Metadata records a new version of metadata, but it does not convert a block blob into a page blob, so the application would still be working with a block blob.",
+					"d": "Copy Blob keeps the source blob's type, and this option also places the result under a different name in a different container. It neither converts invoices.pdf nor clears the earlier versions of the original blob."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-overview"
+				}
+			],
+			"subtopics": [
+				"blob-versioning",
+				"blob-type-constraints"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MQM8MXXRK5FT1ATZEWG8XB",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a general-purpose v2 storage account with blob versioning enabled for the account. A client uploads a 200 MB file as a block blob in two stages, and the service records one version for that file. The request log below shows the upload. You need to identify which client operation created the stored version so you can explain the behavior to the client team. Which operation should you identify?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Account type: general-purpose v2\nBlob versioning: enabled for the account\nBlob type: block blob\n\n2026-10-20T09:15:01Z  PUT block id 0001 of bigfile.bin (100 MB)  -> 201 Created\n2026-10-20T09:15:02Z  PUT block id 0002 of bigfile.bin (100 MB)  -> 201 Created\n2026-10-20T09:15:03Z  PUT bigfile.bin, committing the staged blocks  -> 201 Created\n2026-10-20T09:15:03Z  response header x-ms-version-id: 2026-10-20T09:15:03.0000000Z"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Put Block"
+					},
+					{
+						"id": "b",
+						"text": "Put Block List"
+					},
+					{
+						"id": "c",
+						"text": "Put Blob"
+					},
+					{
+						"id": "d",
+						"text": "Set Blob Metadata"
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "For a block blob, the new version is captured when the staged blocks are committed with Put Block List. In the log, that is the third request, which is also the one that returned the x-ms-version-id header for the recorded version. Put Block only stages content, so the two staging requests did not produce versions of their own.",
+				"perChoice": {
+					"a": "Put Block only stages an individual block; on its own it does not create a version. The version in this upload was created when the staged blocks were committed with Put Block List.",
+					"c": "Put Blob does create a version for a block blob, but the log shows no Put Blob request: the file was uploaded in stages and then committed, so Put Blob is not the operation that produced the recorded version.",
+					"d": "Set Blob Metadata does create a version for a block blob, but the log contains no metadata update, so it is not the operation that produced the recorded version."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-overview"
+				}
+			],
+			"subtopics": [
+				"block-blob-writes",
+				"version-id"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MQYZWP7CDCBXVSJ5YN9HSA",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a general-purpose v2 storage account named contosoarchive with blob versioning turned on for the account and soft delete turned on for the 'reports' container. A cleanup script issued a delete request for every file in that container, and the service returned 202 Accepted for each request. The container now lists no files, yet the storage capacity attributed to it has not fallen and the finance invoice still includes the same volume. The team needs the space the deleted files occupied to be released and the account to end up holding no copies of that data. Which action should the team take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Observation                                                        Value\n-----------------------------------------------------------------  ---------------------------\nService reply to the delete request for reports/q3.csv            202 Accepted\nWrites recorded for q3.csv before its delete request               3\nVersions of q3.csv still listed for the account after the request  3\nFiles returned when the 'reports' container is listed afterwards   none\nStorage capacity shown for the 'reports' container afterwards     unchanged from before"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Delete each version of those files separately, specifying which version to remove."
+					},
+					{
+						"id": "b",
+						"text": "Wait for the container's soft delete retention period to expire, because the delete request also left the current version of each file in that recoverable state."
+					},
+					{
+						"id": "c",
+						"text": "Set the access tier of the remaining versions in the container to archive, so that the account pays less for the data it still holds."
+					},
+					{
+						"id": "d",
+						"text": "Turn off blob versioning for the account, because that immediately releases the versions left behind by the delete request."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Once blob versioning is turned on, a delete request changes the meaning of delete: the current version of the file becomes a previous version instead of being freed, and that version stays in the account and keeps being billed. That is why the container lists no files while the capacity shown for it did not fall and the invoice is unchanged. To actually release the space you have to remove the versions themselves, one version at a time, passing the identifier of the version you want removed (the service lets you delete a specific version by its version ID). Soft delete does not change this: when a blob is deleted while versioning is on, no soft-deleted entry is created for the blob, so the retention window does not apply to that deletion.",
+				"perChoice": {
+					"b": "With versioning enabled, deleting a blob turns its current version into a previous version and does not create a soft-deleted entry for the blob, so the soft delete retention period never starts for that request and waiting for it to expire frees nothing. The content has to be removed by deleting the versions that are still there.",
+					"c": "Moving a version to another access tier does not free the capacity that the data occupies; the content is still stored in the account and still billed. Moving versions to the archive tier also bills the full content length of every version and snapshot in the account, and once a tier is set explicitly on a version it cannot be undone, so this both fails to release the space and makes the bill larger.",
+					"d": "Turning the setting off does not delete existing versions, snapshots or blobs. They remain in the account and continue to be billed, and afterwards they can still be read, listed and deleted, so disabling versioning on its own leaves the space in use."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-enable"
+				}
+			],
+			"subtopics": [
+				"blob-versioning",
+				"delete-semantics"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MR9X4MXB29XEMDBHDRM0ER",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You administer four storage accounts that hold company files. As part of consolidating them into a single account, you plan to switch off blob versioning on each of them in turn. Match each account in the table to the outcome of that attempt.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Account",
+						"Configuration"
+					],
+					"rows": [
+						[
+							"contoso-files",
+							"General-purpose v2; blob versioning enabled; nothing else configured"
+						],
+						[
+							"contoso-lake",
+							"General-purpose v2; hierarchical namespace enabled for Data Lake Storage"
+						],
+						[
+							"contoso-vault",
+							"General-purpose v2; blob versioning enabled; an Immutability (WORM) policy is active on the account"
+						],
+						[
+							"contoso-dr",
+							"General-purpose v2; blob versioning enabled; object replication policies are configured"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "o1",
+						"text": "Succeeds; the earlier states of each file stay readable, and later writes replace the live copy instead of adding another."
+					},
+					{
+						"id": "o2",
+						"text": "Not applicable; an account of this kind never qualified, so no such request can be made."
+					},
+					{
+						"id": "o3",
+						"text": "Refused; the request cannot complete while the account's stored objects are still protected against changes."
+					},
+					{
+						"id": "o4",
+						"text": "Refused; the request cannot complete until the account's copy setup for another account is removed."
+					},
+					{
+						"id": "o5",
+						"text": "Succeeds, but every file and every earlier state is erased at the same time."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "contoso-files"
+					},
+					{
+						"id": "s2",
+						"label": "contoso-lake"
+					},
+					{
+						"id": "s3",
+						"label": "contoso-vault"
+					},
+					{
+						"id": "s4",
+						"label": "contoso-dr"
+					}
+				]
+			},
+			"key": {
+				"s1": "o1",
+				"s2": "o2",
+				"s3": "o3",
+				"s4": "o4"
+			},
+			"explanation": {
+				"correct": "contoso-files is a general-purpose v2 account with no other settings in place, so the switch-off succeeds; switching blob versioning off does not delete existing versions or blobs, so the earlier states stay readable while later writes simply overwrite the live copy (o1). contoso-lake has a hierarchical namespace enabled for Data Lake Storage, and such accounts are excluded from blob versioning entirely, so there is nothing to switch off and no such request can be made (o2). On contoso-vault an Immutability (WORM) policy is active on the account, and a WORM policy can prevent versioning from being disabled, so the request is refused while the stored objects remain protected against changes (o3). On contoso-dr object replication depends on blob versioning, so all object replication policies on the account must be removed before versioning can be disabled, and the request stays refused until that copy setup is gone (o4). The outcome in o5 belongs nowhere: disabling versioning never erases blobs or their earlier states.",
+				"perChoice": {
+					"o1": "Belongs with contoso-files: the account type supports blob versioning and no WORM or replication setting blocks turning it off, so the request succeeds, the existing earlier states remain readable, and subsequent writes overwrite the live copy rather than adding a new version.",
+					"o2": "Belongs with contoso-lake: an account with a hierarchical namespace enabled for Data Lake Storage is excluded from blob versioning, so the setting was never available there and there is nothing to switch off.",
+					"o3": "Belongs with contoso-vault: an Immutability (WORM) policy on the account can prevent versioning from being disabled, so the request is refused while the stored objects are still protected against changes.",
+					"o4": "Belongs with contoso-dr: object replication depends on blob versioning, so all object replication policies on the account must be removed before the setting can be switched off.",
+					"o5": "Fits no account in the table: switching versioning off does not delete blobs, snapshots, or existing versions, so no account in the table ends up with its files and earlier states erased."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-enable"
+				}
+			],
+			"subtopics": [
+				"disable-versioning",
+				"account-prerequisites"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5N6477Q3P5EPQM3T2E4WFVC",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Your team is turning on blob versioning for four storage accounts that hold customer documents, and each account is owned by a different platform group. For each account below, drag it to the outcome the group should expect from the attempt.",
+				"items": [
+					{
+						"id": "i1",
+						"text": "A general-purpose v2 account with hierarchical namespace enabled for Data Lake Storage"
+					},
+					{
+						"id": "i2",
+						"text": "A general-purpose v2 account where the team turns the setting on using Azure Storage REST API version 2019-05-11"
+					},
+					{
+						"id": "i3",
+						"text": "A general-purpose v2 account where the team turns the setting on using Azure Storage REST API version 2021-08-06"
+					},
+					{
+						"id": "i4",
+						"text": "A general-purpose v2 account whose blobs were created last year, before versioning was turned on"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "The setting is not offered on this kind of account"
+					},
+					{
+						"id": "s2",
+						"label": "The configuration call is refused because it uses an API release older than the one the feature requires"
+					},
+					{
+						"id": "s3",
+						"label": "The configuration call is accepted because it uses an API release new enough for the feature"
+					},
+					{
+						"id": "s4",
+						"label": "The change works, and objects that already existed gain an identifier showing when they first appeared, while their earlier state is kept as a prior copy"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Each account maps to a different outcome. The account with hierarchical namespace enabled for Data Lake Storage is excluded from the feature, so the setting is not offered there. The two accounts differ only in the API release used for the configuration call: the feature requires Azure Storage REST API version 2019-10-10 or later, so 2019-05-11 is refused while 2021-08-06 is accepted and the setting takes effect. For the account whose blobs were created before the setting was turned on, the change works and the first write after it assigns each blob a version identifier equal to its creation time, with the state prior to that write retained as a previous version.",
+				"perChoice": {
+					"i1": "Blob versioning is offered for general-purpose v2, premium block blob, and legacy Blob accounts, but an account with a hierarchical namespace enabled for Data Lake Storage is excluded, so the setting is not offered on this kind of account.",
+					"i2": "The feature needs Azure Storage REST API version 2019-10-10 or later, so a configuration call sent with version 2019-05-11 cannot complete and is refused.",
+					"i3": "Azure Storage REST API version 2021-08-06 is newer than the 2019-10-10 baseline the feature requires, so the configuration call is accepted and the setting is turned on for the account.",
+					"i4": "Turning the setting on for an account that already holds blobs is allowed. A blob that existed before the setting was turned on has no version identifier; the first write after the change assigns it an identifier equal to its creation time, and the state before that write becomes a previous version."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-overview"
+				}
+			],
+			"subtopics": [
+				"blob-versioning",
+				"enable-versioning",
+				"account-type-requirements"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5N6BTJ80C2MZAGPXDVM1KGJ",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a general-purpose v2 storage account named contosoreports that holds quarterly report files, and the estate contains several different configurations that affect how file history is kept and how old entries are cleaned up. Four observations have been collected from four separate workloads, and each one comes from a different configuration choice. You need to attribute each observation to the configuration that produces it, so the team can adjust the right setting when a workload behaves unexpectedly. Which match should you apply?",
+				"items": [
+					{
+						"id": "a",
+						"text": "Blob versioning"
+					},
+					{
+						"id": "b",
+						"text": "Snapshots"
+					},
+					{
+						"id": "c",
+						"text": "Lifecycle management policy"
+					},
+					{
+						"id": "d",
+						"text": "Azure Storage Actions task"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "A file replaced last week still opens with its earlier content, and the application keeps no copy of its own"
+					},
+					{
+						"id": "s2",
+						"label": "A file replaced last week shows only the new content in the account, and the application had saved its own copy beforehand"
+					},
+					{
+						"id": "s3",
+						"label": "An old history entry is removed 30 days after the day it was written, even though it remained live for most of that period"
+					},
+					{
+						"id": "s4",
+						"label": "An old history entry is removed 30 days after the day it stopped being the live state, even though it was written years earlier"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d"
+			},
+			"explanation": {
+				"correct": "The four observations map one-to-one onto four different configurations. The earlier content of a replaced file is kept automatically by the service, with no application code involved, which is what Blob versioning does on every write or delete. An account that holds only the replacement while the application had saved its own copy beforehand reflects manual, application-managed snapshots rather than an automatic history. For the cleanup observations, a lifecycle management policy counts a version's age with the day-based daysAfterCreationGreaterThan property, so an entry is removed 30 days after it was written even if it stayed live for much of that time, whereas an Azure Storage Actions task can key on when a version became noncurrent, so the 30 days are counted from the day it stopped being the live state even when it was written years earlier.",
+				"perChoice": {
+					"a": "Belongs in the slot about a replaced file that still opens with its earlier content while the application keeps no copy of its own: with Blob versioning switched on for the account, the service saves a prior copy of the blob every time it is written or deleted, and no application code is required, so the earlier content stays readable. It does not fit the snapshot slot, because snapshots are created by the application, and it does not fit either cleanup slot, which remove old entries rather than keep them.",
+					"b": "Belongs in the slot about an account that shows only the new content after the application saved its own copy beforehand: a snapshot is application-managed and taken deliberately at chosen checkpoints, so the extra copy in this observation came from the application's own code. Microsoft recommends stopping block blob snapshots once versioning is enabled, because versions already capture every update and delete and additional snapshots only add cost.",
+					"c": "Belongs in the slot about an entry removed 30 days after the day it was written: a lifecycle management policy removes old versions using the day-based daysAfterCreationGreaterThan property, and that age is counted from the version's original creation time rather than from the moment it became a previous version, which is why an entry can be removed very soon after it is finally overwritten.",
+					"d": "Belongs in the slot about an entry removed 30 days after it stopped being the live state: an Azure Storage Actions task can key on when a version became noncurrent, which gives finer control than the creation-age rule used by lifecycle management and matches an entry that is kept for 30 days after the day it stopped being live no matter how old the entry itself is."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-enable"
+				}
+			],
+			"subtopics": [
+				"blob-versioning",
+				"snapshot-vs-version",
+				"version-cleanup"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5N6G8SGTNZ88CVQRQ3JHNSM",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a general-purpose v2 account in the Contoso subscription that holds customer documents. A review captured six workloads in that account, each with the outcome the business expects from it. You need to assign the correct mechanism to every workload so that the listed outcome is delivered. Drag each item to the workload it belongs to.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Workload",
+						"Current behavior",
+						"Required outcome"
+					],
+					"rows": [
+						[
+							"Contracts",
+							"Each file is replaced a few times a month",
+							"Every earlier state of each file is kept automatically, with no change to the application"
+						],
+						[
+							"Release notes",
+							"One important milestone per quarter",
+							"The application captures a copy of a file at a moment it chooses"
+						],
+						[
+							"Scanned receipts",
+							"Files are occasionally removed in error",
+							"A removed file can be brought back within 30 days"
+						],
+						[
+							"Quarterly report archive",
+							"The same report file is overwritten every quarter",
+							"Copies are removed automatically once they are more than 400 days old, counted from the date each copy was written"
+						],
+						[
+							"Nightly backup set",
+							"Every night replaces the previous backup file",
+							"A copy is removed automatically 7 days after it stops being the live one"
+						],
+						[
+							"Production account",
+							"Administrators work in it daily",
+							"It cannot be deleted or renamed by mistake"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Blob versioning"
+					},
+					{
+						"id": "i2",
+						"text": "Snapshots"
+					},
+					{
+						"id": "i3",
+						"text": "Soft delete for blobs"
+					},
+					{
+						"id": "i4",
+						"text": "Lifecycle management policy"
+					},
+					{
+						"id": "i5",
+						"text": "Azure Storage Actions task"
+					},
+					{
+						"id": "i6",
+						"text": "Azure Resource Manager lock"
+					},
+					{
+						"id": "i7",
+						"text": "Immutability (WORM) policy"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Contracts"
+					},
+					{
+						"id": "s2",
+						"label": "Release notes"
+					},
+					{
+						"id": "s3",
+						"label": "Scanned receipts"
+					},
+					{
+						"id": "s4",
+						"label": "Quarterly report archive"
+					},
+					{
+						"id": "s5",
+						"label": "Nightly backup set"
+					},
+					{
+						"id": "s6",
+						"label": "Production account"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5",
+				"s6": "i6"
+			},
+			"explanation": {
+				"correct": "Each workload asks for a different outcome, and each outcome has its own mechanism. Keeping earlier copies of every file with no application change is what blob versioning does automatically on every write or delete. A copy that the application takes at a moment it selects is a snapshot. Bringing one individually removed file back inside a retention window is the job of soft delete for blobs. Age-based cleanup measured from the date a copy was written belongs to a lifecycle management policy, whose version rules use the day-based daysAfterCreationGreaterThan property and count from the version's creation time. Cleanup that starts when a copy stops being the live one belongs to an Azure Storage Actions task, which can key on when a version became noncurrent. Preventing the account itself from being deleted or renamed needs an Azure Resource Manager lock, because versioning protects blob content only and offers no protection for the account resource. The immutability (WORM) policy item supports none of the six outcomes.",
+				"perChoice": {
+					"i1": "Contracts: with versioning enabled for the account, a prior copy of the blob is saved automatically each time it is written or deleted, and no application code is required to keep that history.",
+					"i2": "Release notes: snapshots are managed by the application and taken manually, which suits recording one chosen milestone rather than every write.",
+					"i3": "Scanned receipts: soft delete for blobs keeps a removed blob recoverable inside the retention window, so an individual file deleted by mistake can be restored.",
+					"i4": "Quarterly report archive: lifecycle management deletes previous versions using the day-based daysAfterCreationGreaterThan property, and version age is counted from the version's original creation time, which matches removing copies 400 days after the date each copy was written.",
+					"i5": "Nightly backup set: Storage Actions can key cleanup on when a version became noncurrent, which matches removing a copy 7 days after it stops being the live one.",
+					"i6": "Production account: an Azure Resource Manager lock can prevent the account from being deleted or renamed, which is required because versioning does not protect against deletion of a storage account.",
+					"i7": "Fits no slot: an immutability (WORM) policy makes content write-once for a set period and can even stop versioning from being switched off, but it stores no earlier copies, creates no application-chosen checkpoint, restores no removed file, ages nothing out, and does not lock the account."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-enable"
+				}
+			],
+			"subtopics": [
+				"blob-versioning",
+				"version-cleanup",
+				"blob-soft-delete"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5N6QE05FBQ479TWZHC84B6Z",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a general-purpose v2 storage account named contosomedia. The account holds a video library, nightly reports, and log files, and blob versioning is enabled at account level. Finance flagged several surprises on the monthly invoice, and operations reported that fetching previous versions of one log file now runs far slower. You need to match each observation to the storage behavior responsible, so the team can pick the right configuration change next.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Ref",
+						"Observation recorded during the monthly review"
+					],
+					"rows": [
+						[
+							"A",
+							"A nightly job rewrites report.csv using unchanged bytes each night, and the monthly amount billed for that file keeps growing."
+						],
+						[
+							"B",
+							"The cool tier was set on one version, and the monthly amount billed for that file stays at the full content length of the file regardless of where the file resides now."
+						],
+						[
+							"C",
+							"One old version of a video was moved to the cheapest storage tier, and the monthly amount billed for the whole account jumped by an amount far above the size of that one file."
+						],
+						[
+							"D",
+							"Fetching the versions of one log file started running slower after the file was rewritten several times a day for months."
+						],
+						[
+							"E",
+							"The account keeps hundreds of manual snapshots of the same block blobs, and the monthly amount billed for that data shows them counted twice."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "No tier was set on the versions, so the account is billed for the unique blocks across versions, and re-committing a block with identical data adds a billable block."
+					},
+					{
+						"id": "i2",
+						"text": "A tier was set on the version, so the version is billed for its full content length, and that tier choice is permanent even when the blob is moved to a different tier."
+					},
+					{
+						"id": "i3",
+						"text": "Moving a version into the archive tier charges the full content length of every version and snapshot in the account, not only the version that was moved."
+					},
+					{
+						"id": "i4",
+						"text": "The blob has more versions than the recommended maximum of 1,000, and that slows down listing the versions of that blob."
+					},
+					{
+						"id": "i5",
+						"text": "The account still takes block blob snapshots, which duplicate data that the version history already captures, and adds cost."
+					}
+				],
+				"slots": [
+					{
+						"id": "s_a",
+						"label": "Observation A"
+					},
+					{
+						"id": "s_b",
+						"label": "Observation B"
+					},
+					{
+						"id": "s_c",
+						"label": "Observation C"
+					},
+					{
+						"id": "s_d",
+						"label": "Observation D"
+					},
+					{
+						"id": "s_e",
+						"label": "Observation E"
+					}
+				]
+			},
+			"key": {
+				"s_a": "i1",
+				"s_b": "i2",
+				"s_c": "i3",
+				"s_d": "i4",
+				"s_e": "i5"
+			},
+			"explanation": {
+				"correct": "Each observation is produced by one specific billing or performance behavior of versioned blobs. A: when no tier is explicitly set for the versions of a blob, the account is billed for the unique blocks across all versions, and a block that is replaced is billed as a unique block even when its ID and data are unchanged, so a nightly rewrite of identical bytes keeps adding charge for report.csv (i1). B: when a tier is explicitly set on a version, that version is billed for its full content length, and explicitly setting the tier cannot be undone, so a file whose tier was set stays billed at full content length wherever it sits afterwards (i2). C: when a blob or version is moved to the archive tier, the account is billed for the full content length of all versions and snapshots, so archiving one old video version pushed the account-wide amount far beyond the size of that single file (i3). D: a large number of versions per blob degrades blob listing performance, and Microsoft recommends maintaining fewer than 1,000 versions per blob, which explains the slower retrieval of previous versions of the frequently rewritten log file (i4). E: once versioning is enabled, versions already capture every update and delete of block blobs, so continuing to take manual snapshots adds no protection, duplicates data and increases cost (i5).",
+				"perChoice": {
+					"i1": "Observation A. When no tier is explicitly set on the versions, billing counts unique blocks across all versions; a block that is replaced is billed as unique even when it has the same block ID and the same data as in the previous version, so rewriting report.csv with unchanged bytes every night keeps increasing the amount billed for that file.",
+					"i2": "Observation B. Once a tier is explicitly set on a version, that version is billed for its full content length, and explicitly setting the tier cannot be undone: moving the blob back to its original tier still bills the full content length, so the amount stays at the full content length of the file no matter which tier it occupies now.",
+					"i3": "Observation C. Moving a blob or version to the archive tier means the account is billed for the full content length of all versions and snapshots, not only the object that was moved, which is why archiving a single old video version raised the account-wide amount by far more than the size of that file.",
+					"i4": "Observation D. A large number of versions per blob increases the latency of blob listing operations, and Microsoft recommends keeping fewer than 1,000 versions per blob, which matches the slowdown in retrieving previous versions of the log file that is rewritten many times a day.",
+					"i5": "Observation E. After versioning is enabled, versions capture and preserve all block blob updates and deletions, so manually taken snapshots give no extra protection, duplicate data that the version history already holds and add cost, which is why the same block blob data is counted twice on the invoice."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-overview"
+				}
+			],
+			"subtopics": [
+				"version-billing",
+				"blob-access-tiers",
+				"version-count-limits"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5N6T3F52MCZSFXWE5M03E31",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You manage a general-purpose v2 storage account named contosoarchive, where the service keeps a history of every file change for you. A quarterly review produced the four observations below, each recorded against a different file. Match each observation to the behavior of the stored history that explains it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"File",
+						"What the team recorded"
+					],
+					"rows": [
+						[
+							"ledger-2025.csv",
+							"A restore tool captured the string that came back with each write. Twelve months later it sent the same string again, and the service returned that same copy."
+						],
+						[
+							"policy.docx",
+							"An editor changed the descriptive properties stored with last year's copy. The service rejected the request, and the stored properties stayed as they were."
+						],
+						[
+							"legacy.log",
+							"This file was uploaded before the account began keeping any history, and it showed no string at all. After the first update it displayed one, and the earlier content was still retrievable."
+						],
+						[
+							"media-2019.bin",
+							"A rarely opened copy from last year was moved to a cheaper storage option by naming its string. The copy that clients read today kept its current storage class."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "For a file that predates the change, nothing is assigned until its first write; that write then stamps the identifier from the file's creation time and retains the earlier state as a previous copy."
+					},
+					{
+						"id": "i2",
+						"text": "Any single copy, current or not, can be placed in a different access tier by passing its identifier to the tiering operation."
+					},
+					{
+						"id": "i3",
+						"text": "Every stored copy carries the UTC time at which it was written, and that identifier keeps working for the whole life of the copy."
+					},
+					{
+						"id": "i4",
+						"text": "Copies that are no longer the live one are frozen: their content and their metadata cannot be altered after they are created."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Observation 1 (ledger-2025.csv)"
+					},
+					{
+						"id": "s2",
+						"label": "Observation 2 (policy.docx)"
+					},
+					{
+						"id": "s3",
+						"label": "Observation 3 (legacy.log)"
+					},
+					{
+						"id": "s4",
+						"label": "Observation 4 (media-2019.bin)"
+					}
+				]
+			},
+			"key": {
+				"s1": "i3",
+				"s2": "i4",
+				"s3": "i1",
+				"s4": "i2"
+			},
+			"explanation": {
+				"correct": "Observation 1 (ledger-2025.csv) goes with the item stating that every stored copy carries the UTC time at which it was written and that the identifier stays valid for the life of the copy, because the service handed back the same copy when the saved string was reused a year later. Observation 2 (policy.docx) goes with the item about copies that are no longer the live one being frozen, because an earlier copy's content and metadata cannot be modified once created. Observation 3 (legacy.log) goes with the item about a file that predates the change receiving no identifier until its first write, with that write stamping one from the file's creation time and keeping the earlier state as a previous copy. Observation 4 (media-2019.bin) goes with the item about moving any single copy, current or not, to another access tier by passing its identifier, because only the named copy changed storage class while the live copy was unaffected.",
+				"perChoice": {
+					"i1": "Belongs in Observation 3 (legacy.log): a blob that existed before versioning was enabled has no version ID, and the first write after enabling assigns one equal to its creation time while the prior state becomes a previous version.",
+					"i2": "Belongs in Observation 4 (media-2019.bin): Set Blob Tier moves any version, including the current one, between hot, cool, cold and archive tiers when the version ID is supplied, so only the named copy changes tier.",
+					"i3": "Belongs in Observation 1 (ledger-2025.csv): every version ID is the UTC timestamp of the write that produced it, is returned in the x-ms-version-id header, and is fixed for the lifetime of that version, so a value captured a year earlier still retrieves the same copy.",
+					"i4": "Belongs in Observation 2 (policy.docx): previous versions are immutable, so their content and metadata cannot be modified after creation, which is why the service rejected the editor's change."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-enable"
+				}
+			],
+			"subtopics": [
+				"version-ids",
+				"version-immutability",
+				"version-access-tiers"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5N6X4QN7Y20AEK9R27X8E4D",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a general-purpose v2 storage account named contosoreports with blob versioning turned on for the account. A quarterly report file was written five years ago and stayed unchanged until last month, when the analyst replaced it with revised figures. The business now wants a replaced copy of a file to be removed automatically 30 days after a newer copy took its place, no matter the date on which the replaced copy was originally written. The cleanup rule already in the account is not delivering the requested outcome: for the quarterly report, the replaced copy disappeared only a few days after the replacement, even though the rule is configured to retain copies for 30 days. Which configuration should you use to meet the retention the business wants?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account",
+							"contosoreports (general-purpose v2)"
+						],
+						[
+							"Blob versioning",
+							"Enabled for the account"
+						],
+						[
+							"Cleanup mechanism in place",
+							"Lifecycle management policy"
+						],
+						[
+							"Version cleanup property",
+							"daysAfterCreationGreaterThan = 30"
+						],
+						[
+							"Retention the business asked for",
+							"Remove a replaced copy 30 days after a newer copy takes its place"
+						]
+					]
+				},
+				"statement": "To meet the retention the business wants, the team should {{slot1}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "raise the daysAfterCreationGreaterThan value in the lifecycle management policy so previous versions are kept longer"
+							},
+							{
+								"id": "b",
+								"text": "enable soft delete for the container so the Azure Storage service removes previous versions after the retention window"
+							},
+							{
+								"id": "c",
+								"text": "move previous versions to the archive tier and delete them later with a scheduled script"
+							},
+							{
+								"id": "d",
+								"text": "create an Azure Storage Actions task that deletes previous versions by tracking how long each version has been superseded"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "d"
+			},
+			"explanation": {
+				"correct": "The requirement is to time the removal of a replaced copy from the moment it stopped being the live copy, not from the moment its data was originally written. A lifecycle management policy cannot express that: daysAfterCreationGreaterThan is anchored to the version's creation timestamp, so the quarterly report's replaced copy was already older than the 30-day threshold the moment it entered the version history, which is why it vanished days after the replacement. An Azure Storage Actions task can key on when a version became noncurrent, so it removes a replaced copy exactly 30 days after it was replaced regardless of how old the copy itself was.",
+				"perChoice": {
+					"slot1:a": "Raising daysAfterCreationGreaterThan changes only the length of the measurement window, not its starting point. The property is still counted from the time the version's data was written, so every replaced copy is retained for the configured number of days from its own write date rather than 30 days after it was replaced, and copies of files that are replaced often would be kept far longer than the business wants.",
+					"slot1:b": "Soft delete is a recovery mechanism for deleted blobs and deleted versions, not an automatic cleanup mechanism for previous versions. With blob versioning enabled, the data of a replaced copy persists as a previous version until it is explicitly removed, and soft delete retention only controls how long a deliberately deleted version stays recoverable.",
+					"slot1:c": "Archiving the replaced copies and deleting them with a scheduled script makes cleanup a manual, script-driven process and does not deliver the automatic removal 30 days after a replacement. Moving a version to the archive tier also changes billing for the whole account, since setting the archive tier on a version bills the full content length of every version and snapshot in the account, not only the one that was moved."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-enable"
+				}
+			],
+			"subtopics": [
+				"blob-versioning",
+				"version-retention",
+				"storage-actions"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5N71Z3HYAV0WGZTMW9VGMRZ",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a general-purpose v2 storage account that has stored customer documents for several years. Blob versioning was switched on for the account earlier this week, and a scheduled job has since rewritten one of those documents for the first time since the switch. The support team asks whether the content from before the switch can be brought back, and whether anyone is allowed to edit a stored copy in place. You need to describe what the account now holds for that document and what may be done with the copies that predate the switch. Which statements are correct?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Timestamp (UTC)",
+						"Event"
+					],
+					"rows": [
+						[
+							"2024-03-14T09:00:00Z",
+							"reports.txt stored in the 'documents' container"
+						],
+						[
+							"2026-10-20T08:00:00Z",
+							"Blob versioning switched on for the account"
+						],
+						[
+							"2026-10-21T11:22:07Z",
+							"reports.txt written again by the nightly reporting job"
+						]
+					]
+				},
+				"statement": "After the scheduled job's rewrite, {{state}}. For the stored copies that predate the switch, {{editing}}.",
+				"slots": [
+					{
+						"id": "state",
+						"options": [
+							{
+								"id": "a",
+								"text": "the content from before the switch is kept as a previous version of the document, and the rewritten document is the current version"
+							},
+							{
+								"id": "b",
+								"text": "the content from before the switch is discarded, because only writes made after the switch are recorded"
+							},
+							{
+								"id": "c",
+								"text": "the content from before the switch becomes the current version, and the rewritten document is kept as a previous version"
+							},
+							{
+								"id": "d",
+								"text": "the content from before the switch is kept as a previous version of the document, and the rewritten document is also kept as a previous version"
+							}
+						]
+					},
+					{
+						"id": "editing",
+						"options": [
+							{
+								"id": "a",
+								"text": "their content and metadata cannot be modified, so an old copy can only be read, deleted, or copied elsewhere"
+							},
+							{
+								"id": "b",
+								"text": "their content and metadata can be modified in place, so an old copy can be corrected or reworked without any extra steps"
+							},
+							{
+								"id": "c",
+								"text": "their content and metadata can be modified while the account keeps recording changes, so an old copy can be corrected in place"
+							},
+							{
+								"id": "d",
+								"text": "their content and metadata can be modified only after the account's recording of changes is switched off"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"state": "a",
+				"editing": "a"
+			},
+			"explanation": {
+				"correct": "reports.txt was written on 2024-03-14, before versioning was switched on, so it had no version ID. On the first write after the switch (2026-10-21), the modified blob becomes the new current version and the state of the blob before that update becomes a previous version, so the content from before the switch is kept and can be brought back. Previous versions are immutable: their content and metadata cannot be modified, so an old copy can only be read, deleted (by supplying its version ID), or copied elsewhere (for example with Copy Blob) to be used again.",
+				"perChoice": {
+					"state:b": "Wrong: the service does keep the state that existed before the update. For a blob created before versioning was enabled, the state before the update becomes a previous version, so the earlier content is not discarded.",
+					"state:c": "Wrong: the order is reversed. On a write operation the modified blob becomes the new current version, and the earlier state becomes a previous version; the content from before the switch does not become the current version.",
+					"state:d": "Wrong: after a write there is always one current version. The rewritten document is the live state, and only the earlier state becomes a previous version, so the two cannot both be previous versions.",
+					"editing:b": "Wrong: previous versions are immutable, so their content and metadata cannot be modified even while the account keeps recording new versions.",
+					"editing:c": "Wrong: continuing to record changes does not make older versions editable. Once a version exists, its content and metadata are fixed.",
+					"editing:d": "Wrong: switching the account's recording off does not make existing versions editable. Versions stay immutable, and after the setting is off the existing versions can still only be read, listed, or deleted."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-enable"
+				}
+			],
+			"subtopics": [
+				"blob-versioning",
+				"immutable-versions",
+				"version-history"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5N73ZQF8Q4W9Y40C275XRCA",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a general-purpose v2 storage account named contosofinance with blob versioning enabled for the account, and the table below shows the state of one blob stored in it. The team wants the copy written on 2026-08-14 kept in the cool tier so that its retrieval costs fall, while the copy that clients download today must stay as it is. The latest invoice shows a bigger charge for the older copy than the team expected, and the team also asks whether moving that copy back to hot would lower the bill again. You need to move the correct copy and describe how billing and tier behavior apply to it. Which statements are correct?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account",
+							"contosofinance (general-purpose v2)"
+						],
+						[
+							"Blob versioning",
+							"Enabled for the account"
+						],
+						[
+							"Blob",
+							"ledger.csv"
+						],
+						[
+							"Blob type",
+							"Block blob"
+						],
+						[
+							"Versions of ledger.csv",
+							"3 (1 current, 2 previous)"
+						],
+						[
+							"Copy to place in the cool tier",
+							"Version written 2026-08-14 09:12:44 UTC"
+						],
+						[
+							"Version ID of that copy",
+							"2026-08-14T09:12:44Z"
+						],
+						[
+							"Copy clients download today",
+							"Version written 2026-10-02 08:03:11 UTC"
+						],
+						[
+							"Invoice observation",
+							"Charge for the 2026-08-14 copy is larger than the team expected"
+						]
+					]
+				},
+				"statement": "To move that copy, you {{op}}, and {{billing}}.",
+				"slots": [
+					{
+						"id": "op",
+						"options": [
+							{
+								"id": "a",
+								"text": "call Set Blob Tier with the version ID"
+							},
+							{
+								"id": "b",
+								"text": "call Set Blob Tier without the version ID"
+							},
+							{
+								"id": "c",
+								"text": "call Copy Blob with the source version ID"
+							},
+							{
+								"id": "d",
+								"text": "call Set Blob Metadata with the version ID"
+							}
+						]
+					},
+					{
+						"id": "billing",
+						"options": [
+							{
+								"id": "a",
+								"text": "it is billed for the full content length, and the tier decision stays permanent even after a move back to hot"
+							},
+							{
+								"id": "b",
+								"text": "it stays billed only for the unique blocks it added, and the tier decision can be reversed by a move back to hot"
+							},
+							{
+								"id": "c",
+								"text": "it is billed for the full content length, and a move back to hot returns it to the earlier per-block billing"
+							},
+							{
+								"id": "d",
+								"text": "it is billed for the full content length of every version and snapshot in the account, and no later move reduces that amount"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"op": "a",
+				"billing": "a"
+			},
+			"explanation": {
+				"correct": "The copy written on 2026-08-14 is a previous version of ledger.csv, so it is moved by calling Set Blob Tier and passing that copy's version ID (2026-08-14T09:12:44Z); a call that omits the version ID targets the current version, which is the copy clients already download. Once a tier is set explicitly on a version, that version is billed for its full content length rather than only for the unique blocks it added, and the tier decision cannot be undone: moving the copy back to hot still leaves it billed at full content length, so the expected fall in charges from a move back does not materialize.",
+				"perChoice": {
+					"op:b": "Set Blob Tier without the version ID applies the tier change to the current version of ledger.csv, which is the 2026-10-02 copy that clients download, and leaves the 2026-08-14 copy in its current tier.",
+					"op:c": "Copy Blob with the source version ID writes a new blob built from that copy instead of changing the tier of the stored version, so the 2026-08-14 copy keeps its present tier and the data is duplicated at extra cost.",
+					"op:d": "Set Blob Metadata writes metadata and never changes an access tier; on a previous version it cannot even change metadata, because previous versions are immutable.",
+					"billing:b": "Billing per unique block or page is the model that applies only while no tier has been set explicitly. Once the copy is placed in the cool tier its full content length is billed, and the tier decision cannot be reversed by moving the copy back.",
+					"billing:c": "The full-content-length charge is correct, but moving the copy back to hot does not return it to the earlier per-block pricing, because explicitly setting the tier cannot be undone.",
+					"billing:d": "Charging the full content length of every version and snapshot in the account is the behavior that applies when a copy is moved to the archive tier. This copy is going to the cool tier, so only that copy's full content length is billed."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-enable"
+				}
+			],
+			"subtopics": [
+				"version-tiers",
+				"version-billing"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5N7790E491B46FHDR9BF0NP",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a general-purpose v2 storage account named contosologs that stores nightly log files. Blob versioning is enabled for the account, and the log ingestion app also takes a snapshot of its block blob after each upload. Finance reports that the storage charge for the account keeps climbing even though the file sizes have not changed. You need to bring that charge down and still be able to restore an earlier state of any log file. What should the team do?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Account property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account name",
+							"contosologs"
+						],
+						[
+							"Account type",
+							"General-purpose v2"
+						],
+						[
+							"Blob versioning",
+							"Enabled"
+						],
+						[
+							"Log ingestion app",
+							"Creates a snapshot of the block blob after each upload"
+						],
+						[
+							"Storage charge trend",
+							"Up 22% over three months while file sizes stayed the same"
+						]
+					]
+				},
+				"statement": "The team should {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Stop taking the app's block blob snapshots, because the account already captures every write and delete of the blob."
+							},
+							{
+								"id": "b",
+								"text": "Keep taking the app's block blob snapshots but move those snapshot copies to the archive tier so the older ones cost less to store."
+							},
+							{
+								"id": "c",
+								"text": "Turn off blob versioning for the account and rely on the app's block blob snapshots alone, on the expectation that the stored versions will disappear from the account."
+							},
+							{
+								"id": "d",
+								"text": "Enable container soft delete so that removed snapshot copies are reclaimed without an extra charge."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "Blob versioning records every write and delete of a blob automatically, so with versioning enabled on contosologs the history the team needs is already kept by the service itself. The app's own block blob snapshots are extra copies that add cost without adding recovery options the account does not already provide, and Microsoft recommends stopping block blob snapshots once versioning is enabled. Removing the app's snapshot step is therefore what lowers the charge while every earlier state of the log files stays restorable from the versions the account maintains.",
+				"perChoice": {
+					"action:b": "Moving the app's snapshot copies to the archive tier does not reduce the account's charge. When a version is moved to the archive tier, the full content length of every version and snapshot in the account is billed, not only the one that was moved, so this change can raise the account-wide capacity cost instead of lowering it, and the snapshot copies remain billable storage either way.",
+					"action:c": "Turning off versioning moves the account in the wrong direction for the stated requirement. Snapshots are application-managed checkpoints taken on the app's schedule, so they do not record every update or delete the way the service's automatic history does, and disabling versioning does not remove the versions that are already stored, so the charge would not fall as expected.",
+					"action:d": "Container soft delete governs recovering blobs that were deleted inside a container; it does not reduce the charge for copies that are still stored. The extra cost in this workload comes from the app creating a snapshot on every upload, so soft delete is not the setting that brings the charge down."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-enable"
+				}
+			],
+			"subtopics": [
+				"blob-versioning",
+				"snapshots",
+				"cost-optimization"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5N78VYMCME71WTQ1V2MJRNX",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a general-purpose v2 storage account named contosoaudit that keeps one log blob per server. Blob versioning is turned on for the account. The log writer uploads each blob once and then calls Append Block every few seconds as new lines arrive, so the file is only ever appended to and never rewritten in full. A review of one blob shows a single live state and no earlier states, so the lines written earlier in the day cannot be examined once the next batch lands. You need every intermediate state of each log blob to be kept so that earlier content stays available for review. What should the log writer do?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Step",
+						"Client operation",
+						"Content written"
+					],
+					"rows": [
+						[
+							"1",
+							"Upload the blob",
+							"Lines 1-100"
+						],
+						[
+							"2",
+							"Append Block",
+							"Lines 101-200"
+						],
+						[
+							"3",
+							"Append Block",
+							"Lines 201-300"
+						],
+						[
+							"4",
+							"Append Block",
+							"Lines 301-400"
+						]
+					]
+				},
+				"statement": "To keep every earlier state of each log blob, the log writer should {{fix}}.",
+				"slots": [
+					{
+						"id": "fix",
+						"options": [
+							{
+								"id": "a",
+								"text": "Call Create Snapshot on the blob after each batch of entries"
+							},
+							{
+								"id": "b",
+								"text": "Call Set Blob Tier on the blob after each batch of entries"
+							},
+							{
+								"id": "c",
+								"text": "Enable soft delete on the container that holds the log blobs"
+							},
+							{
+								"id": "d",
+								"text": "Add a lifecycle management rule with a version-age filter to the account"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"fix": "a"
+			},
+			"explanation": {
+				"correct": "For an append blob, the Append Block call does not create a new version, so with versioning enabled the service keeps only the live state of the file and the earlier content is lost. The documentation states that for page and append blobs the Append Block and Put Page operations do not create versions and that a manual snapshot is needed to capture those states. Calling Create Snapshot after each batch of appended entries therefore preserves every intermediate state; on a versioned blob the snapshot also produces a version holding identical data, so the states can be restored later.",
+				"perChoice": {
+					"fix:b": "Set Blob Tier only changes the access tier of a blob or version; it is not one of the operations that records a new state, so the content of each batch would still be discarded.",
+					"fix:c": "Soft delete protects blobs that were deleted from being permanently removed. It does not capture the content of a blob at each append, so the earlier states of the log file still would not be retained.",
+					"fix:d": "A lifecycle management rule with a version-age filter only cleans up versions that already exist; it does not cause additional states to be recorded when data is appended."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-overview"
+				}
+			],
+			"subtopics": [
+				"blob-versioning",
+				"append-blob",
+				"snapshots"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5N7CN3Q3GY2D433S9WSS0BX",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a general-purpose v2 storage account named contosodata that stores customer contracts in a container named contracts, and blob versioning is switched on for the account. The business requires that the contracts survive two accidents: the contracts container being removed by mistake, and the whole storage account being removed by mistake. You need to work out what the protection already switched on delivers for each accident and what has to be configured on top of it, so that both accidents are recoverable.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account type",
+							"General-purpose v2"
+						],
+						[
+							"Blob versioning",
+							"Enabled"
+						],
+						[
+							"Versions kept",
+							"All of them, no cleanup schedule"
+						],
+						[
+							"Container 'contracts'",
+							"1,480 blobs, 240 GB"
+						],
+						[
+							"Recovery of the container or the account after removal",
+							"Not handled by the account's blob history"
+						]
+					]
+				},
+				"statement": "The protection already switched on {{s1}}, and {{s2}} must be configured so that both accidents are recoverable.",
+				"slots": [
+					{
+						"id": "s1",
+						"options": [
+							{
+								"id": "a",
+								"text": "keeps earlier copies of blobs that are replaced or deleted, but does not cover the removal of a container or of the whole account"
+							},
+							{
+								"id": "b",
+								"text": "keeps earlier copies of blobs that are replaced or deleted, and also covers the removal of a container or of the whole account"
+							},
+							{
+								"id": "c",
+								"text": "does not keep earlier copies of blobs that are replaced or deleted, but covers the removal of a container or of the whole account"
+							},
+							{
+								"id": "d",
+								"text": "keeps earlier copies of blobs that are replaced or deleted, but covers only the removal of a container and not the removal of the whole account"
+							}
+						]
+					},
+					{
+						"id": "s2",
+						"options": [
+							{
+								"id": "a",
+								"text": "an Azure Resource Manager lock on the storage account and container soft delete for the containers"
+							},
+							{
+								"id": "b",
+								"text": "an Azure Resource Manager lock on the storage account and a lifecycle management rule that retains deleted blobs"
+							},
+							{
+								"id": "c",
+								"text": "container soft delete for the containers and a lifecycle management rule that retains deleted blobs"
+							},
+							{
+								"id": "d",
+								"text": "an Azure Resource Manager lock on the containers and a lifecycle management rule that retains deleted blobs"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "a"
+			},
+			"explanation": {
+				"correct": "Blob versioning is a per-blob history: the service stores a prior copy of a blob whenever that blob is written or deleted, so it protects individual files. It does nothing for the removal of a container or of the whole storage account, because those objects and their blobs disappear together and no version survives them. To cover the two accidents, an Azure Resource Manager lock protects the storage account from being removed, and container soft delete makes a removed container and its contents recoverable for the retention period.",
+				"perChoice": {
+					"s1:b": "Wrong: the blob history only produces copies of individual blobs on write or delete. It cannot restore a container that was removed or an account that was removed, so claiming it also covers those cases is incorrect.",
+					"s1:c": "Wrong: the service does save earlier copies of blobs that are replaced or deleted, so the first half of this statement is false, and the second half is false as well.",
+					"s1:d": "Wrong: earlier copies of blobs are kept, but the removal of a container is not covered by that history either, and the removal of the whole account is likewise uncovered.",
+					"s2:b": "Wrong: a lifecycle management rule can only expire or delete blobs and versions on a schedule; it cannot bring back a removed container, and it does not stop the account from being removed.",
+					"s2:c": "Wrong: container soft delete handles the container accident, but a lifecycle management rule cannot protect the storage account from removal, and it never restores deleted containers.",
+					"s2:d": "Wrong: a lock applied only to the containers leaves the storage account exposed, and a lifecycle management rule restores nothing that was removed."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-enable"
+				}
+			],
+			"subtopics": [
+				"blob-versioning",
+				"data-protection"
+			],
+			"reviewed": false
+		}
+	]
+}

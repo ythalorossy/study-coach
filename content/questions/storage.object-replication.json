@@ -1,0 +1,1984 @@
+{
+	"skill": "storage.object-replication",
+	"questions": [
+		{
+			"id": "q_01M5KER3KW21VYCWP464EJY68P",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your team must replicate 24 container pairs of block blobs from contosoordersprod in East US to contosoreplicas in West Europe. Both accounts are general-purpose v2 in the same Microsoft Entra tenant, were created in the past week (so AllowCrossTenantReplication is false on them), and already have blob versioning plus the change feed switched on. Because of the number of container pairs involved, you build the policy on the destination account from a JSON definition file and then apply it to the source account. Your draft file is shown below. Which change must you make before any blob is copied?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"properties\": {\n    \"policyId\": \"default\",\n    \"rules\": [\n      {\n        \"ruleId\": \"\",\n        \"enabled\": true,\n        \"sourceAccount\": \"contosoordersprod\",\n        \"destinationAccount\": \"contosoreplicas\",\n        \"sourceContainers\": [ { \"name\": \"orders\" } ],\n        \"destinationContainers\": [ { \"name\": \"orders\" } ]\n      }\n    ]\n  }\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Replace each account value with the full Azure Resource Manager resource ID of that account."
+					},
+					{
+						"id": "b",
+						"text": "Keep both account values but set policyId to an empty string and assign your own unique ruleId to every rule."
+					},
+					{
+						"id": "c",
+						"text": "Keep both account values but add a \"prefix\" of \"*\" to every rule so each source account container matches all of its blobs."
+					},
+					{
+						"id": "d",
+						"text": "Keep both account values but set minCreationTime to 1601-01-01T00:00:00Z on every rule so blobs already in each account are included."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The two account properties in a replication policy must carry the full Azure Resource Manager resource ID of each account (for example /subscriptions/<subscriptionId>/resourceGroups/<resource-group>/providers/Microsoft.Storage/storageAccounts/<name>). Azure Storage needs the complete ID to resolve the account, and it reads those IDs to confirm both accounts belong to the same Microsoft Entra tenant — which is exactly why a bare account name is not enough when AllowCrossTenantReplication is false, as it is by default on accounts created from December 15, 2023 onward. Supplying the full ID is recommended practice even when cross-tenant replication is permitted.",
+				"perChoice": {
+					"b": "In a hand-written policy file you leave policyId set to \"default\" and leave every ruleId as an empty string, so the service generates the policy and rule identifiers itself. Choosing your own values is not what the service expects, and this change does nothing about how the two accounts are referenced.",
+					"c": "A rule prefix can name a container and a virtual directory, but it never supports wildcard characters, so \"*\" is invalid. Besides that, a prefix does not influence how the source and destination accounts are resolved.",
+					"d": "Setting minCreationTime to 1601-01-01T00:00:00Z is how you ask for every existing blob to be backfilled, so it changes the copy scope rather than fixing anything required here. Leaving the accounts as bare names still prevents the service from resolving them in this configuration."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-configure"
+				}
+			],
+			"subtopics": [
+				"replication-policy-json",
+				"cross-tenant-replication",
+				"policy-prerequisites"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5M9KWZDG9502XFQGJ6E68TT",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You configured object replication so the block blobs your media app writes to contosomediaprod (East US) also arrive in contosomediadr (West US 2). One rule maps the 'media' container to the 'media' container, and the same policy ID is attached on both accounts, yet hours later the destination container is still empty. The configuration of the two accounts is shown below. Which combination of changes should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"contosomediaprod (source)",
+						"contosomediadr (destination)"
+					],
+					"rows": [
+						[
+							"Account type",
+							"General-purpose v2",
+							"General-purpose v2"
+						],
+						[
+							"Hierarchical namespace",
+							"Disabled",
+							"Disabled"
+						],
+						[
+							"Blob versioning",
+							"Enabled",
+							"Disabled"
+						],
+						[
+							"Change feed",
+							"Disabled",
+							"Enabled"
+						],
+						[
+							"AllowCrossTenantReplication",
+							"true",
+							"true"
+						],
+						[
+							"Replication policy on the account",
+							"repl-media",
+							"repl-media"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Turn on the change feed for contosomediaprod and turn on versioning for contosomediadr."
+					},
+					{
+						"id": "b",
+						"text": "Turn on the change feed for contosomediadr and turn on versioning for contosomediadr."
+					},
+					{
+						"id": "c",
+						"text": "Turn on the change feed for contosomediaprod and turn on versioning for contosomediaprod."
+					},
+					{
+						"id": "d",
+						"text": "Turn on the change feed for contosomediadr and turn on versioning for contosomediaprod."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Object replication needs two features switched on: the change feed on the source account, because Azure Storage reads the source account's change feed to discover writes to copy, and blob versioning on both accounts, because the service copies the blob plus its current and previous versions. In the exhibit the source already has versioning but its change feed is off, while the destination has the change feed but no versioning, so you must turn the change feed on for contosomediaprod and versioning on for contosomediadr.",
+				"perChoice": {
+					"b": "Turning the change feed on for contosomediadr accomplishes nothing for replication: the destination account is never the account whose change feed the service polls, so the writes in contosomediaprod remain invisible to it. The versioning part of this option is right, but the change feed must be switched on at the source end.",
+					"c": "This fixes the change feed but leaves the destination without versioning. Versioning has to be enabled on both accounts because the service replicates the blob's versions to the destination, and with versioning off there contosomediadr still can't receive the copies.",
+					"d": "Both changes land on the wrong accounts: versioning is already enabled on contosomediaprod, and the change feed belongs on the source rather than on the destination, so with this combination replication still has nothing to poll and the destination still cannot accept versions."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-configure"
+				}
+			],
+			"subtopics": [
+				"replication-prerequisites",
+				"change-feed-and-versioning"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5M9PGZY4VKHQM06622AR2FF",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an object replication policy that copies block blobs from contosobacksrc (West Europe) into contosobackdr (West US 2). A retention script in the source account moves blobs older than 90 days to the Archive tier to cut cost. After its first run, three of the 2024 blobs report a replication failure and nothing reached the destination container, while blobs that are still in Hot keep replicating normally. Your runbook has already rehydrated two of those three back to the Hot tier, yet a day later the destination container still holds neither of them. The current state of sample blobs is below.\n\nWhich change should you make so the two rehydrated blobs reach contosobackdr?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Blob in contosobacksrc",
+						"Access tier now",
+						"Replication status",
+						"Matching blob in contosobackdr"
+					],
+					"rows": [
+						[
+							"audit-2024-05.log",
+							"Archive",
+							"Failed",
+							"Not present"
+						],
+						[
+							"audit-2024-06.log",
+							"Hot",
+							"Failed",
+							"Not present"
+						],
+						[
+							"audit-2024-07.log",
+							"Hot",
+							"Failed",
+							"Not present"
+						],
+						[
+							"audit-2024-11.log",
+							"Hot",
+							"Complete",
+							"Present"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Wait it out: once a rehydrated blob is back in the Hot tier, the policy copies it automatically without any further change."
+					},
+					{
+						"id": "b",
+						"text": "Delete the replication policy on both accounts, create it again with the same container pairs, and rehydrate the blobs once more."
+					},
+					{
+						"id": "c",
+						"text": "Call Set Blob Tier on the blob in the destination container so the replica matches the source tier, which triggers the transfer."
+					},
+					{
+						"id": "d",
+						"text": "Overwrite each rehydrated blob on the source once rehydration has finished, so a new version is created and the policy copies it to the destination."
+					}
+				]
+			},
+			"key": {
+				"optionId": "d"
+			},
+			"explanation": {
+				"correct": "Archiving a blob on either side of a replication policy stops replication for that blob, and moving it back out of the Archive tier on its own does not restart it: the blob data has to be written again before the policy picks it up. That is why audit-2024-06.log and audit-2024-07.log are back in Hot but still show Failed with nothing in the destination, while the untouched Hot blob audit-2024-11.log replicated normally. Overwriting the two rehydrated blobs on the source produces a new version that the policy then copies to contosobackdr, which is the only way to get them replicated again.",
+				"perChoice": {
+					"a": "Simply waiting is not enough. The replication policy ignores a blob that was archived until the blob data on the source is written again, so the two rehydrated blobs stay uncopied indefinitely no matter how long you wait.",
+					"b": "Deleting and re-creating the policy does not restart replication for these blobs. The new policy gets a brand-new policy ID and cancels outstanding replication tasks, and existing blobs only re-replicate when the destination still holds a previous version for them, which is not the case here.",
+					"c": "Access tier changes on a source blob are never carried across to the replica, so changing the tier of a blob in the destination container has no effect on whether the source blob is replicated. To archive a replica you call Set Blob Tier on the destination blob yourself, and that still does not copy the missing source blobs."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-configure"
+				}
+			],
+			"subtopics": [
+				"archive-tier-rehydration",
+				"replication-troubleshooting"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5M9R22JW38T7WY8HVDXHQQF",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an object replication policy that copies block blobs from the 'logs' container in contosologsprod (West Europe) into the 'logs' container in contosologsdr (North Europe), and blobs are arriving as expected. Your operations lead now wants a single view of how much replication work is still outstanding, because the replication state of a source blob only fills in once the copy finishes and never shows progress while the copy is in flight. You need to set up ongoing monitoring of the backlog. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Observed value"
+					],
+					"rows": [
+						[
+							"Replication policy on contosologsdr",
+							"logship (rule: logs -> logs)"
+						],
+						[
+							"Metrics configured for policy logship",
+							""
+						],
+						[
+							"Replication state of source blob logs-2026-10-21.json",
+							"(empty)"
+						],
+						[
+							"Change feed on contosologsprod",
+							"Enabled"
+						],
+						[
+							"Write attempt to contosologsdr/logs",
+							"HTTP 409 (Conflict)"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Turn on the Operations pending for replication and the Bytes pending for replication metrics for the replication policy logship."
+					},
+					{
+						"id": "b",
+						"text": "Turn on only the Operations pending for replication metric for the policy logship, and infer the outstanding data volume from the Blob operations metric of the destination account."
+					},
+					{
+						"id": "c",
+						"text": "Turn on the Bytes pending for replication metric at the contosologsprod account level instead of on the policy, and use the change feed metrics on the source container to see what is still queued."
+					},
+					{
+						"id": "d",
+						"text": "Leave monitoring at the individual blob level: poll the replication state property on each source blob until it reports Complete or Failed, and count the failures."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Object replication ships two per-policy metrics — Operations pending for replication and Bytes pending for replication — and each of them is emitted as a series of buckets by age (0-5, 5-10, 10-15, 15-30 minutes, 30 minutes-2 hours, 2-8 hours, 8-24 hours and more than 24 hours). Enabling both on policy logship is exactly how you see how much work is still outstanding, and it is the right answer because neither metric is on by default (the policy currently shows 'None').",
+				"perChoice": {
+					"b": "Enabling only the operations count leaves the byte backlog invisible, and the destination account's Blob operations metric counts all destination requests, not the objects and bytes still queued for replication, so it cannot stand in for the per-policy breakdown.",
+					"c": "The two backlog metrics are configured on the replication policy, not as account-level settings, so switching them on at the contosologsprod account level does nothing for this policy. Change feed metrics report change feed records and reads, not objects queued for replication, so they do not answer the backlog question either.",
+					"d": "A source blob's replication state is only populated once replication finishes, showing Complete or Failed together with the policy ID and rule ID, and it offers no percentage while the copy is in flight. Polling it therefore reports nothing while the backlog actually exists, which is precisely why the policy-level metrics are the monitoring mechanism to use."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-configure"
+				}
+			],
+			"subtopics": [
+				"replication-metrics",
+				"monitoring-replication-backlog"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5M9SA43XSVRNW5SKEDSQ9ZS",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an object replication policy that copies block blobs from contosoappsrc into contosoappdr so a partner application running near its users can read the data locally. A new partner agreement commits your organization to making newly written blobs readable on the replica within 15 minutes of the write, yet the observed lag is far beyond that and nothing in the current setup commits you to any delivery window at all. You need to close the gap. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Measure or setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Source account and region",
+							"contosoappsrc — Sweden Central"
+						],
+						[
+							"Destination account and region",
+							"contosoappdr — Norway East"
+						],
+						[
+							"Account kind (both accounts)",
+							"General-purpose v2"
+						],
+						[
+							"Blob versioning",
+							"Enabled on both accounts"
+						],
+						[
+							"Change feed",
+							"Enabled on the source, disabled on the destination"
+						],
+						[
+							"Container pairs mapped in the policy",
+							"1"
+						],
+						[
+							"Median write-to-replica time, last 7 days",
+							"42 minutes"
+						],
+						[
+							"Slowest write-to-replica time, last 7 days",
+							"6 hours"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Turn on blob index tags replication for each rule so tags arrive with the replicas"
+					},
+					{
+						"id": "b",
+						"text": "Set minCreationTime to 1601-01-01T00:00:00Z so blobs already in the container also flow through replication"
+					},
+					{
+						"id": "c",
+						"text": "Enable priority replication on the replication policy"
+					},
+					{
+						"id": "d",
+						"text": "Add rules until the policy holds the maximum 1,000, so more containers benefit from replication"
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "Priority replication is the opt-in performance mode of object replication. When it is turned on and the source and destination accounts sit in the same continent, Azure commits under an SLA to replicating 99.0% of objects within 15 minutes. Sweden Central and Norway East are both in Europe, so these two accounts satisfy that geographic condition and the mode can be enabled on the policy. All other prerequisites are already met: both accounts are general-purpose v2, both have blob versioning enabled, and the source account has the change feed turned on.",
+				"perChoice": {
+					"a": "Blob index tags replication is a preview capability that copies blob index tags to the replicas, and it requires the EnableObjectReplicationTags preview feature to be registered on the source account. It changes what metadata travels with a blob, not how quickly the blob arrives, so it delivers no delivery-window commitment.",
+					"b": "minCreationTime controls which blobs fall within the copy scope. Setting it to 1601-01-01T00:00:00Z backfills every blob that already exists in the source container, but it does not speed up new writes and would add cost by copying data that already exists.",
+					"d": "A policy can hold up to 1,000 rules, but that ceiling is about how many source containers can each be mapped to one destination container. This policy already maps its single container pair correctly, so adding rules neither changes how quickly blobs are copied nor adds any commitment on delivery timing."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-configure"
+				}
+			],
+			"subtopics": [
+				"priority-replication",
+				"replication-latency",
+				"sla"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5M9W2PZM0KW08YPEWG8QV5N",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an object replication policy that copies the 'imaging' block blobs from contosoimgsrc in East US to contosoimgsdr in West US 2. Blobs written since the policy went live arrive as expected, but contosoimgsdr contains only those new arrivals — the thousands of blobs already stored in contosoimgsrc/imaging never crossed over. Your compliance team now requires the replica to carry everything in that container. The current configuration is listed below. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Source account",
+							"contosoimgsrc, East US, general-purpose v2"
+						],
+						[
+							"Destination account",
+							"contosoimgsdr, West US 2, general-purpose v2"
+						],
+						[
+							"Blob versioning",
+							"Enabled, both accounts"
+						],
+						[
+							"Change feed",
+							"Enabled, contosoimgsrc"
+						],
+						[
+							"Container pair",
+							"contosoimgsrc/imaging to contosoimgsdr/imaging"
+						],
+						[
+							"Rule copy scope",
+							"New blobs only"
+						],
+						[
+							"Blobs already stored in contosoimgsrc/imaging",
+							"4,812, oldest created 2019-03-11"
+						],
+						[
+							"Priority replication",
+							"Disabled"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "On contosoimgsdr, set minCreationTime to 1601-01-01T00:00:00Z in the rule so every blob already in the source container is copied to the replica."
+					},
+					{
+						"id": "b",
+						"text": "On contosoimgsdr, set priority replication to true in the rule so every blob already in the source container is copied to the replica."
+					},
+					{
+						"id": "c",
+						"text": "On contosoimgsdr, delete the policy and re-create it with the same rule so every blob already in the source container is copied to the replica."
+					},
+					{
+						"id": "d",
+						"text": "On contosoimgsrc, set minCreationTime to 1601-01-01T00:00:00Z in the blob versioning configuration so every blob already in the source container is copied to the replica."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The rule is scoped to new blobs only, which is exactly why the 4,812 pre-existing blobs in contosoimgsrc/imaging were skipped while later writes replicated normally. Widening the scope means editing the policy held on the destination account and adding minCreationTime to the rule: leaving it unset copies only future blobs, a chosen timestamp copies everything created on or after that moment, and the value 1601-01-01T00:00:00Z means all blobs in the container.",
+				"perChoice": {
+					"b": "Priority replication is an opt-in performance mode for copies that do happen; when both accounts sit in the same continent it commits to replicating 99.0% of objects within 15 minutes. It doesn't alter which blobs a rule is scoped to, so the blobs already stored in the source container still wouldn't be copied.",
+					"c": "Deleting and re-creating the policy yields a brand-new policy ID, cancels outstanding replication tasks and locks the destination container again without carrying over prior state. After such a re-creation a blob is copied again only if the destination still holds a previous version of it, so most of the existing data still wouldn't arrive.",
+					"d": "minCreationTime is a property of a rule inside the object replication policy, not something that belongs to the blob versioning configuration. Changing versioning on contosoimgsrc leaves the rule's copy scope as new blobs only, so the older blobs still wouldn't be copied."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-configure"
+				}
+			],
+			"subtopics": [
+				"copy-scope",
+				"min-creation-time",
+				"policy-rules"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5M9XVSA3FBKSQJMQ82NV36M",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an object replication policy (policy ID rp-inv-001) that copies block blobs from the 'invoices' container in contosoinvoices (East US) to the 'invoices' container in contosoarchived (West Europe). Newly written blobs reach the replica within minutes, and reads of the replica keep working. Your records team now erases invoice blobs at the source as soon as they are no longer needed, but after a week of testing none of those erasures has been reflected in the replica, which still returns the old invoice blobs. Because the erased records hold customer personal data, you need erasures at the source to propagate to the replica. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"contosoinvoices (source)",
+						"contosoarchived (destination)"
+					],
+					"rows": [
+						[
+							"Account type",
+							"General-purpose v2",
+							"General-purpose v2"
+						],
+						[
+							"Hierarchical namespace",
+							"Disabled",
+							"Disabled"
+						],
+						[
+							"Blob versioning",
+							"Enabled",
+							"Enabled"
+						],
+						[
+							"Change feed",
+							"Enabled",
+							"Not applicable"
+						],
+						[
+							"Container immutability settings on 'invoices'",
+							"",
+							"Retention policy: 30 days, unlocked = false; Legal hold: On"
+						],
+						[
+							"Replication policy attached to the account",
+							"rp-inv-001",
+							"rp-inv-001"
+						],
+						[
+							"Writes performed at the source in the last 7 days",
+							"412 blobs",
+							"412 blobs present"
+						],
+						[
+							"Blob erasures performed at the source in the last 7 days",
+							"37 blobs",
+							"37 blobs still returned as present"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Remove the retention policy and the legal hold from the destination container."
+					},
+					{
+						"id": "b",
+						"text": "Reduce the retention period configured by the destination container's policy from 30 days to 1 day."
+					},
+					{
+						"id": "c",
+						"text": "Add a legal hold at the blob version level on the destination container."
+					},
+					{
+						"id": "d",
+						"text": "Disable blob versioning on the destination account and remove the replication policy from both accounts."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Immutability set on the destination — a container- or version-level retention policy or legal hold — does not stop source writes from replicating, but it does block the matching updates and erasures from being applied on the replica. That matches the evidence: all 412 writes arrived, while all 37 erasures stayed visible in contosoarchived. Because the destination container holds a 30-day retention policy (unlocked) plus an active legal hold, the fix is to take both off the destination container so erasure events can be replicated.",
+				"perChoice": {
+					"b": "Shortening the window does not lift the protection: while the retention period applies, the protected versions still refuse the erasure, so the replica keeps the data. The setting has to be removed from the destination container, not merely made shorter.",
+					"c": "A version-level legal hold is another form of the same protection. Adding it would leave the destination container blocking the erasures, exactly as it does today, and it is harder to clear than a retention period.",
+					"d": "Blob versioning is required by object replication, and it cannot be switched off while a replication policy exists on the account, so the disable operation would be refused. Deleting the policy also ends replication entirely, which is the opposite of what the records team needs."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-configure"
+				}
+			],
+			"subtopics": [
+				"destination-immutability",
+				"delete-propagation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MA2SQ3DBRPE2NZJYJ6XFPN",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You configured asynchronous block blob copies so that everything your team writes to the 'supplier' container in contosodocssrc (East US 2) also lands in the 'supplier' container in contosodocsdr (West Europe). Three container pairs are covered this way, blobs keep arriving on schedule, and reads from contosodocsdr work normally. A supplier portal that your team does not control is now pointed at contosodocsdr/supplier and must keep depositing its nightly PDF summaries there. Every upload it makes is rejected, while reads and deletes through the same credentials still succeed. You need those uploads to start succeeding without giving up the other two container pairs. Which action should you take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Property                 contosodocssrc        contosodocsdr\nKind                     StorageV2 (GPv2)      StorageV2 (GPv2)\nBlob versioning          Enabled              Enabled\nChange feed              Enabled              n/a\nRegional redundancy      LRS                  LRS\n\nPUT https://contosodocsdr.blob.core.windows.net/supplier/nightly-2026-10-22.pdf\n   -> 409 Conflict   (x-ms-error-code: Conflict)\n\nGET https://contosodocsdr.blob.core.windows.net/supplier/nightly-2026-10-21.pdf\n   -> 200 OK\n\nDELETE https://contosodocsdr.blob.core.windows.net/supplier/obsolete-draft.pdf\n   -> 202 Accepted"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Delete the rule that maps the destination container, leaving the other two container pairs in place"
+					},
+					{
+						"id": "b",
+						"text": "Delete the change feed on the destination account, leaving the other two container pairs in place"
+					},
+					{
+						"id": "c",
+						"text": "Delete blob versioning on the destination account, leaving the other two container pairs in place"
+					},
+					{
+						"id": "d",
+						"text": "Delete the AllowCrossTenantReplication property on the destination account, leaving the other two container pairs in place"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "While a container is the target of an active object replication rule, the destination container rejects all writes with HTTP 409 (Conflict), while reads and deletes continue to work — exactly the pattern in the transcript, and the reason the supplier portal's uploads fail. Removing that one rule is what unlocks writes to contosodocsdr/supplier, and because the other two container pairs are covered by their own rules, deleting just this one keeps them replicating.",
+				"perChoice": {
+					"b": "The change feed is enabled on the source account so the service can see source-side changes; it has no bearing on writes sent to the destination container. Removing it would stop new source blobs from replicating at all and would never let the portal write.",
+					"c": "Blob versioning is already enabled on both accounts and is a prerequisite for replication; it does not decide whether the destination container accepts writes. It also cannot be switched off on an account that still carries any replication policy, so this change would be rejected outright.",
+					"d": "AllowCrossTenantReplication only governs whether the account may be paired with storage accounts in a different Microsoft Entra tenant. Both accounts here are in the same tenant, so changing this property cannot affect the 409 responses coming back from contosodocsdr."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-configure"
+				}
+			],
+			"subtopics": [
+				"destination-write-conflict",
+				"replication-policy-rules"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MA8R4SZR9AW5K9DNTF6J81",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have an object replication policy that carries block blobs from the 'audit' container in contosoauditsrc (East US) to the 'audit' container in contosodatadr (West Europe), and freshly written blobs reach the far account within minutes. The current state of both accounts and their container is listed below. Your operations team has now raised four separate complaints about this deployment, each with a different root cause and therefore its own fix. Match each fix to the complaint it resolves.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"contosoauditsrc (East US, source)",
+						"contosodatadr (West Europe, destination)"
+					],
+					"rows": [
+						[
+							"Account kind",
+							"General-purpose v2",
+							"General-purpose v2"
+						],
+						[
+							"Blob versioning",
+							"Enabled",
+							"Enabled"
+						],
+						[
+							"Change feed",
+							"Enabled",
+							"Disabled"
+						],
+						[
+							"Failover configuration",
+							"Customer-managed",
+							"Customer-managed"
+						],
+						[
+							"Replication policies",
+							"rp-audit-01 (2 rules)",
+							"rp-audit-01 (2 rules)"
+						],
+						[
+							"Immutability on the 'audit' container",
+							"",
+							"Retention policy of 30 days, legal hold On"
+						],
+						[
+							"Lifecycle management",
+							"Move content older than 30 days to Cool",
+							""
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Delete the replication policies first, then disable blob versioning"
+					},
+					{
+						"id": "i2",
+						"text": "Remove the immutability configuration from the destination container"
+					},
+					{
+						"id": "i3",
+						"text": "Call Set Blob Tier on each replica"
+					},
+					{
+						"id": "i4",
+						"text": "Remove the customer-managed failover configuration from both accounts"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Your finance team wants the charge for older versions on the source account to go down, but the portal keeps rejecting that request"
+					},
+					{
+						"id": "s2",
+						"label": "Writes from your apps are accepted and brand-new content shows up on the far account, but every overwrite and every erasure at the source is missing there"
+					},
+					{
+						"id": "s3",
+						"label": "Your lifecycle process moves older content on the source account into a cheaper access level, but everything sitting on the far side is still charged at the level it arrived with"
+					},
+					{
+						"id": "s4",
+						"label": "Both accounts belong to your organization's disaster-recovery design, and after the setup is attached nothing ever arrives on the far side"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Each complaint has one root cause and one fix. (1) Old-version charges the portal refuses to drop: blob versioning cannot be disabled on an account that still carries a replication policy, so the policies must be deleted first. (2) Overwrites and erasures that never appear on the replica: immutability on the destination (a retention policy or a legal hold) does not block source writes, but the matching updates and deletes then fail to replicate, so that configuration has to come off the destination container. (3) Replicas billed at the access level they arrived with: a tier change on a source blob never carries over, so Set Blob Tier has to be called on the replica itself. (4) Nothing ever arriving: customer-managed failover is unsupported on the source and on the destination of a replication policy, so it must be removed from both accounts before any blob can be copied.",
+				"perChoice": {
+					"i1": "Matches the complaint about refused removal of old versions (s1). Blob versioning cannot be switched off on an account that has any replication policy, so the policies must be deleted first.",
+					"i2": "Matches the complaint about missing overwrites and erasures (s2). A retention policy or legal hold on the destination doesn't stop source writes, but it does stop the matching updates and deletes from replicating.",
+					"i3": "Matches the complaint about replicas being billed at the wrong access level (s3). A tier change made on a source blob is never transferred to the replica; you have to move the replica itself with Set Blob Tier.",
+					"i4": "Matches the complaint that nothing ever arrives (s4). Customer-managed failover is unsupported on both ends of a replication policy, so both accounts must stop using it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-configure"
+				}
+			],
+			"subtopics": [
+				"blob-versioning",
+				"destination-immutability",
+				"access-tier-changes"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MAEVVEEPEH7GZ71V34P8RV",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have an object replication setup that carries the block blobs in the 'contracts' container of contosocontractsrc into the 'contracts' container of contosocontractdr so the European office can read them locally. Your operations team now has to document what the far account holds after each kind of change made at the source, because auditors keep asking about edge cases. The configuration is shown below.\n\nMatch each situation to what ends up in the destination container.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Source account",
+							"contosocontractsrc, East US, general-purpose v2"
+						],
+						[
+							"Destination account",
+							"contosocontractdr, West Europe, general-purpose v2"
+						],
+						[
+							"Change feed",
+							"Enabled on contosocontractsrc"
+						],
+						[
+							"Blob versioning",
+							"Enabled on both accounts"
+						],
+						[
+							"Replication policy",
+							"ID rp-ctr-001, one rule: contracts to contracts"
+						],
+						[
+							"Encryption used for contract blobs",
+							"Microsoft-managed keys"
+						],
+						[
+							"Snapshots in the source container",
+							"14"
+						],
+						[
+							"Immutability on the destination container",
+							""
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "The blob is copied to the destination container, where the destination account assigns the version ID."
+					},
+					{
+						"id": "i2",
+						"text": "The current version and the previous version of the blob are both copied, each under a version ID assigned by the destination account."
+					},
+					{
+						"id": "i3",
+						"text": "The destination container never receives a copy from that action."
+					},
+					{
+						"id": "i4",
+						"text": "The blob is copied, but the copy lands in the access tier the destination already had."
+					},
+					{
+						"id": "i5",
+						"text": "The request is refused while the account still has a replication policy; those policies must be deleted before it can succeed."
+					},
+					{
+						"id": "x1",
+						"text": "The destination container holds the blob under the exact version ID that the source account gave it."
+					},
+					{
+						"id": "x2",
+						"text": "Nothing further is copied for that blob once it reaches the Archive tier, and moving it back to a hotter tier does not restart the copies under that policy."
+					},
+					{
+						"id": "x3",
+						"text": "The request succeeds, but only blobs written after the change keep arriving through replication."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "A new block blob is written to contosocontractsrc/contracts"
+					},
+					{
+						"id": "s2",
+						"label": "An existing block blob in that container is overwritten"
+					},
+					{
+						"id": "s3",
+						"label": "A snapshot is taken of a block blob at the source"
+					},
+					{
+						"id": "s4",
+						"label": "A lifecycle rule moves a block blob from the Hot tier to the Cool tier at the source"
+					},
+					{
+						"id": "s5",
+						"label": "A colleague attempts to switch off blob versioning on contosocontractsrc"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "A brand-new block blob is copied into the destination container and the version ID it lands under is one the destination account generated, because replication moves blob content rather than the source's version identifiers. When a blob that already exists at the source is overwritten, the service versions it and copies the current plus the previous version, again under newly assigned version IDs at the destination. Snapshots are outside the scope of replication entirely, so taking one on a source blob puts nothing into the destination container. A move between Hot and Cool keeps copying, but access tier changes on a source blob never travel with the copy, so the replica stays in whatever tier it already had; if you want an archived replica you must change the tier on the destination blob yourself. Finally, blob versioning cannot be turned off on an account that carries a replication policy: the request is refused until those policies are deleted.",
+				"perChoice": {
+					"i1": "Correct for a first write of a block blob: the blob content is copied into the destination container, and the version ID on the replica is one the destination account assigns.",
+					"i2": "Correct for an overwrite: the service versions the source blob and copies the current plus the previous version, each recorded at the destination under a version ID generated there.",
+					"i3": "Correct for the snapshot: snapshots of block blobs are never replicated, so the destination container gains nothing from that action.",
+					"i4": "Correct for the Hot-to-Cool move: Hot, Cool and Cold blobs all replicate, but a tier change on the source blob never carries to the replica, so the copy stays in the tier the destination had.",
+					"i5": "Correct for the versioning attempt: blob versioning cannot be disabled on an account that has any replication policy, so the request is refused until the policies are deleted first.",
+					"x1": "Fits no slot. Replication copies blobs rather than version IDs, so the destination always stores the blob under a version ID it assigns itself; the source's identifier is never reused.",
+					"x2": "Fits no slot. Only the Archive tier stops replication for a blob, and even rehydrating it does not resume copies until the blob data is written again. Here the move is to Cool, which replicates normally, and either way the replica keeps its own tier.",
+					"x3": "Fits no slot. Blob versioning stays enabled while a replication policy exists on the account; the attempt to switch it off is rejected rather than silently accepted."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-configure"
+				}
+			],
+			"subtopics": [
+				"replication-behavior",
+				"blob-versioning",
+				"policy-prerequisites"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MAHM89TH45VJPSPPWPW7A5",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a plan to copy block blobs from 14 container pairs in contosovideosrc into the matching containers in contosovideodr, so a read-heavy application in West Europe can serve the data locally. The two accounts belong to different Microsoft Entra tenants, and nothing has been configured yet. The current state of the accounts is shown below.\n\nYour team must now complete four setup tasks. Match each task to the requirement that applies to it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"contosovideosrc (source)",
+						"contosovideodr (destination)"
+					],
+					"rows": [
+						[
+							"Account type",
+							"General-purpose v2, block blobs",
+							"General-purpose v2, block blobs"
+						],
+						[
+							"Region",
+							"North Europe",
+							"West Europe"
+						],
+						[
+							"Microsoft Entra tenant",
+							"Fabrikam tenant",
+							"Contoso tenant"
+						],
+						[
+							"AllowCrossTenantReplication",
+							"False (account created 20 January 2026)",
+							"False (account created 20 January 2026)"
+						],
+						[
+							"Blob versioning",
+							"Disabled",
+							"Disabled"
+						],
+						[
+							"Change feed",
+							"Disabled",
+							"Disabled"
+						],
+						[
+							"Container pairs to cover",
+							"14",
+							"14"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Microsoft.Storage/storageAccounts/blobServices/write on the account"
+					},
+					{
+						"id": "i2",
+						"text": "Storage Blob Data Contributor on the account"
+					},
+					{
+						"id": "i3",
+						"text": "Contributor on the storage account or above"
+					},
+					{
+						"id": "i4",
+						"text": "Reader on the resource group holding both accounts"
+					},
+					{
+						"id": "i5",
+						"text": "policyId set to default with every ruleId left empty"
+					},
+					{
+						"id": "i6",
+						"text": "a policyId of your own with a unique ruleId for each rule"
+					},
+					{
+						"id": "i7",
+						"text": "the full Azure Resource Manager resource ID of both accounts"
+					},
+					{
+						"id": "i8",
+						"text": "the full resource ID of the destination and only the name of the source"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Let the operator turn on the two account-level features that replication depends on"
+					},
+					{
+						"id": "s2",
+						"label": "Let the operator create the replication policy on the destination account"
+					},
+					{
+						"id": "s3",
+						"label": "Write the replication definition by hand on the destination account"
+					},
+					{
+						"id": "s4",
+						"label": "Get the definition accepted on accounts that refuse cross-tenant copies"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i3",
+				"s3": "i5",
+				"s4": "i7"
+			},
+			"explanation": {
+				"correct": "Each task needs something different. Switching on the two features replication relies on (the change feed on the source and blob versioning on both accounts) is an account-level blob service setting, so it is gated by Microsoft.Storage/storageAccounts/blobServices/write; a blob data role grants nothing over that setting. Creating the policy object itself is an Azure Resource Manager deployment task and therefore needs the Contributor role on the storage account or a scope above it, which a read-only role cannot do. A definition you write by hand on the destination must carry policyId as default and empty ruleId values, because that is what tells the service to generate the identifiers, and the identifiers it hands back are what you reuse on the source. Finally, because these accounts refuse cross-tenant copies, the service validates tenant membership by reading the full Azure Resource Manager resource ID of both accounts, so naming only one account by its bare name leaves the definition rejected.",
+				"perChoice": {
+					"i1": "This is the slot for switching on the account-level features. Both prerequisites are set through the storage account's blobServices sub-resource, and Microsoft.Storage/storageAccounts/blobServices/write is the permission that covers them.",
+					"i2": "Fits no slot. Blob data roles grant access to blob content through the data plane; they do not allow changing account-level blob service settings such as blob versioning or the change feed, and they cannot create the policy resource either.",
+					"i3": "This is the slot for creating the policy. Building the replication policy on the destination is an Azure Resource Manager deployment operation, which Contributor on the storage account or above permits.",
+					"i4": "Fits no slot. Reader permits only reading management configuration; it cannot create or change the replication policy resource.",
+					"i5": "This is the slot for hand-writing the destination definition. Leaving policyId as default and every ruleId empty signals that the service should generate the identifiers.",
+					"i6": "Fits no slot. Supplying your own policyId and ruleId values in the destination file means the service does not generate them, and the same identifiers then have to line up with whatever is attached on the source.",
+					"i7": "This is the slot for a definition that must be accepted across two tenants. With cross-tenant copies refused on these accounts, the full resource ID of both accounts lets the service read them and confirm both sit in the expected tenant.",
+					"i8": "Fits no slot. A bare account name leaves the service nothing to read for the source side, so it cannot confirm tenant membership and the definition is refused."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-configure"
+				}
+			],
+			"subtopics": [
+				"replication-permissions",
+				"replication-policy-definition",
+				"cross-tenant-replication"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MAMQ1R04F8K4311H0P3T55",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You copy block blobs asynchronously from contosotagsrc into contosotagdr so that a second application region can read the data locally, and the policy has been running for a month. Four separate requests have arrived from the business since then, and each one needs a different change to the setup. The current configuration is listed below.\n\nMatch each request to the change that satisfies it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Source account",
+							"contosotagsrc — general-purpose v2, East US"
+						],
+						[
+							"Destination account",
+							"contosotagdr — general-purpose v2, West US 2"
+						],
+						[
+							"Microsoft Entra tenant",
+							"Both accounts in the Contoso tenant"
+						],
+						[
+							"Blob versioning",
+							"Enabled on both accounts"
+						],
+						[
+							"Change feed",
+							"Enabled on contosotagsrc"
+						],
+						[
+							"Server-side encryption",
+							"Microsoft-managed keys on both accounts"
+						],
+						[
+							"Access tiers offered",
+							"Hot, cool, cold and archive on both accounts"
+						],
+						[
+							"Policy today",
+							"Created in the portal, 10 container pairs configured so far"
+						],
+						[
+							"Container pairs needed",
+							"12"
+						],
+						[
+							"Permissions your team holds",
+							"contosotagdr only; contosotagsrc is administered by another team"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Register the source for the EnableObjectReplicationTags preview feature, then enable tags replication on the rule"
+					},
+					{
+						"id": "i2",
+						"text": "Turn on priority replication"
+					},
+					{
+						"id": "i3",
+						"text": "Apply a JSON policy definition file on the destination, then attach the same policy to the source"
+					},
+					{
+						"id": "i4",
+						"text": "Add a lifecycle management policy on the destination that archives old replicas"
+					},
+					{
+						"id": "i5",
+						"text": "Add a lifecycle management policy on the source that archives old blobs"
+					},
+					{
+						"id": "i6",
+						"text": "Create the policy in the portal on both accounts"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Filter searches by object metadata on the far account"
+					},
+					{
+						"id": "s2",
+						"label": "Meet a contractual fifteen-minute window for new writes"
+					},
+					{
+						"id": "s3",
+						"label": "Map 12 container pairs while holding permissions on only one of the two accounts"
+					},
+					{
+						"id": "s4",
+						"label": "Lower long-term storage spend on the far account without interrupting the flow of copies"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Each request has exactly one matching change: metadata-based filtering on the copies is only achievable with the per-rule tags setting plus the preview registration on the source (i1); a guaranteed fifteen-minute delivery for new writes is what the opt-in fast path is for and both accounts sit on the same continent (i2); more than ten container pairs plus access to only one account calls for a hand-written definition file applied on the destination and then attached to the source (i3); and cheaper long-term storage on the copies means aging them out with a lifecycle management policy on the destination (i4), because access-tier changes made at the source never travel with the copies.",
+				"perChoice": {
+					"i1": "Belongs to s1. Blob index tags are only copied to the replicas when the rule carries the tags setting, which is preview-only and needs the EnableObjectReplicationTags registration on the source account first, so this pair of steps is what makes metadata filtering work on the far account.",
+					"i2": "Belongs to s2. This opt-in performance mode is the only thing that puts a delivery commitment behind the copies — with both accounts on the same continent it guarantees that 99.0% of objects arrive within 15 minutes under an SLA, which is what the contractual window requires.",
+					"i3": "Belongs to s3. The portal flow handles at most 10 container pairs per policy and configures both ends in one pass, which is impossible when your team can only reach the destination; a definition file supports up to 1,000 pairs and can be applied on the destination first and then attached to the source.",
+					"i4": "Belongs to s4. Combining replication with a lifecycle management policy that archives older copies is the documented way to save money on long-term storage, and aging them out on the destination keeps replication healthy because archiving a blob on either side halts copies for it.",
+					"i5": "Fits no slot. Archiving blobs in the source account stops replication for those blobs, and rehydrating them afterwards does not resume copying until the blob data is written again — so this approach both breaks the flow of copies and saves nothing on the far account.",
+					"i6": "Fits no slot. The portal caps a policy at 10 container pairs, and the guided flow needs you to reach both accounts; with 12 pairs needed and permissions only on the destination, this cannot produce the requested setup."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-configure"
+				}
+			],
+			"subtopics": [
+				"tags-replication",
+				"priority-replication",
+				"replica-tiering"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MASYABJXF3TRWDDAKAV2EN",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Your platform team is standing up object replication so that the block blobs in contosapayprod also arrive in contosapaydr. Both accounts are general-purpose v2 in the same Microsoft Entra tenant, and nothing has been configured on either one yet. Your operations lead has written a checklist for the rollout; attach the matching action or requirement to each line. Two of the options are not needed for this rollout.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Account property",
+						"contosapayprod",
+						"contosapaydr"
+					],
+					"rows": [
+						[
+							"Role in the design",
+							"Source",
+							"Destination"
+						],
+						[
+							"Account kind",
+							"General-purpose v2",
+							"General-purpose v2"
+						],
+						[
+							"Region",
+							"East US",
+							"Canada Central"
+						],
+						[
+							"Microsoft Entra tenant",
+							"contoso.onmicrosoft.com",
+							"contoso.onmicrosoft.com"
+						],
+						[
+							"Blob versioning",
+							"Disabled",
+							"Disabled"
+						],
+						[
+							"Change feed",
+							"Disabled",
+							"Disabled"
+						],
+						[
+							"Replication policies attached",
+							"",
+							""
+						],
+						[
+							"Role assignment on the automation identity",
+							"Storage Blob Data Contributor",
+							"Storage Blob Data Contributor"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Microsoft.Storage/storageAccounts/blobServices/write on each account"
+					},
+					{
+						"id": "b",
+						"text": "Azure Resource Manager Contributor scoped to the storage account or above"
+					},
+					{
+						"id": "c",
+						"text": "Configure replication through the portal in a single flow"
+					},
+					{
+						"id": "d",
+						"text": "Author the policy in a JSON definition file on the destination account"
+					},
+					{
+						"id": "e",
+						"text": "Enable priority replication"
+					},
+					{
+						"id": "f",
+						"text": "Not supported — one source account can feed at most two destination accounts"
+					},
+					{
+						"id": "g",
+						"text": "Add a wildcard such as * to a rule prefix so only certain blobs are copied"
+					},
+					{
+						"id": "h",
+						"text": "Put one source container into two rules so it feeds two destination containers"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Switch on the change feed on contosapayprod and blob versioning on both accounts."
+					},
+					{
+						"id": "s2",
+						"label": "Create the policy that maps the container pairs on contosapaydr."
+					},
+					{
+						"id": "s3",
+						"label": "Add 6 container pairs in the first release; the operator can sign in to both accounts."
+					},
+					{
+						"id": "s4",
+						"label": "Add 40 container pairs in the next release."
+					},
+					{
+						"id": "s5",
+						"label": "Both accounts sit on the same continent, and the business has committed that a blob put at the source is readable in the far account within 15 minutes."
+					},
+					{
+						"id": "s6",
+						"label": "A stakeholder wants the deployment widened so that a further region also receives the source blobs, on top of the one already planned."
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d",
+				"s5": "e",
+				"s6": "f"
+			},
+			"explanation": {
+				"correct": "Turning on the two prerequisite capabilities (change feed on the source, blob versioning on both accounts) is a control-plane write against the accounts' blob services, so it needs Microsoft.Storage/storageAccounts/blobServices/write; the existing Storage Blob Data Contributor assignment is data-plane only and does not cover it. Creating the policy itself is an Azure Resource Manager operation and needs the Contributor role on the storage account or above. For tooling, the portal sets up both ends in one flow as long as it stays within 10 container pairs (6 qualifies), while 40 pairs exceeds the portal ceiling and has to be authored as a JSON definition file on the destination. Because both accounts are on the same continent and a 15-minute readability commitment exists, the opt-in priority replication mode is the fit. Finally, a source account can feed only two destination accounts, so the request for a third cannot be met.",
+				"perChoice": {
+					"a": "Correct for the prerequisite line: enabling blob versioning and the change feed requires Microsoft.Storage/storageAccounts/blobServices/write on the account; the data-plane role already assigned does not grant it.",
+					"b": "Correct for the policy-creation line: creating the replication policy is an Azure Resource Manager operation that requires the Contributor role on the storage account or above.",
+					"c": "Correct for the first release: with 6 container pairs (within the 10-pair portal ceiling) and an operator who can reach both accounts, the portal configures the policy on both accounts in one flow.",
+					"d": "Correct for the next release: 40 container pairs is beyond the 10 pairs the portal supports, so the policy must be authored as a JSON definition file on the destination account and then applied to the source.",
+					"e": "Correct for the delivery-window line: priority replication is the opt-in performance mode that, with source and destination on the same continent, guarantees 99% of objects replicate within 15 minutes.",
+					"f": "Correct for the expansion line: a single source account can feed at most two destination accounts, one policy each, so a third destination region cannot be added to this source.",
+					"g": "Fits no line: a rule prefix may include a virtual directory but never wildcard characters, so a prefix containing * is invalid.",
+					"h": "Fits no line: a container may appear in only one rule, so a single source container cannot be mapped to two destination containers within the policy."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-configure"
+				}
+			],
+			"subtopics": [
+				"replication-prerequisites",
+				"policy-tooling",
+				"replication-limits"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MAZ8A9MCDYM27PHVSGX7C9",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a new object replication design for the block blobs your media team writes to contosomedia (general-purpose v2, East US 2), and several teams want copies of that data read from other locations while one far account is meant to serve several teams at once. Nothing is configured on any account yet. You need to know how far the service actually stretches before the build starts, because some of the requested volumes exceed what is accepted. Match each request below to the limit that applies to it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Request",
+						"What the plan needs"
+					],
+					"rows": [
+						[
+							"Regional read capacity",
+							"The block blobs in contosomedia copied out to three separate locations"
+						],
+						[
+							"Shared replica",
+							"One far account receiving copies from three teams, each with its own copy definition"
+						],
+						[
+							"Portal onboarding",
+							"A definition covering 24 mapped folders, added one at a time through the portal"
+						],
+						[
+							"Full mirror",
+							"A single definition covering 900 mapped folders, each mapped separately"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Two destination accounts per source account"
+					},
+					{
+						"id": "i2",
+						"text": "Two policies into one destination account"
+					},
+					{
+						"id": "i3",
+						"text": "Ten container pairs per policy"
+					},
+					{
+						"id": "i4",
+						"text": "One thousand rules per policy"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "The most far accounts that can hold copies of one account's blobs"
+					},
+					{
+						"id": "s2",
+						"label": "The most separate copy definitions one far account can receive"
+					},
+					{
+						"id": "s3",
+						"label": "The most mappings one policy can carry when set up through the portal"
+					},
+					{
+						"id": "s4",
+						"label": "The most mappings one policy can carry, including those authored in a definition file"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "The two request types about far accounts are both capped at two, but on opposite sides of the relationship: a single source account can feed at most two destination accounts (one policy each), and a single destination account can accept policies from at most two sources. That is why the regional read request (three locations fed from contosomedia) is bound by the source-side limit and the shared replica request (three teams pointing definitions at one far account) by the destination-side limit. The two mapping requests are governed by different ceilings: configuring container pairs one at a time through the portal stops after 10 pairs, so the 24-pair onboarding cannot be done that way, while a policy authored as a JSON definition file can carry up to 1,000 rules, each rule mapping exactly one container pair, which is enough for the 900-folder full mirror.",
+				"perChoice": {
+					"i1": "Belongs with the regional read capacity request: one source account can feed at most two destination accounts, so contosomedia cannot supply copies to three separate locations at the same time.",
+					"i2": "Belongs with the shared replica request: one destination account accepts at most two policies, so only two of the three teams' copy definitions can target that far account.",
+					"i3": "Belongs with the portal onboarding request: the portal interface allows only 10 container pairs per policy, so a 24-pair setup has to be authored in a JSON definition file rather than added one at a time through the portal.",
+					"i4": "Belongs with the full mirror request: a policy holds up to 1,000 rules and each rule maps exactly one container pair, so 900 mapped folders fit, provided the definition is authored as a file since the portal interface stops at 10 pairs."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-configure"
+				}
+			],
+			"subtopics": [
+				"replication-limits",
+				"policy-scaling",
+				"container-mapping"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MB228A3THSGQDA4HPAKT1A",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Block blobs that your team writes to the 'ledger' container in contosofinprod (general-purpose v2, East US) are mirrored asynchronously into the same container of a second general-purpose v2 account in West Europe, and the arrangement has been running for months. Finance now wants contosofinprod to stop keeping older blob versions so that storage charges fall, so an administrator submits the request shown below and the service turns it down. Which change should you make so that finance's request can be carried out?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting or object",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Source account",
+							"contosofinprod (general-purpose v2, East US)"
+						],
+						[
+							"Container being mirrored",
+							"ledger (block blobs only)"
+						],
+						[
+							"Receiving container",
+							"ledger, in a general-purpose v2 account in West Europe"
+						],
+						[
+							"Blob versioning on contosofinprod",
+							"Enabled"
+						],
+						[
+							"Change feed on contosofinprod",
+							"Enabled"
+						],
+						[
+							"Request submitted by the administrator",
+							"Turn off blob versioning on contosofinprod"
+						],
+						[
+							"Outcome",
+							"Turned down by the service; older versions keep accumulating"
+						]
+					]
+				},
+				"statement": "To make the request succeed, you {{action}} and only afterwards submit the change for contosofinprod.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Delete the object replication policies from the storage accounts taking part in the copy"
+							},
+							{
+								"id": "b",
+								"text": "Delete the 'ledger' container in the storage account that sends the copies"
+							},
+							{
+								"id": "c",
+								"text": "Archive the older blob versions in the storage account that sends the copies"
+							},
+							{
+								"id": "d",
+								"text": "Limit the copy scope of the object replication rules to new blobs only"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "Blob versioning is a required building block of object replication, and the service refuses to switch versioning off on an account that still carries a replication policy; those policies have to be deleted first. Once the policies are removed from the accounts involved in the copy, the version-removal request can be submitted and blob versioning can be disabled on contosofinprod.",
+				"perChoice": {
+					"action:b": "Removing a container does not remove the object replication policy itself, so a policy is still attached to the account and the service keeps refusing the change.",
+					"action:c": "Archiving versions changes only where the blob data is held, and archived blobs stop being replicated, so this neither clears the block on the account setting nor keeps copies flowing.",
+					"action:d": "Narrowing the copy scope only changes which blobs later runs pick up; the policy stays on the account, so blob versioning remains locked."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-configure"
+				}
+			],
+			"subtopics": [
+				"blob-versioning",
+				"prerequisites"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MNA2QXQP1K1YNAEV0QFDP3",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your analytics platform writes block blobs into the 'reports' container of contosoreports (general-purpose v2, East US), and an object replication policy is meant to copy them into the same container of contosoreportsdr (general-purpose v2, West Europe). Blob versioning is enabled on both accounts, the change feed is enabled on the source, and the policy is attached on both sides, yet the destination container is still empty. The blobs sit in folders named after the reporting year, and only the blobs in those folders should be copied; anything else in the container has to stay at the source. Which change should you make to the rule, and how many prefix matches can a single rule hold when you configure it in the portal?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Source account",
+							"contosoreports (general-purpose v2, East US)"
+						],
+						[
+							"Destination account",
+							"contosoreportsdr (general-purpose v2, West Europe)"
+						],
+						[
+							"Source container",
+							"reports"
+						],
+						[
+							"Destination container",
+							"reports (already created, holds no blobs)"
+						],
+						[
+							"Policy created through",
+							"Azure portal, on the source account"
+						],
+						[
+							"Rules in the policy",
+							"1 (reports to reports)"
+						],
+						[
+							"Prefix filter on that rule",
+							"202* (the asterisk is meant to stand for any reporting year)"
+						],
+						[
+							"Blob versioning",
+							"Enabled on source and destination"
+						],
+						[
+							"Change feed",
+							"Enabled on source"
+						],
+						[
+							"Content of the source container",
+							"reports/2024/..., reports/2025/..., reports/2026/..., plus files sitting directly in the container root"
+						]
+					]
+				},
+				"statement": "The team should {{fix}} in the replication rule, and a single rule can hold {{limit}} prefix matches when the policy is configured in the portal.",
+				"slots": [
+					{
+						"id": "fix",
+						"options": [
+							{
+								"id": "a",
+								"text": "replace the wildcard with literal prefixes, one for each year folder"
+							},
+							{
+								"id": "b",
+								"text": "keep the wildcard prefix and add one more rule for each year folder"
+							},
+							{
+								"id": "c",
+								"text": "replace the wildcard with one literal prefix that names the container"
+							},
+							{
+								"id": "d",
+								"text": "drop the prefix filter so that one copy of every blob in the container is made"
+							}
+						]
+					},
+					{
+						"id": "limit",
+						"options": [
+							{
+								"id": "a",
+								"text": "up to five"
+							},
+							{
+								"id": "b",
+								"text": "up to one"
+							},
+							{
+								"id": "c",
+								"text": "up to ten"
+							},
+							{
+								"id": "d",
+								"text": "up to twenty"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"fix": "a",
+				"limit": "a"
+			},
+			"explanation": {
+				"correct": "A rule's prefix value may include a virtual directory but must not contain wildcard characters, so the current '202*' value can never match the year folders. The prefix has to spell out the real folder names, so the rule should carry one literal prefix per year folder (for example 2024/, 2025/, 2026/). A rule configured in the portal accepts up to five prefix matches, and three year folders fit easily inside that allowance, so no extra rules are needed. Keeping the wildcard, using a single prefix that names the container, or removing the filter altogether would respectively fail to match, miss the other year folders, or also move the files that must remain at the source.",
+				"perChoice": {
+					"fix:b": "Wildcard characters are never accepted in a rule's prefix string, so splitting the pattern across several rules leaves every rule equally invalid and nothing gets copied.",
+					"fix:c": "A single prefix that names the container does not line up with the blob names inside it, so the year folders would not be picked up; the prefix has to name the actual folder path.",
+					"fix:d": "Without a prefix filter every blob in the source container is replicated, including the files at the container root that the business wants kept at the source.",
+					"limit:b": "A rule can carry several prefix values, not just one; the portal allows up to five of them per rule.",
+					"limit:c": "The portal allows up to five prefix matches per rule, not ten.",
+					"limit:d": "The portal allows up to five prefix matches per rule, not twenty."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-configure"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-overview"
+				}
+			],
+			"subtopics": [
+				"object-replication-rules",
+				"prefix-matching"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MNF1CS1NS30VT2MBFMMF8W",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You copy the 'casefiles' block blobs from contosocases (East US) into the 'casefiles' container of contosocasesdr (West Europe) with object replication, and files created after the policy went live arrive in the far account within minutes. A records officer now corrects a typo inside an existing file: contosocases accepts the change and shows the corrected text, while the copy in contosocasesdr still serves the original text. Erasing a file at the source behaves the same way — it is gone from contosocases but is still returned by contosocasesdr. Because the far copy is what the regulators and the archive team read, every correction and every erasure made at the source has to appear there as well. The current state of both accounts and of the copied container is listed below.\n\nWhich change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"contosocases (source)",
+						"contosocasesdr (destination)"
+					],
+					"rows": [
+						[
+							"Account type",
+							"General-purpose v2",
+							"General-purpose v2"
+						],
+						[
+							"Blob versioning",
+							"Enabled",
+							"Enabled"
+						],
+						[
+							"Change feed",
+							"Enabled",
+							"Not applicable"
+						],
+						[
+							"Replication policy attached",
+							"rp-case-001",
+							"rp-case-001"
+						],
+						[
+							"Immutability policy on the 'casefiles' container",
+							"None",
+							"Active (container scope, time-based)"
+						],
+						[
+							"New file created at the source",
+							"Present",
+							"Present"
+						],
+						[
+							"Existing file corrected at the source",
+							"Corrected content",
+							"Original content"
+						],
+						[
+							"Existing file erased at the source",
+							"Removed",
+							"Still present"
+						]
+					]
+				},
+				"statement": "To make corrections and erasures made at the source show up in the far account, you need to {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "remove the immutability policy from the destination container"
+							},
+							{
+								"id": "b",
+								"text": "remove the immutability policy from the source container"
+							},
+							{
+								"id": "c",
+								"text": "extend the immutability policy on the destination container to a longer period"
+							},
+							{
+								"id": "d",
+								"text": "add a legal hold to the destination container's blob versions"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "The far account keeps serving stale content because the destination container is protected by a container-level immutability policy. When such a policy is in effect on the destination container, updates and deletes performed on the source container still succeed, but those changes fail to replicate to the destination container because of the immutability restriction. Object replication therefore requires that the destination container or blob not be protected by an immutability policy, so the protection has to be lifted on the destination container for corrections and erasures to be carried across.",
+				"perChoice": {
+					"action:b": "The source container is exactly where the writes already succeed — the corrected and erased blobs are accepted there — so nothing at the source is blocking the copy. The change fails when it is applied in contosocasesdr, so altering (or adding) protection on the source cannot make corrections and erasures reach the replica.",
+					"action:c": "Lengthening the protection window on the destination container keeps the destination blobs protected for even longer, so updates and deletes continue to fail to replicate. This makes the stale-replica symptom worse rather than fixing it.",
+					"action:d": "A legal hold on the destination blob versions adds a further restriction at the destination. An active version-level immutability policy also makes replication of the matching update or delete fail, so it does not restore the missing changes."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-configure"
+				}
+			],
+			"subtopics": [
+				"object-replication-troubleshooting",
+				"immutability-and-replication"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MNVQEFVFR7QSZWJ2DQABTR",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your media team uploads finished clips as block blobs to the 'clips' container in contosomediain (East US), and an object replication policy copies that container into the 'clips' container of contosomediaout (West Europe). Clips uploaded earlier this month reached the replica within minutes, but every clip uploaded since the pipeline was upgraded is missing from contosomediaout, and the replication status of those source blobs shows Failed. The business needs each newly uploaded clip to reach the replica. The current configuration is shown below.\n\nWhich change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Source account",
+							"contosomediain — general-purpose v2, East US"
+						],
+						[
+							"Destination account",
+							"contosomediaout — general-purpose v2, West Europe"
+						],
+						[
+							"Blob versioning",
+							"Enabled on both accounts"
+						],
+						[
+							"Change feed",
+							"Enabled on contosomediain"
+						],
+						[
+							"Replication policy",
+							"rp-media-001 attached to both accounts; one rule maps container 'clips' to container 'clips'"
+						],
+						[
+							"Key supplied on each write request since the pipeline upgrade",
+							"Customer-provided key"
+						],
+						[
+							"Clips uploaded before the pipeline upgrade",
+							"Present in contosomediaout"
+						],
+						[
+							"Clips uploaded after the pipeline upgrade",
+							"Absent from contosomediaout; replication status on the source shows Failed"
+						]
+					]
+				},
+				"statement": "The change that lets every newly uploaded clip reach the replica is {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Stop passing the customer-provided key on the write requests."
+							},
+							{
+								"id": "b",
+								"text": "Keep passing the customer-provided key on the write requests and enable the change feed on the destination account."
+							},
+							{
+								"id": "c",
+								"text": "Keep passing the customer-provided key on the write requests and rotate the key in Azure Key Vault."
+							},
+							{
+								"id": "d",
+								"text": "Keep passing the customer-provided key on the write requests and add a second destination account to the policy."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "Object replication doesn't copy blobs that are encrypted with a customer-provided key, which is exactly the symptom here: the clips written after the upgrade carry a customer-provided key, they never reach contosomediaout, and their source-side replication status shows Failed. Object replication works with accounts and blobs protected by Microsoft-managed keys or customer-managed keys, so removing the customer-provided key from the write requests makes each upload fall back to the account's own supported encryption key, and the new clips are then replicated.",
+				"perChoice": {
+					"action:b": "The change feed is required on the source account, where it is already enabled, and turning it on for the destination account has no effect here. Blobs encrypted with a customer-provided key are never replicated, so the new clips would still be missing from contosomediaout.",
+					"action:c": "Rotating the key in Azure Key Vault only produces a new version of the key; the uploads still supply a customer-provided key, and object replication doesn't support blobs encrypted that way. The way the blobs are encrypted on write has to change, not just the key version.",
+					"action:d": "Adding a second destination account doesn't change how the source blobs are encrypted. Blobs encrypted with a customer-provided key fail to replicate to any destination, so the new clips still wouldn't arrive anywhere."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-configure"
+				}
+			],
+			"subtopics": [
+				"customer-provided-key",
+				"replication-troubleshooting"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MP2GN9JVN7664ETR0K600F",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an object replication setup that is meant to copy the block blobs your media team writes to the 'clips' container of contosomediain (East US 2) into the 'clips' container of contosomediaout (West Europe), so that a partner in Europe can serve the clips locally. Blob versioning is enabled on both accounts, the change feed is enabled on contosomediain, and the same replication policy ID is configured on both accounts, yet no clip ever reaches contosomediaout and every new source blob reports a replication status of Failed. The current configuration of the two accounts is listed below.\n\nYou need the clips to reach contosomediaout while both accounts stay encrypted with a customer-managed key. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Property                 | contosomediain (source) | contosomediaout (destination)\nAccount type             | General-purpose v2       | General-purpose v2\nEncryption at rest       | Customer-managed key    | Customer-managed key\nAccount failover         | Customer-managed failover | Not configured\nBlob versioning          | Enabled                 | Enabled\nChange feed              | Enabled                 | Disabled\nReplication policy ID    | med-clips-001           | med-clips-001"
+				},
+				"statement": "To make the new clips reach contosomediaout, you should {{fix}}.",
+				"slots": [
+					{
+						"id": "fix",
+						"options": [
+							{
+								"id": "a",
+								"text": "remove the customer-managed failover configuration on contosomediain so the replication policy can copy the blobs"
+							},
+							{
+								"id": "b",
+								"text": "enable customer-managed failover on contosomediain and contosomediaout so both replication policies can copy the blobs"
+							},
+							{
+								"id": "c",
+								"text": "replace the customer-managed key of contosomediain with a customer-provided key so the replication policy can copy the blobs"
+							},
+							{
+								"id": "d",
+								"text": "disable blob versioning on contosomediain so the customer-managed failover configuration can be changed"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"fix": "a"
+			},
+			"explanation": {
+				"correct": "Object replication supports accounts encrypted with Microsoft-managed keys or customer-managed keys, but customer-managed failover isn't supported for either the source or the destination account in an object replication policy. contosomediain currently has customer-managed failover configured, so it can't take part in a replication policy that is supposed to copy the 'clips' container, which is why nothing arrives in contosomediaout and the source blobs report a replication status of Failed. Taking away the customer-managed failover configuration on contosomediain clears the blocking setting while both accounts keep their customer-managed key encryption, and the policy can then copy the block blobs to the destination container.",
+				"perChoice": {
+					"fix:b": "Enabling customer-managed failover on both accounts makes the deployment unusable: the feature isn't supported for either the source or the destination account in an object replication policy, so turning it on in contosomediaout would disqualify the destination account as well.",
+					"fix:c": "Replacing the customer-managed key with a customer-provided key doesn't address the account configuration, and it also breaks replication the other way: blobs encrypted with a customer-provided key fail to replicate, while customer-managed key encryption is supported. The requirement is to keep the customer-managed key, so this change is wrong on both counts.",
+					"fix:d": "Blob versioning is a prerequisite for object replication and must be enabled on both the source and destination accounts; it also can't be disabled while any replication policy exists on the account, so this request would be refused. Changing it wouldn't affect the customer-managed failover configuration either."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-configure"
+				}
+			],
+			"subtopics": [
+				"object-replication-prerequisites",
+				"object-replication-encryption"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MPST777BEVVC53824N3XSW",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a general-purpose v2 storage account, contosoglobal, that currently replicates data to a destination account in a different Microsoft Entra tenant. Its current settings are listed below. Your security team requires that this account must no longer take part in copies that cross tenant boundaries, and that its AllowCrossTenantReplication property end up set to false. An administrator has already tried to set that property to false, and the service rejected the request. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account type",
+							"General-purpose v2"
+						],
+						[
+							"AllowCrossTenantReplication",
+							"true"
+						],
+						[
+							"Attached replication policies",
+							"1 (rp-glob-004)"
+						],
+						[
+							"Destination account",
+							"In a different Microsoft Entra tenant"
+						],
+						[
+							"Blob versioning",
+							"Enabled"
+						]
+					]
+				},
+				"statement": "To meet the requirement, you should {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "delete the cross-tenant replication policy, then set AllowCrossTenantReplication to false"
+							},
+							{
+								"id": "b",
+								"text": "set AllowCrossTenantReplication to false, then delete the cross-tenant replication policy"
+							},
+							{
+								"id": "c",
+								"text": "delete only the replication rule, then set AllowCrossTenantReplication to false"
+							},
+							{
+								"id": "d",
+								"text": "disable blob versioning, then set AllowCrossTenantReplication to false"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "Azure Storage refuses to set AllowCrossTenantReplication to false on an account that still takes part in cross-tenant object replication policies; the existing cross-tenant policies must be deleted first. Removing the cross-tenant replication policy from contosoglobal and only then setting its AllowCrossTenantReplication property to false meets the security requirement and blocks future cross-tenant policies on that account.",
+				"perChoice": {
+					"action:b": "Performing these two steps in this order leaves the first request denied, because the service rejects a change to false while the account still carries cross-tenant replication policies.",
+					"action:c": "Removing only the rule leaves the cross-tenant replication policy itself attached to the account, and the property change stays refused while any such policy remains.",
+					"action:d": "Turning off blob versioning is not possible on an account that still has a replication policy, and disabling versioning in any case would not remove the cross-tenant policies that block the property change."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-configure"
+				}
+			],
+			"subtopics": [
+				"cross-tenant-replication",
+				"allow-cross-tenant-replication-property"
+			],
+			"reviewed": false
+		}
+	]
+}

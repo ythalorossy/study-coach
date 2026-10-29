@@ -1,0 +1,1214 @@
+{
+	"skill": "governance.locks",
+	"questions": [
+		{
+			"id": "q_01M5GCJ0ZZC27TKTS9H8XEWMFJ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You administer an Azure subscription that contains a resource group, which contains a storage account. The current lock configuration is shown in the following table. A user at the resource scope attempts to delete the storage account by using the Azure CLI. What is the outcome?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Scope",
+						"Lock level"
+					],
+					"rows": [
+						[
+							"Subscription",
+							"CanNotDelete"
+						],
+						[
+							"Resource group",
+							"ReadOnly"
+						],
+						[
+							"Storage account",
+							"(none)"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "The delete succeeds because the storage account itself has no lock."
+					},
+					{
+						"id": "b",
+						"text": "The delete fails because the lock at the resource-group scope is the most restrictive restriction in the inheritance chain."
+					},
+					{
+						"id": "c",
+						"text": "The delete fails because the lock at the subscription scope is the only restriction in the inheritance chain."
+					},
+					{
+						"id": "d",
+						"text": "The delete succeeds because the lock at the resource-group scope only prevents modifications, not deletions."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "Locks inherit from parent scopes. When a lock exists at a parent scope, all resources within that scope inherit the same lock. The most restrictive lock in the inheritance chain takes precedence. ReadOnly is more restrictive than CanNotDelete (because ReadOnly also blocks modifications), so the resource-group lock wins and the delete attempt is denied.",
+				"perChoice": {
+					"a": "Locks are inherited from parent scopes. Even though no lock is set directly on the storage account, the resource-group lock applies through inheritance.",
+					"c": "The subscription lock does apply through inheritance, but both the subscription and resource-group locks are inherited. The most restrictive one (ReadOnly on the resource group) takes precedence over CanNotDelete, so the subscription scope is not the one that decides the outcome.",
+					"d": "A ReadOnly lock blocks both modifications and deletions. It is more restrictive than CanNotDelete, not less restrictive, so the delete is blocked."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/lock-resources"
+				}
+			],
+			"subtopics": [
+				"lock-inheritance",
+				"scope-precedence"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GCK0D5AYZ2MDCM3YC7K7E8",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "A security audit reveals that engineers routinely retrieve the access keys of an Azure storage account by calling a built-in operation. The security lead wants to stop that access while still allowing the team's applications to read and write blob content with their code. An administrator applies a Read-only lock on the storage account.\n\nAfter the lock is in place, an engineer runs the commands shown in the following code block from a workstation with Contributor rights on the resource group.",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "$ az storage account keys list \\\n    --account-name corpdata \\\n    --resource-group rg-prod\n{\n  \"error\": {\n    \"code\": \"RequestDisallowedByAzureLock\",\n    \"message\": \"This request is blocked by an Azure lock...\"\n  }\n}\n\n$ az storage blob upload \\\n    --account-name corpdata \\\n    --container-name reports \\\n    --file ./weekly.csv \\\n    --name weekly.csv\n{\n  \"etag\": \"0x8DCABCD...\",\n  \"lastModified\": \"2026-10-15T18:42:31Z\"\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "The lock prevents both the list-keys call and the blob upload, so the team's applications cannot manage blobs anymore."
+					},
+					{
+						"id": "b",
+						"text": "The lock prevents the list-keys call through the management endpoint, but the team's applications can still upload blobs through the storage account's data plane."
+					},
+					{
+						"id": "c",
+						"text": "The lock prevents only blob operations, not the list-keys call, so the team can still retrieve the account keys."
+					},
+					{
+						"id": "d",
+						"text": "The lock has no effect because locks cannot be applied at the storage-account scope."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "Locks only apply to control plane operations and not to data plane operations. The list-keys call goes through the management endpoint (control plane), so the Read-only lock blocks it. Blob operations performed through the storage account's data plane endpoint are unaffected, so the upload still succeeds.",
+				"perChoice": {
+					"a": "The control plane list-keys call is blocked, but the data plane blob upload is not blocked by the lock. Locks apply only to control plane operations, not to data plane operations.",
+					"c": "Locks block control plane operations, including the list-keys call. Blob data operations go through the data plane and are not blocked by the lock.",
+					"d": "Locks are fully supported at the storage-account scope. The list-keys error in the output confirms the lock is being enforced at that scope."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/lock-resources"
+				}
+			],
+			"subtopics": [
+				"data-plane-vs-control-plane",
+				"read-only-lock"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GCMJJ5TG2BSZMK1FGPMRY0",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Two lock levels are exposed in the Azure portal: 'Delete' and 'Read-only'. Your team must recreate those same lock levels by using Azure PowerShell. The portal labels and the behavior associated with each are shown in the following code block.\n\n```\n{\n  \"Azure portal lock names and behaviors\": [\n    { \"name\": \"Delete\",     \"behavior\": \"Authorized users can read and modify the resource, but cannot delete it.\" },\n    { \"name\": \"Read-only\",  \"behavior\": \"Authorized users can read the resource, but cannot delete or modify it.\" }\n  ]\n}\n```\n\nWhat values should you assign to the LockLevel parameter of the New-AzResourceLock cmdlet?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"Azure portal lock names and behaviors\": [\n    { \"name\": \"Delete\",    \"behavior\": \"Authorized users can read and modify the resource, but cannot delete it.\" },\n    { \"name\": \"Read-only\", \"behavior\": \"Authorized users can read the resource, but cannot delete or modify it.\" }\n  ]\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Delete and ReadOnly"
+					},
+					{
+						"id": "b",
+						"text": "CanNotDelete and ReadOnly"
+					},
+					{
+						"id": "c",
+						"text": "DenyDelete and DenyModify"
+					},
+					{
+						"id": "d",
+						"text": "None and Full"
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "The Azure portal uses the labels 'Delete' and 'Read-only', but the underlying Azure PowerShell parameter values for the LockLevel parameter are 'CanNotDelete' (matching the portal Delete behavior) and 'ReadOnly' (matching the portal Read-only behavior). New-AzResourceLock accepts those two values.",
+				"perChoice": {
+					"a": "'Delete' is the Azure portal label, not a valid PowerShell LockLevel value. The portal label and the cmdlet parameter value differ; you must translate them when you script.",
+					"c": "'DenyDelete' and 'DenyModify' are not valid LockLevel values for New-AzResourceLock. The cmdlet accepts only CanNotDelete and ReadOnly.",
+					"d": "'None' and 'Full' are not valid LockLevel values for New-AzResourceLock. The cmdlet accepts only CanNotDelete and ReadOnly."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/lock-resources"
+				}
+			],
+			"subtopics": [
+				"lock-levels",
+				"lock-naming"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GCMY27NT5BY0N1HXR3HYY3",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "To meet a regulatory requirement, every subscription in the organization has a CanNotDelete restriction applied at the subscription scope. A director submits a request to cancel one of those subscriptions. What happens when the cancellation is processed?",
+				"options": [
+					{
+						"id": "a",
+						"text": "The cancellation is blocked by the restriction, and the subscription remains active."
+					},
+					{
+						"id": "b",
+						"text": "The cancellation proceeds; the resources are deactivated and then permanently deleted after a waiting period."
+					},
+					{
+						"id": "c",
+						"text": "The cancellation proceeds and every resource is permanently removed immediately."
+					},
+					{
+						"id": "d",
+						"text": "The restriction is first removed automatically, and then the cancellation proceeds with no waiting period."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "A resource lock does not block the cancellation of an Azure subscription. When you cancel a subscription that has a lock in place, Azure preserves the resources by deactivating them instead of deleting them right away, and only permanently removes them after a waiting period.",
+				"perChoice": {
+					"a": "Resource locks do not block subscription cancellation, regardless of the lock level. The cancellation request is processed.",
+					"c": "Resources are not deleted immediately on cancellation when a lock is involved. They are deactivated first and only permanently removed after a waiting period.",
+					"d": "The cancellation does not require the lock to be removed first. Locks do not block subscription cancellation, and the deactivation-then-permanent-deletion waiting period is still applied."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/lock-resources"
+				}
+			],
+			"subtopics": [
+				"subscription-cancellation",
+				"lock-scope"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GCQE4WBBCBTCP670W67RMA",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "An operations team deployed a solution that automatically provisioned two resource groups: an unlocked overview group (rg-overview-prod) and a locked infrastructure group (rg-infra-prod). The team tries to remove the lock on rg-infra-prod by using Remove-AzResourceLock. The command fails with an error indicating that the lock cannot be removed by user accounts. What should the team do to remove rg-infra-prod?\n\nThe current state of the two resource groups is shown in the following block.",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"resourceGroups\": [\n    { \"name\": \"rg-overview-prod\", \"lockStatus\": \"Unlocked\" },\n    { \"name\": \"rg-infra-prod\",   \"lockStatus\": \"System-owned lock, level ReadOnly\" }\n  ]\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Retry Remove-AzResourceLock while signed in with Owner scope at the subscription level, and pass the -Force switch to override the lock."
+					},
+					{
+						"id": "b",
+						"text": "Open the rg-infra-prod blade in the Azure portal, find the lock entry under Settings, and click Delete to remove the lock."
+					},
+					{
+						"id": "c",
+						"text": "Find the parent managed application in the Azure portal and delete it; deleting the application also deletes the locked rg-infra-prod resource group."
+					},
+					{
+						"id": "d",
+						"text": "Submit a support request to Microsoft to remove the system-owned lock, and wait for the response before deleting the rg-infra-prod resource group."
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "For services implemented through managed applications, the infrastructure resource group is locked by a system application and cannot be removed by deleting the lock itself. The documented approach is to locate the parent managed application service in the Azure portal and delete it; that action also removes the locked infrastructure resource group.",
+				"perChoice": {
+					"a": "Lock ownership by a system application cannot be overridden by Owner scope or the -Force switch. The lock cannot be deleted through the cmdlet regardless of the operator's role.",
+					"b": "The lock entry cannot be removed from the portal because the system application owns it. Trying to delete the lock in the portal or through PowerShell produces the same ownership error.",
+					"d": "Support escalation is not the documented approach. The documented way to clean up the locked infrastructure is to delete the parent managed application service, which removes the resource group as part of the operation."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/lock-resources"
+				}
+			],
+			"subtopics": [
+				"infrastructure-lock",
+				"lock-removal"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GD467EREFNZ1D0K0P3XPE1",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an Azure subscription. You need to delegate the task of creating and removing management locks on resources throughout the subscription to the help-desk team. The help-desk team must NOT be able to create, update, or delete any Azure resources. Existing role assignments on the subscription are shown in the following table.\n\nWhich built-in role should you assign to the help-desk team at the subscription scope?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "+----------------------+------------------------+----------------------------------------------+\n| Principal            | Existing role          | Scope                                        |\n+----------------------+------------------------+----------------------------------------------+\n| TeamLead-ALZ         | Owner                  | /subscriptions/aaaaaaaa-bbbb-cccc-dddd-eeeeee|\n| Engineer-ALZ         | Contributor            | /subscriptions/aaaaaaaa-bbbb-cccc-dddd-eeeeee|\n| HelpDesk-ALZ         | (no assignment)        | /subscriptions/aaaaaaaa-bbbb-cccc-dddd-eeeeee|\n| Auditor-ALZ          | Reader                 | /subscriptions/aaaaaaaa-bbbb-cccc-dddd-eeeeee|\n+----------------------+------------------------+----------------------------------------------+"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Owner"
+					},
+					{
+						"id": "b",
+						"text": "Contributor"
+					},
+					{
+						"id": "c",
+						"text": "User Access Administrator"
+					},
+					{
+						"id": "d",
+						"text": "Reader"
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "The User Access Administrator built-in role is the only one listed that includes access to the Microsoft.Authorization/* or Microsoft.Authorization/locks/* actions required to create and delete management locks, while not granting any permission to create, update, or delete Azure resources. Owner also satisfies the lock-management requirements but grants resource management, which the requirement explicitly forbids.",
+				"perChoice": {
+					"a": "Owner satisfies the lock-management requirement but also grants full access to all resources, allowing the help-desk team to create, update, and delete Azure resources. This violates the requirement that the team must not be able to modify resources.",
+					"b": "Contributor does not include the Microsoft.Authorization/locks/* actions that are required to create or delete management locks. With this role, the help-desk team would not be able to apply or remove locks at all.",
+					"d": "Reader is view-only and includes no permissions capable of creating or deleting management locks."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/lock-resources"
+				}
+			],
+			"subtopics": [
+				"lock-permissions",
+				"built-in-roles"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GD4HRT6DST3S83GBWDVFHC",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an Azure subscription that contains a resource group named rg-storage. The resource group contains a storage account named proddata01. A management restriction is configured at the storage account scope to stop accidental removal of the resource. The current state of the restriction is shown in the following table.\n\nYou assign the Owner built-in role at the storage account scope to a user. The user then attempts to remove a role assignment that is scoped to the proddata01 storage account. What is the outcome of the attempt?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "+----------------------------+----------------------------------+\n| Scope                      | Restriction applied              |\n+----------------------------+----------------------------------+\n| Resource group 'rg-storage'| No                               |\n| Storage account 'proddata01'| Yes - blocks removal of resource |\n+----------------------------+----------------------------------+"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "The role assignment is removed successfully because the restriction applies only to the storage account itself, not to access configuration on the resource."
+					},
+					{
+						"id": "b",
+						"text": "The role assignment removal is blocked because role assignments cannot be evaluated through the management plane while a restriction is in place."
+					},
+					{
+						"id": "c",
+						"text": "The role assignment is removed successfully because role assignments are managed through Azure RBAC, which operates independently of resource-level restrictions."
+					},
+					{
+						"id": "d",
+						"text": "The role assignment removal is blocked because cannot-delete restrictions prevent the deletion of RBAC assignments on the restricted resource."
+					}
+				]
+			},
+			"key": {
+				"optionId": "d"
+			},
+			"explanation": {
+				"correct": "According to the documentation, cannot-delete management restrictions applied to a resource prevent the deletion of Azure RBAC assignments on that resource. Even a user with the Owner role cannot remove the role assignment while the restriction is in place.",
+				"perChoice": {
+					"a": "Cannot-delete management restrictions applied to a resource affect role assignments on that resource. The role assignment cannot be removed while the restriction is in place.",
+					"b": "Role assignment removal is evaluated at the management plane and is evaluated against the restriction on the resource. The reason the operation is blocked is cannot-delete behavior, not a data plane limitation.",
+					"c": "Azure RBAC management is separate from resource-level restrictions in many cases, but cannot-delete restrictions explicitly block the deletion of role assignments on the restricted resource."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/lock-resources"
+				}
+			],
+			"subtopics": [
+				"cannot-delete-effects",
+				"rbac-assignments"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GD560BS65BRYAX5BJQ8J71",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an Azure subscription. A resource group named rg-appservice contains an App Service plan named asp-prod. A management restriction is configured at the rg-appservice scope. A team has Contributor rights on the rg-appservice resource group.\n\nThe team attempts to scale out asp-prod by issuing a scale request through the Azure portal. What is the outcome of the request?",
+				"options": [
+					{
+						"id": "a",
+						"text": "The scale request completes successfully because the restriction is configured at the resource group scope rather than on the App Service plan resource itself."
+					},
+					{
+						"id": "b",
+						"text": "The scale request completes successfully because Contributor rights on the resource group allow scale operations on resources in that resource group."
+					},
+					{
+						"id": "c",
+						"text": "The scale request is blocked because the management restriction overrides existing user permissions and applies to control plane operations on child resources in the same scope."
+					},
+					{
+						"id": "d",
+						"text": "The scale request is blocked because the management restriction overrides existing user permissions and applies only to deletion operations on child resources in the same scope."
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "Management restrictions applied to a scope are inherited by every resource in that scope, and the restriction overrides any user permissions. Scaling an App Service plan is a control plane operation (it uses a POST request to the Azure Resource Manager endpoint), so a read-only restriction on the resource group blocks the request even though the team has Contributor rights.",
+				"perChoice": {
+					"a": "Management restrictions configured at a parent scope are inherited by all child resources in that scope, so the restriction does apply to the App Service plan even though it wasn't directly locked.",
+					"b": "Management restrictions apply to all users regardless of their role assignments; the restriction overrides Contributor rights at the parent scope, so the scale request is blocked.",
+					"d": "Scaling an App Service plan is not a deletion operation; it is a control plane modification that uses a POST request. The restriction blocks both delete and modify operations on child resources, not just deletes."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/lock-resources"
+				}
+			],
+			"subtopics": [
+				"lock-inheritance",
+				"read-only-effects"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GDSA4C9A8VZ89NJ0PWJE0P",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are planning to apply management locks to Azure infrastructure. Drag each scope option on the left to the matching behavior description on the right.",
+				"items": [
+					{
+						"id": "sub",
+						"text": "Subscription scope"
+					},
+					{
+						"id": "rg",
+						"text": "Resource group scope"
+					},
+					{
+						"id": "res",
+						"text": "Individual resource scope"
+					},
+					{
+						"id": "mg",
+						"text": "Management group scope"
+					}
+				],
+				"slots": [
+					{
+						"id": "toplevel",
+						"label": "Lock applies to every resource at that highest tier; new child resources added later also inherit"
+					},
+					{
+						"id": "container",
+						"label": "Lock applies to every resource inside that folder; new resources added later also inherit"
+					},
+					{
+						"id": "single",
+						"label": "Lock applies only to the chosen single artifact; sibling resources are unaffected"
+					},
+					{
+						"id": "notsupported",
+						"label": "Not permitted: this category of restriction cannot be added at that tier"
+					}
+				]
+			},
+			"key": {
+				"toplevel": "sub",
+				"container": "rg",
+				"single": "res",
+				"notsupported": "mg"
+			},
+			"explanation": {
+				"correct": "Locks can be placed at the subscription, resource group, or individual resource scopes; child resources inherit any lock at a parent scope, including resources added later. Management groups are listed in the documentation as a tier where management locks cannot be added.",
+				"perChoice": {
+					"sub": "Fits the top-level tier slot: a lock placed here covers every resource in the subscription and is inherited by any resources added under it later.",
+					"rg": "Fits the inside-the-folder slot: a lock placed here covers every resource in the resource group, including resources added to that group later.",
+					"res": "Fits the single-artifact slot: a lock placed here constrains only that targeted resource, leaving its siblings unrestricted.",
+					"mg": "Fits the not-permitted slot: management locks cannot be added at the management group tier."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/lock-resources"
+				}
+			],
+			"subtopics": [
+				"lock-scope",
+				"lock-inheritance"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GDSQWCMJJ87AVF6632807E",
+			"body": {
+				"format": "drag-drop",
+				"stem": "A subscription hierarchy has management locks applied at parent and child scopes in different combinations. Drag each scenario to its outcome.",
+				"items": [
+					{
+						"id": "both",
+						"text": "Parent scope has CanNotDelete; child scope has ReadOnly; the action is to remove the child resource group"
+					},
+					{
+						"id": "childonly",
+						"text": "Parent scope has no lock; child scope has CanNotDelete; the action is to remove the child VM"
+					},
+					{
+						"id": "parentonly",
+						"text": "Parent scope has ReadOnly; child scope has no lock; the action is to change the child's properties"
+					},
+					{
+						"id": "readonlylist",
+						"text": "Parent scope has ReadOnly; child scope has no lock; the action is to list items in the child"
+					}
+				],
+				"slots": [
+					{
+						"id": "parentwin",
+						"label": "Denied: only the parent's restriction blocks alterations to the child"
+					},
+					{
+						"id": "childwin",
+						"label": "Denied: only the child's own restriction blocks removal"
+					},
+					{
+						"id": "stricter",
+						"label": "Denied: the stricter child restriction beats the looser parent restriction"
+					},
+					{
+						"id": "allowed",
+						"label": "Allowed: viewing is permitted because the restriction only blocks changes"
+					}
+				]
+			},
+			"key": {
+				"parentwin": "parentonly",
+				"childwin": "childonly",
+				"stricter": "both",
+				"allowed": "readonlylist"
+			},
+			"explanation": {
+				"correct": "When multiple scopes in the chain carry locks, the most restrictive lock in the inheritance chain takes precedence. CanNotDelete blocks removal but allows modifications; ReadOnly blocks both removal and modifications but allows reads.",
+				"perChoice": {
+					"both": "Fits the stricter-child slot: the child ReadOnly is stricter than the parent CanNotDelete, so the removal is denied.",
+					"childonly": "Fits the only-child slot: with no parent restriction, the child's CanNotDelete is what blocks the removal.",
+					"parentonly": "Fits the only-parent slot: with no child restriction, the parent's ReadOnly is what blocks the modification.",
+					"readonlylist": "Fits the allowed slot: ReadOnly allows reads, so listing succeeds."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/lock-resources"
+				}
+			],
+			"subtopics": [
+				"lock-inheritance",
+				"most-restrictive"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GDT5FGR5ZNT36GCSQ7WC42",
+			"body": {
+				"format": "drag-drop",
+				"stem": "A documentation team is capturing the operational effects that management locks have on Azure services. Drag each scenario on the left to the matching service-level outcome on the right.",
+				"items": [
+					{
+						"id": "aks",
+						"text": "Apply a ReadOnly lock to an Azure Kubernetes Service cluster"
+					},
+					{
+						"id": "backup",
+						"text": "Apply a CanNotDelete lock to the resource group used by Azure Backup's vault"
+					},
+					{
+						"id": "automation",
+						"text": "Apply a ReadOnly lock to the resource group that contains an automation account"
+					},
+					{
+						"id": "ml",
+						"text": "Apply a CanNotDelete lock to a resource group containing an Azure Machine Learning workspace"
+					}
+				],
+				"slots": [
+					{
+						"id": "aksoutcome",
+						"label": "Browsing that platform's node section in the management portal is restricted"
+					},
+					{
+						"id": "backupoutcome",
+						"label": "Old restore points accumulate, so protection jobs start failing"
+					},
+					{
+						"id": "automationoutcome",
+						"label": "Runbooks stop because starting them requires a write operation"
+					},
+					{
+						"id": "mloutcome",
+						"label": "Autoscaling degrades because unused compute nodes cannot be removed"
+					}
+				]
+			},
+			"key": {
+				"aksoutcome": "aks",
+				"backupoutcome": "backup",
+				"automationoutcome": "automation",
+				"mloutcome": "ml"
+			},
+			"explanation": {
+				"correct": "Each Azure service has documented behaviors when a management lock is applied. ReadOnly prevents operations that need to call write-style endpoints; CanNotDelete blocks cleanup and removal but allows modifications. Specific Azure services have additional documented interactions with each lock level.",
+				"perChoice": {
+					"aks": "Fits the platform-portal slot: a ReadOnly lock restricts browsing the cluster's Kubernetes resources section in the management portal.",
+					"backup": "Fits the restore-point slot: a CanNotDelete lock prevents the backup service from cleaning up old restore points, so protection jobs start failing.",
+					"automation": "Fits the runbook slot: a ReadOnly lock prevents runbooks from starting because they require a write operation.",
+					"ml": "Fits the autoscaling slot: a CanNotDelete lock prevents autoscaling from removing unused nodes in compute clusters."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/lock-resources"
+				}
+			],
+			"subtopics": [
+				"service-impact",
+				"read-only",
+				"cannot-delete"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GDTE7RR17HQQWS28YGM4J9",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are writing an Azure PowerShell script that creates, lists, and removes management locks. Drag each cmdlet on the left to the operation it performs on the right.",
+				"items": [
+					{
+						"id": "new",
+						"text": "New-AzResourceLock"
+					},
+					{
+						"id": "get",
+						"text": "Get-AzResourceLock"
+					},
+					{
+						"id": "remove",
+						"text": "Remove-AzResourceLock"
+					},
+					{
+						"id": "update",
+						"text": "Update-AzResourceLock"
+					}
+				],
+				"slots": [
+					{
+						"id": "create",
+						"label": "Adds a fresh protection at the requested scope"
+					},
+					{
+						"id": "list",
+						"label": "Enumerates existing protection entries at the scope or subscription"
+					},
+					{
+						"id": "delete",
+						"label": "Eliminates an existing protection at the requested scope"
+					}
+				]
+			},
+			"key": {
+				"create": "new",
+				"list": "get",
+				"delete": "remove"
+			},
+			"explanation": {
+				"correct": "Three documented Azure PowerShell cmdlets manage resource locks: New-AzResourceLock creates them, Get-AzResourceLock reads information about them, and Remove-AzResourceLock deletes them by resource id.",
+				"perChoice": {
+					"new": "Fits the create slot: New-AzResourceLock adds a new management lock at the specified scope.",
+					"get": "Fits the enumerate slot: Get-AzResourceLock retrieves lock information without changing anything.",
+					"remove": "Fits the delete slot: Remove-AzResourceLock eliminates a management lock by its resource id.",
+					"update": "Fits no slot: Update-AzResourceLock is not a documented cmdlet for management locks."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/lock-resources"
+				}
+			],
+			"subtopics": [
+				"powershell-cmdlets",
+				"lock-management"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GDTSCJ7AWD6G3Q1A15VZ02",
+			"body": {
+				"format": "drag-drop",
+				"stem": "A resource group has a ReadOnly lock applied to it. The team wants to perform various operations. Drag each operation into the matching outcome slot.",
+				"items": [
+					{
+						"id": "tag",
+						"text": "Add a tag named Environment=Production to the resource group"
+					},
+					{
+						"id": "movein",
+						"text": "Move an unlocked VM INTO the resource group"
+					},
+					{
+						"id": "moveoutlocked",
+						"text": "Move a separately-protected VM OUT of the resource group"
+					},
+					{
+						"id": "delete",
+						"text": "Delete an unrelated VM that lives in the resource group"
+					}
+				],
+				"slots": [
+					{
+						"id": "mutate",
+						"label": "Blocked: changes to the resource itself (metadata, properties) need a write call"
+					},
+					{
+						"id": "bringin",
+						"label": "Blocked: the ReadOnly lock on the parent blocks bringing more entries inside it"
+					},
+					{
+						"id": "moveout",
+						"label": "Allowed: even an individually-secured item can be moved elsewhere, away from the parent"
+					},
+					{
+						"id": "removed",
+						"label": "Blocked: a ReadOnly lock on the parent blocks removal of items within it"
+					}
+				]
+			},
+			"key": {
+				"mutate": "tag",
+				"bringin": "movein",
+				"moveout": "moveoutlocked",
+				"removed": "delete"
+			},
+			"explanation": {
+				"correct": "A ReadOnly lock prevents modifications and removals of the locked resource and its children, but it allows reads. Resources already carrying their own lock can still be moved out of a ReadOnly-locked resource group.",
+				"perChoice": {
+					"tag": "Fits the metadata slot: adding a tag is updating the resource, and ReadOnly blocks that write operation.",
+					"movein": "Fits the bring-in slot: ReadOnly on a resource group prevents moving other items into it.",
+					"moveoutlocked": "Fits the move-out slot: a VM with its own lock can still be moved to another group, even when the source group carries ReadOnly.",
+					"delete": "Fits the removal slot: ReadOnly blocks deletions of items within the resource group."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/lock-resources"
+				}
+			],
+			"subtopics": [
+				"read-only",
+				"operation-outcome"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GDWA55VD68JWYFAY8H4S30",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You apply management locks by using Azure Resource Manager template files. The table shows four files and how each one is deployed. You need to confirm that every file restricts only the part of your hierarchy that your team intended. Drag each template file to the outcome that matches it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"File",
+						"Deployment scope",
+						"Lock resource declared in the file"
+					],
+					"rows": [
+						[
+							"tmpl-a.json",
+							"Resource group rg-web",
+							"Microsoft.Authorization/locks with \"level\": \"CanNotDelete\" and \"scope\": \"[resourceId('Microsoft.Web/sites/site-prod')]\""
+						],
+						[
+							"tmpl-b.json",
+							"Resource group rg-web",
+							"Microsoft.Authorization/locks with \"level\": \"CanNotDelete\" and no scope property"
+						],
+						[
+							"tmpl-c.json",
+							"Subscription",
+							"Creates resource group rg-new, then a nested deployment in rg-new adds a lock with \"level\": \"ReadOnly\" and no scope property"
+						],
+						[
+							"tmpl-d.json",
+							"Subscription",
+							"Microsoft.Authorization/locks with \"level\": \"ReadOnly\" and \"scope\": \"[resourceId('Microsoft.Network/virtualNetworks/vnet-prod', 'rg-net')]\""
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "tmpl-a.json"
+					},
+					{
+						"id": "b",
+						"text": "tmpl-b.json"
+					},
+					{
+						"id": "c",
+						"text": "tmpl-c.json"
+					},
+					{
+						"id": "d",
+						"text": "tmpl-d.json"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "site-prod is protected, and the other resources in rg-web can still be modified or deleted"
+					},
+					{
+						"id": "s2",
+						"label": "Everything in rg-web is protected, including resources added to the group later"
+					},
+					{
+						"id": "s3",
+						"label": "rg-new and its contents are protected, and the other resource groups in the subscription are not"
+					},
+					{
+						"id": "s4",
+						"label": "vnet-prod is protected, and the other resources in rg-net can still be modified or deleted"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d"
+			},
+			"explanation": {
+				"correct": "Two template rules decide the outcome. First, a lock that carries a scope property is applied to exactly the resource named by that property, no matter which scope the file itself is deployed at — that is how tmpl-a.json ends up restricting site-prod and tmpl-d.json ends up restricting vnet-prod, even though tmpl-d.json runs at subscription scope. Second, a lock without a scope property is applied at the scope where the deployment that contains it runs, and it is then inherited by everything inside that scope, including resources added later. tmpl-b.json is deployed at rg-web, so rg-web and all of its resources inherit it; tmpl-c.json puts the lock inside a nested deployment whose scope is rg-new, so rg-new and its contents inherit it while the subscription and its other resource groups do not. The level value in each file only controls how much the target can change; it never changes which object is targeted.",
+				"perChoice": {
+					"a": "Belongs with 'site-prod is protected…'. Because the lock resource declares a scope pointing at the web app, the restriction lands on that single resource. The CanNotDelete level only means that resource cannot be deleted; it can still be modified, and nothing in rg-web is restricted.",
+					"b": "Belongs with 'Everything in rg-web is protected…'. With no scope property on the lock and the file deployed at rg-web, the lock applies at that deployment scope. Every resource in the group inherits it, and resources added to the group later inherit it as well.",
+					"c": "Belongs with 'rg-new and its contents are protected…'. The lock is declared inside a nested deployment whose scope is rg-new, and it has no scope property, so it applies at the resource group. The parent file being deployed at the subscription does not make the lock a subscription-level restriction.",
+					"d": "Belongs with 'vnet-prod is protected…'. The scope property redirects the lock to the named virtual network, so only that resource is restricted. The ReadOnly level means the virtual network cannot be changed or deleted, while the rest of rg-net stays fully editable."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/lock-resources"
+				}
+			],
+			"subtopics": [
+				"management-locks",
+				"arm-templates",
+				"lock-scope"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GEBVJ24XFY8J5FXG770CWH",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You manage an Azure subscription. You are authoring an ARM template. The template will run at the subscription scope. The template must create a new analytics-rg container and ensure that analytics-rg cannot be deleted by any user, including those with the Owner role. Inside the template, you need to add a nested item that targets the newly created analytics-rg, and inside that nested item you must define a lock.",
+				"statement": "The nested item should use type {{slot1}}, and the lock should use level {{slot2}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "Microsoft.Resources/deployments"
+							},
+							{
+								"id": "b",
+								"text": "Microsoft.Authorization/roleAssignments"
+							},
+							{
+								"id": "c",
+								"text": "Microsoft.Authorization/policyDefinitions"
+							}
+						]
+					},
+					{
+						"id": "slot2",
+						"options": [
+							{
+								"id": "a",
+								"text": "CanNotDelete"
+							},
+							{
+								"id": "b",
+								"text": "ReadOnly"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a",
+				"slot2": "a"
+			},
+			"explanation": {
+				"correct": "A subscription-scope ARM template can declare a new resource group, but a management lock targeted at that new group must live inside a nested Microsoft.Resources/deployments entry that scopes to the group. Inside that nested block you declare a Microsoft.Authorization/locks resource at the CanNotDelete level so the container cannot be deleted by anyone — including users who hold the Owner role — while ordinary modifications still succeed.",
+				"perChoice": {
+					"slot1:b": "Role assignments grant RBAC permissions to a principal at a scope; they do not create management locks.",
+					"slot1:c": "Policy definitions are Azure Policy building blocks that enforce compliance rules; they do not produce management locks that block delete or modify actions.",
+					"slot2:b": "ReadOnly is more restrictive than required for this scenario: in addition to blocking delete it also blocks control-plane update operations against resources inside the container."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/lock-resources"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/overview"
+				}
+			],
+			"subtopics": [
+				"arm-templates",
+				"subscription-deployment"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GEC61A5AT0QVAH647Y20MH",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your networking team needs to create NSG flow logs for several network security groups. One of the NSGs, named nsg-prod, has a single management lock applied. The team reports that they were able to create the corresponding NSG flow log and to modify the NSG rules, but they cannot delete nsg-prod.",
+				"statement": "The lock level applied to nsg-prod is most likely {{slot}}.",
+				"slots": [
+					{
+						"id": "slot",
+						"options": [
+							{
+								"id": "a",
+								"text": "CanNotDelete"
+							},
+							{
+								"id": "b",
+								"text": "ReadOnly"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot": "a"
+			},
+			"explanation": {
+				"correct": "The documentation states that a read-only lock on a network security group blocks creation of the corresponding NSG flow log, while a cannot-delete lock allows the flow log to be created and supports NSG rule modifications. The team's report — successful flow log creation, rule edits, and only inability to delete — matches the behavior of CanNotDelete.",
+				"perChoice": {
+					"slot:b": "ReadOnly on an NSG specifically blocks the POST that creates the corresponding NSG flow log, which contradicts the team's observed success in creating it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/lock-resources"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/overview"
+				}
+			],
+			"subtopics": [
+				"nsg-flow-log",
+				"lock-levels"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GECGBRWF7W0FDJ02ZFC5KB",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a storage account named proddata01 that is used by an engineering team. Engineers need to retrieve the account's primary access key and to upload blobs to a container by using the blob endpoint. You also want a guardrail to ensure that no user, including those with the Owner role, can accidentally delete proddata01.",
+				"statement": "The lock level that should be applied to proddata01 to meet all these requirements is {{slot}}.",
+				"slots": [
+					{
+						"id": "slot",
+						"options": [
+							{
+								"id": "a",
+								"text": "CanNotDelete"
+							},
+							{
+								"id": "b",
+								"text": "ReadOnly"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot": "a"
+			},
+			"explanation": {
+				"correct": "CanNotDelete allows authorized users to read and modify the storage account, including listing the primary access key through the control plane. Data plane operations — such as uploading blobs to a container via the blob endpoint — are not affected by either lock level, so the engineers' application workflow continues to work. The lock still blocks accidental deletion by any user, including those with the Owner role.",
+				"perChoice": {
+					"slot:b": "A read-only lock on a storage account blocks the list-keys operation because it is a control-plane POST that the lock rejects, which would break the engineers' ability to retrieve the primary access key."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/lock-resources"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/overview"
+				}
+			],
+			"subtopics": [
+				"storage-locks",
+				"lock-levels"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GECX6JVMRAY1K0C6ZCZ4GN",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "A resource group is protected by a management lock set at the resource group scope. The lock prevents modification and deletion of resources contained within the group. The operations team wants to understand how the lock affects resource-move operations.",
+				"statement": "The lock blocks the operation: {{slot1}}. The team can still perform this operation: {{slot2}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "moving existing resources across the resource group boundary"
+							},
+							{
+								"id": "b",
+								"text": "moving a resource with no lock to another resource group"
+							},
+							{
+								"id": "c",
+								"text": "creating a new resource"
+							}
+						]
+					},
+					{
+						"id": "slot2",
+						"options": [
+							{
+								"id": "a",
+								"text": "moving a resource that already has its own lock applied directly to another resource group"
+							},
+							{
+								"id": "b",
+								"text": "moving a resource with no lock to another resource group"
+							},
+							{
+								"id": "c",
+								"text": "deleting the resource group"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a",
+				"slot2": "a"
+			},
+			"explanation": {
+				"correct": "The documentation explains that a read-only lock on a resource group prevents moving existing resources in or out of the resource group, yet you can move a resource with its own read-only lock to another resource group — the lock travels with the resource and the move is permitted. This pair captures the docs' two main statements about resource moves across a locked resource group boundary.",
+				"perChoice": {
+					"slot1:b": "The lock at the resource group scope blocks this move the same way it blocks any other move in or out of the resource group, so this is one of the blocked operations rather than the correct example.",
+					"slot1:c": "Creating a resource is not a move operation, so it does not address the operations team's question about resource-move effects.",
+					"slot2:b": "The lock at the resource group scope prevents any resource from being moved in or out of the resource group; the presence or absence of a lock on the resource itself does not change that for resources without their own lock.",
+					"slot2:c": "The lock at the resource group scope also blocks deletion of the resource group itself, so this is not an operation the team can still perform."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/lock-resources"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/overview"
+				}
+			],
+			"subtopics": [
+				"lock-inheritance",
+				"move-operations"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GED8PEPZKAZNAZHKJK3Q50",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your team has an Azure VM that is protected by Azure Backup. The backups for that VM are stored in a recovery services vault that is deployed in its own resource group. The team reports that recent backup jobs for the VM have started to fail. You examine the recovery services vault's resource group and find that exactly one management lock is applied.",
+				"statement": "The {{slot1}} lock level is most likely preventing the backup service from performing one of its routine tasks. The routine task that the backup service cannot perform is {{slot2}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "CanNotDelete"
+							},
+							{
+								"id": "b",
+								"text": "ReadOnly"
+							}
+						]
+					},
+					{
+						"id": "slot2",
+						"options": [
+							{
+								"id": "a",
+								"text": "cleaning up older restore points"
+							},
+							{
+								"id": "b",
+								"text": "creating new restore points"
+							},
+							{
+								"id": "c",
+								"text": "writing backup data to existing restore points"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a",
+				"slot2": "a"
+			},
+			"explanation": {
+				"correct": "The documentation specifies that backups fail when a cannot-delete lock is applied to the resource group created by the Azure Backup service, because the backup service cannot clean up restore points and the service supports only up to 18 restore points. The newly failing backup jobs point to this lock level and this blocked operation.",
+				"perChoice": {
+					"slot1:b": "The documentation identifies a cannot-delete lock, not a read-only lock, as the lock level that causes Azure Backup to fail.",
+					"slot2:b": "Creating new restore points is not the operation blocked by the lock; the failure is about the backup service being unable to remove expired restore points, which fills the 18-point quota.",
+					"slot2:c": "Writing backup data is the central purpose of the backup service and is not what the lock interferes with — the lock prevents the service from cleaning up restore points."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/lock-resources"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/overview"
+				}
+			],
+			"subtopics": [
+				"azure-backup",
+				"lock-levels"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GEJVY8T6FDT0SVJVFQA5P4",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your organization uses Azure. Within the tenant, multiple resource groups organize the workloads. A specific resource group, rg-finance, contains an Azure SQL logical server named sql-prod that stores regulated financial data. The compliance team has mandated that sql-prod be treated as immutable: no one may alter its configuration or remove it. All other resources in rg-finance must remain fully manageable. To satisfy the requirement, you should apply a {{level}} management lock at the {{scope}} scope.",
+				"statement": "To satisfy the requirement, you should apply a {{level}} management lock at the {{scope}} scope.",
+				"slots": [
+					{
+						"id": "level",
+						"options": [
+							{
+								"id": "a",
+								"text": "Delete"
+							},
+							{
+								"id": "b",
+								"text": "Read-only"
+							}
+						]
+					},
+					{
+						"id": "scope",
+						"options": [
+							{
+								"id": "a",
+								"text": "subscription"
+							},
+							{
+								"id": "b",
+								"text": "resource group"
+							},
+							{
+								"id": "c",
+								"text": "resource"
+							},
+							{
+								"id": "d",
+								"text": "management group"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"level": "b",
+				"scope": "c"
+			},
+			"explanation": {
+				"correct": "A Read-only lock prevents authorized users from altering or deleting the resource, similar to restricting everyone to the permissions of the Reader role. Applying the lock at the resource scope confines the protection to sql-prod, leaving every other resource in rg-finance unaffected.",
+				"perChoice": {
+					"level:a": "A Delete (CanNotDelete) lock would prevent removal of sql-prod but would still allow configuration changes. The compliance mandate treats sql-prod as immutable, so configuration updates must also be blocked.",
+					"scope:a": "Applying the lock at the subscription scope would make every resource in the tenant immutable, far exceeding the requirement and breaking the manageability of workloads outside rg-finance.",
+					"scope:b": "Applying the lock at the resource group scope would lock every resource in rg-finance, not just sql-prod. The requirement states that the other resources in the group must remain fully manageable.",
+					"scope:d": "Management locks cannot be created at the management group scope. The lock-resources documentation explicitly notes that you cannot add a lock to a management group."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/lock-resources"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/overview"
+				}
+			],
+			"subtopics": [
+				"lock-types",
+				"lock-scopes"
+			],
+			"reviewed": false
+		}
+	]
+}

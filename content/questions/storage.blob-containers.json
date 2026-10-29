@@ -1,0 +1,1548 @@
+{
+	"skill": "storage.blob-containers",
+	"questions": [
+		{
+			"id": "q_01M5MBARQX4HYJWHJ5RERZ6W68",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You support a partner portal whose invoices are hosted in the storage account shown below. The partner's web application must download individual invoice documents from the invoices container over plain HTTPS requests that carry no credentials, and the partner's developers must not be able to enumerate the other documents stored in that container. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "powershell",
+					"text": "PS> Get-AzStorageAccount -ResourceGroupName \"rg-west\" -Name \"contosoinvoices\" |\n      Select-Object Name, AllowBlobPublicAccess\n\nName            AllowBlobPublicAccess\n----            -------------------\ncontosoinvoices  Enabled\n\nPS> Get-AzStorageContainer -Context $ctx | Select-Object Name, PublicAccess\n\nName       PublicAccess\n----       ------------\ninvoices   Off\nreports    Container\nlogs       Off"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set the invoices container to the Container level"
+					},
+					{
+						"id": "b",
+						"text": "Set the invoices container to the Blob level"
+					},
+					{
+						"id": "c",
+						"text": "Set the invoices container to the Private (no anonymous access) level"
+					},
+					{
+						"id": "d",
+						"text": "Set the storage account's Allow blob anonymous access property to Enabled"
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "The account already reports AllowBlobPublicAccess = Enabled, so nothing blocks a container from being opened up, and the invoices container is currently Private (shown as Off by PowerShell). Changing that container to the Blob level lets unauthenticated clients read blob contents they already know the URL for, while the container listing stays closed, so the partner's developers cannot discover the other documents. The access level is a container-wide setting, so one change to this container covers all invoices.",
+				"perChoice": {
+					"a": "Container level also exposes the list of blobs, so the partner's developers would be able to enumerate every document in invoices — exactly what the requirement forbids. It does let clients list blobs, though never the account's containers.",
+					"c": "Private keeps both the container and its blobs reachable only through authorized requests, so the partner's credential-free downloads would fail.",
+					"d": "The account-level property is already Enabled, so no change is needed there, and even in accounts where it is disabled, toggling it only permits the feature — each container's own level must still be changed before any data is readable without credentials."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/anonymous-read-access-configure"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction"
+				}
+			],
+			"subtopics": [
+				"container-anonymous-access",
+				"access-levels",
+				"blob-versus-container-access"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MBDDRBC11VK57MKHZF52F0",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You host product photos for the company's public website in the storage account shown below. Any visitor must be able to download a photo over plain HTTPS without signing in and without a key or token. When a colleague opens the account in the portal and reaches the form for creating a container, the control that sets who may reach the data is greyed out and cannot be picked. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Account name",
+							"contosomedia"
+						],
+						[
+							"Account type",
+							"General-purpose v2 (Standard)"
+						],
+						[
+							"Account-level public data access",
+							"Disabled"
+						],
+						[
+							"Network default action",
+							"Accept requests from any network"
+						],
+						[
+							"Existing containers",
+							"site-images (Private), site-css (Private), site-data (Private)"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "In the storage account settings, switch Allow blob anonymous access to Enabled, then create the container and give it a public data access level"
+					},
+					{
+						"id": "b",
+						"text": "In the storage account settings, switch Hierarchical namespace to Enabled, then create the container and give it a public data access level"
+					},
+					{
+						"id": "c",
+						"text": "In the storage account settings, regenerate the account access keys, then create the container and give it a public data access level"
+					},
+					{
+						"id": "d",
+						"text": "Create the container first and set its access level to Blob or Container, leaving the storage account settings unchanged"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The account-level switch shown as Disabled is the master gate for public data access. While it is off, every container in that account stays private no matter what its own level says, and that is why the access level control on the container form is greyed out. You must first switch public access on for the account (Configuration blade), then create the container and choose a level that exposes data — Private, Blob or Container — to visitors. Changing the account setting alone is not enough either; the container level still has to be set explicitly.",
+				"perChoice": {
+					"b": "This setting adds Data Lake Storage Gen2 capabilities and lowers the path-segment limit for blob names; it has no effect on whether requests without credentials are accepted. It also changes which features the account supports, so switching it on would introduce risk without solving the website problem.",
+					"c": "New account keys authenticate requests that present the key, and they grant full control of the account to anyone who holds one. A visitor who has no key still cannot download a photo, so regenerating keys does nothing for unsigned public reads.",
+					"d": "The container level is subordinate to the account switch. Because the account currently refuses public data access, that setting overrides whatever you choose on the container, and the control cannot be selected at all — which is exactly the greyed-out state described."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/anonymous-read-access-configure"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction"
+				}
+			],
+			"subtopics": [
+				"anonymous-access",
+				"storage-account-settings"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MBFCWS97GCB0GXSMYA1PDG",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a release pipeline that runs as the service principal sp-deploy. On every deployment it must switch the account-wide setting that decides whether blob data may be requested without credentials (AllowBlobPublicAccess) on the storage account contosodata, and it must be able to do the same when you later turn the setting back off. The assignments listed below are the only permissions sp-deploy holds today. You need to give the pipeline the missing permission without handing it any broader access than the task requires. Which role assignment should you add?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Principal",
+						"Role",
+						"Scope"
+					],
+					"rows": [
+						[
+							"sp-deploy",
+							"Storage Blob Data Owner",
+							"contosodata"
+						],
+						[
+							"svc-reporting",
+							"Storage Blob Data Reader",
+							"contosodata/logs"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Storage Account Contributor, scoped to the contosodata storage account resource"
+					},
+					{
+						"id": "b",
+						"text": "Storage Blob Data Contributor, scoped to the contosodata storage account resource"
+					},
+					{
+						"id": "c",
+						"text": "Storage Blob Data Reader, scoped to the contosodata storage account resource"
+					},
+					{
+						"id": "d",
+						"text": "Reader and Data Access, scoped to the contosodata storage account resource"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Flipping AllowBlobPublicAccess is an account configuration change: it needs Microsoft.Storage/storageAccounts/write, and the assignment must sit at the storage account scope or higher. Of the three built-in roles that carry that action - Owner, Contributor and Storage Account Contributor - Storage Account Contributor is the least privileged, so it is the right choice for a pipeline that only has to manage account settings. One caveat worth knowing: this role also includes the account list keys action, so the principal can reach all data in the account through those keys even though it was assigned for configuration work.",
+				"perChoice": {
+					"b": "Storage Blob Data Contributor works only on blob data itself - creating, reading, updating and deleting containers and blobs. It carries no Microsoft.Storage/storageAccounts/write action, so it cannot change the account-wide anonymous access property. sp-deploy already has an equivalent-or-wider data-plane role, so adding it would change nothing about the failing step.",
+					"c": "Storage Blob Data Reader is a read-only data-plane role for blob content. It grants no write action on the storage account properties, so the pipeline would still be unable to switch the anonymous access setting either way.",
+					"d": "Reader and Data Access is also read-only: it lets the principal list and read account metadata and read blob data, but it contains no write action for the account, so it cannot change the anonymous access property."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/anonymous-read-access-configure"
+				}
+			],
+			"subtopics": [
+				"allow-blob-public-access",
+				"role-assignments"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MBKM0FKYBNM28PTQEDYVG7",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You are standing up a new Blob Storage workload. A provisioning script creates one container per business unit, and on the latest run a single step failed with the output shown below, so that unit's container does not exist yet. The team needs the container to be created successfully by the script. Which change should you make to the script?",
+				"exhibit": {
+					"kind": "code",
+					"language": "powershell",
+					"text": "PS C:\\> New-AzStorageContainer -Name \"finance--reports--2019\" -Context $ctx\nNew-AzStorageContainer : (InvalidResourceName) The specified resource name contains invalid characters.\nAt line:1 char:1\n+ New-AzStorageContainer -Name \"finance--reports--2019\" -Context $ctx\n+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n    + CategoryInfo          : OperationStopped: (System.InvalidOperationException) The specified resource name contains invalid characters.\n\nPS C:\\> Get-AzStorageAccount -Name contosodata | Select-Object Name, AllowBlobPublicAccess\n\nName          AllowBlobPublicAccess\n----          ---------------------\ncontosodata   Disabled"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Replace the name with finance-reports-2019"
+					},
+					{
+						"id": "b",
+						"text": "Replace the name with Finance-Reports-2019"
+					},
+					{
+						"id": "c",
+						"text": "Replace the name with finance_reports_2019"
+					},
+					{
+						"id": "d",
+						"text": "Replace the name with fr"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A container name becomes part of the container URI, so it has to satisfy DNS-style naming rules: 3 to 63 characters, starting with a letter or a number, containing only lowercase letters, numbers and the dash, and never two dashes in a row. The string passed to the script contains two consecutive dashes in two places, which is what the service rejects. Collapsing each pair to a single dash gives finance-reports-2019: 19 characters, starts with a letter, all lowercase letters, digits and single dashes, so the create call succeeds and the resulting URI is valid.",
+				"perChoice": {
+					"b": "Uppercase letters are not permitted; a container name may contain only lowercase letters, numbers and the dash, so this variant is rejected with the same invalid-name error.",
+					"c": "The underscore is not an allowed character, so the create call fails in the same way as the current script.",
+					"d": "Two characters is below the minimum length; a container name must be at least 3 and at most 63 characters, so this name is rejected."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-portal"
+				}
+			],
+			"subtopics": [
+				"container-naming",
+				"container-creation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MBQ019ZK6CRN1NHTTTVBMD",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your marketing site serves product photographs from a single container in the storage account below, and colleagues on the corporate network can already download those photographs without signing in. The same photographs are linked from e-mails to customers, who open them from home, mobile and hotel connections, and those downloads fail with HTTP 403. The browsers never send a key or token. You cannot change the networks your customers browse from, and every customer who clicks the link must get the photograph. In each option below, the container keeps its present public access level. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Scope",
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Storage account mediaassets",
+							"Performance",
+							"Standard"
+						],
+						[
+							"Storage account mediaassets",
+							"Allow blob anonymous access",
+							"Enabled"
+						],
+						[
+							"Storage account mediaassets",
+							"Public network access",
+							"Enabled"
+						],
+						[
+							"Storage account mediaassets",
+							"Network access level",
+							"Networks selected"
+						],
+						[
+							"Storage account mediaassets",
+							"IP address allow list",
+							"10.10.0.0/16, 198.51.100.0/24"
+						],
+						[
+							"Storage account mediaassets",
+							"Exceptions for trusted Microsoft services",
+							"none"
+						],
+						[
+							"Container productphotos",
+							"Anonymous access level",
+							"Blob"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set the network access level of mediaassets to All networks"
+					},
+					{
+						"id": "b",
+						"text": "Add 0.0.0.0/0 to the IP address allow list of mediaassets and keep the network access level at Networks selected"
+					},
+					{
+						"id": "c",
+						"text": "Add mediaassets to the exceptions for trusted Microsoft services and keep the network access level at Networks selected"
+					},
+					{
+						"id": "d",
+						"text": "Set the network access level of mediaassets to Disabled and reach the container through a private endpoint"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Public access on a container only removes the authorization requirement; the firewall and network rules configured on the storage account stay in effect and keep filtering incoming traffic according to their ACLs. mediaassets currently accepts traffic only from the address ranges in its allow list, so customers outside them are blocked even though productphotos permits anonymous blob reads. Choosing All networks makes the account reachable from any internet client, which is what the requirement calls for, and the container's existing access level then serves the photographs with no credentials.",
+				"perChoice": {
+					"b": "Adding 0.0.0.0/0 to the allow list is not the documented way to let arbitrary internet clients connect; the supported way to open an account to any network is the All networks setting on its network access level.",
+					"c": "The trusted services exception list is intended for first-party Microsoft services, not for end-user browsers, so customers' requests would still be filtered by the account's network rules.",
+					"d": "Disabling public network access and using a private endpoint requires connectivity from inside the virtual network, which customers browsing from home or mobile connections do not have."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/anonymous-read-access-configure"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction"
+				}
+			],
+			"subtopics": [
+				"container-anonymous-access",
+				"storage-firewall-rules",
+				"public-network-access"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MBV8XY47KT5FM5Q2QCWR59",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a public status page whose browser-side script fetches one JSON file straight from Blob Storage over plain HTTPS, and the request must carry no key, token or other credential. A pipeline created the container media in the storage account below, and a colleague confirmed that an authenticated read of that file returns HTTP 200. Since the pipeline ran, every unauthenticated GET of the same file returns HTTP 403, and you cannot change how the browser issues the request. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "powershell",
+					"text": "PS> Get-AzStorageAccount -ResourceGroupName rg-corpweb -Name stcorpweb |\n      Select-Object AllowBlobPublicAccess, AllowSharedKeyAccess\n\n    AllowBlobPublicAccess    AllowSharedKeyAccess\n    ------------------      ---------------------\n    True                     True\n\nPS> Get-AzStorageContainer -Context $ctx | Select-Object Name, PublicAccess\n\n    Name        PublicAccess\n    ----        ------------\n    $web        Container\n    images      Blob\n    reports     Private\n    media       Private\n\nPS C:\\deploy> Get-Content .\\create-media.ps1\nNew-AzStorageContainer -Name $containerName -Context $ctx"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set the media container's anonymous access level to Blob"
+					},
+					{
+						"id": "b",
+						"text": "Leave the media container's anonymous access level at Private and wait for the account setting to propagate"
+					},
+					{
+						"id": "c",
+						"text": "Re-create the media container at the same anonymous access level once the account setting has propagated"
+					},
+					{
+						"id": "d",
+						"text": "Assign the Storage Blob Data Reader role to the status page's identity and have the browser set the matching token on every request"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The account already permits anonymous requests (AllowBlobPublicAccess is True), so the account-wide switch is not what is blocking the browser. Each container comes into existence with the private level and keeps it until somebody deliberately raises it; the account setting only makes anonymous access permissible in principle, it never assigns a level to a container. Raising the media container's level to Blob therefore makes the file itself readable without credentials, which satisfies the status page requirement, while the container listing stays protected.",
+				"perChoice": {
+					"b": "Waiting cannot help: every new container is created at the private level regardless of what the account switch says, so the container will not pick up a more permissive value. The short propagation delay that applies when the account switch itself is toggled is about that switch taking effect across the account, not about containers inheriting a level from it.",
+					"c": "Recreating the container only produces another new container, which starts at the same private level, so the unauthenticated request would still be refused. The account switch never supplies a container with a public level on its own.",
+					"d": "A data-plane role such as Storage Blob Data Reader only authorizes callers that present a matching credential, and a browser page cannot obtain or attach an identity's token on each request. The requirement is a request carrying no credential at all, which only the container's own anonymous access level can deliver."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/anonymous-read-access-configure"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction"
+				}
+			],
+			"subtopics": [
+				"container-access-level",
+				"anonymous-access",
+				"container-creation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MBXRDH532BZ2CAQSQQ12RT",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have run a pilot that streams telemetry from a fleet of 12,000 devices into a new container, and the operations dashboard that reads it cannot tolerate slow responses. You now need to choose the storage account option that will host this container and absorb the traffic the pilot produced. Which option should you choose?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Pilot measurement",
+						"Observed value"
+					],
+					"rows": [
+						[
+							"Object size",
+							"Most objects are 4 KB; the 99th percentile is under 1 MB"
+						],
+						[
+							"Write throughput",
+							"About 20,000 writes per second, sustained continuously"
+						],
+						[
+							"Read latency target",
+							"Under 10 milliseconds for dashboard reads"
+						],
+						[
+							"Write pattern",
+							"Every sample arrives as a new independent object; stored objects are never edited in place"
+						],
+						[
+							"Other data services needed on the same account",
+							"None - no file shares, queues or tables"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "General-purpose v2 (Standard)"
+					},
+					{
+						"id": "b",
+						"text": "Premium block blob"
+					},
+					{
+						"id": "c",
+						"text": "Premium page blob"
+					},
+					{
+						"id": "d",
+						"text": "Premium file shares"
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "The pilot profile is the one the Premium block blob option exists for: very high transaction rates, small objects and a requirement for consistently low latency. Sustained ~20,000 writes per second on objects averaging 4 KB, with dashboard reads that must stay under 10 ms, matches those characteristics, so the container should sit in a Premium block blob account. Because the account needs no file shares, queues or tables, the extra services a general-purpose account provides are not a factor here.",
+				"perChoice": {
+					"a": "General-purpose v2 (Standard) is the default and recommended account type for almost all Blob Storage scenarios and for accounts that also serve file shares, queues and tables, but it is aimed at typical rather than exceptional transaction volumes, and it does not promise the consistently low latency this dashboard requires. It would be the right choice if the account also had to host file shares, queues or tables, which the pilot shows it does not.",
+					"c": "Premium page blob is for page blob workloads only, which store random-access files such as VHDs acting as VM disks. This fleet never edits stored objects in place - every sample arrives as a new independent object - so there is no random-access disk workload for this option to serve.",
+					"d": "Premium file shares back Azure Files scenarios where storage is exposed over SMB/NFS as file shares; they are not tuned for the blob endpoint used by an application that writes millions of independent objects and reads them over HTTP."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction"
+				}
+			],
+			"subtopics": [
+				"storage-account-types",
+				"premium-accounts",
+				"workload-selection"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MC00W0RY82J2D317JD42E6",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your company publishes product photographs and user manuals that anyone must be able to download over plain HTTPS without a key or a token; the one listed below holds those files and colleagues confirm they already load that way. It also holds contract-2026.pdf, a file carrying customer signatures that may only be handed to requests that carry credentials. You need the photographs and manuals to stay publicly downloadable while that one file stops being reachable without credentials. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Container",
+						"Anonymous access level",
+						"Contents"
+					],
+					"rows": [
+						[
+							"public-downloads",
+							"Blob",
+							"product photographs, user manuals, contract-2026.pdf"
+						],
+						[
+							"finance-archive",
+							"Private",
+							"signed contracts, quarterly statements"
+						],
+						[
+							"logs-archive",
+							"Private",
+							"VM diagnostic logs"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Put contract-2026.pdf into a different container that keeps the Private access level."
+					},
+					{
+						"id": "b",
+						"text": "Change the anonymous access level of the public-downloads container to Private so nothing in it is reachable without credentials."
+					},
+					{
+						"id": "c",
+						"text": "Leave the public-downloads container at the Blob level and add a per-blob setting that makes contract-2026.pdf need an authorization header."
+					},
+					{
+						"id": "d",
+						"text": "Rename contract-2026.pdf to a file name that visitors cannot guess, and leave the public-downloads container at the Blob level."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The anonymous access level is a property of the container as a whole, and every blob inside a container inherits it. Because the level can only be chosen at container level and never for an individual blob, the only way to require credentials for contract-2026.pdf while the photographs and manuals stay open is to place that file in a container whose level is Private, like finance-archive, and hand it out only to authorized requests.",
+				"perChoice": {
+					"b": "Turning the public-downloads container to Private applies to all of its blobs, so the product photographs and manuals would stop loading for visitors, which the requirement forbids. This closes the whole door instead of just the one file.",
+					"c": "There is no per-blob anonymous access level; the setting exists only on the container. While contract-2026.pdf stays in a container set to Blob, anyone who has its URL can read it anonymously, so the customer signatures remain exposed.",
+					"d": "Renaming only makes the address harder to guess; it does not change who may read the file. A blob in a container at the Blob level is still returned to anonymous callers, so the signatures stay reachable to anyone who learns the name."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/anonymous-read-access-configure"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction"
+				}
+			],
+			"subtopics": [
+				"container-access-level",
+				"container-configuration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MC4P5T9FT7FEVE2YXVFBF4",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are creating three new containers in the storage account contosodata, one per workload, and for each container you must choose the kind of object that holds the files. You need each file to behave the way its workload expects it to behave. Match each container to the blob type that fits it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Container",
+						"What the application writes",
+						"How the data is used"
+					],
+					"rows": [
+						[
+							"audit-2026",
+							"A compliance agent adds a new line every few minutes; earlier lines are never changed or deleted",
+							"An auditor downloads the whole file once a month"
+						],
+						[
+							"vmdisks",
+							"Virtual hard disk files that the virtual machines attach and update in no fixed order",
+							"Mounted by the running virtual machines as their disks"
+						],
+						[
+							"media",
+							"A web application uploads product photos and PDF manuals, each file delivered as a whole",
+							"Pages embed individual files straight from the container"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "block",
+						"text": "Block blob"
+					},
+					{
+						"id": "append",
+						"text": "Append blob"
+					},
+					{
+						"id": "page",
+						"text": "Page blob"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "audit-2026"
+					},
+					{
+						"id": "s2",
+						"label": "vmdisks"
+					},
+					{
+						"id": "s3",
+						"label": "media"
+					}
+				]
+			},
+			"key": {
+				"s1": "append",
+				"s2": "page",
+				"s3": "block"
+			},
+			"explanation": {
+				"correct": "audit-2026 is only ever added to at the end and never rewritten, which is exactly what Append blobs are optimised for (the classic case being VM logs), so Append blob belongs in that slot. vmdisks holds random-access virtual hard disk files attached to virtual machines, which is the Page blob case, sized at up to 8 TiB. media holds ordinary text and binary files such as photographs and PDFs delivered whole by a web application, which is the general-purpose Block blob case; block blobs store data as individually managed blocks and reach roughly 190.7 TiB.",
+				"perChoice": {
+					"append": "Fits audit-2026: the workload only adds new data at the end of the file and never modifies what is already there, and Append blobs are block-based objects optimised for append-only writes such as logging.",
+					"page": "Fits vmdisks: the workload needs random-access reads and writes to a virtual hard disk file mounted by a virtual machine, and Page blobs store random-access files up to 8 TiB for exactly this purpose.",
+					"block": "Fits media: the workload writes general text and binary files (photographs, PDF manuals) that a web application uploads and serves, which is what block blobs are for; storing data as individually managed blocks also allows objects up to about 190.7 TiB."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-portal"
+				}
+			],
+			"subtopics": [
+				"blob-types",
+				"choosing-blob-type"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MC6SRPV46DP1N15KJZHYJ8",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are handing out permissions on the storage account shown below for the first time, and security has asked that each assignment cover only the job it is given, with no extra reach on the account or its data. Three identities need access, and each one has a different job. Match each job to the role that grants it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Storage account",
+							"contosodata (General-purpose v2)"
+						],
+						[
+							"Allow blob anonymous access",
+							"Disabled"
+						],
+						[
+							"Containers and their public access levels",
+							"invoices — Private; reports — Blob; $web — Container"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "itA",
+						"text": "Job 1: a deployment pipeline must switch the account-wide setting that decides whether blobs can be fetched without credentials, in both directions, and touch nothing else on the account"
+					},
+					{
+						"id": "itB",
+						"text": "Job 2: a nightly job must create new containers, add blobs to them, replace blobs that already exist and remove ones that have expired"
+					},
+					{
+						"id": "itC",
+						"text": "Job 3: a reporting application must download the contents of blobs in any container of the account, while being unable to change or delete anything"
+					}
+				],
+				"slots": [
+					{
+						"id": "sl1",
+						"label": "Storage Account Contributor"
+					},
+					{
+						"id": "sl2",
+						"label": "Storage Blob Data Contributor"
+					},
+					{
+						"id": "sl3",
+						"label": "Storage Blob Data Reader"
+					}
+				]
+			},
+			"key": {
+				"sl1": "itA",
+				"sl2": "itB",
+				"sl3": "itC"
+			},
+			"explanation": {
+				"correct": "Job 1 changes AllowBlobPublicAccess, which is an account configuration change requiring Microsoft.Storage/storageAccounts/write at the storage account scope or higher — that is the job of Storage Account Contributor (Owner and Contributor would also work but grant far more than the task needs). Job 2 creates containers and performs full data operations on their contents, which is Storage Blob Data Contributor. Job 3 only pulls blob content and must not change or remove anything, which is Storage Blob Data Reader. The data-plane roles are the right choice for Jobs 2 and 3 because they grant data access without any configuration rights.",
+				"perChoice": {
+					"itA": "Changing AllowBlobPublicAccess needs Microsoft.Storage/storageAccounts/write granted at the storage account scope or higher, and Storage Account Contributor carries that action, so this is the role for Job 1. Owner and Contributor would also satisfy it, but they hand out broader reach than the task requires.",
+					"itB": "Creating containers plus uploading, overwriting and deleting blobs is full data-plane write access, which is what Storage Blob Data Contributor grants.",
+					"itC": "Downloading blob content with no ability to change or delete it is the read-only data-plane permission granted by Storage Blob Data Reader."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/anonymous-read-access-configure"
+				}
+			],
+			"subtopics": [
+				"role-assignment",
+				"anonymous-access",
+				"least-privilege"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MC9D4DJR392WQZCJTDG087",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are setting up a new Blob Storage workload by hand in the portal of the account contosodata, and four jobs are on your list: put the workload's objects somewhere new, adjust what callers who send no key may reach in the containers that are already there, settle whether the account as a whole tolerates such callers, and store the first file under a named virtual directory. Match each job to the portal path that carries it out.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Detail recorded by the storage team",
+						"Value"
+					],
+					"rows": [
+						[
+							"Job 1 - result expected afterwards",
+							"A new, empty grouping level appears for the new workload"
+						],
+						[
+							"Job 2 - result expected afterwards",
+							"Two existing containers in this account get opposite treatment for callers that send no key"
+						],
+						[
+							"Job 3 - result expected afterwards",
+							"Every container in the account is affected, whether its own exposure has been touched or not"
+						],
+						[
+							"Job 4 - result expected afterwards",
+							"The blob is reachable at a URL with an extra path segment added"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "p1",
+						"text": "Data storage > Containers > + Container"
+					},
+					{
+						"id": "p2",
+						"text": "Data storage > Containers > Change access level"
+					},
+					{
+						"id": "p3",
+						"text": "Configuration > Allow blob anonymous access"
+					},
+					{
+						"id": "p4",
+						"text": "Containers > Upload > Advanced > Upload to folder"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Provision somewhere in the account to hold a new set of objects"
+					},
+					{
+						"id": "s2",
+						"label": "Give or withhold credential-free reach for contents that already exist in this account"
+					},
+					{
+						"id": "s3",
+						"label": "Decide whether this account permits credential-free requests for its stored objects at all"
+					},
+					{
+						"id": "s4",
+						"label": "Place a newly arriving file beneath a chosen virtual directory without adding a new container"
+					}
+				]
+			},
+			"key": {
+				"s1": "p1",
+				"s2": "p2",
+				"s3": "p3",
+				"s4": "p4"
+			},
+			"explanation": {
+				"correct": "Each job sits at a different level of configuration. Creating the grouping layer for new objects is done from the Containers blade with the + Container button. Changing what unauthenticated callers may reach for containers that already exist is done on the same blade, by selecting the containers and using Change access level to pick Private, Blob or Container. The account-wide decision about whether credential-free requests are tolerated at all lives on the Configuration blade as Allow blob anonymous access, and it overrides whatever the individual containers say. Finally, placing a blob under a named virtual directory is part of the Upload flow, under Advanced > Upload to folder.",
+				"perChoice": {
+					"p1": "Belongs in the slot about provisioning somewhere new for a set of objects: Data storage > Containers > + Container is the portal route that creates a container, where you type the name, pick an anonymous access level (defaulting to Private) and select Create.",
+					"p2": "Belongs in the slot about giving or withholding credential-free reach for contents that already exist: on the Containers blade you tick the containers, choose Change access level, pick a value in the Anonymous access level dropdown and confirm with OK. It is the only place a container's own exposure can be set, and it works only while the account permits such access.",
+					"p3": "Belongs in the slot about whether the account as a whole tolerates credential-free requests: Allow blob anonymous access on the Configuration blade (the AllowBlobPublicAccess property) is the master switch, and when it disables such access every container in the account becomes private whatever its own level says.",
+					"p4": "Belongs in the slot about storing the first file under a named virtual directory: Upload on the container's Containers blade, expanded to Advanced, offers Upload to folder, which adds the blob inside a new or existing virtual folder instead of at the container root."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/anonymous-read-access-configure"
+				}
+			],
+			"subtopics": [
+				"container-creation",
+				"anonymous-access"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MCAPRYTRA6AJE3DD6Z1EH8",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are getting historical files into the Blob Storage account contosodata for the first time, and each of the four transfers below has its own constraint. Match each transfer to the tool or service that fits it.",
+				"items": [
+					{
+						"id": "i1",
+						"text": "One-off moves between containers or between storage accounts, run from a Windows or Linux command shell with nothing to schedule."
+					},
+					{
+						"id": "i2",
+						"text": "A nightly pipeline that picks up an on-premises file share and writes it into Blob Storage, authenticating with a managed identity instead of a stored key."
+					},
+					{
+						"id": "i3",
+						"text": "Browsing existing block blob content on a Linux server as though it were a mounted local folder."
+					},
+					{
+						"id": "i4",
+						"text": "Getting 40 TB of files to a Microsoft facility because the office uplink cannot finish the upload in the time allowed."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "AzCopy"
+					},
+					{
+						"id": "s2",
+						"label": "Azure Data Factory"
+					},
+					{
+						"id": "s3",
+						"label": "Blobfuse"
+					},
+					{
+						"id": "s4",
+						"label": "Azure Data Box"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "AzCopy is the command-line utility for ad hoc transfers on Windows and Linux, including work that spans containers or whole accounts, so the one-off moves belong there. Azure Data Factory covers the repeatable scheduled pipeline, and it accepts a managed identity among its authentication options. Blobfuse is the Linux virtual file system that lets engineers work with existing block blob data as a mounted folder. Azure Data Box is the offline shipping option, which is what a 40 TB archive whose uplink is too slow requires.",
+				"perChoice": {
+					"i1": "Ad hoc, command-shell transfers between containers or accounts are exactly what AzCopy is built for; it runs on both Windows and Linux.",
+					"i2": "A recurring, authenticated copy job that runs every night is a Data Factory pipeline, and a managed identity is one of the authentication methods it supports.",
+					"i3": "Reading existing block blob content as a local directory on Linux is the job of Blobfuse, the Linux virtual file system.",
+					"i4": "When the network cannot carry the payload within the allowed window, the payload travels offline with Azure Data Box instead of being uploaded."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction"
+				}
+			],
+			"subtopics": [
+				"bulk-data-transfer",
+				"data-movement-tools"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MCBBWVA0V3X71MA8DDR7SD",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a ticket to create four new containers in the storage account contosodata, and the four entries on the list below are exactly what the infrastructure team typed into the request. Two of them have to go live today and the others must be sent back for correction before deployment. Match each proposed entry to the outcome Blob Storage produces for it.",
+				"items": [
+					{
+						"id": "logs-archive-2026",
+						"text": "logs-archive-2026"
+					},
+					{
+						"id": "ab",
+						"text": "ab"
+					},
+					{
+						"id": "pay-ments_v2",
+						"text": "pay-ments_v2"
+					},
+					{
+						"id": "sales--archive",
+						"text": "sales--archive"
+					}
+				],
+				"slots": [
+					{
+						"id": "accepted",
+						"label": "Created successfully"
+					},
+					{
+						"id": "too-short",
+						"label": "Rejected: entry is too short"
+					},
+					{
+						"id": "bad-character",
+						"label": "Rejected: contains a character that is not allowed"
+					},
+					{
+						"id": "double-dash",
+						"label": "Rejected: has two separator characters side by side"
+					}
+				]
+			},
+			"key": {
+				"accepted": "logs-archive-2026",
+				"too-short": "ab",
+				"bad-character": "pay-ments_v2",
+				"double-dash": "sales--archive"
+			},
+			"explanation": {
+				"correct": "Blob Storage requires a container name to be a valid DNS name, because it becomes part of the container URI: 3 to 63 characters, starting with a letter or number, containing only lowercase letters, numbers and the dash, with no two consecutive dashes. logs-archive-2026 meets all of these (16 characters, lowercase, digits, single dashes) and is created as written. ab is only two characters, below the three-character minimum. pay-ments_v2 is long enough but uses an underscore, which is not in the permitted character set. sales--archive uses only allowed characters and is long enough, but the two dashes in a row break the DNS-name requirement.",
+				"perChoice": {
+					"logs-archive-2026": "Created successfully: 16 characters, starts with a letter, all lowercase letters, digits and single dashes, so it satisfies every container naming rule.",
+					"ab": "Rejected because a container name must be at least 3 characters long; this entry is only two.",
+					"pay-ments_v2": "Rejected because only lowercase letters, numbers and dashes are permitted; the underscore is not an allowed character.",
+					"sales--archive": "Rejected because two or more consecutive dashes are not allowed, which would make the name an invalid DNS name."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction"
+				}
+			],
+			"subtopics": [
+				"container-naming",
+				"naming-rules",
+				"container-creation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MCCGPWE89BFXV3CA5ZDYW6",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You look after the storage account contosodata, and five support tickets arrived today, each recording a different observation. Match each ticket to the one explanation that best accounts for what was seen.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Ticket",
+						"What was observed",
+						"Extra detail from support"
+					],
+					"rows": [
+						[
+							"A",
+							"Colleagues on the corporate network download files from the marketing container over plain HTTPS with no key or token; the same URLs return 403 for customers on home broadband.",
+							"The marketing container lets callers without credentials read both the container listing and its file contents."
+						],
+						[
+							"B",
+							"A request with no credentials that used to trigger a sign-in prompt now fails straight away with 403 instead of 401.",
+							"The account-level setting that decides whether callers without credentials are tolerated was switched off more than ten minutes ago."
+						],
+						[
+							"C",
+							"After that same account-level change, the company's public website still serves its pages to visitors, including those at home.",
+							"The site files are held in the $web container."
+						],
+						[
+							"D",
+							"A partner application keeps being authorized with its own account key when it reads a container, and security wants confirmation that this is the expected behaviour.",
+							"The application sends its requests with an Authorization header."
+						],
+						[
+							"E",
+							"Right after switching the account-level setting on, a colleague's test download of a public file returned 403; the same request a minute later returned 200.",
+							"No other change was made in between the two tests."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "fw",
+						"text": "The account's network rules admit only the corporate address range, so callers outside it are still blocked by their ACLs even where the container itself lets anonymous reads through."
+					},
+					{
+						"id": "code",
+						"text": "Once the account stops tolerating callers who send no credentials, such a request is answered with 403 (Forbidden) rather than the usual 401 (Unauthorized)."
+					},
+					{
+						"id": "web",
+						"text": "The $web container remains publicly reachable whatever the account-level setting says, which is why the site keeps loading."
+					},
+					{
+						"id": "hdr",
+						"text": "When a request carries an Authorization header, the service authorizes it with those supplied credentials and the container's anonymous level has no bearing on it."
+					},
+					{
+						"id": "prop",
+						"text": "A change to the account-level setting needs up to 30 seconds to propagate, so a test run immediately afterwards still sees the previous behaviour."
+					},
+					{
+						"id": "decoy",
+						"text": "The container was created with the portal default that requires authorization for everything, so no request can reach it without credentials."
+					}
+				],
+				"slots": [
+					{
+						"id": "a",
+						"label": "Ticket A"
+					},
+					{
+						"id": "b",
+						"label": "Ticket B"
+					},
+					{
+						"id": "c",
+						"label": "Ticket C"
+					},
+					{
+						"id": "d",
+						"label": "Ticket D"
+					},
+					{
+						"id": "e",
+						"label": "Ticket E"
+					}
+				]
+			},
+			"key": {
+				"a": "fw",
+				"b": "code",
+				"c": "web",
+				"d": "hdr",
+				"e": "prop"
+			},
+			"explanation": {
+				"correct": "Each ticket's symptom is produced by a different documented behaviour of anonymous blob access: Ticket A is network filtering (the account's firewall rules stay in force even where the container level allows anonymous reads), Ticket B is the changed status code that clients see once the account no longer tolerates unauthenticated requests (403 instead of 401), Ticket C is the exception for the $web container used by static websites, Ticket D is the rule that an Authorization header makes the service authorize with those credentials and ignore the anonymous level, and Ticket E is the up-to-30-second propagation delay for account-level changes. The container-created-with-the-default-private-level explanation fits none of the tickets, because in each case an authenticated or in-network read still succeeds.",
+				"perChoice": {
+					"fw": "Ticket A: internal downloads work and external ones fail with 403 even though the container level allows anonymous listing and reads, which points at the account's network firewall rules limiting traffic to the corporate range.",
+					"code": "Ticket B: after the account-level setting was switched off, an anonymous request that used to be challenged (401) is refused directly with 403.",
+					"web": "Ticket C: turning anonymous access off on the account does not take down the static website, because the $web container is always publicly accessible.",
+					"hdr": "Ticket D: the application sends an Authorization header, so the service evaluates the supplied key and ignores the container's anonymous level — the observed behaviour is expected.",
+					"prop": "Ticket E: the first test ran before the account-level change had fully propagated (up to 30 seconds), so the later retry returned 200.",
+					"decoy": "No ticket fits: in every ticket a request with credentials or from inside the network still succeeds, so the container cannot be one that requires authorization for everything."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/anonymous-read-access-configure"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction"
+				}
+			],
+			"subtopics": [
+				"anonymous-access",
+				"account-settings",
+				"troubleshooting"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MCFFMJ48STWXVB2FZT7MES",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You look after the storage account contosodata. Six weeks ago it was switched to Azure Data Lake Storage Gen2 because a machine-learning workload on the account relies on that file system, and that workload is staying. Since the switch, the nightly reporting job has been failing while it writes its partitioned output into the lake container: each object name nests one folder per year, month, day, region and partition, and on busy nights those names become very long chains of folders. You cannot redesign the machine-learning workload. You need the reporting job to write every nightly partition again from tomorrow onwards. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account name",
+							"contosodata"
+						],
+						[
+							"Account type",
+							"General-purpose v2 (Standard)"
+						],
+						[
+							"Hierarchical namespace",
+							"Enabled"
+						],
+						[
+							"Destination container",
+							"lake"
+						],
+						[
+							"Object name built by the job",
+							"year=2026/month=10/day=23/region=eu-west-1/partition=…/part-00001.parquet"
+						],
+						[
+							"Folders in the longest name produced last night",
+							"258"
+						]
+					]
+				},
+				"statement": "The change you make is to {{fix}}.",
+				"slots": [
+					{
+						"id": "fix",
+						"options": [
+							{
+								"id": "a",
+								"text": "Shorten each object name so that, with the account and container counted, it uses no more than 63 path segments"
+							},
+							{
+								"id": "b",
+								"text": "Give each region its own container so each object name uses fewer path segments than before"
+							},
+							{
+								"id": "c",
+								"text": "Turn the hierarchical namespace off on the account so each object name uses no more than 254 path segments"
+							},
+							{
+								"id": "d",
+								"text": "Shorten only the final folder in the object name so that the rest of the account and container path stays as it is"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"fix": "a"
+			},
+			"explanation": {
+				"correct": "The deciding fact is that a blob name may contain no more than 254 path segments on an account without the hierarchical namespace, and no more than 63 path segments — a count that includes the segments for the account host name and the container name — on an account with the hierarchical namespace enabled. contosodata has that namespace enabled, and the reporting job's names contain 258 folders, so every write is rejected. Because the machine-learning workload depends on the hierarchical file system, the namespace must stay on, which leaves shortening the names as the workable fix: the job's output must be flattened or consolidated until each name, counted together with the account and container parts, stays within the 63-segment ceiling.",
+				"perChoice": {
+					"fix:b": "Splitting the output across one container per region removes at most the region folder from each name, while the account host and container parts still count towards the total. The limit is applied to each object name on its own, so names that are still hundreds of segments long keep failing.",
+					"fix:c": "Turning the hierarchical namespace off would raise the allowance to 254 path segments and the job would then write, but it removes the hierarchical file system that the machine-learning workload on this account depends on, and the scenario rules that workload out.",
+					"fix:d": "Renaming only the last folder leaves the year, month, day, region and partition folders in place, so the segment count stays close to what it is now and the uploads continue to be rejected."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction"
+				}
+			],
+			"subtopics": [
+				"blob-naming",
+				"hierarchical-namespace",
+				"container-configuration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MCHHCD5ZXS9YGPXA7H7DXY",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You publish a small static site — an index page, a stylesheet and a few images — straight from Blob Storage in the storage account contosostatic, and every file it needs sits in one container there. Security has required the account to stop serving data to callers that present no credentials, that change is already applied, and since it went in every visitor's request to the site returns HTTP 403 even though an authenticated read of index.html still succeeds. The security decision must stay exactly as it is, and every visitor must be able to reach the site again over plain HTTPS without presenting anything. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Name",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Account setting",
+							"Allow blob anonymous access",
+							"Disabled"
+						],
+						[
+							"Container",
+							"site",
+							"Anonymous access level: Container"
+						],
+						[
+							"Container",
+							"internal-reports",
+							"Anonymous access level: Private"
+						]
+					]
+				},
+				"statement": "The change that brings the site back for every visitor while leaving the account-wide permission for credential-free callers switched off is {{fix}}.",
+				"slots": [
+					{
+						"id": "fix",
+						"options": [
+							{
+								"id": "a",
+								"text": "Copy the files into the $web container and leave the account's Allow blob anonymous access setting as it is."
+							},
+							{
+								"id": "b",
+								"text": "Copy the files into the $web container and set the account's Allow blob anonymous access setting back to Enabled."
+							},
+							{
+								"id": "c",
+								"text": "Copy the files into a new container named site-public, set its anonymous access level to Container, and leave the account's Allow blob anonymous access setting as it is."
+							},
+							{
+								"id": "d",
+								"text": "Leave the files in the site container, set its anonymous access level to Container, and leave the account's Allow blob anonymous access setting as it is."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"fix": "a"
+			},
+			"explanation": {
+				"correct": "The account's Allow blob anonymous access setting is the master switch, so with it at Disabled no container level can make files reachable without credentials — including the site's current container, whose level of Container is overridden. The one exception is the $web container: its contents stay readable without credentials regardless of the account-wide setting, because turning anonymous access off on the account does not affect static websites. Copying the site's files into $web therefore restores public reach while the account-wide restriction the review demanded stays in force.",
+				"perChoice": {
+					"fix:b": "Turning Allow blob anonymous access back to Enabled undoes the decision the review required and would once again expose every container in the account whose level allows unauthenticated reads, including internal-reports.",
+					"fix:c": "A brand-new container with a public level still fails: the account setting overrides the container level, so requests with no credentials keep returning 403 until anonymous access is allowed on the account itself.",
+					"fix:d": "Re-applying a public level to the existing container has no effect for the same reason — the Disabled account setting wins over any container level, so the site stays at 403."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/anonymous-read-access-configure"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction"
+				}
+			],
+			"subtopics": [
+				"anonymous-access",
+				"static-website-container",
+				"container-access-level"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MCNFSSWGAXP3YQJDGQM3R8",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You support a partner integration that pulls a brochure PDF from the container assets in the storage account contosomedia. Callers that present nothing at all download that file successfully, but every attempt from the integration fails, because its code attaches a shared access signature whose expiry date has already passed. The partner's contract forbids issuing it any new secret, and you may not change the container's settings, the account settings, or the URL the integration calls. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Observation",
+						"Result"
+					],
+					"rows": [
+						[
+							"Storage account contosomedia - Allow blob anonymous access",
+							"Enabled"
+						],
+						[
+							"Container assets - anonymous access level",
+							"Blob"
+						],
+						[
+							"GET https://contosomedia.blob.core.windows.net/assets/brochure.pdf from a home connection, no credential presented",
+							"200"
+						],
+						[
+							"GET of the same URL from the partner integration, which attaches a shared access signature with se=2026-10-21",
+							"403"
+						]
+					]
+				},
+				"statement": "To keep the partner's downloads working without handing it any new secret, {{fix}}.",
+				"slots": [
+					{
+						"id": "fix",
+						"options": [
+							{
+								"id": "a",
+								"text": "Stop sending the expired shared access signature"
+							},
+							{
+								"id": "b",
+								"text": "Send a fresh shared access signature in place of the expired one"
+							},
+							{
+								"id": "c",
+								"text": "Add the partner's outbound address ranges to the storage account's firewall"
+							},
+							{
+								"id": "d",
+								"text": "Grant the application identity Storage Blob Data Reader on the storage account"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"fix": "a"
+			},
+			"explanation": {
+				"correct": "The container already answers credential-less GETs with HTTP 200 from an untrusted network, so neither the account switch nor the container's access level needs changing and the URL is fine. The integration's failures come from the credential it attaches: when a request that could be served anonymously arrives with an Authorization header, the service authorizes it against the credentials in that header instead of the anonymous setting, so an expired signature fails with 403 even though the same URL is open to anyone. Because the account settings, container settings, URL and partner credentials are all fixed, the only change left is to let the integration make the call with no credential at all.",
+				"perChoice": {
+					"fix:b": "A new shared access signature would still travel in the Authorization header, so the service would again authorize against supplied credentials rather than the anonymous path, and it would require issuing the partner a new secret, which the contract rules out.",
+					"fix:c": "Firewall rules decide which networks may reach the account. A credential-less download from a home connection already succeeds, so the network path is not what is blocking the integration; an address exception would change nothing about the expired credential it carries.",
+					"fix:d": "A data-plane role lets that identity read blob content with its own credentials, but the integration's code still attaches the expired signature, so each call continues to be evaluated against those credentials and keeps failing."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/anonymous-read-access-configure"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction"
+				}
+			],
+			"subtopics": [
+				"anonymous-access",
+				"shared-access-signature",
+				"troubleshooting"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MCQXYC154E5PA9PS6KC5EB",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You administer the storage account contosomedia, whose current settings are shown below. A partner application reads from it over plain HTTPS and puts nothing on the wire — no account key, no shared access signature, no token of any kind. It opens https://contosomedia.blob.core.windows.net/assets/brochure.pdf successfully, and the screen that shows the files stored inside assets also loads fine, but the screen that is supposed to show every container in the account returns HTTP 403 on every attempt. The partner contract rules out handing the application a secret, and the two screens that already work must keep working unchanged. You need the account-wide screen to start working too. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "powershell",
+					"text": "PS C:\\> Get-AzStorageAccount -Name contosomedia | Select-Object AllowBlobPublicAccess\nAllowBlobPublicAccess\n-------------------\nTrue\n\nPS C:\\> Get-AzStorageContainer -Context $ctx | Select-Object Name, PublicAccess\n\nName     PublicAccess\n----     ------------\nassets   Container\nmedia    Blob\nreports  Private"
+				},
+				"statement": "To make the third screen work, you {{fix}}.",
+				"slots": [
+					{
+						"id": "fix",
+						"options": [
+							{
+								"id": "a",
+								"text": "hard-code the container path in the application so it calls the container it needs directly"
+							},
+							{
+								"id": "b",
+								"text": "grant the application's identity Storage Blob Data Reader on the account"
+							},
+							{
+								"id": "c",
+								"text": "enable hierarchical namespace on contosomedia and leave the call unchanged"
+							},
+							{
+								"id": "d",
+								"text": "set the access level of every container to Container and leave the call unchanged"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"fix": "a"
+			},
+			"explanation": {
+				"correct": "The container assets already sits at the highest public access level, so its blobs and its own blob listing are readable by callers that send nothing, which is exactly what the two working screens do. Even at that level, however, an anonymous caller is never allowed to enumerate the containers belonging to a storage account, and no container's access level covers that account-wide listing, so raising or lowering levels can never make that screen succeed. Because the partner must stay credential-free, the only workable fix is to stop asking the account for its list of containers and to address the containers the application needs directly by name, i.e. hard-code the container path.",
+				"perChoice": {
+					"fix:b": "A data-plane role such as Storage Blob Data Reader is only consulted when a request presents that identity's credential. This application sends nothing on the wire, so granting the role leaves the outcome of its requests unchanged.",
+					"fix:c": "Hierarchical namespace changes how names are organised and how many segments a name may have, and it is what makes a Data Lake Storage Gen2 file system available. It does not decide whether an unauthenticated caller may enumerate the containers of an account.",
+					"fix:d": "The access level set on a container governs who may read that container's blobs and its blob listing; the assets container is already at the highest level available, and no container's level grants anonymous access to the account's container listing, so this change cannot make the failing screen work."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/anonymous-read-access-configure"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction"
+				}
+			],
+			"subtopics": [
+				"container-access-level",
+				"anonymous-access",
+				"blob-containers"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MNVG9C3WGDHJEZXS19236X",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are consolidating five workloads into one Azure storage account, listed below. You need a single account option that provides all of them. Which option should you choose?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Workload",
+						"What the account must provide"
+					],
+					"rows": [
+						[
+							"Shared team files",
+							"File shares for users and applications"
+						],
+						[
+							"Background job messaging",
+							"A queue for jobs waiting to be processed"
+						],
+						[
+							"Application lookup records",
+							"A table for structured items"
+						],
+						[
+							"Virtual machine disks",
+							"Random-access disks for virtual machines"
+						],
+						[
+							"Public images",
+							"Containers that serve images to visitors"
+						]
+					]
+				},
+				"statement": "The account option that provides all five workloads is {{t}}.",
+				"slots": [
+					{
+						"id": "t",
+						"options": [
+							{
+								"id": "a",
+								"text": "General-purpose v2 (Standard)"
+							},
+							{
+								"id": "b",
+								"text": "Premium block blob"
+							},
+							{
+								"id": "c",
+								"text": "Premium page blob"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"t": "a"
+			},
+			"explanation": {
+				"correct": "General-purpose v2 (Standard) provides blobs, file shares, queues and tables from one account, and its blob support covers the page blobs that virtual machine disks need, so it covers all five workloads in the table.",
+				"perChoice": {
+					"t:b": "Premium block blob accounts suit very high transaction rates, small objects or consistently low latency, and they serve block blob workloads only, so the file share, queue and table workloads would have no home there.",
+					"t:c": "Premium page blob accounts are for page blobs only, so the file share, queue, table and general object workloads would have nowhere to run."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction"
+				}
+			],
+			"subtopics": [
+				"storage-account-type"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MP42Y4BPYRZFS0C6FFR3VJ",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You look after two storage accounts. One of them, contosodocs, hosts the help centre of a customer-facing product: an index page that is rebuilt from the file listing of the container on every visit, and the help files that visitors then download one by one. All traffic to the site is plain HTTPS, and no request carries a key, a shared access signature or any other credential, so both parts of the help centre must keep working for visitors who present nothing.\n\nThe other account, contosolegacy, holds archive objects that must no longer be reachable by callers who present nothing. You have decided to switch off the account-wide setting that governs credential-free requests there, and the operations team wants to know how long to wait before they treat that switch as complete across all clients.\n\nWhich anonymous access level must the help-files container carry, and how long can the change on contosolegacy take to take effect?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Storage account  : contosodocs\nAllow blob anonymous access : Enabled\nContainer in scope          : help-files\nLevel recorded today        : Private (no anonymous access)\n\nStorage account  : contosolegacy\nAllow blob anonymous access : Enabled\nContainer in scope          : 4 archive containers\nLevel recorded today        : Blob"
+				},
+				"statement": "The help-files container must carry the {{level}} setting, and the switch on contosolegacy can take {{propagation}} to reach every client.",
+				"slots": [
+					{
+						"id": "level",
+						"options": [
+							{
+								"id": "a",
+								"text": "Private (no anonymous access)"
+							},
+							{
+								"id": "b",
+								"text": "Blob"
+							},
+							{
+								"id": "c",
+								"text": "Container"
+							},
+							{
+								"id": "d",
+								"text": "Account-wide, for every container in the storage account"
+							}
+						]
+					},
+					{
+						"id": "propagation",
+						"options": [
+							{
+								"id": "a",
+								"text": "up to 30 seconds"
+							},
+							{
+								"id": "b",
+								"text": "up to 5 minutes"
+							},
+							{
+								"id": "c",
+								"text": "up to 30 minutes"
+							},
+							{
+								"id": "d",
+								"text": "up to 12 hours"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"level": "c",
+				"propagation": "a"
+			},
+			"explanation": {
+				"correct": "Both halves of the help centre have to work for callers who present no credential: the index page needs to list the files that sit in the container, and each help file must then be downloaded. The Container level is the only per-container value that gives anonymous clients both the listing and the blob data. Blob blocks the listing, Private blocks credential-free requests altogether, and \"Account-wide\" is not a container-level value at all - the account-wide switch merely decides whether credential-free requests are permitted. Separately, a change to the account's anonymous access setting can take up to 30 seconds to fully propagate, so the operations team should allow that brief window before treating the switch on contosolegacy as complete everywhere.",
+				"perChoice": {
+					"level:a": "Private is the default for new containers and permits only authorized requests, so the index listing and the file downloads would both fail for visitors who present nothing.",
+					"level:b": "With Blob, anonymous clients may read blob data but the container listing is blocked, so the index page that lists the help file names would fail.",
+					"level:d": "Anonymous access levels are set per container and only three exist: Private, Blob and Container. The account-wide setting only decides whether credential-free requests are permitted at all; it is not a value you can pick for an individual container.",
+					"propagation:b": "That overstates the delay; the change reaches clients far sooner than a five-minute wait.",
+					"propagation:c": "That overstates it as well; the change reaches every client in well under a minute.",
+					"propagation:d": "Far too long; the change is in force across clients within a brief delay."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/anonymous-read-access-configure"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction"
+				}
+			],
+			"subtopics": [
+				"container-anonymous-access",
+				"account-access-propagation"
+			],
+			"reviewed": false
+		}
+	]
+}

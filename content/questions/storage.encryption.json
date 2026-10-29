@@ -1,0 +1,1729 @@
+{
+	"skill": "storage.encryption",
+	"questions": [
+		{
+			"id": "q_01M5M9PZBYK7RX608E1QGW9C5W",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your organization requires that every object held in the account be protected by two layers of encryption, each using its own key and a different algorithm. An audit of a production storage account found that only the standard service-side layer is active on it. The account is already in service and carries live customer workloads that must keep running. Which approach should you take to put the second layer in place?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property shown for the account",
+						"Observed value"
+					],
+					"rows": [
+						[
+							"Account kind",
+							"General-purpose v2"
+						],
+						[
+							"Encryption",
+							"Microsoft-managed keys"
+						],
+						[
+							"Infrastructure encryption",
+							"Disabled"
+						],
+						[
+							"In service since",
+							"April of this year"
+						],
+						[
+							"Workload",
+							"Live customer workloads, no maintenance window agreed"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Switch the setting on in the storage account itself, under Security + networking > Encryption, and confirm it reports Enabled."
+					},
+					{
+						"id": "b",
+						"text": "Provision another storage account with infrastructure encryption enabled on the Encryption tab at creation time, then migrate the payload over to it."
+					},
+					{
+						"id": "c",
+						"text": "Re-deploy the storage account's ARM template with infrastructure encryption set to Enabled, so the account picks up the property value."
+					},
+					{
+						"id": "d",
+						"text": "Assign a built-in Azure Policy definition that requires infrastructure encryption, which brings the storage account into compliance."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "Infrastructure encryption is chosen only while the account is being provisioned, by setting Enable infrastructure encryption = Enabled on the Encryption tab of the create-account experience, and the account cannot be switched to it or away from it afterwards. Because this account has been in service since April with the setting off, the second layer cannot be added to it in place: a storage account of a kind that supports the setting (general-purpose v2 qualifies) has to be provisioned with it turned on, and the stored payload then moved across. Note that Microsoft also considers this extra layer unnecessary for most scenarios and recommends it only where compliance truly demands double encryption.",
+				"perChoice": {
+					"a": "The Encryption blade under Security + networking is where you verify the setting, not where you change it. The value is fixed when the account is created, so the portal cannot switch infrastructure encryption on for an account that already exists.",
+					"c": "The property belongs to the account's creation-time configuration, so re-deploying the template against the running account cannot retroactively apply it; the setting stays disabled and the deployment cannot deliver double encryption for what is already stored.",
+					"d": "A built-in policy definition that requires infrastructure encryption only evaluates and flags resources. It can keep accounts from missing the setting, but it cannot apply an immutable creation-time property to an account that is already running, so it does not put the second layer in place here."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/infrastructure-encryption-enable"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-service-encryption"
+				}
+			],
+			"subtopics": [
+				"infrastructure-encryption",
+				"storage-account-security",
+				"immutable-account-settings"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5M9SG03XTWGMK18QX7MZAXV",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a general-purpose v2 storage account whose blob data is protected by a key your own team manages in the Azure Key Vault vault kv-contoso. The account's key version setting is blank, so Azure Storage settles on the version by itself. Your compliance group now wants the superseded key version taken out of use. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Account encryption key source",
+							"Microsoft.Keyvault"
+						],
+						[
+							"Key vault URI",
+							"https://kv-contoso.vault.azure.net"
+						],
+						[
+							"Key name",
+							"storagekey"
+						],
+						[
+							"Key version configured on the account",
+							"(blank)"
+						],
+						[
+							"Key version created 2026-10-02",
+							"Enabled"
+						],
+						[
+							"Key version created 2026-10-23 09:15 UTC",
+							"Enabled"
+						],
+						[
+							"Current time",
+							"2026-10-23 14:40 UTC"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Leave the older version enabled until at least one day has passed since the newer version was created, then disable the older version in the vault."
+					},
+					{
+						"id": "b",
+						"text": "Disable the older version in the vault now and rely on the account's regular check to switch it to the newer version."
+					},
+					{
+						"id": "c",
+						"text": "Let the vault roll out a further version of the key on its own, and disable the currently active version once that happens."
+					},
+					{
+						"id": "d",
+						"text": "Disable the older version in the vault now and re-save the account configuration to force it to pick up the newer version straight away."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Because the account is configured without a specific key version, Azure Storage only looks in the key vault once a day and adopts the newest version it finds there. The newer version in this exhibit was created a few hours ago, so the account may still be working with the older one; switching that version off immediately would leave the account without a usable key, and blob reads and writes would start failing with HTTP 403. Keeping the older version enabled for at least a day after the newer one is created gives the account time to move over, and turning the older version off afterwards causes no downtime and no exposure of unencrypted data.",
+				"perChoice": {
+					"b": "The account's check happens only once a day, so it does not react the moment a new version appears. Disabling the older version right away can therefore break data operations before the account has moved to the newer version.",
+					"c": "Azure Storage never creates or rotates key versions in your vault; the new version has to be created by you and the account pointed at it. Waiting for the vault to roll out a version by itself would leave the old one serving the account indefinitely.",
+					"d": "Re-saving the account configuration does not force an immediate lookup; automatic tracking still happens on the daily schedule. To move across at once you would have to specify the newer version explicitly, which turns off automatic version tracking and makes future updates your job."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/customer-managed-keys-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-service-encryption"
+				}
+			],
+			"subtopics": [
+				"customer-managed-keys",
+				"key-rotation",
+				"key-version-tracking"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5M9W24SV0P8EHWVX88XR1KP",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a general-purpose v2 storage account that a business application uses for blobs, file shares, queues and tables. Your security policy requires that all data in the account be encrypted at rest with a key that your own team manages in Azure Key Vault, rather than one held by the platform vendor. Which statement correctly describes the data that the account's key protects?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account kind",
+							"General-purpose v2"
+						],
+						[
+							"Redundancy",
+							"Geo-redundant storage (GRS)"
+						],
+						[
+							"Default access tier",
+							"Hot"
+						],
+						[
+							"Data types used by the application",
+							"Blobs, file shares, queues, tables"
+						],
+						[
+							"Key for encryption at rest",
+							"Stored in Azure Key Vault vault kv-contoso"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Every data type in the account, including queues and tables, is protected with the key as soon as the key is assigned."
+					},
+					{
+						"id": "b",
+						"text": "Blobs and file shares are protected with the key; queues and tables need an encryption scope before the key reaches them."
+					},
+					{
+						"id": "c",
+						"text": "Blobs and file shares are protected with the key only after infrastructure encryption is turned on for the account."
+					},
+					{
+						"id": "d",
+						"text": "Blobs and file shares are protected with the key; queue and table data are covered only if you chose them for the account when you created it."
+					}
+				]
+			},
+			"key": {
+				"optionId": "d"
+			},
+			"explanation": {
+				"correct": "A key held by your own team in Azure Key Vault reaches Blob Storage and Azure Files only. Queue and Table data sits under that key solely when those two services are opted in during account creation; on an account that did not opt them in, they stay on Microsoft-managed keys. Nothing in the exhibit's other properties (account kind, redundancy, access tier) changes this scope of coverage.",
+				"perChoice": {
+					"a": "Assigning a customer-managed key does not spread it to every service in the account. Queue and Table storage remain on Microsoft-managed keys unless those services were selected at account creation, so this statement promises protection that the account does not have.",
+					"b": "Encryption scopes give per-container and per-blob key control for Blob Storage only; they are not a mechanism for bringing Queue or Table storage under the vault key.",
+					"c": "Infrastructure encryption is a second layer beneath the service layer that always relies on a Microsoft-managed key separate from the service key, and Microsoft states it is rarely needed. It is not a prerequisite for a vault key to protect blobs and file shares, and turning it on cannot extend that key to queues or tables."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/customer-managed-keys-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-service-encryption"
+				}
+			],
+			"subtopics": [
+				"customer-managed-keys",
+				"service-encryption-coverage"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5M9XA36NW6SHSJ2T28HDWZD",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a general-purpose v2 storage account that four business units share. Each unit's blobs sit under its own encryption scope so that the key boundary can be drawn per tenant, and the scope shown below belongs to a unit whose contract ended last week. You need both of these outcomes: the ongoing charges for that scope must stop, and nothing may be able to read or write the blobs that sit under it any more. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Encryption scope name",
+							"scope-fabrikam"
+						],
+						[
+							"Created",
+							"47 days ago"
+						],
+						[
+							"Key protecting the scope",
+							"Customer-managed key in the key vault kv-contoso"
+						],
+						[
+							"Containers defaulting to this scope",
+							"6 containers"
+						],
+						[
+							"Blobs under the scope",
+							"Archived monthly reports for the departed tenant"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Remove the encryption scope from the storage account so it is deleted together with its key"
+					},
+					{
+						"id": "b",
+						"text": "Revoke the key in the key vault kv-contoso and leave the encryption scope as it is"
+					},
+					{
+						"id": "c",
+						"text": "Turn off the encryption scope, then revoke the key it uses in the key vault kv-contoso"
+					},
+					{
+						"id": "d",
+						"text": "Add a new key version in kv-contoso and point the encryption scope at that version"
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "An encryption scope can never be deleted; the only lifecycle action available is to turn it off, and once it is off every later read and write against that scope fails with 403, which satisfies the second requirement. Turning the scope off also ends the ongoing charges for it. Because the scope was created well over 30 days ago, the minimum-billing window has already passed, so stopping it now stops the cost. Microsoft also recommends turning a scope off before withdrawing its key in the vault, otherwise the scope keeps being billed while its data is unreachable — so the correct sequence is to turn the scope off first and then revoke the key.",
+				"perChoice": {
+					"a": "There is no delete operation for an encryption scope. Scopes are permanent objects that can only be turned off and later turned back on, so the scope and its containers cannot be removed this way.",
+					"b": "Withdrawing the key alone leaves the scope switched on, so the account continues to be charged for a scope whose blobs nobody can reach. Microsoft advises switching off the scope first and only then revoking the key.",
+					"d": "Adding a new version of the key does not retire the scope: the scope remains active, keeps being billed, and the blobs under it stay reachable under the new version. Azure Storage also never rotates a customer-managed key for you; a new version takes effect only if the account or scope is pointed at it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/encryption-scope-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/customer-managed-keys-overview"
+				}
+			],
+			"subtopics": [
+				"encryption-scopes",
+				"key-revocation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5M9ZYHWREV1ZZYHH4P2KGAH",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You are preparing to create a new general-purpose v2 storage account, stgcontoso, for a finance team. The team's blobs and Azure file shares must be encrypted with a key that the team itself maintains in Azure Key Vault, and the team must be able to trace and control every access to that key. The planned configuration for the new account is shown below. Which change must you make before the account is created?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Planned value"
+					],
+					"rows": [
+						[
+							"Account kind",
+							"General-purpose v2"
+						],
+						[
+							"Encryption - key source",
+							"Azure Key Vault"
+						],
+						[
+							"Key vault URL",
+							"https://kv-contoso.vault.azure.net/"
+						],
+						[
+							"Key name",
+							"contoso-storage-key"
+						],
+						[
+							"Key version",
+							"1.0.0"
+						],
+						[
+							"Identity on the account",
+							"SystemAssigned"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Create the account with the system-assigned identity and grant it wrapkey, unwrapkey and get permissions on the key."
+					},
+					{
+						"id": "b",
+						"text": "Create the account with the user-assigned identity and grant it wrapkey, unwrapkey and get permissions on the key."
+					},
+					{
+						"id": "c",
+						"text": "Create the account with the user-assigned identity and grant it get and list permissions on the key."
+					},
+					{
+						"id": "d",
+						"text": "Create the account without an identity, then attach a user-assigned identity after deployment and grant it wrapkey, unwrapkey and get permissions on the key."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "When a storage account is created with a key that the customer holds in Azure Key Vault, the account must be given a user-assigned managed identity as part of creation, and that identity must hold at least the wrapkey, unwrapkey and get permissions on the key so the service can wrap and unwrap the account encryption key. The planned configuration therefore has to swap the identity block to a user-assigned one and ensure those three permissions exist on contoso-storage-key before the account comes up.",
+				"perChoice": {
+					"a": "The permissions listed are the right ones, but a system-assigned identity cannot back a customer-managed key at account-creation time; the system-assigned option only becomes available when the key is applied to an account that already exists.",
+					"c": "get and list are read-style permissions and do not let the account protect or unprotect its own encryption key. wrapkey and unwrapkey are required in addition to get, so key access fails when the account is created.",
+					"d": "The key has to work at the moment the account is created, and creation requires the user-assigned identity to be part of the account from the start. Bolting an identity on only after deployment leaves the account without a usable identity for its key."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/customer-managed-keys-overview"
+				}
+			],
+			"subtopics": [
+				"customer-managed-keys",
+				"managed-identity",
+				"encryption-configuration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MA125KG1WNSR678QTQ948S",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a general-purpose v2 storage account, stgcontoso, whose blob data must be encrypted with a key that your own team maintains in the Azure Key Vault vault kv-contoso. The account, the vault, the key and the permissions granted to the account's identity are all configured as shown below. You need to finish the setup so that the account can actually use that key. Which change should you make first?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account encryption",
+							"Customer-managed key"
+						],
+						[
+							"Key vault",
+							"kv-contoso (Key Vault, subscription 2, region East US)"
+						],
+						[
+							"Key name",
+							"key-contoso"
+						],
+						[
+							"Key type and size",
+							"RSA, 2048 bits"
+						],
+						[
+							"Vault soft delete",
+							"Disabled"
+						],
+						[
+							"Vault purge protection",
+							"Disabled"
+						],
+						[
+							"Identity used by the account",
+							"System-assigned managed identity"
+						],
+						[
+							"Permissions on key-contoso",
+							"wrapKey, unwrapKey, get"
+						],
+						[
+							"Key version configured on the account",
+							"Blank (version chosen by Azure Storage)"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Enable soft delete and purge protection on kv-contoso"
+					},
+					{
+						"id": "b",
+						"text": "Enable purge protection on kv-contoso and re-create key-contoso as a 4096-bit RSA-HSM key"
+					},
+					{
+						"id": "c",
+						"text": "Enable soft delete on kv-contoso and grant the identity only the get permission on key-contoso"
+					},
+					{
+						"id": "d",
+						"text": "Enable soft delete on kv-contoso and change the account to a user-assigned managed identity"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The vault that holds a customer-managed key must have soft delete enabled and purge protection enabled, and the key itself must be an RSA or RSA-HSM key of 2048, 3072 or 4096 bits. In the exhibit the vault has both soft delete and purge protection turned off, while everything else already qualifies: key-contoso is an RSA 2048-bit key, and the account's identity holds wrapKey, unwrapKey and get. Turning on both vault protections is therefore the one change that must be made before stgcontoso can use the key.",
+				"perChoice": {
+					"b": "Purge protection by itself is not enough — soft delete must be enabled on the vault as well. The key also already qualifies: RSA at 2048 bits is one of the accepted key types and sizes, so replacing it with a 4096-bit RSA-HSM key changes nothing that was broken and forces the account to be pointed at a new key.",
+					"c": "Soft delete alone leaves purge protection off, so the vault still fails the requirement. The identity also already carries the minimum set of permissions it needs — wrapKey, unwrapKey and get — so narrowing it to get only would remove capabilities the account relies on rather than fix a problem.",
+					"d": "Soft delete alone leaves purge protection off, so the vault still fails the requirement. The identity choice is also already acceptable: only at account-creation time must a user-assigned managed identity be supplied for customer-managed keys, while an existing storage account may use either its system-assigned or a user-assigned identity, so no identity change is needed here."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/customer-managed-keys-overview"
+				}
+			],
+			"subtopics": [
+				"customer-managed-keys",
+				"key-vault-requirements",
+				"managed-identity-permissions"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MA5FP3CA3NEJ8643WNB5JN",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a general-purpose v2 storage account, stgcontoso, with a blob container named reports that carries a default encryption scope of esc-finance. A second business unit owns an encryption scope of its own, esc-marketing, and its data must live in that same container with each unit's blobs protected by a separate key. Every upload from that unit is currently rejected, and the finance unit's blobs must not be lost. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"reports - recorded state",
+						"Value"
+					],
+					"rows": [
+						[
+							"Default encryption scope",
+							"esc-finance"
+						],
+						[
+							"Use this encryption scope for all blobs in the container",
+							"Selected"
+						],
+						[
+							"Upload from the finance application carrying esc-finance",
+							"Succeeded"
+						],
+						[
+							"Upload from the marketing application carrying esc-marketing",
+							"Failed - HTTP 403 Forbidden"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Recreate the container with 'Use this encryption scope for all blobs in the container' cleared at creation time, then move the existing blobs into it."
+					},
+					{
+						"id": "b",
+						"text": "Recreate the container with 'Use this encryption scope for all blobs in the container' selected at creation time, and the marketing uploads will succeed."
+					},
+					{
+						"id": "c",
+						"text": "Clear 'Use this encryption scope for all blobs in the container' on the existing container from the Encryption pane, and the marketing uploads will succeed right away."
+					},
+					{
+						"id": "d",
+						"text": "Change the default encryption scope of the existing container to esc-marketing, and leave the checkbox as it is."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The enforcement choice for a container's default encryption scope is made when the container is created, and because 'Use this encryption scope for all blobs in the container' is selected on reports, clients are not permitted to override the default: an upload carrying any scope other than esc-finance fails, which is exactly the 403 the marketing unit sees. Recreating the container with that choice cleared lets each client send its own scope - uploads carrying the default scope and uploads carrying another scope both succeed - and the finance blobs can be moved across to the new container.",
+				"perChoice": {
+					"b": "Selecting the same choice on the replacement container keeps overrides prohibited, so the marketing uploads that carry esc-marketing still fail with HTTP 403. Selection is only appropriate when every blob in the container must use esc-finance, which is not the requirement here.",
+					"c": "The choice between requiring the container's default scope and permitting clients to override it is fixed when the container is created, so clearing it on the existing container has no effect and the uploads keep returning HTTP 403.",
+					"d": "Repointing the container's default at esc-marketing does not lift the restriction on overrides, would place the finance unit's data under the wrong scope, and the container's default scope is in any case decided at creation time rather than afterwards."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/encryption-scope-overview"
+				}
+			],
+			"subtopics": [
+				"encryption-scopes",
+				"container-default-encryption-scope"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MA85TPQJSW2ED1MG3197K2",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a general-purpose v2 storage account, stgcontoso, shared by several business units through their own encryption scopes. The configuration below shows the account as it stands today plus the change a newly onboarded business unit has requested. You need to predict the outcome of that request and the way the key version of the resulting scope will be handled from then on. Which statement is correct?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account type",
+							"General-purpose v2"
+						],
+						[
+							"Encryption scopes in the account",
+							"10,000"
+						],
+						[
+							"Key type used by the scopes",
+							"Customer-managed key in Azure Key Vault kv-contoso"
+						],
+						[
+							"Scopes whose key version is aligned with the latest version in the vault",
+							"10,000"
+						],
+						[
+							"Requested change",
+							"Add one more encryption scope with a customer-managed key, with its key version aligned with the latest version in the vault"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "The request is rejected, because a storage account cannot hold more than 10,000 encryption scopes, so you would have to raise the quota first."
+					},
+					{
+						"id": "b",
+						"text": "The scope is created, and Azure Storage keeps its key version aligned with the latest version in the vault, just as it does for the existing scopes."
+					},
+					{
+						"id": "c",
+						"text": "The scope is created, but Azure Storage does not keep its key version aligned with the vault, so you must update that version yourself."
+					},
+					{
+						"id": "d",
+						"text": "The scope is created with a Microsoft-managed key, so there is no key version for you to update at all."
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "The account already holds 10,000 encryption scopes protected by customer-managed keys whose key version Azure Storage aligns with the latest version in the vault. That figure is the ceiling for scopes receiving that treatment; past it, any further customer-managed-key-protected scope is still created, but its key version must be maintained by the team — add a new version in the vault yourself and update the scope to point at it. Azure Storage never changes a customer-managed key version on your behalf once a scope falls outside the tracked set.",
+				"perChoice": {
+					"a": "The 10,000 figure is the ceiling for scopes whose key version Azure Storage keeps aligned with the vault, not a hard limit on how many encryption scopes an account may contain. The additional scope is created, and no quota change is needed.",
+					"b": "Automatic alignment with the latest key version is exactly what the account's existing 10,000 scopes already receive. Additional customer-managed-key scopes created beyond that ceiling fall outside this behavior and their versions become the team's responsibility.",
+					"d": "The new scope is created with the key type that was requested — a customer-managed key held in Key Vault. Passing the ceiling changes who maintains the key version, not which key protects the data; a Microsoft-managed key would leave no key version for the team to update."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/encryption-scope-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/customer-managed-keys-overview"
+				}
+			],
+			"subtopics": [
+				"encryption-scopes",
+				"customer-managed-keys",
+				"key-rotation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MA9DMGHD97CZXBNDN22588",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are designing how four Contoso teams protect the data at rest in their new general-purpose v2 storage accounts. Each team has stated its requirement in its own words. Drag the one option that is the right choice for each team into that team's row, and leave the option that fits no row behind.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Team and stated requirement",
+						"Option to place here"
+					],
+					"rows": [
+						[
+							"Retail - wants the protection that every account already has out of the box, with nothing for its team to configure and no extra charge",
+							""
+						],
+						[
+							"Legal - must hold its own key in the Contoso vault, grant and review access to that key itself, and control how the key is rotated",
+							""
+						],
+						[
+							"Marketplace - two sellers store their files in one account, and the key that protects one seller's files must be a different key from the other seller's, kept as a boundary inside that account",
+							""
+						],
+						[
+							"Insurance - data must still be unreadable after an attacker steals a single key, because a second, independent key that the attacker does not hold is also required",
+							""
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Microsoft-managed key"
+					},
+					{
+						"id": "i2",
+						"text": "Customer-managed key from Azure Key Vault"
+					},
+					{
+						"id": "i3",
+						"text": "Encryption scope"
+					},
+					{
+						"id": "i4",
+						"text": "Infrastructure encryption"
+					},
+					{
+						"id": "i5",
+						"text": "Customer-provided encryption key"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Retail"
+					},
+					{
+						"id": "s2",
+						"label": "Legal"
+					},
+					{
+						"id": "s3",
+						"label": "Marketplace"
+					},
+					{
+						"id": "s4",
+						"label": "Insurance"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Retail takes the default: a new account is protected with Microsoft-managed keys automatically, on for every account, cannot be disabled, and costs nothing extra. Legal needs the key to sit in its own vault with its own RBAC and rotation, which is what customer-managed keys from Azure Key Vault provide (the key wraps the account encryption key rather than encrypting data directly). Marketplace needs a key boundary inside one shared account, which is exactly what encryption scopes give, scoping the key from the account down to a container or a single blob. Insurance needs data to survive the loss of any one key, which requires the extra layer under the service layer that infrastructure encryption adds: a second 256-bit AES layer with its own key, always Microsoft-managed and always a separate key. Customer-provided encryption keys are sent per Blob request from a key store the customer runs and carry no key scoping in the storage account, so no row calls for them.",
+				"perChoice": {
+					"i1": "Retail: every storage account is encrypted at rest with service-side encryption under a key that Azure holds and rotates to its own compliance rules, at no additional charge, so this team needs no configuration.",
+					"i2": "Legal: customer-managed keys live in Azure Key Vault or Key Vault Managed HSM and put rotation and key control in Contoso's hands, with Contoso RBAC on the key and auditable rotation.",
+					"i3": "Marketplace: encryption scopes move the key scope from the whole account down to a single container or one blob, which is how two sellers in one account get a separate key boundary.",
+					"i4": "Insurance: infrastructure encryption encrypts data a second time beneath the service layer with two different algorithms and two different keys, so a single stolen key cannot expose the data.",
+					"i5": "No row fits: customer-provided encryption keys travel with each Blob Storage request from a key store the customer owns, giving per-request control but no key scoping inside the storage account."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-service-encryption"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/customer-managed-keys-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/encryption-scope-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/infrastructure-encryption-enable"
+				}
+			],
+			"subtopics": [
+				"encryption-keys",
+				"encryption-scopes",
+				"infrastructure-encryption"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MABXE6QJPJDQYC8MBWKYPC",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You look after four general-purpose v2 storage accounts at Contoso. The table lists each account with its configuration as it stands and what has recently happened to it. Drag the statement that accurately describes each account into that account's row, and leave the statement that describes none of them behind.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Account",
+						"Configuration and recent events"
+					],
+					"rows": [
+						[
+							"stg-alpha",
+							"New account being created now. The owning team requires a key it holds in Azure Key Vault to protect everything the account will serve: blobs, file shares, queues and tables."
+						],
+						[
+							"stg-lake",
+							"Live for two years. NFS 3.0 is enabled, and a newly onboarded business unit wants its own key boundary for a single container."
+						],
+						[
+							"stg-scope",
+							"Encryption scope esc-legal was disabled six days ago after the business unit's contract ended, and the vault key behind it was turned off as well."
+						],
+						[
+							"stg-files",
+							"Azure file shares are in active use. The key in vault kv-contoso that protects the account was disabled an hour ago and users report that file operations now fail."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Blobs and file shares get the team's key; queues and tables are not protected unless those services are opted in when the account is created."
+					},
+					{
+						"id": "i2",
+						"text": "The requested per-container key boundary may be unavailable, because an enabled add-on interferes with encryption scope support."
+					},
+					{
+						"id": "i3",
+						"text": "Data under it can no longer be read or written, and the scope still bills for the full 30 days."
+					},
+					{
+						"id": "i4",
+						"text": "Every user gets HTTP 403 on file share operations, including directory listings and permission calls."
+					},
+					{
+						"id": "i5",
+						"text": "Azure rotates the new key version for you every day, so the account keeps serving data with no interruption."
+					}
+				],
+				"slots": [
+					{
+						"id": "s_alpha",
+						"label": "stg-alpha"
+					},
+					{
+						"id": "s_lake",
+						"label": "stg-lake"
+					},
+					{
+						"id": "s_scope",
+						"label": "stg-scope"
+					},
+					{
+						"id": "s_files",
+						"label": "stg-files"
+					}
+				]
+			},
+			"key": {
+				"s_alpha": "i1",
+				"s_files": "i4",
+				"s_lake": "i2",
+				"s_scope": "i3"
+			},
+			"explanation": {
+				"correct": "Each row matches one behaviour of Azure Storage encryption. For stg-alpha, a customer-managed key is applied to Blob Storage and Azure Files automatically, while queue and table data is only protected when those services are opted in at account creation time. For stg-lake, encryption scope support can be affected when the account has Data Lake Storage Gen2, NFS 3.0 or SFTP enabled, so feature support has to be confirmed before a per-container key boundary is promised. For stg-scope, an encryption scope can only be disabled, never deleted; disabling blocks reads and writes on it, and a scope is billed a minimum of 30 days, which six days after being switched off is still running in full. For stg-files, once the key is disabled in the vault, Azure Files operations such as listing directories and files, creating files and getting or setting permissions fail with HTTP 403 for every user. The statement about Azure rotating the key version daily fits no row: Azure Storage never rotates a customer-managed key for you, and the daily poll only adopts the latest version when no version is specified.",
+				"perChoice": {
+					"i1": "Belongs on stg-alpha: a customer-managed key covers Blob Storage and Azure Files by default, and queue and table data is only covered if those services are opted in when the account is created.",
+					"i2": "Belongs on stg-lake: encryption scope support can be affected when Data Lake Storage Gen2, NFS 3.0 or SFTP is enabled on the account, so support must be verified before promising per-container keys.",
+					"i3": "Belongs on stg-scope: disabling an encryption scope makes later reads and writes on it fail with 403, and billing runs a minimum of 30 days before it prorates hourly, so a scope switched off after six days is still charged for the full period.",
+					"i4": "Belongs on stg-files: when the key is revoked, Azure Files operations including listing directories and files, creating files, and get/set permission all fail with HTTP 403 for every user.",
+					"i5": "Fits no row: Azure Storage never rotates your key for you; you create a new version in the key vault yourself and then update the account. The daily poll only adopts the latest version when the account's key version is left unspecified."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/customer-managed-keys-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/encryption-scope-overview"
+				}
+			],
+			"subtopics": [
+				"customer-managed-keys",
+				"encryption-scopes",
+				"revoked-key-behavior"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MAFVRDATQ9B6N0K9TKBC3Z",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are creating the general-purpose v2 account stgcontoso today, and its blob container 'invoices' and its Azure file share 'payslips' must end up protected by the key that Contoso keeps itself in the vault kv-contoso. The plan is shown below. Four conditions have to hold for this to work, and each of them applies to a different object in the plan. Drag each condition into the row of the object it applies to, and leave the condition that fits no row behind.",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"storageAccount\": \"stgcontoso\",\n  \"accountKind\": \"StorageV2\",\n  \"replication\": \"Standard_LRS\",\n  \"dataToProtect\": [\n    \"blob container 'invoices'\",\n    \"Azure file share 'payslips'\"\n  ],\n  \"keyVault\": \"kv-contoso\",\n  \"keyInVault\": \"storkey\",\n  \"plannedKeySource\": \"Azure Key Vault\",\n  \"accountCreation\": \"today\"\n}"
+				},
+				"items": [
+					{
+						"id": "vaultreq",
+						"text": "Must have soft delete and purge protection enabled"
+					},
+					{
+						"id": "keyreq",
+						"text": "Must be an RSA or RSA-HSM key sized 2048, 3072 or 4096 bits"
+					},
+					{
+						"id": "permreq",
+						"text": "Must cover wrapkey, unwrapkey and get on the key"
+					},
+					{
+						"id": "acctreq",
+						"text": "Must be given a user-assigned identity at creation time"
+					},
+					{
+						"id": "leftover",
+						"text": "Must be created in the same subscription, region and Entra tenant as stgcontoso"
+					}
+				],
+				"slots": [
+					{
+						"id": "vault",
+						"label": "kv-contoso"
+					},
+					{
+						"id": "key",
+						"label": "storkey"
+					},
+					{
+						"id": "perm",
+						"label": "The role assignments that stgcontoso holds in kv-contoso"
+					},
+					{
+						"id": "acct",
+						"label": "The new account stgcontoso"
+					}
+				]
+			},
+			"key": {
+				"vault": "vaultreq",
+				"key": "keyreq",
+				"perm": "permreq",
+				"acct": "acctreq"
+			},
+			"explanation": {
+				"correct": "Each condition belongs to a different object. kv-contoso is the Azure Key Vault that stores the key, and any key vault (or Key Vault Managed HSM) used for customer-managed keys must have soft delete and purge protection enabled. storkey is the key itself, and a key used for customer-managed keys must be an RSA or RSA-HSM key of 2048, 3072 or 4096 bits. The role assignments held by the account's identity must grant wrapkey, unwrapkey and get on that key, because the service uses those permissions to wrap and unwrap the account encryption key. The account stgcontoso, because it is being created now, must be given a user-assigned managed identity at creation time; on an already existing account either a user-assigned or the system-assigned identity would be accepted. The condition about subscription, region and Entra tenant fits no row, because the vault or managed HSM is allowed to sit in a different subscription, region or tenant from the storage account.",
+				"perChoice": {
+					"vaultreq": "Belongs with kv-contoso: the vault holding the key must have soft delete and purge protection enabled before the account can use it.",
+					"keyreq": "Belongs with storkey: the key itself must be an RSA or RSA-HSM key sized 2048, 3072 or 4096 bits; other key types or sizes are not accepted for customer-managed keys.",
+					"permreq": "Belongs with the role assignments stgcontoso holds in kv-contoso: the identity needs at least wrapkey, unwrapkey and get on the key.",
+					"acctreq": "Belongs with the new account stgcontoso: when an account is created with a customer-managed key, a user-assigned managed identity must be supplied at creation time.",
+					"leftover": "Fits no row: the key vault or managed HSM may be located in a different subscription, region or Microsoft Entra tenant from the storage account, so no co-location condition exists."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/customer-managed-keys-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-service-encryption"
+				}
+			],
+			"subtopics": [
+				"customer-managed-keys",
+				"key-vault-prerequisites",
+				"managed-identity"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MAQC7S73K0Q27KXQ9PBHQ3",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You look after stgcontoso, a general-purpose v2 storage account that several Contoso business units share. Each unit keeps its blobs under an encryption scope of its own, and the account's infrastructure encryption was switched on when the account was created. Four situations have come up this week. Drag the outcome that is actually true into the slot of the situation it belongs to, and leave the outcome that is true of none of them behind.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Resource",
+						"Detail"
+					],
+					"rows": [
+						[
+							"stgcontoso",
+							"General-purpose v2; infrastructure encryption: Enabled at creation"
+						],
+						[
+							"esc-hr",
+							"Encryption scope; enabled earlier this month; holds the HR unit's blobs; being switched off today"
+						],
+						[
+							"esc-fin",
+							"Encryption scope; enabled last year; holds the finance unit's blobs"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "The scope automatically inherits the extra protection configured at account level, and you cannot switch that off for the scope afterwards."
+					},
+					{
+						"id": "i2",
+						"text": "The request fails: a blob under an encryption scope can never be moved to the archive tier, even though that tier is encrypted at rest like all other data."
+					},
+					{
+						"id": "i3",
+						"text": "The minimum 30-day period that begins when the scope is created applies in full, so the full 30 days is billed whether or not the scope is turned off; after the 30 days, the amount prorates hourly."
+					},
+					{
+						"id": "i4",
+						"text": "The upload is rejected: when a blob is created with an encryption scope you cannot include an access tier in the same request."
+					},
+					{
+						"id": "i5",
+						"text": "Switching an encryption scope off erases the blobs stored under it for good and ends all cost at once, because the data exists only while the scope is on."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "A new encryption scope added to stgcontoso this week"
+					},
+					{
+						"id": "s2",
+						"label": "HR's request to store a copy of a blob that already sits under esc-hr and keep it for years"
+					},
+					{
+						"id": "s3",
+						"label": "esc-hr switched off by the HR team today, which expects its cost to stop straight away"
+					},
+					{
+						"id": "s4",
+						"label": "Finance's app creating a blob under esc-fin and naming a Hot or Cool tier in the same request"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Each of the four situations has exactly one true outcome. A scope added to an account that already carries infrastructure encryption picks that second layer up automatically, and the setting is then fixed for the scope. A blob that already sits under a scope can never be moved to the archive tier, even though that tier is otherwise covered by service-side encryption. Switching a scope off inside the first 30 days still bills the whole 30 days, because every scope is billed for a minimum of 30 days from the moment it is enabled and only then prorates hourly. A blob created with an encryption scope cannot carry an access tier in the same upload request. The statement about switching a scope off destroying the blobs and ending all charges at once fits none of the situations.",
+				"perChoice": {
+					"i1": "Belongs to the new encryption scope added this week: every scope created on an account that already has infrastructure encryption inherits it, and that per-scope setting cannot be changed afterwards.",
+					"i2": "Belongs to HR's request to keep a copy for years: an existing blob under an encryption scope cannot be moved to the archive tier; the archive tier itself is still encrypted at rest by the service layer, which is why the two facts are not contradictory.",
+					"i3": "Belongs to esc-hr being switched off today: enabling a scope bills a minimum of 30 days and then prorates hourly, so switching it off inside that window still leaves the full 30 days to pay.",
+					"i4": "Belongs to the Finance app naming a tier during the upload: an access tier cannot be specified when a new blob is uploaded with an encryption scope, so the request is rejected.",
+					"i5": "Fits no situation: disabling an encryption scope does not delete the blobs or their keys; later reads and writes on that scope fail and it can be re-enabled, and the 30-day minimum billing still stands."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/encryption-scope-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/infrastructure-encryption-enable"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-service-encryption"
+				}
+			],
+			"subtopics": [
+				"encryption-scopes",
+				"infrastructure-encryption",
+				"encryption-billing"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MASTSM4F376JJSXER3A205",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You work the storage-related ticket queue at Contoso. The table shows the four open tickets, with nothing more than the requester's own symptoms or requirements. Drag the statement that explains each ticket into that ticket's slot, and leave the statement that explains none of the tickets behind.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Ticket",
+						"What the requester reports"
+					],
+					"rows": [
+						[
+							"T1",
+							"stgcontoso stores its blobs under a key that Contoso keeps itself in the Azure Key Vault vault kv-contoso. Since 09:00 UTC, Get Blob, Get Blob Properties, Set Blob Tier, Copy Blob and Put Block all return HTTP 403 Forbidden, for every application and every user. Nothing on the storage account itself was reconfigured."
+						],
+						[
+							"T2",
+							"stgcontoso holds a three-year retention corpus. The blob finance-2026.pdf sits under encryption scope esc-finance and has to go to the archive tier, but Set Blob Tier is refused for it. A second blob with no scope on it moved to archive without complaint."
+						],
+						[
+							"T3",
+							"The reporting team keeps its data in the Table Storage of stgcontoso and encrypts every entity in the client library before upload. A security review asked them to move to the newer client library, whose cipher is AES-GCM. They cannot find any API that would let them do that."
+						],
+						[
+							"T4",
+							"stgcontoso is a general-purpose v2 account that was created in 2021. Compliance now requires every object in it to be covered by a second, independent encryption layer built on a different algorithm with a key of its own. The portal offers no setting for this and Azure Policy reports the account as non-compliant."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "The account can no longer unwrap its account encryption key, so every read and write of that account's data is rejected."
+					},
+					{
+						"id": "b",
+						"text": "A blob that already sits under an encryption scope cannot be moved to the archive tier."
+					},
+					{
+						"id": "c",
+						"text": "Table Storage supports only version 1 of client-side encryption, which does not use AES-GCM."
+					},
+					{
+						"id": "d",
+						"text": "Infrastructure encryption can only be chosen while the account is being created and can never be turned on or off afterwards."
+					},
+					{
+						"id": "e",
+						"text": "With no key version specified, Azure Storage polls the key vault once a day and adopts the newest version on its own."
+					}
+				],
+				"slots": [
+					{
+						"id": "t1",
+						"label": "Ticket T1"
+					},
+					{
+						"id": "t2",
+						"label": "Ticket T2"
+					},
+					{
+						"id": "t3",
+						"label": "Ticket T3"
+					},
+					{
+						"id": "t4",
+						"label": "Ticket T4"
+					}
+				]
+			},
+			"key": {
+				"t1": "a",
+				"t2": "b",
+				"t3": "c",
+				"t4": "d"
+			},
+			"explanation": {
+				"correct": "Each ticket maps to the one rule that produces its symptoms. T1: a customer-managed key never encrypts data directly — Azure Storage uses it to wrap the account encryption key — and access to that key is revoked by disabling or deleting it in the vault. Once that happens every data read and write on the account fails with HTTP 403 Forbidden for all users, which is exactly the listed Blob operations. T2: the archive tier is covered by service-side encryption, but an existing blob that already sits under an encryption scope cannot be moved there; the unscoped blob in the same account moves fine. T3: client-side encryption version 2 (AES-GCM) exists for Blob and Queue SDKs only — Table Storage is served by version 1 (AES-CBC) alone, so table entities cannot be moved onto the newer library. T4: the second encryption layer beneath the service layer is a creation-time-only choice, made on the Encryption tab when the account is created, and it is immutable afterwards, which is why a 2021 account offers no setting and fails policy.",
+				"perChoice": {
+					"a": "Belongs in T1. The listed Blob operations (Get Blob, Get Blob Properties, Set Blob Tier, Copy Blob, Put Block) are precisely the calls that fail with 403 once the customer-managed key can no longer be used to unwrap the account encryption key, and the failure hits every user.",
+					"b": "Belongs in T2. The archive tier is still protected by service-side encryption, but an existing encryption-scoped blob cannot be moved to it; a blob with no scope can, exactly as the requester observed.",
+					"c": "Belongs in T3. Client-side encryption version 2 uses AES-GCM and ships only in the Blob and Queue SDKs; Table Storage supports version 1 (AES-CBC) only, so there is no API for moving table entities onto the newer library.",
+					"d": "Belongs in T4. Infrastructure encryption is configured on the Encryption tab at account creation and afterwards can neither be enabled nor disabled, so an existing 2021 account cannot be brought into line with the new requirement.",
+					"e": "Fits no ticket. Daily polling for the newest key version only happens when no key version is specified, and it concerns version tracking rather than these symptoms: T1's failures are caused by lost access to the key itself, not by a stale version."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/customer-managed-keys-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/encryption-scope-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-service-encryption"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/infrastructure-encryption-enable"
+				}
+			],
+			"subtopics": [
+				"customer-managed-keys",
+				"encryption-scopes",
+				"infrastructure-encryption"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MAWTPSK6RSPBNMTH62450S",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are preparing Contoso's new storage accounts for production, and the blobs and file shares of each account must be encrypted with the key that Contoso keeps itself in Azure Key Vault from the moment the account goes live. A readiness review produced the four findings in the table. Drag the change that resolves each finding into that finding's row, and leave the change that resolves none of them behind.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Finding",
+						"Object inspected",
+						"What the review found"
+					],
+					"rows": [
+						[
+							"1",
+							"Vault kv-contoso",
+							"Purge protection is on, but soft delete is switched off."
+						],
+						[
+							"2",
+							"Key 'contoso-storage' in kv-contoso",
+							"Created as an EC-P256 key of 256 bits."
+						],
+						[
+							"3",
+							"Role assignments of the storage account's identity",
+							"Only the built-in Reader role is assigned on this object."
+						],
+						[
+							"4",
+							"Account stgfinance, created today",
+							"The vault, key and key version are already filled in; the identity picker offers only the system-assigned identity."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Turn on soft delete here; purge protection alone is not enough."
+					},
+					{
+						"id": "i2",
+						"text": "Replace it with an RSA or RSA-HSM key of size 2048, 3072 or 4096."
+					},
+					{
+						"id": "i3",
+						"text": "Give the account's identity the wrapkey, unwrapkey and get permissions on it."
+					},
+					{
+						"id": "i4",
+						"text": "Pick a user-assigned managed identity on the creation form."
+					},
+					{
+						"id": "i5",
+						"text": "Leave the account's key version blank so the service adopts the newest version daily."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Finding 1"
+					},
+					{
+						"id": "s2",
+						"label": "Finding 2"
+					},
+					{
+						"id": "s3",
+						"label": "Finding 3"
+					},
+					{
+						"id": "s4",
+						"label": "Finding 4"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "A key vault or managed HSM that holds the key must have both soft delete and purge protection enabled, so finding 1 is fixed by switching soft delete on. The key itself must be an RSA or RSA-HSM key of size 2048, 3072 or 4096, so finding 2 is fixed by replacing the EC-P256 key. The identity the account uses needs at least the wrapkey, unwrapkey and get permissions on the key, which the read-only built-in role does not grant, so finding 3 is fixed by granting those permissions. When customer-managed keys are supplied while the account is being created, a user-assigned managed identity must be given, so finding 4 is fixed by choosing one on the creation form. The version field of finding-free concern: leaving the key version blank only controls automatic version updates and repairs none of the four findings.",
+				"perChoice": {
+					"i1": "Belongs in Finding 1. Both soft delete and purge protection have to be enabled on the key vault, so purge protection on its own is insufficient.",
+					"i2": "Belongs in Finding 2. The key must be an RSA or RSA-HSM key of size 2048, 3072 or 4096; an EC-P256 key of 256 bits cannot be used.",
+					"i3": "Belongs in Finding 3. The account's managed identity needs at least wrapkey, unwrapkey and get on the key; a read-only role assignment such as the built-in Reader does not provide them.",
+					"i4": "Belongs in Finding 4. At account-creation time a user-assigned managed identity must be supplied for customer-managed keys, whereas an existing account may use either the user-assigned or the system-assigned identity.",
+					"i5": "Fits no row. It describes how the key version is tracked, and none of the four findings concerns the account's key version, so it resolves nothing here."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/customer-managed-keys-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-service-encryption"
+				}
+			],
+			"subtopics": [
+				"customer-managed-keys",
+				"managed-identity",
+				"key-vault-requirements"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MAZ1CBVN7HE8MXT3MH6JGR",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "After a merger, the key protecting the blobs of a general-purpose v2 storage account, stgcontoso, is held by the partner company's security team in an Azure Key Vault Managed HSM, and Contoso's own security team may not hold that key. The layout below shows where each object sits today. You need the design document to state the location rules accurately before the account configuration is finalized. Which statement is correct?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Object                        Tenant     Region       Subscription\nStorage account stgcontoso    Contoso    East US      sub-contoso-prod\nManaged HSM holding the key   Fabrikam   West Europe  sub-fabrikam-sec"
+				},
+				"statement": "Regarding where the vault that holds the key may sit, {{loc}}.",
+				"slots": [
+					{
+						"id": "loc",
+						"options": [
+							{
+								"id": "a",
+								"text": "it may differ in tenant, region and subscription independently"
+							},
+							{
+								"id": "b",
+								"text": "it must match the account's region, but may differ in tenant and subscription"
+							},
+							{
+								"id": "c",
+								"text": "it must match the account's subscription, but may differ in tenant and region"
+							},
+							{
+								"id": "d",
+								"text": "it must match the account's tenant, but may differ in region and subscription"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"loc": "a"
+			},
+			"explanation": {
+				"correct": "The documentation states that the key vault or managed HSM supplying the key is allowed to sit in a different Microsoft Entra tenant, a different region and a different subscription than the storage account. So the Fabrikam managed HSM in West Europe under sub-fabrikam-sec is an acceptable arrangement for stgcontoso in Contoso's tenant in East US, and no relocation is needed; a managed HSM exposes the same APIs and management interfaces as a key vault. The rules that do apply concern the key itself (RSA or RSA-HSM of 2048, 3072 or 4096 bits, soft delete and purge protection on the vault or HSM) and the identity permissions (wrapkey, unwrapkey, get), not the vault's location.",
+				"perChoice": {
+					"loc:b": "The vault is allowed to sit in a different region from the storage account, so a region match is not a requirement and the West Europe HSM is fine.",
+					"loc:c": "The vault is allowed to sit in a different subscription from the storage account, so a subscription match is not a requirement.",
+					"loc:d": "The vault is allowed to sit in a different Microsoft Entra tenant from the storage account, so a tenant match is not a requirement either."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/customer-managed-keys-overview"
+				}
+			],
+			"subtopics": [
+				"customer-managed-keys",
+				"key-vault-requirements"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MN5MV3M70EM80RYN34CEHP",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have stgcontoso, a general-purpose v2 storage account that keeps seven years of legal records in the blob container legal-records. Every container in this account carries the encryption scope esc-legal, and that scope is protected by a key your own team manages in the Azure Key Vault vault kv-contoso. The legal team has asked for two things: the records older than seven years should be moved into the archive tier to reduce cost, and every new upload should be placed in the tier of the requester's choice at the moment it is written. The current configuration is shown below. Which outcome should you tell the legal team to expect?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Object",
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account stgcontoso",
+							"Account kind",
+							"General-purpose v2"
+						],
+						[
+							"Account stgcontoso",
+							"Encryption scope on containers",
+							"esc-legal"
+						],
+						[
+							"Encryption scope esc-legal",
+							"Key type",
+							"Customer-managed key in kv-contoso"
+						],
+						[
+							"Container legal-records",
+							"Tier of the blobs stored today",
+							"Cool"
+						],
+						[
+							"Container legal-records",
+							"Blobs the legal team wants to move",
+							"12,500 records older than seven years"
+						],
+						[
+							"New upload request from the legal team",
+							"Tier named in the request",
+							"Archive"
+						]
+					]
+				},
+				"statement": "When the legal team carries out its two requests, {{outcome}}.",
+				"slots": [
+					{
+						"id": "outcome",
+						"options": [
+							{
+								"id": "a",
+								"text": "the upload that names an access tier is rejected and the scoped blobs cannot be moved to the archive tier"
+							},
+							{
+								"id": "b",
+								"text": "the upload that names an access tier succeeds and the scoped blobs cannot be moved to the archive tier"
+							},
+							{
+								"id": "c",
+								"text": "the upload that names an access tier is rejected and the scoped blobs can be moved to the archive tier"
+							},
+							{
+								"id": "d",
+								"text": "the upload that names an access tier succeeds and the scoped blobs can be moved to the archive tier"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"outcome": "a"
+			},
+			"explanation": {
+				"correct": "Blobs that sit under an encryption scope have two restrictions: Azure Storage will not accept an access tier on a new upload for such a blob, and an existing encryption-scoped blob cannot be moved into the archive tier. The legal team's upload that names the archive tier is therefore rejected, and the 12,500 older records in legal-records cannot be moved to the archive tier either. The archive tier itself is still covered by the account's normal at-rest encryption, so nothing about encryption coverage changes for blobs stored there; the blocks come from the encryption scope, not from a gap in encryption.",
+				"perChoice": {
+					"outcome:b": "Wrong about the upload: an access tier cannot be set when uploading a new blob that is protected by an encryption scope, so that request is rejected even though the archive move is also blocked.",
+					"outcome:c": "Wrong about the archive move: an existing blob that is protected by an encryption scope cannot be moved to the archive tier, so the 12,500 records stay where they are.",
+					"outcome:d": "Wrong on both counts: naming an access tier at upload time is rejected for a blob under an encryption scope, and a scoped blob cannot be moved to the archive tier."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/encryption-scope-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-service-encryption"
+				}
+			],
+			"subtopics": [
+				"encryption-scopes",
+				"blob-access-tiers"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MND3HXRTHJB2NQ93AN3MA9",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You look after stgcontoso, a general-purpose v2 storage account that a billing platform has been using for two years. Its current configuration is shown below. The auditors have asked for the queue and table data held in the account to be protected by the key that your team manages in Azure Key Vault, in the same way the blob and file share data is protected today. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account kind",
+							"General-purpose v2"
+						],
+						[
+							"Service encryption",
+							"Customer-managed key"
+						],
+						[
+							"Key store",
+							"Azure Key Vault kv-contoso, key billing-key-1"
+						],
+						[
+							"Key version tracking",
+							"Automatic"
+						],
+						[
+							"Blob service",
+							"Protected by the customer-managed key"
+						],
+						[
+							"Azure Files service",
+							"Protected by the customer-managed key"
+						],
+						[
+							"Queue service",
+							"Protected by a Microsoft-managed key"
+						],
+						[
+							"Table service",
+							"Protected by a Microsoft-managed key"
+						]
+					]
+				},
+				"statement": "To protect the queue and table data of a general-purpose v2 account that is already running with a customer-managed key, you must {{s1}}.",
+				"slots": [
+					{
+						"id": "s1",
+						"options": [
+							{
+								"id": "a",
+								"text": "provision a replacement account that applies a customer-managed key to Queue and Table storage, then move the queues and tables across"
+							},
+							{
+								"id": "b",
+								"text": "reconfigure the existing account in place so that a customer-managed key applies to Queue and Table storage"
+							},
+							{
+								"id": "c",
+								"text": "move the queues and tables into containers in the existing account so that a customer-managed key applies to them as well"
+							},
+							{
+								"id": "d",
+								"text": "assign an encryption scope to each queue and table so that a customer-managed key applies to them as well"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"s1": "a"
+			},
+			"explanation": {
+				"correct": "A customer-managed key protects Blob Storage and Azure Files automatically, but the Queue and Table services are protected by such a key only when those services are opted in while the account is being created. Because stgcontoso has been running for two years, that opt-in can no longer be added to it, so the only way to bring its queue and table data under the vault key is to set up a replacement account with the customer-managed key enabled for Queue and Table storage and copy the queues and tables into it.",
+				"perChoice": {
+					"s1:b": "The opt-in that extends a customer-managed key to Queue and Table storage is only offered when the storage account is created, so an in-place change to an account that is already running cannot turn it on for those services.",
+					"s1:c": "Containers belong to the blob service. Copying the data into containers would change which service holds it rather than bring the Queue and Table services of the account under the vault key, and the messages and entities in those services would still be protected only by a Microsoft-managed key.",
+					"s1:d": "An encryption scope sets the key scope for a container or a single blob in blob storage, so it does not extend a customer-managed key to the Queue and Table services."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/customer-managed-keys-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-service-encryption"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/encryption-scope-overview"
+				}
+			],
+			"subtopics": [
+				"customer-managed-keys",
+				"queue-and-table-storage",
+				"encryption-scopes"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MNPMJ4E0880XXTDTB8Z84Y",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You look after stgcontoso, a general-purpose v2 storage account that holds blob containers and an Azure Files share, with the content of both protected by a customer-managed key, contoso-content-key, that your team keeps in the Azure Key Vault vault kv-contoso. On 12 October the vault administrator disabled that key, and since then the applications that use this account's content report errors instead of returning data, although the account's managed identity still holds its permissions on the key. The service desk needs an accurate account of what the clients receive and which of the account's calls are affected. Choose the completion below that gives it.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "stgcontoso - storage account (general-purpose v2)\n\nItem                                Value\n---------------------------------   ------------------------------------------\nStorage account                     stgcontoso (general-purpose v2)\nContent held                        Blob containers and the Azure Files share 'reports'\nKey protecting the content          Customer-managed key 'contoso-content-key' in vault kv-contoso\nKey state in kv-contoso             Disabled on 12 October\nManaged identity permissions        wrapkey, unwrapkey, get (unchanged)\nClient symptom since 12 October     Requests for account content return an error instead of data"
+				},
+				"statement": "While the key stays disabled in the vault, {{slot1}} is returned to the clients, and {{slot2}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "HTTP 403 (Forbidden)"
+							},
+							{
+								"id": "b",
+								"text": "HTTP 404 (Not Found)"
+							},
+							{
+								"id": "c",
+								"text": "HTTP 409 (Conflict)"
+							},
+							{
+								"id": "d",
+								"text": "HTTP 500 (Internal Server Error)"
+							}
+						]
+					},
+					{
+						"id": "slot2",
+						"options": [
+							{
+								"id": "a",
+								"text": "reads and writes of blob and Azure Files content fail, including metadata reads and writes"
+							},
+							{
+								"id": "b",
+								"text": "reads and writes of blob content fail, including metadata reads and writes, while Azure Files calls keep working"
+							},
+							{
+								"id": "c",
+								"text": "reads and writes of Azure Files content fail, including metadata reads and writes, while blob calls keep working"
+							},
+							{
+								"id": "d",
+								"text": "reads and writes of blob and Azure Files content keep working, while metadata reads and writes fail"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a",
+				"slot2": "a"
+			},
+			"explanation": {
+				"correct": "Disabling a customer-managed key in the key vault withdraws the storage account's ability to use that key, and Microsoft documents the client-visible result: after the key is disabled, clients cannot call operations that read from or write to a resource or its metadata, and those calls fail with error code 403 (Forbidden) for all users. The affected calls are the Blob Storage reads and writes (Get Blob, Get Blob Properties, Get/Set Blob Metadata, Put Blob, Put Block, Append Block, Put Page, Copy Blob, Set Blob Tier and similar) and the Azure Files calls (Create File, Get File, Put Range, Copy File, Rename File, List Directories and Files, plus the directory and file property and metadata operations), so blob and Azure Files content and metadata reads and writes all fail with the same status code.",
+				"perChoice": {
+					"slot1:b": "HTTP 404 (Not Found) is wrong because the containers, blobs and file shares still exist; nothing was deleted. The documented outcome of a disabled customer-managed key is 403 (Forbidden) for the affected calls.",
+					"slot1:c": "HTTP 409 (Conflict) would signal a request that clashes with the current state of the resource. The key being unusable is reported as 403 (Forbidden), not a conflict.",
+					"slot1:d": "HTTP 500 (Internal Server Error) would indicate a fault on the service side. The documented outcome is an authorization failure that the client sees as 403 (Forbidden) for every user.",
+					"slot2:b": "Azure Files calls are hit as well: the documented list of calls that fail after the key is disabled includes Create Permission, Get Permission, List Directories and Files, Create Directory, the directory and file property and metadata operations, Create File, Get File, Put Range, Copy File and Rename File.",
+					"slot2:c": "Blob calls are hit as well: the documented list includes Get Blob, Get Blob Properties, Get Blob Metadata, Set Blob Metadata, Put Blob, Put Block, Append Block, Put Page, Copy Blob, Copy Blob From URL, Set Blob Tier and the incremental copy call, so blob calls do not keep working.",
+					"slot2:d": "Content reads and writes fail too, not only metadata calls. Get Blob, Get Blob Properties, Put Blob, Put Page and Copy Blob are all on the list of calls that fail once the key is disabled, so it is not the case that only metadata operations are affected."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/customer-managed-keys-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-service-encryption"
+				}
+			],
+			"subtopics": [
+				"customer-managed-keys",
+				"key-revocation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MP0RZ9S2PP29ZC36HXCHXY",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are creating the general-purpose v2 storage account stgcontoso, and the blobs it holds must be encrypted at rest with a key that your own team keeps in Azure Key Vault. You have already created the vault, the key and the access policy for the account's identity, but pointing the account at that key does not complete successfully. The configuration as it stands today is shown below. You need to correct it so that the account can actually use the key.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Object: Storage account stgcontoso\n  Type: general-purpose v2\n  Encryption key source: customer-managed key in Azure Key Vault\n  Key name: contoso-content-key\n  Location: West Europe\n\nObject: Key vault kv-contoso\n  Soft delete: Disabled\n  Purge protection: Disabled\n  Location: West Europe\n\nObject: Key contoso-content-key\n  Key type: EC\n  Key size: 521\n  Key state: enabled\n\nObject: Managed identity stgcontoso-identity\n  Key permissions: get, wrapKey, unwrapKey\n  Identity type: system-assigned\n"
+				},
+				"statement": "You should {{choice}}.",
+				"slots": [
+					{
+						"id": "choice",
+						"options": [
+							{
+								"id": "a",
+								"text": "enable soft delete and purge protection on kv-contoso, create a new RSA-HSM key of size 4096 in that vault, and point stgcontoso at it"
+							},
+							{
+								"id": "b",
+								"text": "enable soft delete and purge protection on kv-contoso, create a new RSA-HSM key of size 1024 in that vault, and point stgcontoso at it"
+							},
+							{
+								"id": "c",
+								"text": "enable soft delete on kv-contoso but leave purge protection off, create a new RSA-HSM key of size 4096 in that vault, and point stgcontoso at it"
+							},
+							{
+								"id": "d",
+								"text": "enable soft delete and purge protection on kv-contoso, keep the existing EC key contoso-content-key, and point stgcontoso at it"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"choice": "a"
+			},
+			"explanation": {
+				"correct": "A vault that holds a customer-managed key must have soft delete and purge protection enabled, and the key itself must be an RSA or RSA-HSM key of size 2048, 3072 or 4096. In the layout shown, kv-contoso has neither protection switched on and contoso-content-key is an EC key of size 521, so stgcontoso cannot use it. Turning on both protections in the vault, creating an RSA-HSM key of an accepted size, and repointing the account at that new key resolves both blockers. The managed identity already holds get, wrapKey and unwrapKey, and the vault may sit in the same location as the account, so no other change is required.",
+				"perChoice": {
+					"choice:b": "A key size of 1024 is not accepted for customer-managed keys. The supported sizes are 2048, 3072 and 4096, so the account still cannot use the key.",
+					"choice:c": "Purge protection must be enabled on the vault that holds the key. Leaving it off keeps the setup from working even with a key of an accepted type and size.",
+					"choice:d": "The key type is the blocker here. Customer-managed keys must be RSA or RSA-HSM keys, so an EC key cannot be used no matter which protections are switched on in the vault."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/customer-managed-keys-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-service-encryption"
+				}
+			],
+			"subtopics": [
+				"customer-managed-keys",
+				"key-vault-requirements"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MQG85Y0NXRX8YN0KW7YAYR",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have stgcontoso, a general-purpose v2 storage account whose blobs today are protected by the key that Microsoft manages for you. Contoso wants to hold the key itself, so the account is to be pointed at a key in the Azure Key Vault vault kv-contoso. The account holds about 40 TB of blobs and no outage has been approved for the application that writes to it. You need to know what happens to the blobs that are already in the account during this change. Which statement correctly describes Azure Storage's behavior?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account",
+							"stgcontoso (general-purpose v2)"
+						],
+						[
+							"Key type protecting the blobs today",
+							"Microsoft-managed key"
+						],
+						[
+							"Blob data in the account",
+							"About 40 TB across twelve containers"
+						],
+						[
+							"Approved application outage",
+							"None"
+						]
+					]
+				},
+				"statement": "During this change, {{outcome}}.",
+				"slots": [
+					{
+						"id": "outcome",
+						"options": [
+							{
+								"id": "a",
+								"text": "Azure Storage wraps the account key with the Contoso key, so the blobs already in the account are covered by it right away."
+							},
+							{
+								"id": "b",
+								"text": "Azure Storage decrypts and re-encrypts every blob with the Contoso key, so the blobs already in the account are covered by it only after that work is finished."
+							},
+							{
+								"id": "c",
+								"text": "Azure Storage leaves the account key with Microsoft, so the blobs already in the account are covered by the Contoso key only after each blob is uploaded again."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"outcome": "a"
+			},
+			"explanation": {
+				"correct": "A customer-managed key does not encrypt blob data directly. Azure Storage uses it to wrap the account encryption key, so only the protection of that key changes: the stored data stays encrypted throughout, the blobs that are already in the account are covered from the moment the account is pointed at the Contoso key, and no outage, no emptying of the account and no extra upload are needed. A storage account can also be moved between Microsoft-managed keys and customer-managed keys at any time.",
+				"perChoice": {
+					"outcome:b": "Wrong: the Contoso key never encrypts blob data directly. Azure Storage uses it to wrap the account encryption key, so no blob is decrypted and re-encrypted, and the new protection applies from the moment the account is pointed at that key.",
+					"outcome:c": "Wrong: the account key does not stay with Microsoft once the account is pointed at the Contoso key. The account encryption key is re-wrapped under the Contoso key, so the blobs that are already stored are covered too, and no blob has to be uploaded again."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/customer-managed-keys-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-service-encryption"
+				}
+			],
+			"subtopics": [
+				"customer-managed-keys",
+				"key-wrapping"
+			],
+			"reviewed": false
+		}
+	]
+}

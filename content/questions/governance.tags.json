@@ -1,0 +1,1377 @@
+{
+	"skill": "governance.tags",
+	"questions": [
+		{
+			"id": "q_01M5GEP3P6KVMXFA7FG59E7FPC",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your company records ownership with a costCenter tag on every resource group. The resources inside those groups carry no such metadata today, and you want the ones that already exist to pick it up along with anything deployed from now on. Which policy definition should you assign?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Scope or resource",
+						"Tags currently applied"
+					],
+					"rows": [
+						[
+							"Resource group rg-web-prod",
+							"costCenter: 4711"
+						],
+						[
+							"Resource group rg-data-prod",
+							"costCenter: 4712"
+						],
+						[
+							"Virtual machine vm-web-01 in rg-web-prod",
+							"(none)"
+						],
+						[
+							"Storage account stwebprod01 in rg-web-prod",
+							"(none)"
+						],
+						[
+							"Public IP pip-web-01 in rg-web-prod",
+							"owner: alice"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Inherit a tag from the resource group"
+					},
+					{
+						"id": "b",
+						"text": "Append a tag and its value from the resource group"
+					},
+					{
+						"id": "c",
+						"text": "Require a tag and its value on resources"
+					},
+					{
+						"id": "d",
+						"text": "Add or replace a tag on resource groups"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "'Inherit a tag from the resource group' copies the tag name and its value from the parent resource group onto every resource in scope each time that resource is created or updated, and a remediation task can be run so resources deployed earlier pick the value up as well. That matches the exhibit: the groups already carry costCenter, while the virtual machine and storage account inside have nothing.",
+				"perChoice": {
+					"b": "'Append a tag and its value from the resource group' only supplies the pair to a resource that is missing the tag, so a resource already holding a different value keeps it, and it leaves resources created before the assignment untouched until they are changed. It would not push 4711 and 4712 onto the existing members.",
+					"c": "'Require a tag and its value on resources' uses the deny effect, so it evaluates whether a resource carries the expected pair and blocks the deployment when it does not; it never supplies the value from the resource group, so the members shown in the exhibit would still go untagged and deployments would fail.",
+					"d": "'Add or replace a tag on resource groups' targets resource groups only. The groups in the exhibit already hold the right value, and vm-web-01 and stwebprod01 would remain without costCenter."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-policies"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources"
+				}
+			],
+			"subtopics": [
+				"tag-policy-inheritance",
+				"azure-policy"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GEPEGX3F2SFX4PQT0SC436",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "A single template deploys four resources, each carrying the tag pairs listed below. During the deployment one of the resources is rejected with an error about its metadata. Which resource is the reason?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Resource",
+						"Tag pairs supplied",
+						"Longest tag name (characters)"
+					],
+					"rows": [
+						[
+							"Storage account stappdata01",
+							"12",
+							"200"
+						],
+						[
+							"Virtual machine vm-sales01",
+							"10",
+							"480"
+						],
+						[
+							"Public IP address pip-sales01",
+							"20",
+							"300"
+						],
+						[
+							"Load balancer lb-sales01",
+							"18",
+							"90"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "The storage account, because its tag name is longer than the maximum length allowed for that resource type"
+					},
+					{
+						"id": "b",
+						"text": "The storage account, because it carries more tag pairs than that resource type allows"
+					},
+					{
+						"id": "c",
+						"text": "The virtual machine, because its tag name is longer than the maximum length allowed for that resource type"
+					},
+					{
+						"id": "d",
+						"text": "The public IP address, because it carries more tag pairs than that resource type allows"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "For storage accounts the tag name may be at most 128 characters, and stappdata01 arrives with a 200-character name. That exceeds the limit imposed on that resource type, so the request carrying those pairs is the one that fails.",
+				"perChoice": {
+					"b": "Twelve pairs is well inside the ceiling that applies to a resource, a resource group or a subscription, which is 50 name-value pairs. The storage account is rejected because of the name length, not the count.",
+					"c": "Virtual machines accept tag names of up to 512 characters, and 480 characters is under that, so vm-sales01 is not the problem.",
+					"d": "Public IP addresses are not one of the resource types capped at 15 tags, and 20 pairs is also below the general ceiling of 50, so pip-sales01 is accepted."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-support"
+				}
+			],
+			"subtopics": [
+				"tag-limits",
+				"tag-name-length"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GEQ1E2JM72RDQMGRENY6CQ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "An audit shows that the members of rg-web-prod still carry an out-of-date costCenter value of 1000, while the group itself already holds 4711. You plan one policy assignment made at the resource group's scope so that the members end up at 4711 both on the next deployment or update and for the ones that already exist. Which policy definition should you assign?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Resource",
+						"Kind",
+						"costCenter value"
+					],
+					"rows": [
+						[
+							"rg-web-prod",
+							"Resource group",
+							"4711"
+						],
+						[
+							"vm-web-01",
+							"Resource",
+							"1000"
+						],
+						[
+							"stwebprod01",
+							"Resource",
+							"1000"
+						],
+						[
+							"pip-web-01",
+							"Resource",
+							"4711"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add or replace a tag on resources"
+					},
+					{
+						"id": "b",
+						"text": "Add a tag to resources"
+					},
+					{
+						"id": "c",
+						"text": "Append a tag and its value to resources"
+					},
+					{
+						"id": "d",
+						"text": "Add or replace a tag on resource groups"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "This definition uses the modify effect to set the specified name and value on every resource in the assignment's scope whenever that resource is created or updated, overwriting a value that differs, and a remediation task can be run to bring the resources that already exist into line. That turns vm-web-01 and stwebprod01 from 1000 to 4711 and leaves pip-web-01 at 4711, and it deliberately does not touch resource groups, which already hold the correct value.",
+				"perChoice": {
+					"b": "'Add a tag to resources' only supplies the pair when the resource does not have it. A resource already holding costCenter: 1000 keeps 1000, so the stale values in the exhibit would survive.",
+					"c": "'Append a tag and its value to resources' acts only on resources that are missing the tag and does not modify resources created before the policy was applied, so it would neither correct 1000 nor reach the existing members.",
+					"d": "'Add or replace a tag on resource groups' rewrites metadata on resource groups only. rg-web-prod already carries 4711, so nothing would change and the members would stay at 1000."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-policies"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources"
+				}
+			],
+			"subtopics": [
+				"tag-policy-effects",
+				"policy-remediation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GEQBB346EJNQG7MRQ72JV6",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "While reviewing the levels of an Azure hierarchy, your team has confirmed that organizational tags are accepted on the individual things it deploys, on the containers that hold those things, and on the billing containers that hold those containers. One level in the hierarchy has no place to store that metadata. Which level is it?",
+				"options": [
+					{
+						"id": "a",
+						"text": "Management group"
+					},
+					{
+						"id": "b",
+						"text": "Subscription"
+					},
+					{
+						"id": "c",
+						"text": "Resource group"
+					},
+					{
+						"id": "d",
+						"text": "Resource"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Tags are metadata key-value pairs, and the levels that accept them are the individual resources, the resource groups that contain them, and the subscriptions that hold those groups. The level that sits above the subscriptions is the management group, and it is not one of the scopes on which tags can be applied.",
+				"perChoice": {
+					"b": "Subscriptions do accept tags, and they are the level where a tag can be set for everything billed to that agreement.",
+					"c": "Resource groups accept tags, and applying one there is the usual way to label a set of related resources together.",
+					"d": "Individual resources accept tags, which is where most metadata is applied; some resource providers only allow the tags to be changed while the resource is in a particular state, such as virtual machine extensions requiring a running virtual machine."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources"
+				}
+			],
+			"subtopics": [
+				"tag-scope",
+				"resource-hierarchy"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GEQR4E71N97EFSJK3Z5GJF",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "The monthly usage for an Azure Virtual Desktop deployment arrives as a separate record for every session host, so finance has to add up the lines by hand. They want those charges reported under the host pool itself so that they can be reviewed in Cost Management without building any filters. What should the platform team add?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Cost record",
+						"Resource ID",
+						"Monthly cost (USD)"
+					],
+					"rows": [
+						[
+							"Session host sh-fin-01",
+							"/subscriptions/s1/resourceGroups/rg-VDD/providers/Microsoft.DesktopVirtualization/hostPools/hp-finance/sessionHosts/1",
+							"1,180"
+						],
+						[
+							"Session host sh-fin-02",
+							"/subscriptions/s1/resourceGroups/rg-VDD/providers/Microsoft.DesktopVirtualization/hostPools/hp-finance/sessionHosts/2",
+							"1,205"
+						],
+						[
+							"Host pool hp-finance",
+							"/subscriptions/s1/resourceGroups/rg-VDD/providers/Microsoft.DesktopVirtualization/hostPools/hp-finance",
+							"0"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "A tag named cm-resource-parent whose value is the host pool's resource ID"
+					},
+					{
+						"id": "b",
+						"text": "A tag named cm-resource-parent whose value is the resource group's ID"
+					},
+					{
+						"id": "c",
+						"text": "A tag named cm-resource-parent whose value is the host pool's display name"
+					},
+					{
+						"id": "d",
+						"text": "A tag named cm-resource-parent whose value is the subscription's ID"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The reserved tag name cm-resource-parent is used to group the cost of a resource under another one, and its value must be the resource ID of the resource the costs should be reported against. Putting the host pool's ID, /subscriptions/s1/resourceGroups/rg-VDD/providers/Microsoft.DesktopVirtualization/hostPools/hp-finance, in that tag makes the two session host records show up under the pool in Cost Management, with no filters needed.",
+				"perChoice": {
+					"b": "The resource group's ID identifies the container rather than the pool that owns these costs, so the charges would be reported against the grouping that already contains everything in the exhibit rather than under hp-finance.",
+					"c": "The value has to be a resource ID. A display name cannot be resolved to the resource, so the grouping would not take effect.",
+					"d": "The subscription ID points at the billing container above the pool, so the spend would roll up to the subscription instead of to hp-finance, which is not the level finance asked for."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources"
+				}
+			],
+			"subtopics": [
+				"cost-allocation-tags",
+				"cm-resource-parent"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GF4WV5BXMFNS5JMM58PP6B",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "The output below summarizes three tagging actions an engineer performed against an Azure subscription. The first action succeeds. The second and third attempts both go via the Azure portal: the second is denied and the third succeeds. Role assignments are listed for each user. Which statement explains the portal denial?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Action 1 - op1@contoso.com - Tag Contributor at /subscriptions/sub-x\n  Interface: PowerShell\n  Cmdlet  : Set-AzResource -Tag @{ Environment='Prod' } -ResourceId .../vm-prod\n  Outcome : Tag saved\n\nAction 2 - op1@contoso.com - Tag Contributor at /subscriptions/sub-x\n  Interface: Azure portal\n  Action  : Open Tags blade on vm-prod, add Department=IT, Save\n  Outcome : Save blocked\n\nAction 3 - op2@contoso.com - Contributor at /subscriptions/sub-x\n  Interface: Azure portal\n  Action  : Open Tags blade on vm-prod, add Department=IT, Save\n  Outcome : Tag saved"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "The role grants Microsoft.Resources/tags write access but does not let the user apply tags on resources via the Azure portal"
+					},
+					{
+						"id": "b",
+						"text": "The Azure portal enforces a built-in Owner assignment on every resource before saving tag changes"
+					},
+					{
+						"id": "c",
+						"text": "The PowerShell cmdlet writes tags via a service principal that bypasses Azure role checks"
+					},
+					{
+						"id": "d",
+						"text": "Subscription-scope roles are not enforced during Azure portal sessions of the same user"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The Tag Contributor role grants write access to the Microsoft.Resources/tags resource type, which permits tag operations through Azure PowerShell and the REST API. The role, however, does not let you apply tags to resources or resource groups through the Azure portal; the portal requires a role on the resource itself (such as Contributor) for the Tags blade to save changes, which is why op2 in action 3 succeeds while op1 in action 2 is denied.",
+				"perChoice": {
+					"b": "Tag changes succeed from the portal when the operator has a role (such as Contributor) that grants write access on the resource. The portal does not require the built-in Owner role for tag operations.",
+					"c": "PowerShell does not bypass Azure role checks. The success of action 1 is the same Tag Contributor role that the portal rejects in action 2; the difference is the interface, not any privileged code path.",
+					"d": "Subscription-scope role assignments are honored during Azure portal sessions. The difference between action 2 and action 3 is the role assigned to each user, not any propagation or scope issue."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources"
+				}
+			],
+			"subtopics": [
+				"tag-role-permissions",
+				"portal-access"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GF53NAH61SVEWBZMXCYS8G",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "The code block below is a truncated response from the Azure unique tags API. The monitoring tool flags the response as malformed because the same key appears twice. What property of the API explains the repetition?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"value\": [\n    { \"tagName\": \"Environment\", \"tagValue\": \"Production\" },\n    { \"tagName\": \"Environment\", \"tagValue\": \"Staging\" }\n  ],\n  \"nextLink\": \"https://management.azure.com/subscriptions/.../tagNames?$skiptoken=...\"\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "The API re-emits the key on a subsequent page when additional values for it remain to be returned"
+					},
+					{
+						"id": "b",
+						"text": "The unique tags API treats each case variant of the key as a separate entry"
+					},
+					{
+						"id": "c",
+						"text": "The cost report duplicates the key each time a new tag value is added"
+					},
+					{
+						"id": "d",
+						"text": "The PATCH operation duplicates the key in the response when the resource supports more than 15 tags"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The unique tags API has a per-page size limit. When a tag key has more unique values than fit on one page, the API returns additional values on subsequent pages and re-emits the key at the start of those pages to signal that the values are still under that key. This pattern is expected behavior for the API and the presence of nextLink in the response indicates more data follows.",
+				"perChoice": {
+					"b": "Tag names are case-insensitive for operations. The unique tags API matches them that way, so different casings of the key do not produce separate entries under the same logical key.",
+					"c": "The duplication observed here is a property of the unique tags API itself. The cost report uses the values stored by the provider and is unrelated to how the API response is shaped.",
+					"d": "The PATCH operation is unrelated to the unique tags API. The 15-tag limit applies to specific resource types such as Azure Automation and Azure Front Door; it does not produce a repeated key in the unique tags API response."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources"
+				}
+			],
+			"subtopics": [
+				"unique-tag-pagination",
+				"tag-apis"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GF5EM8KSXT8M7Y3FQ4RA3X",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "The cost analysis view in Cost Management groups your resources' running cost by tag pair. The output below shows two rows reported under the same tag name. Finance considers them identical deployments and wants the rows merged. What causes the split?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Tag name        Tag data         Monthly cost\n-------------   ---------------  ------------\nEnvironment     Production       $4,210.00\nEnvironment     production       $3,872.00"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "The provider records each tag pairing case-sensitively, so two distinct casings form two cost entries under one key"
+					},
+					{
+						"id": "b",
+						"text": "The cost view treats tag keys case-sensitively, producing entries with different identifiers"
+					},
+					{
+						"id": "c",
+						"text": "Cost Management applies its own case conversion before aggregating tag pairings"
+					},
+					{
+						"id": "d",
+						"text": "Resources whose tag carries a currency symbol generate duplicate cost entries"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Tag values are case-sensitive: the resource provider stores each casing of a tag value as a separate entry. Because Cost Management groups cost by tag pair, 'Environment=Production' and 'Environment=production' surface as two distinct rows even though the displayed tag name is identical.",
+				"perChoice": {
+					"b": "Tag names are case-insensitive for operations, not case-sensitive. The split here comes from the tag data entries differing in case, not from the tag name.",
+					"c": "Cost Management does not perform its own case conversion on tag values before aggregating. The split is a property of how tag values are stored by the resource provider, not a display-side transformation.",
+					"d": "The presence of a currency symbol in a tag has no documented effect on Cost Management. The row split is driven by case-sensitive storage of the tag data, not by any symbol in the value."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources"
+				}
+			],
+			"subtopics": [
+				"tag-case-sensitivity",
+				"cost-reporting"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GFBPK0XB30FWEV5GZVRBWR",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Your platform team enforces its conventions with the built-in Azure Policy definitions for tags. Four separate rules are needed for the resources your application teams deploy. Match each built-in definition to the requirement it satisfies.",
+				"items": [
+					{
+						"id": "a",
+						"text": "Add a tag to resources"
+					},
+					{
+						"id": "b",
+						"text": "Add or replace a tag on resources"
+					},
+					{
+						"id": "c",
+						"text": "Append a tag and its value to resources"
+					},
+					{
+						"id": "d",
+						"text": "Require a tag and its value on resources"
+					},
+					{
+						"id": "e",
+						"text": "Require a tag on resources"
+					},
+					{
+						"id": "f",
+						"text": "Inherit a tag from the resource group"
+					},
+					{
+						"id": "g",
+						"text": "Add a tag to resource groups"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Every deployed resource that lacks the owner pair receives owner=4711 on creation and on later updates, while a value an application team set earlier stays exactly as it is"
+					},
+					{
+						"id": "s2",
+						"label": "Every deployed resource carries owner=4711 after each creation or update, even when it already held a different value"
+					},
+					{
+						"id": "s3",
+						"label": "Resources that were already running when the rule was assigned stay as they are until something changes them"
+					},
+					{
+						"id": "s4",
+						"label": "A create or update request is refused unless the resource carries the owner pair with a value from an approved list"
+					},
+					{
+						"id": "s5",
+						"label": "A create or update request is refused unless the resource carries the owner pair at all, whatever value it holds"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d",
+				"s5": "e"
+			},
+			"explanation": {
+				"correct": "The first requirement only fills in a missing pair and leaves an existing value alone, which is what the add-only definition does (it also leaves anything already deployed alone until a remediation task is run). The second requirement forces the value on every creation and update and overwrites whatever was there, which is the add-or-replace definition. The third requirement keeps already-deployed resources untouched until they are modified, which is the append definition. The fourth requirement blocks a request unless both the pair and an approved value are present, and the fifth blocks it unless the pair exists at all, which are the two require definitions with the deny effect.",
+				"perChoice": {
+					"a": "Fits the first slot: it writes the specified pair onto any resource missing it at creation or update and explicitly leaves a different existing value unchanged.",
+					"b": "Fits the second slot: it adds or replaces the pair on every resource created or updated, so an old value is overwritten.",
+					"c": "Fits the third slot: an append definition only acts on resources that are created or changed after the assignment, and the resource types it targets explicitly exclude resource groups.",
+					"d": "Fits the fourth slot: it enforces both the existence of the pair and an accepted value, rejecting a request that meets only one of the two conditions.",
+					"e": "Fits the fifth slot: it enforces only that the pair exists, so any value is accepted.",
+					"f": "Fits no slot: it copies a pair down from the parent resource group to the resources inside it, and none of the requirements takes its value from a containing resource group.",
+					"g": "Fits no slot: it targets the containers themselves rather than the individual resources, and none of the requirements is about tagging the container."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-policies"
+				}
+			],
+			"subtopics": [
+				"tag-policy-definitions",
+				"tag-compliance"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GFCDVBT67R1KP28N4D0T80",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Contoso keeps ownership metadata in the two upper levels of its hierarchy, as the exhibit shows, and the individual resources carry nothing. Five different behaviors are on the table for how resources should end up with that metadata. Match each built-in policy definition to the behavior it produces.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Hierarchy level",
+						"Value stored there"
+					],
+					"rows": [
+						[
+							"Subscription prod-payments",
+							"costCenter = 4711"
+						],
+						[
+							"Resource group rg-api-prod",
+							"costCenter = 4711"
+						],
+						[
+							"Resource vm-api-01",
+							"(no pairs stored)"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Inherit a tag from the resource group"
+					},
+					{
+						"id": "b",
+						"text": "Inherit a tag from the resource group if missing"
+					},
+					{
+						"id": "c",
+						"text": "Inherit a tag from the subscription"
+					},
+					{
+						"id": "d",
+						"text": "Inherit a tag from the subscription if missing"
+					},
+					{
+						"id": "e",
+						"text": "Append a tag and its value from the resource group"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Resources copy the pair from the container they sit in, then always finish with whatever value that container currently holds"
+					},
+					{
+						"id": "s2",
+						"label": "Resources copy the pair from the container they sit in, while a value already carried by the resource is never changed"
+					},
+					{
+						"id": "s3",
+						"label": "Resources copy the pair from the billing scope that contains them, then always finish with whatever value that scope currently holds"
+					},
+					{
+						"id": "s4",
+						"label": "Resources copy the pair from the billing scope that contains them, while a value already carried by the resource is never changed"
+					},
+					{
+						"id": "s5",
+						"label": "Resources that lack the pair receive the one defined on the container; anything created before the rule was assigned stays as it is until it is modified"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d",
+				"s5": "e"
+			},
+			"explanation": {
+				"correct": "The four inherit definitions differ in two ways: where the pair is read from (the resource group or the subscription) and whether an existing value on the resource is overwritten. Only the add or replace style versions overwrite, so a resource always ends with the current value of the upper level. The conditional versions add the value only when the resource lacks the pair and explicitly leave a different value in place. The append definition also only fills a gap, and it additionally leaves every resource that was created before the assignment untouched until that resource is changed.",
+				"perChoice": {
+					"a": "Fits the first slot: it adds or replaces the pair on every resource created or updated from the parent resource group, so the resource always ends up with the group's current value.",
+					"b": "Fits the second slot: it adds the group's value when the resource has no such pair and will not change a pair that is already there with a different value.",
+					"c": "Fits the third slot: it adds or replaces the pair on every resource created or updated from the containing subscription.",
+					"d": "Fits the fourth slot: it takes the value from the subscription only for resources missing the pair, leaving an existing different value alone.",
+					"e": "Fits the fifth slot: it supplies the group's pair only when the resource lacks it, and it does not modify tags on resources created before the policy was applied until those resources are changed."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-policies"
+				}
+			],
+			"subtopics": [
+				"tag-inheritance",
+				"tag-policy-definitions"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GFCV08GYSXJ2JWRMSA7YCM",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Three responses are available when a resource fails a tagging rule. Match each policy effect to the outcome your team would see.",
+				"items": [
+					{
+						"id": "a",
+						"text": "modify"
+					},
+					{
+						"id": "b",
+						"text": "append"
+					},
+					{
+						"id": "c",
+						"text": "deny"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "A resource that lacks the pair is corrected as it is created or updated, and a remediation task can bring the already deployed resources into line"
+					},
+					{
+						"id": "s2",
+						"label": "Only resources created or changed after the assignment receive the pair; anything already deployed keeps what it carries until it is touched"
+					},
+					{
+						"id": "s3",
+						"label": "A create or update request that fails the rule is refused and the change never reaches the resource provider"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c"
+			},
+			"explanation": {
+				"correct": "The modify effect alters the resource instead of refusing the request, and the tag definitions built on it can be run as a remediation task so resources that were deployed earlier are brought into compliance too. The append effect only touches resources that are created or updated after the assignment, leaving anything already deployed as it is until it is touched again. The deny effect refuses the create or update request, so a resource that does not carry the required pair never reaches the resource provider.",
+				"perChoice": {
+					"a": "Fits the first slot: a modify rule changes the resource during create or update, and the built-in tag definitions on this effect support a remediation task for existing resources.",
+					"b": "Fits the second slot: an append rule acts only on resources created or changed after the assignment and does not reach back to resources that already existed.",
+					"c": "Fits the third slot: a deny rule blocks the create or update request itself, which is how the built-in rules that mandate a required pair and value are built."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-policies"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/overview"
+				}
+			],
+			"subtopics": [
+				"policy-effects",
+				"tag-remediation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GFD7GEQN73TM5NS8124S8H",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are standardizing how pairs are named across your estate. Four naming restrictions apply, and each one belongs to a different place in the hierarchy of resources. Match each restriction to the scope where it takes effect.",
+				"items": [
+					{
+						"id": "a",
+						"text": "Azure DNS zone"
+					},
+					{
+						"id": "b",
+						"text": "Traffic Manager profile"
+					},
+					{
+						"id": "c",
+						"text": "Azure Front Door profile"
+					},
+					{
+						"id": "d",
+						"text": "All tagged resources, including resource groups and subscriptions"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "The name rejects spaces and parentheses, cannot start with a digit, and cannot contain special or Unicode characters; the value can hold any characters"
+					},
+					{
+						"id": "s2",
+						"label": "The name rejects spaces, # and :, and cannot start with a digit"
+					},
+					{
+						"id": "s3",
+						"label": "The name rejects only # and :"
+					},
+					{
+						"id": "s4",
+						"label": "The name rejects the characters < > % & \\\\ ? /"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d"
+			},
+			"explanation": {
+				"correct": "Each service narrows the general character rules in its own way. A zone name is the most restricted: spaces and parentheses are refused, a name cannot begin with a digit, and special or Unicode characters are not permitted, although the value itself accepts everything. Traffic Manager additionally refuses # and : and also refuses a leading digit. Front Door refuses only # and :. The set of characters that no name anywhere may contain is the baseline restriction for every tagged resource.",
+				"perChoice": {
+					"a": "Fits the first slot: a zone name rejects spaces and parentheses, cannot start with a digit, and does not accept special or Unicode characters, while the value can contain all characters.",
+					"b": "Fits the second slot: this profile type rejects spaces, # and : in the name, and the name cannot start with a digit.",
+					"c": "Fits the third slot: this profile type only rejects # and : in the name; spaces and a leading digit are not part of its restriction.",
+					"d": "Fits the fourth slot: the characters < > % & \\\\ ? / are refused in a name on every resource that supports pairs, as well as on containers and subscriptions."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources"
+				}
+			],
+			"subtopics": [
+				"tag-naming",
+				"tag-limitations"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GFDZJZ5HTMD74T5QJTQ4MY",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Four support issues have come up across your estate. Match each situation to the approach that resolves it.",
+				"items": [
+					{
+						"id": "a",
+						"text": "Consolidate the extra entries into a JSON string stored under a single name"
+					},
+					{
+						"id": "b",
+						"text": "Run the service's own update command instead of a PATCH request"
+					},
+					{
+						"id": "c",
+						"text": "Apply the change while that instance is in the running state"
+					},
+					{
+						"id": "d",
+						"text": "Turn on tag inheritance in Cost Management"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "One resource already carries as many pairs as it is allowed to hold, and the next deployment tries to add several more"
+					},
+					{
+						"id": "s2",
+						"label": "Metadata entered on an Azure IP Group through the portal cannot be saved"
+					},
+					{
+						"id": "s3",
+						"label": "Editing pairs on a stopped virtual machine extension is refused, but the same edit succeeds once it is started"
+					},
+					{
+						"id": "s4",
+						"label": "One service never emits its metadata to the billing report, yet finance needs every usage record to show the owner value"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d"
+			},
+			"explanation": {
+				"correct": "Each situation has a documented workaround. A resource that has hit the ceiling on how many pairs it can hold can keep the additional data by putting a JSON string in the value of one name. A resource type whose API refuses PATCH cannot be edited from the portal at all, so its own update command has to be used instead. An extension refuses the edit until the parent compute instance is running. Finally, when a provider does not emit its pairs to the cost report, the records can still be attributed by switching on tag inheritance in Cost Management.",
+				"perChoice": {
+					"a": "Fits the first slot: when a resource, resource group, or subscription has reached the ceiling on pairs, the extra values can be carried in a JSON string placed in the value of one name.",
+					"b": "Fits the second slot: IP Groups and Azure Firewall policies refuse PATCH operations, so the portal cannot change their pairs and the service's own update command is required.",
+					"c": "Fits the third slot: the pairs on a virtual machine extension can only be updated while the virtual machine is running.",
+					"d": "Fits the fourth slot: tag inheritance in Cost Management makes usage and cost records carry the pair even when the provider does not support or emit it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-support"
+				}
+			],
+			"subtopics": [
+				"tag-limitations",
+				"cost-attribution"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GFGWHH5Q901EV4SSWAY8KY",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are writing the tagging standard for a new deployment. Before publishing it, you must record the maximum size Azure allows for each part of a tag, because templates will be rejected once these ceilings are crossed. The five caps below are all enforced by the platform. Match each cap to the part of the tag it limits.",
+				"items": [
+					{
+						"id": "i15",
+						"text": "15"
+					},
+					{
+						"id": "i50",
+						"text": "50"
+					},
+					{
+						"id": "i128",
+						"text": "128"
+					},
+					{
+						"id": "i256",
+						"text": "256"
+					},
+					{
+						"id": "i512",
+						"text": "512"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Pair count on an Azure Automation account"
+					},
+					{
+						"id": "s2",
+						"label": "Pair count on a resource group"
+					},
+					{
+						"id": "s3",
+						"label": "Tag name length on a storage account"
+					},
+					{
+						"id": "s4",
+						"label": "Tag value length on any resource type"
+					},
+					{
+						"id": "s5",
+						"label": "Tag name length on a resource type other than storage accounts"
+					}
+				]
+			},
+			"key": {
+				"s1": "i15",
+				"s2": "i50",
+				"s3": "i128",
+				"s4": "i256",
+				"s5": "i512"
+			},
+			"explanation": {
+				"correct": "A resource, resource group, or subscription normally carries at most 50 name-value pairs, while a short list of services accepts only 15; Azure Automation is one of those, so 15 goes with the Automation account and 50 with a resource group. Name size is capped at 512 characters in general but only 128 characters on storage accounts, and value size is capped at 256 characters on every resource type, storage accounts included.",
+				"perChoice": {
+					"i15": "Belongs with the Azure Automation account target. Automation is listed among the services that hold at most 15 name-value pairs rather than the usual 50.",
+					"i50": "Belongs with the resource group target. Every resource, resource group, and subscription holds up to 50 name-value pairs unless its service type imposes a lower ceiling.",
+					"i128": "Belongs with the storage account tag name target. Storage accounts accept a shorter tag name than other resource types.",
+					"i256": "Belongs with the tag value target. Values are limited to 256 characters on all resource types, and storage accounts keep the same value limit while shortening only the name.",
+					"i512": "Belongs with the general tag name target. This is the longest tag name accepted on resource types other than storage accounts."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-support"
+				}
+			],
+			"subtopics": [
+				"tag-limits",
+				"tag-naming-constraints"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GFMBQB7EPJDWXXXR96C4DD",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your platform team is finalizing the metadata standard that every resource it deploys must follow, and the draft list of pairs below was flagged during review. Which change should you make to the standard?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Tag name",
+						"Draft value"
+					],
+					"rows": [
+						[
+							"Environment",
+							"Production"
+						],
+						[
+							"CostCenter",
+							"4711"
+						],
+						[
+							"dbAdminPassword",
+							"Fabrikam#2024"
+						]
+					]
+				},
+				"statement": "The revised standard should {{revision}} the entry that was flagged.",
+				"slots": [
+					{
+						"id": "revision",
+						"options": [
+							{
+								"id": "a",
+								"text": "keep the value in Azure Key Vault and leave only a pointer in the tag"
+							},
+							{
+								"id": "b",
+								"text": "keep the value in the tag after encoding it with Base64"
+							},
+							{
+								"id": "c",
+								"text": "keep the value in the tag and limit portal visibility to subscription owners"
+							},
+							{
+								"id": "d",
+								"text": "keep the value in the tag only until the deployment finishes"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"revision": "a"
+			},
+			"explanation": {
+				"correct": "Tag values are held as plain text, and Azure can surface them through many channels, including billing reports, commands that return existing tags, deployment history, exported templates and monitoring logs. A database administrator password therefore must never be written as a tag value. Azure Key Vault is the service designed to securely store and control access to passwords and other secrets, so the credential belongs there while the tag carries only a pointer that lets the team find the right entry.",
+				"perChoice": {
+					"revision:b": "Base64 is only an encoding, not protection. The encoded text is still stored and returned as plain text through the same channels, so anyone who can read tags, deployment history, exported templates or reports can recover the password.",
+					"revision:c": "Restricting who sees the tag in the portal does not remove the value from the places Azure returns it automatically, such as commands that list tags, deployment history, exported templates and monitoring logs, so the credential would still leak.",
+					"revision:d": "The value is exposed for as long as it is present, and deployment history and exported templates keep a record of it, so removing the tag after the fact does not undo the exposure."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/key-vault/general/overview"
+				}
+			],
+			"subtopics": [
+				"tagging-standards",
+				"sensitive-data-in-tags"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GFMNPP83B57FAVJSC68X0R",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your team deploys a batch of virtual machines from one template, and every deployment ends with the failure below. You need each machine to carry all 63 chargeback attributes while the per-resource ceiling stays exactly as it is today. Which approach should you take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Code: InvalidTemplateDeployment\nMessage: Resource 'vm-sales-01' was rejected because it carries 63 tag pairs, more than the 50 allowed per resource."
+				},
+				"statement": "To keep the deployments succeeding, the team should {{approach}}.",
+				"slots": [
+					{
+						"id": "approach",
+						"options": [
+							{
+								"id": "a",
+								"text": "pack the attributes into one tag whose value is a JSON string"
+							},
+							{
+								"id": "b",
+								"text": "split the attributes between the machine and its resource group and read both at run time"
+							},
+							{
+								"id": "c",
+								"text": "request a higher per-resource tag pair limit from Azure support"
+							},
+							{
+								"id": "d",
+								"text": "store the attributes in the deployment history of the template instead of in tags"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"approach": "a"
+			},
+			"explanation": {
+				"correct": "A resource, resource group or subscription can hold at most 50 tag name-value pairs, which is why the deployment is rejected. The documented way to record more data than that ceiling allows is to keep a JSON string as the value of one tag name and place the many values inside that string. That satisfies the limit while keeping all 63 chargeback attributes on each machine.",
+				"perChoice": {
+					"approach:b": "Resources do not pick up the pairs applied to the resource group or subscription, so the members of the group would end up with only part of the data and the other part would never reach the machine.",
+					"approach:c": "The 50-pair ceiling is a fixed platform limit and cannot be raised per resource type by a support request, so this does not resolve the rejected deployment.",
+					"approach:d": "Deployment history is not queryable metadata on the resource, so the attributes would be unavailable to anything that reads the resource's tags, which is the stated purpose of storing them."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources"
+				}
+			],
+			"subtopics": [
+				"tag-limits",
+				"tagging-standards"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GFN2PKX0M1W9PVXTY4489S",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "After a team added a pair whose value is written in a non-English language to its fleet of Linux virtual machines, every deployment that reads instance metadata from the Instance Metadata Service began failing with a decoding error. The business information still has to be captured on the machines. Which rule should the tagging standard add?",
+				"statement": "To stop the decoding failures, the standard should {{rule}}.",
+				"slots": [
+					{
+						"id": "rule",
+						"options": [
+							{
+								"id": "a",
+								"text": "restrict tag names and values to ASCII characters"
+							},
+							{
+								"id": "b",
+								"text": "restrict tag values to 128 characters or fewer"
+							},
+							{
+								"id": "c",
+								"text": "restrict tag names to a maximum length of 512 characters"
+							},
+							{
+								"id": "d",
+								"text": "restrict tag values to a maximum length of 256 characters"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"rule": "a"
+			},
+			"explanation": {
+				"correct": "The platform warns that non-English language used in tags can cause a decoding failure while a virtual machine's metadata is loaded from the Instance Metadata Service, which is exactly the symptom described. Keeping tag names and values to ASCII characters removes the non-English wording and therefore the decoding failure, while the business information can still be captured in English.",
+				"perChoice": {
+					"rule:b": "128 characters is a size ceiling that applies to the name on storage accounts, not a language rule. A short non-English value still produces the decoding failure described in the scenario.",
+					"rule:c": "The 512-character ceiling on a tag name is a size limit, not a language rule. Keeping a non-English name within it does not stop the metadata decoding failure.",
+					"rule:d": "The 256-character ceiling on a tag value is a size limit and does not address non-English wording, so the Instance Metadata Service would still fail to decode the value."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources"
+				}
+			],
+			"subtopics": [
+				"tag-character-limits",
+				"tagging-standards"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GFNWD1NZ8QZGACKDTGQEYY",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your finance team reports on usage downloaded from the billing portal. The pairs your developers apply to their configuration stores show up on the resources themselves, but the Tags column for those store lines is empty, and the support matrix below shows that type behaves this way. You need those usage records to carry the pairs. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Resource type",
+						"Accepts tags",
+						"Sends tags to usage/billing data"
+					],
+					"rows": [
+						[
+							"Microsoft.App/configurationStores",
+							"Yes",
+							"No"
+						],
+						[
+							"Microsoft.Storage/storageAccounts",
+							"Yes",
+							"Yes"
+						],
+						[
+							"Microsoft.Compute/virtualMachines",
+							"Yes",
+							"Yes"
+						]
+					]
+				},
+				"statement": "To get the usage records tagged, you should {{fix}}.",
+				"slots": [
+					{
+						"id": "fix",
+						"options": [
+							{
+								"id": "a",
+								"text": "enable tag inheritance in Cost Management"
+							},
+							{
+								"id": "b",
+								"text": "assign a policy definition that requires the pair on that resource type"
+							},
+							{
+								"id": "c",
+								"text": "grant the Tag Contributor role to the finance analysts"
+							},
+							{
+								"id": "d",
+								"text": "move the pairs to the subscription so every charge line carries them"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"fix": "a"
+			},
+			"explanation": {
+				"correct": "The support matrix separates two different things: whether a resource type has a tag property, and whether it passes those tag values into the billing usage data. Microsoft.App configuration stores accept tags but do not send them to the usage data, which is why the Tags column is empty for those lines. The documented way to make sure usage and charge records are tagged regardless of whether a resource type supports or emits tags is tag inheritance in Cost Management.",
+				"perChoice": {
+					"fix:b": "A policy definition can require or add tags to a resource, but it cannot change how a resource provider emits its tags in billing usage data. The store lines would still arrive without tags in the Tags column.",
+					"fix:c": "The Tag Contributor role grants write access to the Microsoft.Resources/tags type so that pairs can be applied. It does not alter what the usage data contains, so the Tags column stays empty.",
+					"fix:d": "Resources do not pick up pairs that are placed on the subscription, and even where a policy propagates a value downward, the usage record still originates from the resource type, which does not emit tags for configuration stores."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-support"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources"
+				}
+			],
+			"subtopics": [
+				"tags-in-cost-report",
+				"tag-support-matrix"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GFPGAJ7GGA4YMBYEGNM9BV",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your network team manages an Azure IP Group that already exists. Whenever someone saves the pairs Environment=Production and CostCenter=4711 on it from the portal, nothing changes, although the same pairs save normally on virtual machines and storage accounts. You have only the command line available. Which command should you run?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Where the pairs were saved",
+						"Result"
+					],
+					"rows": [
+						[
+							"Azure IP Group (already exists)",
+							"No change to the pairs"
+						],
+						[
+							"Virtual machine",
+							"Pairs saved"
+						],
+						[
+							"Storage account",
+							"Pairs saved"
+						]
+					]
+				},
+				"statement": "Run {{cmd}} to put the required pairs on the existing IP group.",
+				"slots": [
+					{
+						"id": "cmd",
+						"options": [
+							{
+								"id": "a",
+								"text": "az network ip-group update"
+							},
+							{
+								"id": "b",
+								"text": "az network ip-group create"
+							},
+							{
+								"id": "c",
+								"text": "az network ip-group show"
+							},
+							{
+								"id": "d",
+								"text": "az network ip-group delete"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"cmd": "a"
+			},
+			"explanation": {
+				"correct": "Azure IP Groups and Azure Firewall policies do not support PATCH operations, so the PATCH-based save used by the portal cannot change their tags. The documented way around this is to use the update command belonging to that resource type instead, and for an IP group that command is az network ip-group update.",
+				"perChoice": {
+					"cmd:b": "The create command provisions a new IP group and fails when one with the same name already exists, so it cannot apply the pairs to the existing object.",
+					"cmd:c": "The show command only reads and prints the current configuration of the IP group, including its current pairs, and leaves it unchanged.",
+					"cmd:d": "The delete command removes the IP group entirely instead of labelling it, which would destroy the object the team needs to keep."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources"
+				}
+			],
+			"subtopics": [
+				"tag-limitations",
+				"azure-cli"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GFSDTTWZRK8XE0E1MQPRDG",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are writing the metadata standard that every resource in your estate must follow. The draft tag set below pairs the application's owner and cost centre with a database administrator login and a storage account connection string. You have learned that tag values are readable by anyone who can pull a cost report, a deployment history, an exported template, or a monitoring log. You need the standard to state which values may be placed in a tag. Which rule should the standard contain?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "\"tags\": {\n  \"ApplicationOwner\": \"alex@contoso.com\",\n  \"CostCenter\": \"4711\",\n  \"DatabaseAdminLogin\": \"svc_sqladmin\",\n  \"StorageConnectionString\": \"DefaultEndpointsProtocol=https;AccountKey=9b2fd41c8e77a4b0d9e1f==\"\n}"
+				},
+				"statement": "The standard should {{rule}}.",
+				"slots": [
+					{
+						"id": "rule",
+						"options": [
+							{
+								"id": "a",
+								"text": "exclude secrets and connection strings from tag values"
+							},
+							{
+								"id": "b",
+								"text": "allow secrets and connection strings in tag values after Base64 encoding them"
+							},
+							{
+								"id": "c",
+								"text": "allow secrets and connection strings in tag values and restrict tag read operations with role assignments"
+							},
+							{
+								"id": "d",
+								"text": "allow secrets and connection strings in tag values on resource types that don't report tags to cost data"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"rule": "a"
+			},
+			"explanation": {
+				"correct": "Tags are kept as plain text, so whatever sits in a tag value can surface wherever that value is surfaced: cost reports, commands that return existing tag definitions, deployment histories, exported templates, and monitoring logs. The published guidance is therefore not to place sensitive values in tags. Logins, passwords, keys, and connection strings belong outside resource metadata, and the pairs in the draft set should carry only non-sensitive metadata such as the owner and the cost centre.",
+				"perChoice": {
+					"rule:b": "Base64 is a reversible encoding rather than protection, so the stored text is still readable and shows up in the same cost reports, deployment histories, exported templates, and monitoring logs as an unencoded value would.",
+					"rule:c": "Restricting who can call the tag operations doesn't close the other paths. The value can still be exposed through cost reports, deployment histories, exported templates, and monitoring logs, where role assignments on the tag operations have no effect.",
+					"rule:d": "Whether a resource type emits its tags to cost data varies, as the support matrix records, but omitting a type from a cost report doesn't remove the other exposures: the value is still returned by tag operations, deployment histories, exported templates, and monitoring logs."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-support"
+				}
+			],
+			"subtopics": [
+				"tag-security",
+				"tag-value-standards"
+			],
+			"reviewed": false
+		}
+	]
+}

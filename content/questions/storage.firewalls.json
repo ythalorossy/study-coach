@@ -1,0 +1,1939 @@
+{
+	"skill": "storage.firewalls",
+	"questions": [
+		{
+			"id": "q_01M5KBBHK61Q6X2E4Q4HZ5HG9J",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your storage account stcont001 sits in East US with geo-redundant replication and currently accepts traffic only from selected networks. Two virtual network rules authorize subnet app-subnet-prod in East US and subnet app-subnet-failover in Central US, and both of those subnets carry a storage service endpoint. Production reads and writes from East US succeed, but during a failover drill the application deployed in Central US receives HTTP 403 for every request to stcont001. Which change should you make so the failover subnet keeps working while access stays limited to selected networks?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Observation or setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Replication",
+							"Standard RA-GRS (primary in East US)"
+						],
+						[
+							"Public network access",
+							"Enabled from selected networks"
+						],
+						[
+							"Storage service endpoint on app-subnet-prod",
+							"Microsoft.Storage"
+						],
+						[
+							"Storage service endpoint on app-subnet-failover",
+							"Microsoft.Storage"
+						],
+						[
+							"Virtual network rules",
+							"app-subnet-prod (East US), app-subnet-failover (Central US)"
+						],
+						[
+							"IP network rules",
+							""
+						],
+						[
+							"Network security exceptions",
+							""
+						],
+						[
+							"Blob requests from app-subnet-prod",
+							"200 OK"
+						],
+						[
+							"Blob requests from app-subnet-failover",
+							"403 Forbidden"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Replace the service endpoint on the failover subnet with a Microsoft.Storage.Global endpoint"
+					},
+					{
+						"id": "b",
+						"text": "Add an IP network rule for the public address range that the failover virtual network's subnets egress through, and leave the service endpoint as is"
+					},
+					{
+						"id": "c",
+						"text": "Set public network access on stcont001 to Enabled from all networks so the public endpoint answers every request"
+					},
+					{
+						"id": "d",
+						"text": "Enable the \"Allow trusted Microsoft services to access this storage account\" network security exception"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Azure Storage service endpoints come in two types. Microsoft.Storage only reaches storage accounts located in the same region as the virtual network, whereas Microsoft.Storage.Global reaches accounts in any region, which is what a geo-redundant account needs when clients operate from the paired region. Because a subnet can carry only one storage service endpoint, the existing Microsoft.Storage endpoint on app-subnet-failover must be removed before the global one is added. Both subnets are already listed in the account's virtual network rules, so after the swap the failover subnet is authorized and region-agnostic. This preserves the \"Enabled from selected networks\" restriction rather than opening the account to the internet.",
+				"perChoice": {
+					"b": "Wrong: a service endpoint makes traffic from that subnet reach storage with a private source IP, so an IP network rule built around the subnet's public address never matches. IP rules are the tool for clients outside a virtual network, not for subnets that already route through a service endpoint.",
+					"c": "Wrong: this makes the account reachable from any network, which removes the network filtering the account is supposed to keep and exposes it to the internet. It solves the 403 by deleting the security boundary rather than by authorizing the failover subnet.",
+					"d": "Wrong: that exception exists for Azure platform services that connect from outside your network boundary and cannot be expressed as a virtual network or IP rule, such as a logging or diagnostics service reading resource logs or metrics tables. Traffic from your own subnets is handled by virtual network rules and service endpoints."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-virtual-networks"
+				}
+			],
+			"subtopics": [
+				"service-endpoints",
+				"virtual-network-rules",
+				"geo-redundant-access"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KBGR7FSEXB38DRK1VXA34R",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have moved an analytics pipeline onto storage account stdata02, and the pipeline now calls the Data Lake Storage Gen2 REST APIs from inside the hub virtual network while public network access on the account is switched off. Reading a file's contents succeeds, but creating a directory or changing an access control list fails with HTTP 403 and the client logs report an unresolved host redirect. You need every pipeline operation to work without ever leaving private connectivity. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Check or operation",
+						"Observed result"
+					],
+					"rows": [
+						[
+							"Private endpoints approved on stdata02",
+							"1"
+						],
+						[
+							"Public network access",
+							"Disabled"
+						],
+						[
+							"Get file contents (REST)",
+							"200 OK"
+						],
+						[
+							"Create Directory (REST)",
+							"403 - could not resolve redirected host"
+						],
+						[
+							"Delete Directory (REST)",
+							"403 - could not resolve redirected host"
+						],
+						[
+							"Manage ACL (REST)",
+							"403 - could not resolve redirected host"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Create one more private endpoint for the dfs sub-resource and keep the private endpoint that already exists"
+					},
+					{
+						"id": "b",
+						"text": "Create one more private endpoint for the file sub-resource and keep the private endpoint that already exists"
+					},
+					{
+						"id": "c",
+						"text": "Create one more private endpoint for the queue sub-resource and keep the private endpoint that already exists"
+					},
+					{
+						"id": "d",
+						"text": "Create one more private endpoint for the table sub-resource and keep the private endpoint that already exists"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Data Lake Storage and Blob are paired choices: a working Data Lake Storage Gen2 deployment needs a private endpoint for the dfs sub-resource as well as one for the blob sub-resource. The account has only a single private endpoint, which is why content reads succeed while Manage ACL, Create Directory and Delete Directory fail - those operations are issued against the dfs path and then redirected to the Blob endpoint, whose private name cannot be resolved. Adding the dfs private endpoint alongside the existing one completes the pair and lets every operation resolve over private connections without any public access.",
+				"perChoice": {
+					"b": "the file sub-resource is the Azure Files endpoint used for SMB/NFS file share access. It has nothing to do with the Data Lake Storage Gen2 namespace operations, so the directory and ACL calls would still fail.",
+					"c": "the queue sub-resource is the Azure Storage queue endpoint used by messaging and processing workloads. Queue private endpoints do not serve hierarchical namespace operations, so the pipeline would keep getting 403 responses.",
+					"d": "the table sub-resource is the Azure Tables (NoSQL) endpoint. It does not back the Data Lake Storage Gen2 path, so creating a table private endpoint leaves the directory and ACL failures unresolved."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-private-endpoints"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security"
+				}
+			],
+			"subtopics": [
+				"private-endpoints",
+				"data-lake-storage",
+				"private-dns"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KBN7D7CBGMMKCYWVWN61EE",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have configured storage account stshare04 to accept traffic only from selected networks, and it already carries one virtual network rule for the subnet shown as already authorized below. A data feed that runs inside a virtual network owned by a separate Microsoft Entra tenant must now be able to write to the account, and that network has only the one subnet shown in the second row. On the account's Networking page the Virtual networks and Subnets pickers return nothing for that other tenant, and Add new virtual network cannot reach it either. You need this second source authorized so the feed keeps working. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Subnet",
+						"Virtual network",
+						"Owner of the virtual network",
+						"Storage service endpoint on the subnet",
+						"Current rule on stshare04"
+					],
+					"rows": [
+						[
+							"snet-app-prod",
+							"vnet-hub-prod",
+							"Contoso tenant, the same tenant as the account",
+							"Microsoft.Storage",
+							"Virtual network rule, Authorized"
+						],
+						[
+							"snet-ingest",
+							"vnet-partner-feed",
+							"Fabrikam tenant, a different tenant from the account",
+							"",
+							"No rule"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Pick vnet-partner-feed and snet-ingest from the Virtual networks and Subnets pickers in the Networking page, which also turns on the Microsoft.Storage service endpoint for you."
+					},
+					{
+						"id": "b",
+						"text": "Add snet-ingest with PowerShell, Azure CLI, or the REST API by supplying its subnet resource ID, once the Microsoft.Storage service endpoint has been enabled on that subnet in the partner subscription."
+					},
+					{
+						"id": "c",
+						"text": "Add the address range of the partner virtual network to the account's IP network rules, so that requests arriving from its public addresses are accepted."
+					},
+					{
+						"id": "d",
+						"text": "Add a resource instance rule for vnet-partner-feed, on the grounds that the account cannot authorize a subnet belonging to another tenant."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "Subnets that belong to a virtual network in a different Microsoft Entra tenant are never listed by the portal, so that subnet has to be added by resource ID with PowerShell, Azure CLI, or the REST API. Because the row for snet-ingest also shows no storage service endpoint, the endpoint must be enabled on that subnet first (from the partner subscription, since the subnet lives there) before the rule can work; unlike the portal flow, these tools do not create the endpoint for you. With the endpoint in place and the virtual network rule added, the feed's traffic reaches the account while access stays limited to selected networks.",
+				"perChoice": {
+					"a": "This cannot work: the pickers only ever list virtual networks and subnets from the account's own Microsoft Entra tenant, which is exactly why nothing appears for the Fabrikam tenant in the second row. The portal's convenience of creating the service endpoint for you is only available for same-tenant subnets.",
+					"c": "IP network rules match public IP address ranges of clients that are not in a virtual network. A virtual network's address space is not such a public range, and it does not express per-subnet authorization; the partner subnet needs a virtual network rule on its subnet resource ID instead.",
+					"d": "Resource instance rules are for Azure resources that cannot be isolated by a subnet or IP range, and such a resource must live in the same Microsoft Entra tenant as the storage account. A virtual network from another tenant cannot be covered this way; virtual network rules are the mechanism for subnets."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-virtual-networks"
+				}
+			],
+			"subtopics": [
+				"virtual-network-rules",
+				"service-endpoints",
+				"network-rules-configuration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KBY10210B2YB9GNB62CZVD",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a storage account stbackup02 that must accept nightly backup uploads from a server in an on-premises data center. That data center reaches Azure over an ExpressRoute circuit, and the account is currently locked to selected networks with no source authorized yet. The account's current configuration is shown below. You need the nightly backup job to reach the account while no other network gains access. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Storage account",
+							"stbackup02"
+						],
+						[
+							"Default access level",
+							"Enabled from selected networks"
+						],
+						[
+							"Virtual network rules",
+							"0"
+						],
+						[
+							"IP network rules",
+							"0"
+						],
+						[
+							"Resource instance rules",
+							"0"
+						],
+						[
+							"Private endpoints",
+							"0"
+						],
+						[
+							"Backup source",
+							"Server in on-premises data center DC1, linked to Azure by an ExpressRoute circuit"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add an IP network rule for the private IP address range of the on-premises data center"
+					},
+					{
+						"id": "b",
+						"text": "Add an IP network rule for the public NAT IP addresses used for Microsoft peering"
+					},
+					{
+						"id": "c",
+						"text": "Add an IP network rule for the public IP address range of the on-premises firewall's Internet-facing interface"
+					},
+					{
+						"id": "d",
+						"text": "Add an IP network rule for the private IP address range of the circuit's private peering"
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "When an on-premises network reaches Azure through an ExpressRoute circuit, the addresses the storage account actually sees are the translated public addresses used on the Microsoft peering path, because on-premises private addresses are translated before the traffic enters Microsoft's network. IP network rules filter on public IP ranges, so the rule must list those Microsoft peering translation addresses, which are supplied either by the service provider or by the customer. Adding them keeps the account on selected networks while letting the backup job through.",
+				"perChoice": {
+					"a": "The private addresses assigned inside the on-premises data center are never the source the storage account sees, and an IP network rule only matches public IP ranges. Adding them authorizes nothing, so the backup job would still be denied.",
+					"c": "The Internet-facing address of the on-premises firewall is what Azure sees when traffic reaches Azure over the ordinary Internet, not over an ExpressRoute circuit. With a circuit in place, the source presented to the service is the translated address on the peering path, so this range would not match and the uploads would still fail.",
+					"d": "Private peering carries on-premises traffic to Azure virtual networks over a private link; it does not deliver traffic to the public endpoint that IP network rules govern. Listing its private range therefore cannot authorize the backup source."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-set-default-access"
+				}
+			],
+			"subtopics": [
+				"ip-network-rules",
+				"expressroute",
+				"on-premises-access"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KC24D09SVHFEZ6BD0TPA4B",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a web application that runs in subnet app-snet of virtual network vnet-app in East US. It serves data from two storage accounts: starchest01 in East US and stglobal05 in West Europe. Both accounts accept traffic only from selected networks, both already carry a virtual network rule authorizing vnet-app / app-snet, and app-snet has a storage service endpoint, as shown below. Calls to starchest01 succeed, but every request to stglobal05 is rejected with HTTP 403. You need the application to keep serving both accounts. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Storage account starchest01",
+							"Region: East US"
+						],
+						[
+							"Storage account stglobal05",
+							"Region: West Europe"
+						],
+						[
+							"Public network access (both accounts)",
+							"Enabled from selected networks"
+						],
+						[
+							"Virtual network rule (both accounts)",
+							"vnet-app / app-snet — present"
+						],
+						[
+							"Service endpoint on app-snet",
+							"Microsoft.Storage"
+						],
+						[
+							"Application",
+							"Runs in app-snet, East US"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Replace the Microsoft.Storage service endpoint on app-snet with a Microsoft.Storage.Global service endpoint."
+					},
+					{
+						"id": "b",
+						"text": "Add a Microsoft.Storage.Global service endpoint to app-snet and leave the Microsoft.Storage endpoint that is already on the subnet."
+					},
+					{
+						"id": "c",
+						"text": "Add a virtual network rule on stglobal05 that authorizes app-snet."
+					},
+					{
+						"id": "d",
+						"text": "Enable a network security exception on stglobal05 for trusted services so the application's requests reach the account."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The Microsoft.Storage service endpoint reaches storage accounts only in the same region as the virtual network, so requests from app-snet in East US can never reach stglobal05 in West Europe, no matter which network rules the account carries. Microsoft.Storage.Global reaches accounts in any region, so swapping the endpoint type restores cross-region reach. Because a subnet can carry only one of the two endpoint types, the existing Microsoft.Storage endpoint has to be taken off app-snet before the Global one is added. The account stays on selected networks, and the existing virtual network rule keeps authorizing the subnet.",
+				"perChoice": {
+					"b": "A subnet supports only one of the two storage service endpoint types, so the Microsoft.Storage endpoint already on app-snet cannot remain alongside a new Global endpoint; it has to be removed first. Adding a second endpoint is therefore not a configuration that can be applied.",
+					"c": "stglobal05 already carries a virtual network rule for app-snet, as the exhibit shows. Network rules decide which sources may reach the public endpoint, but they cannot widen the set of regions that the subnet's endpoint type reaches, so this change leaves the HTTP 403 in place.",
+					"d": "A network security exception is intended for Azure platform services that run outside your network boundary and cannot be expressed as a virtual network or IP rule. Traffic from your own virtual machine is not covered by it, so it cannot resolve a cross-region endpoint limitation."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-virtual-networks"
+				}
+			],
+			"subtopics": [
+				"service-endpoints",
+				"virtual-network-rules"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KC8VJD00VH5YMMTMVA2YMJ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a nightly AzCopy job that runs from subnet copy-snet of virtual network vnet-backup and copies a container from storage account stsrc01 into storage account stdst02. Copying out of stsrc01 has worked for months, but since last night's change every run now fails on the destination leg: the client logs show the destination host cannot be resolved from vnet-backup and the job reports HTTP 403 when it writes to stdst02. The accounts and that network are described below. You need tonight's copy to complete, and neither account may be opened up to traffic from any network. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Public network access on stsrc01",
+							"Enabled from selected networks"
+						],
+						[
+							"Public network access on stdst02",
+							"Enabled from selected networks"
+						],
+						[
+							"Virtual network rule on stsrc01",
+							"vnet-backup / copy-snet"
+						],
+						[
+							"Virtual network rule on stdst02",
+							"vnet-backup / copy-snet"
+						],
+						[
+							"Service endpoint on copy-snet",
+							"Microsoft.Storage"
+						],
+						[
+							"Blob private endpoint for stsrc01",
+							"pe-stsrc01-blob, in copy-snet of vnet-backup"
+						],
+						[
+							"Blob private endpoint for stdst02",
+							""
+						],
+						[
+							"Private DNS zone linked to vnet-backup",
+							"privatelink.blob.core.windows.net"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add an IP network rule to stdst02 that allows the public address range of vnet-backup."
+					},
+					{
+						"id": "b",
+						"text": "Create a blob private endpoint for stdst02 in vnet-backup."
+					},
+					{
+						"id": "c",
+						"text": "Create an additional blob private endpoint for stsrc01 in vnet-backup."
+					},
+					{
+						"id": "d",
+						"text": "Enable a network security exception on stdst02 that allows trusted Azure services."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "The job runs in a network where it reaches stsrc01 over Private Link, and vnet-backup has the privatelink.blob.core.windows.net private zone linked. A copy client needs a working path to every account it touches, so leaving only the source side privatised breaks the destination leg: inside that network the destination name has no private address to resolve to. Giving stdst02 its own blob private endpoint in vnet-backup supplies that address, the ordinary connection string for the destination then resolves correctly, and the existing virtual network rules and selected-networks setting can stay in place.",
+				"perChoice": {
+					"a": "An IP network rule matches the public source address ranges of clients that reach the public endpoint, which suits office networks, on-premises hosts and scanners. Traffic sent from vnet-backup does not present that range to storage — once a subnet carries a service endpoint its traffic arrives with a private source IP — so an address range would neither resolve the destination name nor give the job a path to it.",
+					"c": "stsrc01 already has a blob private endpoint in vnet-backup and reads from it succeed, so a second one for the same account in the same subnet adds nothing. The failing leg is the destination: the copy client needs a private path to the destination account as well, and only one side is currently privatised.",
+					"d": "A network security exception is for Azure platform services that run outside your network boundary, such as a diagnostics or logging service reading resource logs or metrics tables. AzCopy running inside vnet-backup is not such a service, so the exception would not restore the destination connection and would weaken the account for no benefit."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-private-endpoints"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security"
+				}
+			],
+			"subtopics": [
+				"private-endpoints",
+				"cross-account-copy",
+				"network-rules"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KCBGCY3CKJTVYAJ3RZVM8P",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have storage account stdiag01, which several Azure platform services write resource logs and metrics tables into from addresses outside your virtual network. The account now accepts traffic only from sources you list, nothing on it authorizes those writers, and every log and metrics upload fails with HTTP 403. You need those uploads to keep succeeding while no other network gains access. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"stdiag01 setting",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Account type",
+							"General-purpose v2"
+						],
+						[
+							"Location",
+							"East US"
+						],
+						[
+							"Public network access",
+							"Enabled from selected networks"
+						],
+						[
+							"Virtual network rules",
+							""
+						],
+						[
+							"IP network rules",
+							""
+						],
+						[
+							"Resource instance rules",
+							""
+						],
+						[
+							"Allow Azure services on this account list",
+							"Off"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add a trusted service exception so the platform services can reach the account."
+					},
+					{
+						"id": "b",
+						"text": "Add a resource instance rule that authorizes the platform services that run in your tenant."
+					},
+					{
+						"id": "c",
+						"text": "Add an IP network rule that lists the public address ranges of the platform services."
+					},
+					{
+						"id": "d",
+						"text": "Add a virtual network rule that authorizes the subnet where the platform services run."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A network security exception for trusted services is the mechanism for Azure services that run outside your network and cannot be expressed as a virtual network or IP rule, such as a service that only needs to write resource log files or metrics tables; these services authenticate strongly before they connect. Switching on the Azure services list for stdiag01 lets the log and metrics writes through, while every other source still has to match an explicit virtual network, IP or resource instance rule, so no other network gains access.",
+				"perChoice": {
+					"b": "A resource instance rule covers Azure resources you can point at individually: the resource must live in the same Microsoft Entra tenant as the storage account, and its role assignments decide which operations it may run. The platform services writing these logs are not resource instances in your tenant, so there is nothing to select for them.",
+					"c": "IP network rules work by matching the client's public IP address against a range you supply. The callers here originate from addresses you do not control and cannot express as a stable range in your own address space, so no correct range can be listed, and a range broad enough to try would expose the account to unrelated networks.",
+					"d": "Virtual network rules authorize named subnets of your own virtual networks, and each such subnet must also have a storage service endpoint enabled on it. The platform services writing these logs do not run in a subnet you can select, so such a rule never matches their traffic."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-set-default-access"
+				}
+			],
+			"subtopics": [
+				"trusted-services",
+				"network-security-exceptions",
+				"firewall-rules"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KCHKK9M4ZMGJQR1QX8WCQA",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have storage account stmedia07 in East US that accepts traffic only from selected networks. A colleague, Priya, holds the assignments shown below. She wants to authorize subnet app-snet of virtual network vnet-app as a new source, but on the Networking page the page reports that her operation is not authorized and the rule is never written to the account. You need Priya to be able to complete this configuration task on stmedia07. Which additional role assignment should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Principal",
+						"Built-in role currently held",
+						"Scope"
+					],
+					"rows": [
+						[
+							"Priya Raman (user)",
+							"Storage Blob Data Contributor",
+							"stmedia07 (account)"
+						],
+						[
+							"Priya Raman (user)",
+							"Reader",
+							"RG-app (contains vnet-app)"
+						],
+						[
+							"svc-backup (service principal)",
+							"Storage Account Key Operator Service",
+							"stmedia07 (account)"
+						],
+						[
+							"Public network access on stmedia07",
+							"Enabled from selected networks",
+							"Existing rule: vnet-app / app-snet"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Assign the built-in Storage Account Contributor role on stmedia07"
+					},
+					{
+						"id": "b",
+						"text": "Assign the built-in Storage Blob Data Owner role on the containers in stmedia07"
+					},
+					{
+						"id": "c",
+						"text": "Assign the built-in Storage Account Key Operator Service role on stmedia07"
+					},
+					{
+						"id": "d",
+						"text": "Assign the built-in Network Contributor role on the RG-app resource group that holds vnet-app"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Adding a virtual network rule is a management-plane change written to the storage account's own network settings, and the documentation names Storage Account Contributor as the built-in role that lets you add one (a custom role carrying Microsoft.Network/virtualNetworks/subnets/joinViaServiceEndpoint/action on the subnets would also satisfy the requirement). Priya's current assignments only cover reading resources, blob data, and key operations, none of which change the account's firewall configuration, so the portal rejects her change.",
+				"perChoice": {
+					"b": "Storage Blob Data Owner grants full control over blob data inside the account's containers. Data-plane roles govern the data a principal reads and writes, not the account's network rules, so the authorization error on the Networking page would persist.",
+					"c": "Storage Account Key Operator Service lets a principal list and regenerate the account's access keys for key-based authentication. It grants no permission over the account's network configuration, so it cannot authorize adding a subnet rule.",
+					"d": "Network Contributor in the RG-app resource group administers virtual networks and their subnets. The rule being added is stored on the storage account stmedia07, which lies outside that scope, so the operation would still fail."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-virtual-networks"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security"
+				}
+			],
+			"subtopics": [
+				"virtual-network-rules",
+				"role-based-access"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KCV6VMEP8R15CM13YHBJY8",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have storage account starch12, a general-purpose v2 account in East US with geo-redundant replication, and four teams on your estate each need a different outcome. The state of the account and of each team's client is shown below. Match each team to the one change you should make, so that the team's traffic keeps working and no source you have not listed can reach the account. Which change belongs with each team?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Team",
+						"Configuration in place",
+						"What the team reports",
+						"What the team needs"
+					],
+					"rows": [
+						[
+							"Team A",
+							"Subnet dev-app of vnet-dev is listed under the account's virtual network rules, added two days ago. Nothing on the account or on that subnet has changed since.",
+							"Every read and write from the virtual machines in dev-app returns HTTP 403.",
+							"That subnet must be able to read and write."
+						],
+						[
+							"Team B",
+							"A blob private endpoint for vnet-app is approved and name resolution inside vnet-app returns the private address. An IP network rule still authorizes 203.0.113.0/24, the range of a contractor's office.",
+							"A contractor working from that office can still list containers using the account name.",
+							"Nothing at all may reach the account from outside vnet-app, and the team's own application must keep working."
+						],
+						[
+							"Team C",
+							"A dfs private endpoint for vnet-data is approved. The network runs its own DNS server and delegates no subdomains to Azure.",
+							"Applications inside vnet-data resolve the account name to the same address they get from outside the virtual network, and their uploads fail.",
+							"Applications inside vnet-data must keep working with the same connection string they already use."
+						],
+						[
+							"Team D",
+							"Private endpoints for blob and dfs are approved in vnet-sec, which uses the default Azure DNS. The account's default access allows the selected sources only.",
+							"SMB clients in vnet-sec cannot mount the account's share; the mount reports that the host is unreachable.",
+							"The share must be mountable from vnet-sec, with traffic staying inside the virtual network."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Enable the Microsoft.Storage service endpoint on that subnet"
+					},
+					{
+						"id": "b",
+						"text": "Change the account's default access to Disabled"
+					},
+					{
+						"id": "c",
+						"text": "Delegate the privatelink subdomain to the virtual network's private DNS zone"
+					},
+					{
+						"id": "d",
+						"text": "Create a private endpoint for the file sub-resource"
+					},
+					{
+						"id": "e",
+						"text": "Use the privatelink subdomain URL directly instead of the account name"
+					},
+					{
+						"id": "f",
+						"text": "Change the account's default access to Enabled from all networks"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Team A"
+					},
+					{
+						"id": "s2",
+						"label": "Team B"
+					},
+					{
+						"id": "s3",
+						"label": "Team C"
+					},
+					{
+						"id": "s4",
+						"label": "Team D"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d"
+			},
+			"explanation": {
+				"correct": "Team A: the rule is on the account, but a rule only grants access to a subnet that also carries the Microsoft.Storage service endpoint; that endpoint is what gives the direct route, so without it the requests keep being denied two days later. Team B: the private endpoint works and is permitted, but an IP network rule still admits a contractor's office, so outside traffic must be cut off at the account level — setting the default access to Disabled leaves private endpoints as the only route, and traffic from the network that owns the private endpoint is always permitted. Team C: the endpoint is fine; the name is not resolving locally, because a network-owned DNS server has no records for the privatelink subdomain, so the ordinary account name still returns the outside address. Delegating that subdomain to the virtual network's private DNS zone (or adding the A records yourself) makes the account name resolve to the private endpoint address, so the existing connection string keeps working. Team D: every storage service needs its own private endpoint, so the blob and dfs endpoints do not carry SMB file share traffic; an endpoint for the file sub-resource is what the mount needs.",
+				"perChoice": {
+					"a": "Team A — the virtual network rule is already saved, so the missing piece is the service endpoint on that subnet; the portal would have created it when the subnet was picked.",
+					"b": "Team B — an IP network rule is still admitting the contractor's office, and only turning off the account's public traffic closes every source at once while leaving the approved private endpoint path working for the application.",
+					"c": "Team C — inside a network that runs its own DNS server, the privatelink subdomain must be delegated to the virtual network's private DNS zone or the records must be added by hand; that is why the account name still returns the outside address.",
+					"d": "Team D — one private endpoint is needed per storage service; endpoints created for blob and dfs do not serve the file share, which is why the SMB mount has nothing to route on.",
+					"e": "Fits no slot — clients keep using the ordinary account name and DNS does the routing; the privatelink name belongs in DNS records, not in the client's URL, and this change would not resolve the 403, the outside access, the name resolution or the missing SMB endpoint.",
+					"f": "Fits no slot — this removes network filtering from the account entirely, admitting every source, which contradicts keeping unlisted sources out and directly violates Team B's requirement."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-private-endpoints"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-virtual-networks"
+				}
+			],
+			"subtopics": [
+				"service-endpoints",
+				"private-endpoints",
+				"private-dns"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KD1YZCNQPQV7A2B0DCCHEH",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are reviewing four reports about storage account stedge01, a general-purpose v2 account in East US that nobody wants exposed to traffic from any network. Each row of the table describes one client and what you observed from it. Match every case to the reason behind that behaviour, so that you can correct what actually needs correcting without loosening the account. Which reason belongs with each client?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Client",
+						"What you observed"
+					],
+					"rows": [
+						[
+							"A",
+							"The application in app-snet of vnet-app writes to stedge01 normally, and the account lists that subnet as an authorized source with the storage service endpoint turned on. The account also carries an IP network rule listing the public address block that app-snet held before the endpoint was enabled."
+						],
+						[
+							"B",
+							"The team removed app-snet last week and created a subnet with the same name in the same virtual network. The Networking page now lists no rule for vnet-app / app-snet, and every request from the application returns HTTP 403."
+						],
+						[
+							"C",
+							"A colleague added a virtual network rule for vnet-app / app-snet and pressed Save at 09:14 UTC. Requests made from that source between 09:14 and 09:15 UTC returned HTTP 403, and requests made after 09:15 UTC succeeded."
+						],
+						[
+							"D",
+							"Public network access on stedge01 is Disabled and the account carries no network rules. The web app in vnet-app, where a private endpoint for stedge01 exists, keeps reading and writing normally, while a laptop on the corporate network gets HTTP 403."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "The account's rules no longer list that subnet, because the earlier subnet was removed along with the network rule that referenced it."
+					},
+					{
+						"id": "i2",
+						"text": "That source now reaches storage with a private address, so the public address block in the IP rule no longer comes into play."
+					},
+					{
+						"id": "i3",
+						"text": "Denies stay in force for up to one minute after an allowing change has been saved."
+					},
+					{
+						"id": "i4",
+						"text": "Traffic from a virtual network that owns a private endpoint is allowed even when the account refuses public traffic."
+					},
+					{
+						"id": "i5",
+						"text": "The endpoint on the subnet reaches storage accounts only in the region where the virtual network sits."
+					},
+					{
+						"id": "i6",
+						"text": "The application used the privatelink hostname directly instead of the account's ordinary hostname."
+					}
+				],
+				"slots": [
+					{
+						"id": "a",
+						"label": "Client A"
+					},
+					{
+						"id": "b",
+						"label": "Client B"
+					},
+					{
+						"id": "c",
+						"label": "Client C"
+					},
+					{
+						"id": "d",
+						"label": "Client D"
+					}
+				]
+			},
+			"key": {
+				"a": "i2",
+				"b": "i1",
+				"c": "i3",
+				"d": "i4"
+			},
+			"explanation": {
+				"correct": "Client B matches i1: when a subnet that a network rule referenced is removed, that entry is dropped from the account's rules, and a subnet later created under the same name inherits nothing, so it must be added again. Client A matches i2: once the storage service endpoint is enabled on the subnet, its traffic reaches storage with a private source address, so an IP network rule written for the public address block the subnet held earlier no longer matches anything. Client C matches i3: after a change that allows access is saved, the rules that deny access can still apply for up to one more minute, so failures in the first minute are expected and stop shortly afterwards. Client D matches i4: traffic from a virtual network that owns a private endpoint for the account is always permitted, even with public network access disabled, which is why the app works while the corporate laptop is refused.",
+				"perChoice": {
+					"i1": "Belongs with Client B. Removing a subnet that a network rule points at also removes that entry from the account, so the replacement subnet created under the same name has to be authorized again before its requests stop returning HTTP 403.",
+					"i2": "Belongs with Client A. With the storage service endpoint enabled, the subnet's traffic arrives with a private source address, so the IP network rule that matched the address block the subnet used before no longer has any effect and the writes keep succeeding.",
+					"i3": "Belongs with Client C. Deny rules can remain in force for up to one minute after a change that allows access is saved, which matches failures until 09:15 UTC and success afterwards; no configuration change is needed.",
+					"i4": "Belongs with Client D. Traffic from a virtual network that owns a private endpoint is always allowed, even when the account refuses public traffic, so the app in vnet-app keeps working while clients outside any authorized source are rejected.",
+					"i5": "Fits no case here. A regional endpoint only reaches accounts in the virtual network's own region, and both stedge01 and vnet-app are in East US, so no row is showing that effect; it would only matter for a client targeting an account in another region.",
+					"i6": "Fits no case here. None of these four clients uses the privatelink hostname; they all connect with the account's ordinary hostname and rely on DNS, so this is not behind any of the behaviour shown."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-set-default-access"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-private-endpoints"
+				}
+			],
+			"subtopics": [
+				"service-endpoints",
+				"virtual-network-rules",
+				"private-endpoints"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KD7D9Y7HGYZ7HRTAZXEQFC",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have storage account stsec01, a general-purpose v2 account in East US that today accepts connections from any network. You are about to close it down so that only the four clients below can still reach it, and none of those four may be interrupted by the lockdown. Match each client to the one configuration change you should make on stsec01. Which change belongs with each client?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Client",
+						"Where it runs",
+						"What it needs from stsec01"
+					],
+					"rows": [
+						[
+							"Off-site backup client",
+							"Physical server in a corporate data center, connected to Azure through an ExpressRoute circuit",
+							"Nightly archive uploads"
+						],
+						[
+							"Storefront web tier",
+							"Subnet app-snet, which today carries no service endpoint",
+							"Blob reads and queue writes"
+						],
+						[
+							"Diagnostic writer",
+							"Azure platform capability that pushes resource logs and metrics from outside your subscriptions",
+							"Its log and metrics tables keep filling"
+						],
+						[
+							"Reporting host",
+							"Azure virtual machine in the same subscription, with no subnet of its own and no fixed public address",
+							"Table and queue calls"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Add the Microsoft peering NAT addresses to the account's IP network rules"
+					},
+					{
+						"id": "b",
+						"text": "Authorize app-snet as a virtual network rule and give the subnet a Microsoft.Storage service endpoint"
+					},
+					{
+						"id": "c",
+						"text": "Turn on Allow trusted Microsoft services on this account"
+					},
+					{
+						"id": "d",
+						"text": "Add a resource instance rule that names the virtual machine by its resource ID"
+					},
+					{
+						"id": "e",
+						"text": "Set the default access to Enabled from all networks"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Off-site backup client"
+					},
+					{
+						"id": "s2",
+						"label": "Storefront web tier"
+					},
+					{
+						"id": "s3",
+						"label": "Diagnostic writer"
+					},
+					{
+						"id": "s4",
+						"label": "Reporting host"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d"
+			},
+			"explanation": {
+				"correct": "Once stsec01 is set to accept traffic only from selected networks, every source that must reach it has to be named by one of the account's mechanisms, and these four clients each need a different one. The ExpressRoute-linked server reaches Azure as the circuit's Microsoft peering NAT addresses, so only IP network rules can allow it. The storefront tier in vnet-app needs a virtual network rule, which grants nothing unless app-snet also carries a storage service endpoint; Microsoft.Storage suffices because the subnet and the account are both in East US. The platform capability that writes logs and metrics runs outside the customer's network and cannot be pinned to a subnet or an address range, so the trusted services exception is the mechanism intended for it. The reporting host lives in the same tenant but owns neither a subnet nor a fixed address, so a resource instance rule naming its resource ID authorizes it, after which its role assignments decide which operations actually succeed. Enabling access from all networks would keep every client running but would defeat the lockdown, so it belongs to no client.",
+				"perChoice": {
+					"a": "Slot 'Off-site backup client': traffic from an on-premises data center arriving over an ExpressRoute circuit presents itself to Azure as the circuit's Microsoft peering NAT addresses, and those addresses can be allowed only through the account's IP network rules; a subnet-based rule cannot describe a server outside Azure.",
+					"b": "Slot 'Storefront web tier': traffic from an Azure subnet is authorized with a virtual network rule, and that rule grants nothing unless the subnet itself carries a storage service endpoint. Microsoft.Storage is the endpoint type to use because both vnet-app and stsec01 sit in East US.",
+					"c": "Slot 'Diagnostic writer': a platform capability that runs outside the customer's network and writes logs or metrics is precisely the case the trusted services exception covers; such services authenticate strongly before they connect, so enabling it stays narrow.",
+					"d": "Slot 'Reporting host': when a source resource cannot be isolated by a subnet or by an IP range, a resource instance rule that names its resource ID is what authorizes it. The resource must sit in the same Microsoft Entra tenant as the account, which this one does, and its role assignments then limit which operations succeed.",
+					"e": "Fits no slot: Enabled from all networks would keep all four clients working, but it also lets any network reach stsec01, which is the opposite of the lockdown being applied."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-virtual-networks"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-set-default-access"
+				}
+			],
+			"subtopics": [
+				"firewall-rules",
+				"network-rules",
+				"service-endpoints"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KDDTR67GB1Y9TA9WNFS9YB",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have storage account stopsfw01, a general-purpose v2 account in East US that today accepts traffic only from selected networks and has no authorized source listed at all, so all five requests below fail today with HTTP 403. Match each request to the change, if any, that you should make on stopsfw01 so that the requester can reach the account, while no source you have not listed gains access. Which change belongs with each request?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property on stopsfw01",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account kind",
+							"General-purpose v2"
+						],
+						[
+							"Region",
+							"East US"
+						],
+						[
+							"Public network access",
+							"Enabled from selected networks"
+						],
+						[
+							"Authorized sources currently listed",
+							""
+						],
+						[
+							"Result today for all five requests",
+							"HTTP 403"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "A reporting VM in report-snet of vnet-report, where report-snet already has the Microsoft.Storage service endpoint turned on"
+					},
+					{
+						"id": "i2",
+						"text": "An on-premises backup server that reaches Azure over an ExpressRoute circuit"
+					},
+					{
+						"id": "i3",
+						"text": "A legacy Azure VM in another subscription of the same tenant that has no subnet of its own and no fixed public address"
+					},
+					{
+						"id": "i4",
+						"text": "Azure Monitor, which pushes diagnostics logs and metrics into the account from addresses outside Azure"
+					},
+					{
+						"id": "i5",
+						"text": "A security auditor who is refused today and asks for the Storage Blob Data Reader role on stopsfw01 so that her requests are accepted"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Virtual network rule"
+					},
+					{
+						"id": "s2",
+						"label": "IP network rule"
+					},
+					{
+						"id": "s3",
+						"label": "Resource instance rule"
+					},
+					{
+						"id": "s4",
+						"label": "Network security exception"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "An account set to accept traffic only from selected networks admits nothing until the caller appears in one of the four configurable source lists, so each of the first four requests maps to exactly one of them. The reporting VM reaches the account from a named subnet of vnet-report, and report-snet already carries the Microsoft.Storage service endpoint that a subnet rule depends on, so a virtual network rule is what authorizes it. The on-premises server has no subnet to name: its traffic arrives over the ExpressRoute circuit as public addresses (the NAT addresses used for Microsoft peering), so an IP network rule covering those addresses is the mechanism that fits it. The legacy VM is an Azure resource that neither a subnet nor an address range can isolate, and it lives in the same tenant, so a resource instance rule is the right mechanism, with the role assignments on the resource deciding which operations it may run. Azure Monitor writes logs and metrics from platform addresses outside the customer's network and cannot be expressed as a subnet or an address range, so a network security exception is the escape hatch for it. The auditor's request is not a network matter at all: network rules only filter traffic and never grant or deny authorization, so granting her the data role changes nothing about the 403 unless her source is listed.",
+				"perChoice": {
+					"i1": "This belongs in the virtual network rule slot: it is a workload inside a named subnet of vnet-report, and that subnet already carries the Microsoft.Storage service endpoint that such a rule requires. Without a rule for it, the request from that subnet fails with HTTP 403.",
+					"i2": "This belongs in the IP network rule slot: an ExpressRoute-connected on-premises server arrives at the account as public addresses (the NAT addresses used for Microsoft peering, supplied by the service provider or the customer), so those addresses are what you list. There is no subnet to name for this caller.",
+					"i3": "This belongs in the resource instance rule slot: the caller is an Azure resource in the same Microsoft Entra tenant that cannot be isolated by a subnet or an address range, which is exactly what resource instance rules are for. The role assignments on the resource still decide which operations it may perform against the storage data.",
+					"i4": "This belongs in the network security exception slot: a platform logging and metrics writer runs outside the customer's network and cannot be captured by a subnet or an address range, so a trusted-service exception is the only mechanism that lets it in. It authenticates strongly before connecting.",
+					"i5": "This fits no slot. Network rules are network filtering, not authentication: granting the auditor a data-plane role does not change whether her source network is allowed through the firewall, so she would still get HTTP 403 from a source that is not listed. Her request is an authorization request and must be solved on the identity side, while her network still has to be admitted separately."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-virtual-networks"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-set-default-access"
+				}
+			],
+			"subtopics": [
+				"network-rules",
+				"service-endpoints",
+				"trusted-services"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KDKPFH7D4H8QDCMWVNCH27",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have storage account stlife01, a general-purpose v2 account in East US with geo-redundant replication, and the account accepts traffic only from selected networks. Every night an automation pipeline rebuilds the networking objects around it, and after last night's run the four jobs below behaved as shown. Drag each action to the job it belongs to.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Job",
+						"What the pipeline did and what happened"
+					],
+					"rows": [
+						[
+							"Job A",
+							"It deleted subnet ops-snet of virtual network vnet-ops and recreated the subnet with the same name and the same address space, then added the storage service endpoint to it again. Writes to stlife01 from that subnet now fail with HTTP 403, and last week's rule named vnet-ops / ops-snet."
+						],
+						[
+							"Job B",
+							"It attempted to move subnet ingress-snet of virtual network vnet-dr from the Microsoft.Storage service endpoint to a Microsoft.Storage.Global one in a single update so that this region can reach an account in another region. The update was rejected and the subnet still reports only the original endpoint."
+						],
+						[
+							"Job C",
+							"A scanning tool runs in subnet ops-snet of virtual network vnet-ops and reaches stlife01 through public address 10.7.3.4, the address of the NAT gateway in front of the subnet. That address is still the only entry among the account's IP rules, and reads now fail with HTTP 403."
+						],
+						[
+							"Job D",
+							"A regression test started 20 seconds after the rules were saved returns HTTP 403 for a source that had just been added to the account, while the sources that were already authorized pass."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Authorize the recreated ops-snet on the account again"
+					},
+					{
+						"id": "i2",
+						"text": "Remove the subnet's current endpoint first, then add the other type"
+					},
+					{
+						"id": "i3",
+						"text": "Match the IP rule to the private source address the traffic now presents"
+					},
+					{
+						"id": "i4",
+						"text": "Rerun the test after the delay in which deny rules can stay in force, which can last up to a minute"
+					}
+				],
+				"slots": [
+					{
+						"id": "Job A",
+						"label": "Job A"
+					},
+					{
+						"id": "Job B",
+						"label": "Job B"
+					},
+					{
+						"id": "Job C",
+						"label": "Job C"
+					},
+					{
+						"id": "Job D",
+						"label": "Job D"
+					}
+				]
+			},
+			"key": {
+				"Job A": "i1",
+				"Job B": "i2",
+				"Job C": "i3",
+				"Job D": "i4"
+			},
+			"explanation": {
+				"correct": "Each job fails for a different reason. Job A's subnet was destroyed and rebuilt, and a rule pointing at a deleted subnet goes with it, so the replacement subnet has to be authorized again. Job B tried to swap endpoint types in one step, but a subnet carries only one storage service endpoint, so the old one must be removed before the other is added. Job C's subnet now sends traffic with a private source address, so the entry for the NAT gateway's public address no longer matches and the rule must follow the address actually presented. Job D's test simply ran inside the short window in which deny rules can remain in force after you save a change that allows access, so the test is rerun once that window passes; nothing in the configuration is wrong.",
+				"perChoice": {
+					"i1": "Job A. Removing a subnet that a network rule points at also removes that rule, and a replacement subnet that reuses the same name inherits no authorization, so ops-snet must be added as a source again. The re-added service endpoint does not by itself bring the rule back.",
+					"i2": "Job B. A subnet can carry only one storage service endpoint, so switching from Microsoft.Storage to Microsoft.Storage.Global has to be done as two steps: delete the existing endpoint, then add the other one. A single combined update is rejected.",
+					"i3": "Job C. Once ops-snet carries a storage service endpoint its traffic reaches the account with a private source address, so the allow-listed NAT gateway address 10.7.3.4 no longer matches anything and requests are denied. The rule must name the private address the traffic presents, or the subnet can be authorized as a virtual network rule instead.",
+					"i4": "Job D. After you save settings that allow access, the rules that block access can stay in force for up to one more minute. The test at 20 seconds falls inside that window, so the correct response is to rerun it later rather than to change the account."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-virtual-networks"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-set-default-access"
+				}
+			],
+			"subtopics": [
+				"virtual-network-rules",
+				"service-endpoints",
+				"ip-network-rules"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KDQTQDYBC20E4AGXXRMX4W",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are moving four storage accounts onto private-only connectivity, and each business unit is at a different stage. The state of every account is shown below, and in each case public network access is or must stay disabled so that nothing can reach the account over its public endpoint. Match each unit to the one change you should make so that its clients keep working. Which change belongs with each unit?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Unit",
+						"Account and current state",
+						"What the clients do"
+					],
+					"rows": [
+						[
+							"Retail storefront",
+							"rstoretail01, general-purpose v2 Standard, static website enabled, public network access disabled, no private endpoints created",
+							"A web front end reaches the account only from inside vnet-web, subnet snet-web"
+						],
+						[
+							"Payroll document store",
+							"payfiles01, general-purpose v2 Standard, Azure Files shares, public network access disabled, no private endpoints created",
+							"A Windows server in vnet-hub maps the shares as SMB drives"
+						],
+						[
+							"Plant archive",
+							"plantarch01, created in 2015 as a classic (general-purpose v1) account, public network access disabled",
+							"The plant wants the same private-only reachability the other units have"
+						],
+						[
+							"Research data lake",
+							"reslake01, general-purpose v2 Premium, owned by the storage team; yesterday a researcher in another department raised a private endpoint request in the portal and it is still pending",
+							"The researcher cannot use the account while the request sits unapproved"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Add a private endpoint for the static website sub-resource and register privatelink.web.core.windows.net in the private DNS zone"
+					},
+					{
+						"id": "b",
+						"text": "Add a private endpoint for the file sub-resource and register privatelink.file.core.windows.net in the private DNS zone"
+					},
+					{
+						"id": "c",
+						"text": "Move the account to general-purpose v2 (Standard or Premium) before adding private endpoints"
+					},
+					{
+						"id": "d",
+						"text": "Have the account owner approve the pending request on the Private endpoints tab"
+					},
+					{
+						"id": "e",
+						"text": "Add virtual network rules for the calling subnets and enable the Microsoft.Storage service endpoint on each"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Retail storefront"
+					},
+					{
+						"id": "s2",
+						"label": "Payroll document store"
+					},
+					{
+						"id": "s3",
+						"label": "Plant archive"
+					},
+					{
+						"id": "s4",
+						"label": "Research data lake"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d"
+			},
+			"explanation": {
+				"correct": "Each unit needs a different piece of the private-connectivity story. The storefront publishes a static website, so it needs the static website endpoint and its own private DNS zone, privatelink.web.core.windows.net. The payroll shares are mounted as SMB drives from a server inside a virtual network, which Private Link carries; the file endpoint plus privatelink.file.core.windows.net is what makes the mapping resolve, and no virtual network rule or service endpoint is needed for a subnet that owns a private endpoint. The plant account is still a classic v1 account, and private endpoints are only available on general-purpose v2 accounts, so it must be converted first. The research data lake already has an endpoint request waiting, and creating a private endpoint sends a consent request that the account owner approves on the Private endpoints tab.",
+				"perChoice": {
+					"a": "Belongs with Retail storefront. A static website is served through the web sub-resource, and each storage service needs its own private endpoint; the matching private DNS zone is privatelink.web.core.windows.net.",
+					"b": "Belongs with Payroll document store. Private endpoints work with every protocol the account supports, including SMB, and traffic from a virtual network that owns the private endpoint is always permitted even when public network access is disabled. Because the firewall governs only the public endpoint, no virtual network rule is needed for the file server's subnet.",
+					"c": "Belongs with Plant archive. Private endpoints require a general-purpose v2 account on Standard or Premium performance tiers; a classic v1 account cannot use them, so the account type must be raised first.",
+					"d": "Belongs with Research data lake. Creating a private endpoint sends a consent request to the owner of the storage account; pending requests are approved by the owner on the account's Private endpoints tab, and approval is automatic only when the requester already owns the account.",
+					"e": "Fits no slot. Virtual network rules and service endpoints filter traffic to the public endpoint, which is exactly what these accounts cannot use, so they change nothing for any of the four units here, and they are not a substitute for the account conversion the plant account needs."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-private-endpoints"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security"
+				}
+			],
+			"subtopics": [
+				"private-endpoints",
+				"private-dns",
+				"public-network-access"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KDWWD4RDDFTPNS3XW1RD7Y",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have storage account stmesh01, a general-purpose v2 account in East US. Overnight your infrastructure pipeline deleted vnet-app and its application subnet, then rebuilt both with identical names. Since the rebuild, the batch job that runs in that subnet receives HTTP 403 for every request it sends to stmesh01, while unrelated workloads are unaffected. You need the job working again with no source beyond the application subnet able to reach the account. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Observed state"
+					],
+					"rows": [
+						[
+							"Storage account",
+							"stmesh01 (general-purpose v2, East US)"
+						],
+						[
+							"Public network access",
+							"Enabled from selected networks"
+						],
+						[
+							"Sources listed on the account",
+							"none"
+						],
+						[
+							"Service endpoint on the rebuilt application subnet",
+							"Not present"
+						],
+						[
+							"Subnet address space",
+							"10.20.0.0/24"
+						]
+					]
+				},
+				"statement": "You should {{fix}}.",
+				"slots": [
+					{
+						"id": "fix",
+						"options": [
+							{
+								"id": "a",
+								"text": "Enable the storage service endpoint on the rebuilt application subnet, then add that subnet to the account's virtual network rules and save"
+							},
+							{
+								"id": "b",
+								"text": "Enable the storage service endpoint on the rebuilt application subnet, then add the 10.20.0.0/24 range to the account's IP network rules and save"
+							},
+							{
+								"id": "c",
+								"text": "Enable the storage service endpoint on the rebuilt application subnet, then add the rebuilt subnet to the account's trusted services exception and save"
+							},
+							{
+								"id": "d",
+								"text": "Enable the storage service endpoint on the rebuilt application subnet, then set the account's public network access to Enabled from all networks and save"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"fix": "a"
+			},
+			"explanation": {
+				"correct": "A subnet is authorized by a virtual network rule, and every subnet in such a rule must also carry a storage service endpoint, which supplies the direct route to the account. Deleting a subnet that a rule referenced removes it from the account's rules as well, and a replacement created under the same name inherits nothing, so both steps must be repeated for the rebuilt application subnet: enable the service endpoint and add the subnet as a rule, then save. The account stays on Enabled from selected networks, so nothing beyond the listed source can connect.",
+				"perChoice": {
+					"fix:b": "IP network rules match a public address range and suit clients outside Azure, while a source inside vnet-app belongs in a virtual network rule. Once the service endpoint is enabled on the subnet, its traffic reaches storage with a private source address, so a range rule built for the public address no longer matches anything.",
+					"fix:c": "The trusted services exception is the escape hatch for Azure platform services that run outside your boundary and cannot be expressed as a subnet or IP rule, such as a diagnostics or logging writer. Your own application subnet is not such a service, so listing it there authorizes nothing and the requests stay blocked.",
+					"fix:d": "Enabled from all networks removes network filtering and lets any client reach the public endpoint, which contradicts the requirement that only the application subnet may connect. The account should stay on Enabled from selected networks with the rebuilt subnet listed."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-virtual-networks"
+				}
+			],
+			"subtopics": [
+				"virtual-network-rules",
+				"service-endpoints",
+				"recreated-subnets"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KE3Y8X761Y1NSGKS20JFZZ",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have storage account stvault09, a general-purpose v2 account in East US whose public network access is set to Disabled. Private endpoints for two of its services already serve virtual network vnet-hub, and the private DNS zones that go with them are linked to that network, so blob and Data Lake Storage clients there work normally. Today a team must mount the file share named shares from a virtual machine in subnet files-snet of vnet-hub, and that attempt fails every time. The account and network state are shown below. You need the share reachable from that virtual machine while the account's public endpoint stays closed to all traffic. Which changes should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account",
+							"stvault09, GeneralPurposeV2, East US"
+						],
+						[
+							"Public network access",
+							"Disabled"
+						],
+						[
+							"Private endpoint for blob sub-resource",
+							"Approved, in vnet-hub"
+						],
+						[
+							"Private endpoint for dfs sub-resource",
+							"Approved, in vnet-hub"
+						],
+						[
+							"Private endpoint for file sub-resource",
+							"None created"
+						],
+						[
+							"Private DNS zones linked to vnet-hub",
+							"privatelink.blob.core.windows.net, privatelink.dfs.core.windows.net"
+						],
+						[
+							"Blob and dfs clients from vnet-hub",
+							"Reads and writes succeed"
+						],
+						[
+							"Mount attempted from files-snet",
+							"\\\\stvault09.file.core.windows.net\\shares"
+						],
+						[
+							"Result of the mount attempt",
+							"The network path was not found"
+						]
+					]
+				},
+				"statement": "To bring the mount back, {{change}}, and the virtual machine should reach the share with {{connect}}.",
+				"slots": [
+					{
+						"id": "change",
+						"options": [
+							{
+								"id": "a",
+								"text": "Create a private endpoint for the file sub-resource and link privatelink.file.core.windows.net to vnet-hub."
+							},
+							{
+								"id": "b",
+								"text": "Create a private endpoint for the web sub-resource and link privatelink.web.core.windows.net to vnet-hub."
+							},
+							{
+								"id": "c",
+								"text": "Create a private endpoint for the table sub-resource and link privatelink.table.core.windows.net to vnet-hub."
+							},
+							{
+								"id": "d",
+								"text": "Create a private endpoint for the file sub-resource, but link its private DNS zone to an on-premises DNS server instead of to vnet-hub."
+							}
+						]
+					},
+					{
+						"id": "connect",
+						"options": [
+							{
+								"id": "a",
+								"text": "The ordinary mount path \\\\stvault09.file.core.windows.net\\shares, letting DNS resolve the account name."
+							},
+							{
+								"id": "b",
+								"text": "The mount path \\\\privatelink.file.core.windows.net\\shares, which bypasses the account name and DNS."
+							},
+							{
+								"id": "c",
+								"text": "A mount path that uses the IP address of stvault09's public endpoint and port 445, skipping DNS."
+							},
+							{
+								"id": "d",
+								"text": "A mount path that uses the IP address of the new private endpoint instead of the account name, skipping DNS."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"change": "a",
+				"connect": "a"
+			},
+			"explanation": {
+				"correct": "A private endpoint serves a single storage service, and each service has its own private DNS name, so stvault09's existing blob and dfs endpoints give the virtual network no route at all for Azure Files traffic. With only privatelink.blob.core.windows.net and privatelink.dfs.core.windows.net linked, the name stvault09.file.core.windows.net still leads to the public endpoint, which is Disabled, and the mount never reaches the account. Creating a private endpoint for the file sub-resource and linking privatelink.file.core.windows.net to vnet-hub gives the share an address inside the network while the public endpoint stays shut. From inside that network the client keeps using the ordinary mount path \\\\stvault09.file.core.windows.net\\shares and lets DNS supply the address; the privatelink name is the endpoint's own DNS record, not a host a client dials directly.",
+				"perChoice": {
+					"change:b": "privatelink.web.core.windows.net belongs to the static website sub-resource, so a web endpoint carries no file share traffic and the mount keeps failing.",
+					"change:c": "privatelink.table.core.windows.net belongs to the table sub-resource. Tables and file shares are separate services with separate endpoints and separate private DNS names, so this leaves file traffic unrouted.",
+					"change:d": "The zone has to be linked to the virtual network so name resolution inside vnet-hub returns the private address. Delegating it only to an on-premises server leaves virtual machines in vnet-hub following the account name to the public endpoint, which is closed.",
+					"connect:b": "The privatelink name is the private endpoint's own DNS record, not a host that clients address directly. Clients keep the account's endpoint name and let DNS route them.",
+					"connect:c": "Public network access is Disabled on this account, so the public endpoint address cannot carry the mount. Inside the virtual network the address must come from name lookup.",
+					"connect:d": "Replacing the endpoint name with the endpoint's raw IP skips name lookup, which is not the supported way to reach the account; the client addresses the account by its own name and DNS supplies the address."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-private-endpoints"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security"
+				}
+			],
+			"subtopics": [
+				"private-endpoints",
+				"private-dns"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KEB31Q0WM837H1QPJD0FZ9",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have storage account stfw03 in East US, and both subnets shown below already appear among the networks that the account accepts today. You need every request from batch-snet to reach the account, and no additional network may gain access to it. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account",
+							"stfw03, general-purpose v2, East US"
+						],
+						[
+							"Access from public networks",
+							"Selected networks only"
+						],
+						[
+							"First rule, added last year",
+							"vnet-hub / app-snet, added from the portal"
+						],
+						[
+							"Second rule, added yesterday",
+							"vnet-hub / batch-snet, added with the Azure CLI"
+						],
+						[
+							"Requests from app-snet",
+							"Succeeding"
+						],
+						[
+							"Requests from batch-snet",
+							"HTTP 403 on every call"
+						]
+					]
+				},
+				"statement": "The change you should make is to {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Enable the Microsoft.Storage service endpoint on batch-snet."
+							},
+							{
+								"id": "b",
+								"text": "Enable the Microsoft.Storage service endpoint on app-snet."
+							},
+							{
+								"id": "c",
+								"text": "Add the address range of batch-snet to the account's IP network rules."
+							},
+							{
+								"id": "d",
+								"text": "Turn on the account-wide exception for trusted Azure services."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "A subnet listed in a storage account's virtual network rules must also have a storage service endpoint turned on for it. The portal creates that endpoint as you pick the subnet, while the Azure CLI and PowerShell leave it to you, so batch-snet has a rule but no endpoint and its requests are denied. Turning the endpoint on for batch-snet makes the existing rule work without letting any other network in.",
+				"perChoice": {
+					"action:b": "app-snet was added from the portal, which created the endpoint for it at the time, which is why its requests succeed. Doing it there again changes nothing for batch-snet.",
+					"action:c": "IP network rules list public addresses and ranges for clients outside a virtual network. A subnet of vnet-hub is authorized by a virtual network rule, so an address range entry does not admit batch-snet.",
+					"action:d": "The exception covers Azure platform services calling the account from outside your network boundary, such as services reading log or metric data. It does not cover compute running in your own subnets."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-virtual-networks"
+				}
+			],
+			"subtopics": [
+				"service-endpoints",
+				"virtual-network-rules"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KEFRR0XZT6XFQD9568V7YF",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have storage account stbuild09 in East US, which today accepts connections only from sources you have listed. A CI job runs on virtual machine vm-build01 in subnet ci-snet of vnet-dev, and until two days ago that subnet reached the internet through the public address 203.0.113.10 — the only address the account allows today. An engineer then enabled a storage service endpoint on ci-snet so the job could reach a different storage account, and since that change every upload from vm-build01 to stbuild09 fails with HTTP 403. You need the job's uploads to succeed again while no source you have not listed gains access.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"stbuild09 setting",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Public network access",
+							"Enabled from selected networks"
+						],
+						[
+							"IP network rules",
+							"203.0.113.10/32"
+						],
+						[
+							"Virtual network rules",
+							""
+						],
+						[
+							"Exceptions for trusted Azure services",
+							"Disabled"
+						]
+					]
+				},
+				"statement": "The change you should make on stbuild09 is {{change}}.",
+				"slots": [
+					{
+						"id": "change",
+						"options": [
+							{
+								"id": "a",
+								"text": "A virtual network rule for the subnet where the job executes"
+							},
+							{
+								"id": "b",
+								"text": "An IP network rule for the public address the subnet used before the endpoint was enabled"
+							},
+							{
+								"id": "c",
+								"text": "A resource instance rule for the virtual machine that hosts the job"
+							},
+							{
+								"id": "d",
+								"text": "Public network access changed to Enabled from all networks"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"change": "a"
+			},
+			"explanation": {
+				"correct": "Once ci-snet carries a storage service endpoint, requests originating in that subnet arrive at the storage account with a private source address, so 203.0.113.10 is no longer the caller and the existing IP network rule can never match; every upload therefore gets HTTP 403. Because the subnet already has the Microsoft.Storage service endpoint in place, the fix is to authorize the subnet itself with a virtual network rule for ci-snet of vnet-dev. That restores the CI job's uploads and keeps the account closed to every source that is not listed, while the job keeps a private source address instead of hairpinning through a public IP.",
+				"perChoice": {
+					"change:b": "An IP network rule matches the source address exactly as the storage service sees it. After the service endpoint was enabled on ci-snet, traffic from that subnet is delivered with a private source address, so listing the subnet's old public address — or adding it again — changes nothing and the job keeps receiving HTTP 403.",
+					"change:c": "A resource instance rule authorizes a specific Azure resource by its identity, and it is intended for resources that no subnet or IP range can isolate, with role assignments on the resource deciding which data operations it may run. Here the client is an ordinary subnet whose source is already isolable by service endpoint, so authorizing the VM identity is not the change that restores these uploads.",
+					"change:d": "Enabled from all networks removes network filtering from stbuild09 altogether. That contradicts the requirement that no unlisted source gain access and leaves the account reachable from any network on the internet."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-virtual-networks"
+				}
+			],
+			"subtopics": [
+				"virtual-network-rules",
+				"service-endpoints"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KERWRJE3JGSZ2RENKSVHQC",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have storage account stprop04 in East US, a general-purpose v2 account that today accepts traffic only from the networks you have listed. Its authorized list contains a virtual network rule for subnet ci-snet of virtual network vnet-dev, and ci-snet already carried a storage service endpoint before you touched the account. A build agent running in ci-snet had returned HTTP 403 on every run since it was deployed. Today at 08:00 you edited the account's Networking page so that ci-snet appears among its authorized networks, and you confirmed the edit on that page. You have not altered anything else on the account. You need to explain this pattern to the build team and say what they should do about it. Which explanation is correct, and what should you tell them?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Time",
+						"What happened on stprop04",
+						"Result for the build agent"
+					],
+					"rows": [
+						[
+							"07:55",
+							"Nothing on the account was edited",
+							"HTTP 403"
+						],
+						[
+							"08:00",
+							"ci-snet added among the account's authorized virtual networks on the Networking page and the edit was confirmed",
+							"Run not yet observed"
+						],
+						[
+							"08:00",
+							"Build run",
+							"HTTP 403"
+						],
+						[
+							"08:01",
+							"Build run",
+							"HTTP 403"
+						],
+						[
+							"08:03",
+							"Build run",
+							"Run completed without error"
+						],
+						[
+							"08:05",
+							"Build run",
+							"Run completed without error"
+						]
+					]
+				},
+				"statement": "You should {{slot1}}, and you should {{slot2}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "Requests that arrive just after you allow a source can keep being rejected for up to one minute, and that window covered the two attempts at 08:00 and 08:01."
+							},
+							{
+								"id": "b",
+								"text": "Network rules decide which networks may reach an account but never check credentials, so these HTTP 403 responses come from the agent's missing credential rather than from where it sits."
+							},
+							{
+								"id": "c",
+								"text": "Because ci-snet already had a storage service endpoint, the agent reaches the account from a private address that the account's rules cannot match, so the entry can never take effect."
+							},
+							{
+								"id": "d",
+								"text": "A virtual network rule only becomes usable after the account's private endpoints have been approved, so the approvals that completed at 08:02 released the entry."
+							}
+						]
+					},
+					{
+						"id": "slot2",
+						"options": [
+							{
+								"id": "a",
+								"text": "Take no action on the account and leave its configuration as it is."
+							},
+							{
+								"id": "b",
+								"text": "Remove the ci-snet entry and add it again, because rewriting the rule refreshes it."
+							},
+							{
+								"id": "c",
+								"text": "Add an IP network rule for the agent's public address, so the agent gains a second authorized path."
+							},
+							{
+								"id": "d",
+								"text": "Grant the build agent a shared key, because credentials are what the agent has been missing."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a",
+				"slot2": "a"
+			},
+			"explanation": {
+				"correct": "The virtual network rule for ci-snet was correct from the moment it was added: the subnet already had a storage service endpoint, so the only explanation for the pattern is the documented propagation behaviour. After you save settings that allow access, the rules that block access stay in force for up to one more minute, which covers the 08:00 and 08:01 runs; from 08:03 the saved rule is in force and the agent works. Because the account's configuration is already right, nothing further should be done to it — rewriting the rule, adding an IP network rule for the agent's address, or issuing credentials would either be pointless or would widen or duplicate access rather than fix anything.",
+				"perChoice": {
+					"slot1:a": "Correct. Blocking rules can remain in force for up to one minute after you save a change that allows access, so the failures seen in that first minute after the edit are expected and the rule itself did not need fixing.",
+					"slot1:b": "Network rules are network filtering only and never authenticate, but that does not explain the timing: the account was returning HTTP 403 before the rule existed and began succeeding minutes later with no credential change, which matches the delay after an allow change instead.",
+					"slot1:c": "A storage service endpoint gives the agent a private source address, but virtual network rules authorize named subnets rather than addresses, so a rule for ci-snet matches that subnet whether or not it has an endpoint — the endpoint must exist before the rule is added, which it does.",
+					"slot1:d": "Private endpoints are a separate mechanism with their own consent flow; nothing about them gates a virtual network rule, and no private endpoints or approvals were involved here, so this invents a step that does not exist.",
+					"slot2:a": "Correct. The rule is valid and the agent is already completing its runs, so the correct guidance is to leave the account's configuration alone and let the schedule run on.",
+					"slot2:b": "Deleting and re-adding the same rule changes nothing; the entry was valid all along and re-saving would simply start the same short delay again.",
+					"slot2:c": "The agent reaches the account from ci-snet, which is already authorized, and its traffic arrives with a private source address because of the service endpoint, so an extra public-IP rule adds an unwanted authorized source instead of fixing anything.",
+					"slot2:d": "Credentials were never the problem — the same agent and the same credentials failed before the rule existed and succeeded after it, and handing out a shared key would not have influenced the firewall's decision at all."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-set-default-access"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security"
+				}
+			],
+			"subtopics": [
+				"firewall-propagation-delay",
+				"virtual-network-rules",
+				"service-endpoints"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5M8ZSM74C6NSDPS4HJ4K8ZB",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Storage account stpl01 is a general-purpose v2 account in East US whose public network access is disabled. Yesterday the network operations team set up a private link for the blob service of stpl01 inside vnet-hub and linked the blob DNS zone to that network, but they worked from a subscription your platform team does not control. A connectivity check from application subnet app-snet shows the account name still resolving to its public address, and every blob call from the application is rejected. Nobody has touched anything else on the account. The current state is below. You need the application working again while the account's public endpoint stays closed to all traffic. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting or object",
+						"Value"
+					],
+					"rows": [
+						[
+							"Storage account",
+							"stpl01, general-purpose v2, East US"
+						],
+						[
+							"Public network access",
+							"Disabled"
+						],
+						[
+							"Subscription that owns stpl01",
+							"sub-platform"
+						],
+						[
+							"Subscription that set up the private link",
+							"sub-network"
+						],
+						[
+							"Service the private link targets",
+							"blob"
+						],
+						[
+							"Virtual network and subnet",
+							"vnet-hub / app-snet"
+						],
+						[
+							"Blob DNS zone linked to vnet-hub",
+							"Yes"
+						],
+						[
+							"Name resolution from app-snet",
+							"Account name resolves to the public address"
+						]
+					]
+				},
+				"statement": "You should {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Approve the request that is waiting on the Private endpoints blade of stpl01"
+							},
+							{
+								"id": "b",
+								"text": "Add a virtual network rule for vnet-hub / app-snet from the Networking blade of stpl01"
+							},
+							{
+								"id": "c",
+								"text": "Change public network access on stpl01 from Disabled to Enabled from selected networks"
+							},
+							{
+								"id": "d",
+								"text": "Add an IP network rule for the address range of vnet-hub from the Networking blade of stpl01"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "Setting up a private link sends a consent request to the owner of the storage account, and it is accepted automatically only when the requester already owns that account. Here the link was set up from sub-network while sub-platform owns stpl01, so the request is still outstanding: the object exists but nothing has been accepted, so blob traffic from app-snet keeps going to the public address, where it is refused because public network access is disabled. The owner of stpl01 clears this by accepting the outstanding request from the account's Private endpoints blade, after which clients in vnet-hub reach the account over the private link and the public endpoint can remain closed.",
+				"perChoice": {
+					"action:b": "Virtual network rules filter the account's public endpoint only, and a virtual network that owns a private link is permitted regardless of the public access setting. Adding a rule for app-snet neither accepts the outstanding request nor restores traffic while public network access is Disabled.",
+					"action:c": "This reopens the account to public traffic, which contradicts the requirement, and the symptom is an undecided consent request on the private link rather than an over-restrictive filter on the public endpoint.",
+					"action:d": "An IP network rule, like a virtual network rule, applies to the public endpoint. With public network access disabled those requests never reach that endpoint, and traffic from vnet-hub is already allowed through the private link once its request is accepted."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-private-endpoints"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security"
+				}
+			],
+			"subtopics": [
+				"private-endpoints",
+				"network-rules",
+				"private-link-consent"
+			],
+			"reviewed": false
+		}
+	]
+}

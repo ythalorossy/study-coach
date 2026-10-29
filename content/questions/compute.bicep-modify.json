@@ -1,0 +1,1434 @@
+{
+	"skill": "compute.bicep-modify",
+	"questions": [
+		{
+			"id": "q_01M5Q87VKN4CBH6B3C4A82E2J1",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Bicep file that creates a network interface and a virtual machine in a resource group. You need the deployment team to be able to supply the virtual machine's name when they run the deployment, and when they supply nothing the deployment must still create the same virtual machine the file creates today. The file must keep the prefix spelled out in only one place: the fallback has to be computed from the prefix declaration that is already there, so a later change to that declaration also changes the fallback. Which change should you apply to the file?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "targetScope = 'resourceGroup'\n\n@description('Location for all resources')\nparam location string = resourceGroup().location\n\n@description('Short environment name used to build resource names')\nparam environmentName string = 'dev'\n\nvar vmNamePrefix = 'vm-${environmentName}'\n\nresource nic 'Microsoft.Network/networkInterfaces@2024-07-01' = {\n  name: '${vmNamePrefix}-nic'\n  location: location\n  properties: {\n    ipConfigurations: [\n      {\n        name: 'ipconfig1'\n        properties: {\n          privateIPAllocationMethod: 'Dynamic'\n        }\n      }\n    ]\n  }\n}\n\nresource vm 'Microsoft.Compute/virtualMachines@2024-07-01' = {\n  name: '${vmNamePrefix}-01'\n  location: location\n  properties: {\n    hardwareProfile: {\n      vmSize: 'Standard_D2s_v5'\n    }\n    storageProfile: {\n      osDisk: {\n        name: 'osdisk'\n        createOption: 'FromImage'\n        managedDisk: {\n          storageAccountType: 'Premium_LRS'\n        }\n      }\n      dataDisks: []\n    }\n    networkProfile: {\n      networkInterfaces: [\n        {\n          id: nic.id\n        }\n      ]\n    }\n  }\n}\n\noutput vmId string = vm.id\n"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Change `var vmNamePrefix` into `param vmNamePrefix string = 'vm-${environmentName}'`, add `param vmName string = '${vmNamePrefix}-01'`, and set the virtual machine's `name` to `vmName`."
+					},
+					{
+						"id": "b",
+						"text": "Make no change to `var vmNamePrefix` and add `param vmName string = '${vmNamePrefix}-01'`, and set the virtual machine's `name` to `vmName`."
+					},
+					{
+						"id": "c",
+						"text": "Make no change to `var vmNamePrefix` and add `param vmName string = 'vm-${environmentName}-01'`, and set the virtual machine's `name` to `vmName`."
+					},
+					{
+						"id": "d",
+						"text": "Make no change to `var vmNamePrefix` and add `param vmName string = vmNamePrefix`, and set the virtual machine's `name` to `vmName`."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A parameter default value may be an expression or may be built from another parameter, but it can never reference a variable. Turning the prefix declaration into a parameter is what makes it usable inside the new parameter's default, so `vmName` falls back to the name the file produces today (with the shown defaults, 'vm-dev-01') while still allowing an override at deployment time. Assigning the resource's `name` from `vmName` then wires the new input to the virtual machine, and the prefix stays written down in exactly one place, so a later change to the prefix declaration also changes the fallback.",
+				"perChoice": {
+					"b": "The default value reads `${vmNamePrefix}`, and a parameter default may never point at a variable. While the prefix is declared as a variable the file fails to compile, so the prefix declaration has to become a parameter before a default value can build on it.",
+					"c": "This compiles, but it writes a second copy of the prefix expression ('vm-${environmentName}') inside the new default instead of computing the fallback from the prefix declaration that is already in the file. The prefix is then spelled out in two places, so a later change to the declaration would leave the fallback stale.",
+					"d": "Two problems here: a default value cannot reference the variable `vmNamePrefix` at all, so the file would not compile, and even if it did, the fallback would be the prefix alone ('vm-dev') instead of the full name the file builds today."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/parameters"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/file"
+				}
+			],
+			"subtopics": [
+				"bicep-parameters",
+				"param-versus-var",
+				"virtual-machine-deployment"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q89CTCG6FT2R07SF4E33JE",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Bicep file that creates a key vault and one secret inside it, and the secret currently holds a placeholder value written directly in the file. You need the deployment team to supply the real value when they run the deployment, and that value must not be recoverable afterwards from the deployment's history or from command-line output. Which change should you apply to the file?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "@description('Location for the key vault and its secret')\nparam location string = resourceGroup().location\n\n@description('Name of the key vault')\nparam vaultName string\n\nresource vault 'Microsoft.KeyVault/vaults@2023-07-01' = {\n  name: vaultName\n  location: location\n  sku: {\n    family: 'A'\n    name: 'standard'\n  }\n  properties: {\n    tenantId: subscription().tenantId\n    enableRbacAuthorization: true\n    accessPolicies: []\n  }\n}\n\nresource apiKey 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {\n  parent: vault\n  name: 'api-key'\n  properties: {\n    value: 'replace-me'\n    attributes: {\n      enabled: true\n    }\n  }\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add a `param secretValue string` declaration with the `@secure()` decorator and reference it in the secret's `properties.value` property."
+					},
+					{
+						"id": "b",
+						"text": "Add a `var secretValue string` declaration and reference it in the secret's `properties.value` property."
+					},
+					{
+						"id": "c",
+						"text": "Add a `param secretValue string` declaration without any decorator and reference it in the secret's `properties.value` property."
+					},
+					{
+						"id": "d",
+						"text": "Add a `param secretValue int` declaration with the `@secure()` decorator and reference it in the secret's `properties.value` property."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The file needs a new deployment-time input for the secret value, and that input must be a `string` (the secret's `properties.value` carries text) carrying the `@secure()` decorator, which keeps the supplied value out of deployment history, the portal and command-line output. Declaring `param secretValue string` with `@secure()` and referencing it in the secret's `properties.value` meets both requirements: the team supplies the value when they deploy, and the value is not recoverable afterwards, while the rest of the file stays as it is.",
+				"perChoice": {
+					"b": "A `var` stores a value that is computed inside the file and its contents are fixed in the template, so the deployment team cannot supply the secret value when they run the deployment. The `@secure()` decorator also applies to parameters only, not to variables, so the value could not be kept out of deployment history this way.",
+					"c": "A `param` of type `string` with no decorator is valid and can be supplied at deployment time, but without `@secure()` the value is recorded in the deployment's history and returned in command-line output, so it fails the requirement that the value not be recoverable afterwards.",
+					"d": "The `@secure()` decorator is allowed only on `string` and `object` parameters, so it cannot be applied to an `int` parameter; an integer also cannot carry the text value that the secret's `properties.value` expects."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/parameters"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/file"
+				}
+			],
+			"subtopics": [
+				"bicep-parameters",
+				"secure-parameter-values",
+				"modifying-an-existing-bicep-file"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q8DMCWVG7E180PZE6KZWYY",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Bicep file that creates a resource group and then calls a module that holds the application's networking resources. The file is written at subscription scope, and the deployment fails because the resources declared inside the module need a resource group. You need every resource the module defines to be created inside the resource group that this same deployment creates. Which change should you apply to the file?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "targetScope = 'subscription'\n\nparam location string = 'westeurope'\nparam appName string = 'contosoapp'\n\nresource newRG 'Microsoft.Resources/resourceGroups@2025-04-01' = {\n  name: '${appName}-rg'\n  location: location\n}\n\nmodule network 'modules/network.bicep' = {\n  params: {\n    location: location\n  }\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add `scope: newRG` to the module declaration"
+					},
+					{
+						"id": "b",
+						"text": "Add `scope: subscription()` to the module declaration"
+					},
+					{
+						"id": "c",
+						"text": "Add `scope: newRG` to the resource group declaration"
+					},
+					{
+						"id": "d",
+						"text": "Add `parent: newRG` to the module declaration"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A module that carries no `scope` property is deployed at the target scope of the file that declares it, so this module inherits the file's subscription scope and its resource-group-scoped resources fail. The `scope` property on a module overrides that default for that module alone, and a valid scope object can be the symbolic name of a resource group declared in the same file, so `scope: newRG` places everything the module defines inside the group the deployment creates.",
+				"perChoice": {
+					"b": "`scope: subscription()` names the subscription as the module's target, which is exactly the scope the module already inherits from this file, so the module's resources are still left without a resource group and the failure remains.",
+					"c": "`scope` is a property of a module declaration; a resource declaration does not accept one. In this subscription-scoped file the resource group is already created at the subscription level, so there is nothing to scope there — a child resource is tied to its parent with the `parent` property instead.",
+					"d": "`parent` is the property that binds a child resource to its parent resource declaration; it is not part of a module declaration, so the file would not compile this way and the module would remain on the file's own scope."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/modules"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/file"
+				}
+			],
+			"subtopics": [
+				"bicep-module-scope",
+				"bicep-target-scope",
+				"bicep-resource-groups"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q8GEM0B550266A1H42EEKB",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Bicep file that creates one virtual machine in a resource group and reports that machine's size at the end of the deployment. The operations team keeps an approved catalogue of three sizes - Standard_D2s_v5, Standard_D4s_v5 and Standard_D8s_v5 - and a deployment that passes any other size has to be rejected. The size that comes back in the deployment's outputs must also stay inside that approved catalogue. Which change should you apply to the file?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "targetScope = 'resourceGroup'\n\n@description('Size of the virtual machine')\nparam vmSize string = 'Standard_D2s_v5'\n\nparam adminUsername string = 'azureuser'\n\nresource vm 'Microsoft.Compute/virtualMachines@2024-07-01' = {\n  name: 'app-vm'\n  location: resourceGroup().location\n  properties: {\n    hardwareProfile: {\n      vmSize: vmSize\n    }\n    osProfile: {\n      computerName: 'app-vm'\n      adminUsername: adminUsername\n      adminPassword: 'Placeholder!2345'\n    }\n  }\n}\n\noutput deployedVmSize string = vm.properties.hardwareProfile.vmSize"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add a user-defined type whose union lists the three approved sizes, make it the type of the `vmSize` parameter, and give the `deployedVmSize` output the same type."
+					},
+					{
+						"id": "b",
+						"text": "Add the `@allowed` decorator listing the three approved sizes to the existing `vmSize` parameter and leave the `deployedVmSize` output as `string`."
+					},
+					{
+						"id": "c",
+						"text": "Add a `var` holding the three approved sizes and set the default value of the `vmSize` parameter to reference that variable."
+					},
+					{
+						"id": "d",
+						"text": "Change the `vmSize` parameter to an `object` parameter with an `approvedSizes` property and add an `if` expression on the virtual machine so it is skipped when the supplied size is outside the list."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A user-defined type can hold a union of literal values, and the same type can be used for a parameter and for an output. Declaring it with the three approved sizes, using it as the type of `vmSize` and as the type of the `deployedVmSize` output means a value outside the catalogue fails validation, and the value reported at the end of the deployment is held to the same catalogue. The union form is the right choice here because the restriction has to hold for the output as well as for the input.",
+				"perChoice": {
+					"b": "`@allowed` pins a parameter to a fixed list of values and fails validation when a different value is supplied, but it is permitted only on `param` statements, so it cannot be attached to the `deployedVmSize` output. The reported size would remain an unconstrained string.",
+					"c": "A variable stores a computed or repeated expression for reuse inside the file, and a parameter's default value can never be built from a variable, so this change would not compile. Even if it did, a variable does not validate the value a caller supplies at deployment time.",
+					"d": "An `if` expression only decides whether a resource is created; it is not a validation mechanism. It would leave the deployment with no virtual machine rather than rejecting an unapproved size, and it cannot hold the reported output to the catalogue either."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/file"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/parameters"
+				}
+			],
+			"subtopics": [
+				"user-defined-types",
+				"parameter-validation",
+				"output-declarations"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q8PHC9QMRGPMBGS7NXG86M",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Bicep file that creates an application environment in a resource group: one virtual network, one network interface and a set of Windows Server virtual machines produced by a loop. The operations team wants the Azure Monitor agent extension attached to those servers so their telemetry reaches Log Analytics, but only the servers listed for monitoring should receive the extension, and the deployment must report the id of every extension it created so the dashboards can be wired up. The file contains no extension yet. Which change should you apply to the file?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "@description('Number of application servers to create')\nparam serverCount int = 3\n\n@description('Indexes of the servers that must report telemetry to Log Analytics')\nparam monitoredIndexes array = [0, 1]\n\nresource vnet 'Microsoft.Network/virtualNetworks@2023-09-01' = {\n  name: 'payments-vnet'\n  location: resourceGroup().location\n  properties: {\n    addressSpace: {\n      addressPrefixes: ['10.20.0.0/16']\n    }\n  }\n}\n\nresource nic 'Microsoft.Network/networkInterfaces@2023-09-01' = {\n  name: 'payments-nic'\n  location: resourceGroup().location\n  properties: {\n    ipConfigurations: [\n      {\n        name: 'ipconfig1'\n        properties: {\n          subnet: {\n            id: vnet.id\n          }\n        }\n      }\n    ]\n  }\n}\n\nresource vm 'Microsoft.Compute/virtualMachines@2024-07-01' = [for i in range(0, serverCount): {\n  name: 'payments-vm-${i}'\n  location: resourceGroup().location\n  properties: {\n    hardwareProfile: {\n      vmSize: 'Standard_D4s_v5'\n    }\n    storageProfile: {\n      imageReference: {\n        publisher: 'MicrosoftWindowsServer'\n        offer: 'WindowsServer'\n        sku: '2022-datacenter-azure-edition'\n        version: 'latest'\n      }\n    }\n    osProfile: {\n      computerName: 'payments-vm-${i}'\n      adminUsername: 'azadmin'\n      adminPassword: 'Password1234!'\n    }\n    networkProfile: {\n      networkInterfaces: [\n        {\n          id: nic.id\n        }\n      ]\n    }\n  }\n}]"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Declare the extension as its own resource at the top level of the file with a `for` expression over the virtual machines, set `parent` to the virtual machine that each instance belongs to, add `if` inside the loop expression so only the monitored indexes receive it, and publish the extension id in the outputs."
+					},
+					{
+						"id": "b",
+						"text": "Declare the extension as its own resource at the top level of the file with a `for` expression over the virtual machines, set `parent` to the virtual machine that each instance belongs to, and publish the extension id in the outputs, but leave `if` out so that every virtual machine in the loop receives the extension."
+					},
+					{
+						"id": "c",
+						"text": "Nest the extension inside the virtual machine resource body so the hierarchy stays in one block, add `if` inside the loop expression so only the monitored indexes receive it, and publish the extension id in the outputs."
+					},
+					{
+						"id": "d",
+						"text": "Move the extension into a separate module file, pass the virtual machine resource id to that module as a parameter, add `if` inside the loop expression so only the monitored indexes receive it, and publish the extension id in the outputs."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The extension is a child of the virtual machine, and it has to be produced once for every server the loop creates and only for the servers on the monitoring list. A child that is created in a loop is declared on its own at the top level of the file with a `for` expression, and the `parent` property ties each instance to the virtual machine it belongs to; in that separate form the whole type must be spelled out, for example `Microsoft.Compute/virtualMachines/extensions@2024-07-01`, because the parent type is no longer implied by the surrounding block. The `if` inside the loop expression is evaluated during deployment and decides per instance whether that extension is created - conditional deployment does not cascade to child resources, so the condition has to sit on the extension itself. Because the child is now a named resource of the file, its id can also be published in an output for the monitoring team.",
+				"perChoice": {
+					"b": "This attaches the extension to every server the loop produces, including the ones that are not listed for monitoring, so it fails the requirement that only the listed servers receive it. A `for` expression on its own creates one instance per loop item and applies to all of them; the condition has to be part of the loop expression for it to be evaluated per instance.",
+					"c": "Nesting keeps the hierarchy visible in a single block, which is the right form for a child that always exists under its parent and is not produced per loop iteration or referenced on its own. A child that is produced for each member of a loop, and only for some of them, has to be declared at the top level of the file and attached with the `parent` property. The `if` expression can only be applied to a whole resource or module declaration, so it cannot be placed on a resource nested inside the loop body.",
+					"d": "A module is compiled into a nested deployment with its own scope, and a child resource declared inside a module can only be attached to a parent that is declared in that same module. Passing the virtual machine id in as a parameter therefore cannot create the extension as a child of the virtual machines that this file declares; the parent relationship has to be expressed in this file with the `parent` property."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/file"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/modules"
+				}
+			],
+			"subtopics": [
+				"child-resources",
+				"loops-and-conditions",
+				"virtual-machine-extensions"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q8T6DK04CPW6DSGQE0Q5VQ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Bicep file that deploys six Linux virtual machines for an application, driven by a loop over a parameter that holds the machine names. Deployments of this file are rejected intermittently because the compute service receives too many virtual machine create requests at the same moment. You need the machines produced by that loop to be created one after another, in sequence, while the loop keeps working from the same list of names. Which change should you apply to the file?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "param vmNames array = [\n  'app-vm01'\n  'app-vm02'\n  'app-vm03'\n  'app-vm04'\n  'app-vm05'\n  'app-vm06'\n]\n\nresource vnet 'Microsoft.Network/virtualNetworks@2025-01-01' = {\n  name: 'app-vnet'\n  location: resourceGroup().location\n  properties: {\n    addressSpace: {\n      addressPrefixes: ['10.0.0.0/16']\n    }\n    subnets: [\n      {\n        name: 'snet-app'\n        properties: {\n          addressPrefix: '10.0.1.0/24'\n        }\n      }\n    ]\n  }\n}\n\nresource nics 'Microsoft.Network/networkInterfaces@2025-01-01' = [for (name, i) in vmNames: {\n  name: '${name}-nic'\n  location: resourceGroup().location\n  properties: {\n    ipConfigurations: [\n      {\n        name: 'ipconfig1'\n        properties: {\n          subnet: {\n            id: vnet.properties.subnets[0].id\n          }\n          privateIPAllocationMethod: 'Dynamic'\n        }\n      }\n    ]\n  }\n}]\n\nresource vms 'Microsoft.Compute/virtualMachines@2025-04-01' = [for (name, i) in vmNames: {\n  name: name\n  location: resourceGroup().location\n  properties: {\n    hardwareProfile: {\n      vmSize: 'Standard_D2s_v5'\n    }\n    osProfile: {\n      computerName: name\n      adminUsername: 'azureuser'\n      adminPassword: 'Placeholder-Pa55word!'\n      linuxConfiguration: {\n        disablePasswordAuthentication: false\n      }\n    }\n    storageProfile: {\n      imageReference: {\n        publisher: 'Canonical'\n        offer: '0001-com-ubuntu-server-jammy'\n        sku: '22_04-lts-gen2'\n        version: 'latest'\n      }\n    }\n    networkProfile: {\n      networkInterfaces: [\n        {\n          id: nics[i].id\n        }\n      ]\n    }\n  }\n}]\n\noutput vmIds array = [for (name, i) in vmNames: {\n  name: name\n  id: vms[i].id\n}]\n"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add `@batchSize(1)` to the resource declaration that produces the virtual machines."
+					},
+					{
+						"id": "b",
+						"text": "Add `@batchSize(1)` to the resource declaration that produces the network interfaces used by the virtual machines."
+					},
+					{
+						"id": "c",
+						"text": "Add `@batchSize(1)` to the `param vmNames` declaration."
+					},
+					{
+						"id": "d",
+						"text": "Replace the `for` expression with six separate resource declarations, one per machine."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The instances produced by a `for` loop are deployed in parallel by default, which is why all six create requests reach the compute service at the same moment and some deployments are throttled. The `batchSize` decorator can be applied to a resource or module declaration that uses a `for` expression, and with a value of 1 its loop instances are deployed one after another rather than all at the same time. Putting it on the resource declaration that produces the virtual machines therefore makes the machines come up in sequence, while the loop keeps reading the same `vmNames` parameter.",
+				"perChoice": {
+					"b": "The decorator would also be accepted on that declaration, because the network interface resource uses a `for` expression too, but it would only control the order in which the network interfaces are created. The virtual machines would still be requested in parallel - and each machine already waits for its own network interface to exist - so the burst of create requests would remain.",
+					"c": "`batchSize` may only be applied to a resource or module declaration that uses a `for` expression; it cannot be attached to a `param` declaration, so the file would not compile with that change.",
+					"d": "Listing the machines as six separate resource declarations removes the loop but does not slow anything down. Resources that have no dependency between them are still deployed in parallel, so the same burst of create requests would reach the compute service, and the names would no longer come from the parameter."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/file"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/modules"
+				}
+			],
+			"subtopics": [
+				"bicep-loops",
+				"bicep-decorators",
+				"virtual-machine-deployment"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q8YNWZKPVV6N88ZGMNXAJT",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Bicep file that deploys an application's networking by calling a shared module that your platform team publishes to the organization's container registry. Last week the build agent's Bicep CLI was upgraded, and since then every build of the file fails. The shared module has to keep coming from the registry where the platform team publishes it - you are not allowed to publish it anywhere else - and the build has to succeed again. Which change should you apply to the file?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "main.bicep\n===========\ntargetScope = 'subscription'\n\nmodule network 'br:modules.fabrikam.io/networking/hub:2.1.0' = {\n  name: 'networkDeploy'\n  params: {\n    location: deployment().location\n  }\n}\n\nShared module details\n---------------------\nRegistry name: fabrikammodules\nRepository inside the registry: networking/hub\nPublished version: 2.1.0\n\nBuild agent output\n------------------\n$ bicep --version\nBicep CLI v0.43.1\n\n$ bicep build main.bicep\nError BCP446: Module registry hostname 'modules.fabrikam.io' is not supported by this CLI version."
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Rewrite the module path in the file to `br:fabrikammodules.azurecr.io/networking/hub:2.1.0`, delete the cached copy, and run `bicep restore` before compiling it again."
+					},
+					{
+						"id": "b",
+						"text": "Rewrite the module path in the file to `br:fabrikammodules.azurecr.io/networking/hub:2.1.0` and run `bicep build` again, leaving the local cache untouched."
+					},
+					{
+						"id": "c",
+						"text": "Rewrite the module path in the file to the public registry form `br/public:networking/hub:2.1.0` and run `bicep restore` before compiling it again."
+					},
+					{
+						"id": "d",
+						"text": "Leave the module path in the file unchanged and add `#disable-next-line BCP446` above the module declaration to silence the reported error."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Since Bicep CLI v0.43.1 the CLI rejects module references that use a custom domain and raises diagnostic BCP446; the hostname in the reference has to be one the CLI accepts (the built-in allowlist covers *.azurecr.io, *.azurecr.cn, *.azurecr.us, mcr.microsoft.com, mcr.azure.cn and ghcr.io). The shared module lives in the registry named fabrikammodules, so the private-registry path form br:<registry-name>.azurecr.io/<file-path>:<tag> yields br:fabrikammodules.azurecr.io/networking/hub:2.1.0. A module pulled from a registry must be fetched into the local cache with `bicep restore` before the file can use it, and because the reference was rewritten the stale cached entry has to be removed and the restore run again so the module is fetched through the corrected hostname.",
+				"perChoice": {
+					"b": "Rewriting the hostname clears the BCP446 error, but a module that comes from a registry is not usable until `bicep restore` has pulled it into the local cache. Because the reference changed, the entry cached under the old path has to be removed and the restore re-run; otherwise the build keeps working from the stale cached copy and the module is never fetched through the corrected hostname.",
+					"c": "The public registry form br/public:<file-path>:<tag> points at Microsoft's published module registry, where this organization's shared networking module does not exist. It would also mean republishing the module somewhere else, which the stated requirement rules out.",
+					"d": "A disable directive only silences the reported diagnostic; it does not make the custom hostname usable, and the CLI still blocks that registry when it tries to fetch the module. The documented fix is to update the references to use a supported hostname, and such directives are meant to be used sparingly, only after reviewing the diagnostic."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/modules"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/file"
+				}
+			],
+			"subtopics": [
+				"bicep-modules",
+				"module-registry",
+				"bicep-cli"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q94EMN9JKFZTXCSZRZYA1D",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Bicep file that creates a storage account and a blob container for an application. The file does not compile: the build fails because the default value of the storage account name parameter points at something that cannot be used there. Two things must remain true once you fix it: the deployment team must still be able to supply the storage account name when they run the deployment, and the name fragment that ends the resource names must stay written in exactly one place, so that changing it later also changes every name that depends on it. Which change should you apply to the file?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "var nameFragment = 'prod'\n\nparam storageAccountName string = 'stgapp${nameFragment}'\n\nresource stg 'Microsoft.Storage/storageAccounts@2025-06-01' = {\n  name: storageAccountName\n  location: resourceGroup().location\n  sku: { name: 'Standard_LRS' }\n  kind: 'StorageV2'\n}\n\nresource logs 'Microsoft.Storage/storageAccounts/blobServices/containers@2025-06-01' = {\n  name: '${storageAccountName}/logs'\n  properties: {}\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Declare the fragment as a parameter with a default value and let the storage account name parameter take its default from that parameter."
+					},
+					{
+						"id": "b",
+						"text": "Keep the fragment as a variable and declare the storage account name as a variable that is built from that variable."
+					},
+					{
+						"id": "c",
+						"text": "Keep the fragment as a variable and write the fragment's value directly into the default value of the storage account name parameter."
+					},
+					{
+						"id": "d",
+						"text": "Keep the fragment as a variable and declare the storage account name parameter with a default value that is that variable."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A parameter default value may be built from another parameter, so the fragment can become a parameter with its own default and the storage account name parameter can keep its default while still being overridable at deployment time. Because a parameter may not share its name with a variable in the same scope, the variable declaration is replaced rather than duplicated. The fragment therefore still appears in one place, and changing its default later changes the derived names.",
+				"perChoice": {
+					"b": "Turning the storage account name into a variable removes the team's ability to supply that name when the deployment runs, which the requirement keeps. Parameters are the way to accept input per deployment, and a parameter default can be an expression such as resourceGroup().location or a value built from another parameter, but never a variable.",
+					"c": "This compiles, but the fragment's text now exists in two places: in the variable and inside the storage account name parameter. A later edit to the variable would leave the derived names stale, so the fragment is no longer maintained in one place as required.",
+					"d": "A parameter default value can never point at a variable. Parameter values are resolved before any deployment operation starts, so leaving the storage account name parameter's default built from the variable keeps the file from compiling."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/parameters"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/file"
+				}
+			],
+			"subtopics": [
+				"bicep-parameters",
+				"bicep-variables"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q9AMB6GX1RA3J35MNQKVQ4",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a Bicep file that deploys a Windows Server virtual machine, a network interface and an extra storage volume, and it also calls a shared module that installs the monitoring agent. The platform team has reviewed the file and asked for several changes before it is used in production. Match each requirement below with the single change you should make to the file; one of the listed changes is not needed for any of the requirements.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "targetScope = 'resourceGroup'\n\nparam vmName string = 'app-vm01'\nparam location string = resourceGroup().location\nparam adminUser string = 'azureuser'\nparam createDataDisk bool = true\n\nvar description = 'Finance workload host'\n\nmodule agent './modules/agent.bicep' = {\n  name: 'agentDeploy'\n  params: {\n    vmName: vmName\n  }\n}\n\nresource nic 'Microsoft.Network/networkInterfaces@2025-06-01' = {\n  name: '${vmName}-nic'\n  location: location\n  properties: {\n    ipConfigurations: [\n      {\n        name: 'ipconfig1'\n        properties: {\n          privateIPAllocationMethod: 'Dynamic'\n        }\n      }\n    ]\n  }\n}\n\nresource vm 'Microsoft.Compute/virtualMachines@2025-06-01' = {\n  name: vmName\n  location: location\n  properties: {\n    hardwareProfile: {\n      vmSize: 'Standard_D4s_v5'\n    }\n    osProfile: {\n      computerName: vmName\n      adminUsername: adminUser\n      adminPassword: 'Temp1234!'\n    }\n    networkProfile: {\n      networkInterfaces: [\n        { id: nic.id }\n      ]\n    }\n  }\n}\n\nresource dataDisk 'Microsoft.Compute/disks@2025-06-01' = {\n  name: '${vmName}-data'\n  location: location\n  sku: {\n    name: 'Premium_LRS'\n  }\n  properties: {\n    diskSizeGB: 128\n  }\n}\n\noutput vmId string = vm.id"
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Add `@minLength(3)` and `@maxLength(24)` to the `adminUser` parameter."
+					},
+					{
+						"id": "i2",
+						"text": "Add an `if` expression to the `dataDisk` resource so it is deployed only when `createDataDisk` is true."
+					},
+					{
+						"id": "i3",
+						"text": "Give the module a `name` built from `deployment().name` instead of the fixed value it has today."
+					},
+					{
+						"id": "i4",
+						"text": "Add `@sys.description('Identifier of the application host')` to the `vmName` parameter."
+					},
+					{
+						"id": "i5",
+						"text": "Add `@retryOn(errorCodes: ['NotAvailable'], maxRetries: 5)` to the `vm` resource."
+					},
+					{
+						"id": "i6",
+						"text": "Add `@allowed(['eastus', 'westeurope'])` to the `location` parameter."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Requirement 1 - A run that passes an administrator account name shorter than three characters or longer than twenty-four characters must be rejected."
+					},
+					{
+						"id": "s2",
+						"label": "Requirement 2 - The extra storage volume must be left out in runs that do not ask for it, while the rest of the file must still succeed."
+					},
+					{
+						"id": "s3",
+						"label": "Requirement 3 - Two copies of this file running at the same time must not be able to read each other's results from the shared file, and the label of each copy must be distinct."
+					},
+					{
+						"id": "s4",
+						"label": "Requirement 4 - The portal must show help text for the parameter that gives the server its name, and the file must still compile even though it already declares a variable with that same word."
+					},
+					{
+						"id": "s5",
+						"label": "Requirement 5 - Creating the server sometimes comes back as a transient failure, and the file must handle that by itself instead of ending the run."
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "Requirement 1 is met by the string length decorators on `adminUser`, because `@minLength`/`@maxLength` constrain a string by character count and both limits are inclusive. Requirement 2 is met by the conditional expression on the `dataDisk` resource, because `if` marks a resource as conditional and the expression is evaluated during the deployment. Requirement 3 is met by naming the nested deployment from `deployment().name`, because two nested deployments that share one fixed name at the same scope can make a deployment report the wrong output. Requirement 4 is met by writing the help-text decorator as `@sys.description(...)`, because decorators live in the `sys` namespace and the file already declares a variable called `description`. Requirement 5 is met by `@retryOn` on the virtual machine resource, because it takes error-code strings and an optional retry count of at most 10 with exponential back-off. The `@allowed` change on `location` matches none of the requirements.",
+				"perChoice": {
+					"i1": "Fits requirement 1. `@minLength` and `@maxLength` constrain a string parameter by character count and all four of the length/value limits are inclusive, so attaching them to `adminUser` makes a deployment that passes a name outside three to twenty-four characters fail validation.",
+					"i2": "Fits requirement 2. `if` marks a resource as conditional and the expression is evaluated during the deployment, so guarding the `dataDisk` resource with the existing `createDataDisk` flag leaves that volume out of runs that do not ask for it while the rest of the file is still processed.",
+					"i3": "Fits requirement 3. Deploying two nested deployments that use the same fixed name at the same scope can make one deployment report the wrong output, so a name built from `deployment().name` differs on every run and each run reads back only its own results.",
+					"i4": "Fits requirement 4. Decorators sit in the `sys` namespace, so because the file already declares a variable named `description`, the help-text decorator has to be written as `@sys.description(...)` for the file to compile and for the portal to show the tip for that parameter.",
+					"i5": "Fits requirement 5. `@retryOn` accepts error-code strings plus an optional retry count of at most 10 and uses exponential back-off, so adding it to the virtual machine resource lets the deployment make another attempt after a transient failure instead of ending the run.",
+					"i6": "Fits no requirement. `@allowed` is valid only on `param` statements and merely checks that the supplied value belongs to a fixed list; no requirement asks to restrict the deployment regions to a list of values, and the character-count rule in requirement 1 is handled by the length decorators."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/parameters"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/file"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/modules"
+				}
+			],
+			"subtopics": [
+				"bicep-decorators",
+				"bicep-modules",
+				"bicep-parameters"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q9N50847S2BCZB5RQKN2SP",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a Bicep file that deploys an AKS cluster with its default group of nodes, and it also calls a module that holds the application's ingress configuration, currently loaded from a file stored next to the template. Four changes were requested before this file can be promoted to production. Match each requirement below with the single change you should make to the file.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "targetScope = 'resourceGroup'\n\nparam clusterName string = 'app-aks'\nparam dnsPrefix string = 'app'\nparam nodeSizes array = [ 'Standard_D4as_v5' ]\n\nresource aks 'Microsoft.ContainerService/managedClusters@2024-05-01' = {\n  name: clusterName\n  location: resourceGroup().location\n  identity: {\n    type: 'SystemAssigned'\n  }\n  properties: {\n    dnsPrefix: dnsPrefix\n    agentPoolProfiles: [\n      {\n        name: 'systempool'\n        count: 3\n        vmSize: nodeSizes[0]\n        mode: 'System'\n        osType: 'Linux'\n      }\n    ]\n    linuxProfile: {\n      adminUsername: 'azureuser'\n      ssh: {\n        keyData: 'ssh-rsa AAAA...'\n      }\n    }\n  }\n}\n\nmodule ingressModule './ingress.bicep' = {\n  name: 'app-ingress'\n  params: {\n    clusterName: clusterName\n  }\n}\n"
+				},
+				"items": [
+					{
+						"id": "itemB",
+						"text": "output clusterFqdn string = aks.properties.fqdn"
+					},
+					{
+						"id": "itemD",
+						"text": "module ingressModule 'ts:11111111-2222-3333-4444-555555555555/rg-app/ingress-package:2.0.0' = { ... }"
+					},
+					{
+						"id": "itemA",
+						"text": "resource appGroup 'Microsoft.ContainerService/managedClusters/agentPools@2024-05-01' = { parent: aks ... }"
+					},
+					{
+						"id": "itemC",
+						"text": "@allowed([ 'Standard_D4as_v5', 'Standard_D8as_v5' ]) param nodeSizes array"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "The group of workers that runs the application's own workloads must be declared on its own and stay attached to the cluster, so more groups can be added later without rewriting the cluster's block."
+					},
+					{
+						"id": "s2",
+						"label": "The deployment result must expose the cluster's DNS name so the release pipeline can register it."
+					},
+					{
+						"id": "s3",
+						"label": "The deployment team must be able to pick which virtual machine types the workers in the group run on, but only the two the platform team has approved; choosing just one of them is fine, while anything else must fail the deployment."
+					},
+					{
+						"id": "s4",
+						"label": "The dependency that this file pulls in must stop relying on the file stored next to the template, and engineers who do not write Bicep must still be able to launch it from the portal or from command-line tools."
+					}
+				]
+			},
+			"key": {
+				"s1": "itemA",
+				"s2": "itemB",
+				"s3": "itemC",
+				"s4": "itemD"
+			},
+			"explanation": {
+				"correct": "The group that runs the application's own workers has to be moved into a declaration of its own that points at the cluster through the parent property, which is the separate form of a child resource and needs the whole type path. Making the cluster's DNS name visible to the pipeline needs a new output statement that reads the value from the cluster's properties. Holding the virtual machine types to the approved pair needs the @allowed decorator, which for an array parameter also accepts any subset of the listed values. Letting engineers launch the dependency outside Bicep means referencing it through a template spec path, because a module taken from a registry can only be deployed from inside a Bicep file.",
+				"perChoice": {
+					"itemA": "Fits the group requirement. A child resource may be declared on its own by giving its full type path and a parent property, which keeps it tied to the cluster while letting more groups be added later.",
+					"itemB": "Fits the DNS name requirement. An output statement returns a value read from the cluster's properties so the deployment result exposes it to the release pipeline.",
+					"itemC": "Fits the approved machine type requirement. @allowed validates the supplied values during deployment, rejects anything outside the approved list, and for an array parameter accepts any subset of the listed values.",
+					"itemD": "Fits the portability requirement. A template spec can be deployed through the API, Azure CLI, Azure PowerShell or the portal, while a module pulled from a registry can only be deployed from inside a Bicep file."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/file"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/parameters"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/modules"
+				}
+			],
+			"subtopics": [
+				"bicep-child-resources",
+				"bicep-parameter-validation",
+				"bicep-module-sources"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R48XVJ89RAAV7BYEBARJKF",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a Bicep file that deploys a Windows Server virtual machine with a network interface and an attached data disk into an existing resource group. The platform team reviewed the file, and four adjustments were requested before it goes into production. Match each request below with the single edit that satisfies it; one of the listed edits is unnecessary.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "// current file: deployed into an existing resource group\nparam location string = resourceGroup().location\nparam vmSize string = 'Standard_D2s_v5'\nparam adminUsername string = 'azureuser'\n\nresource nic 'Microsoft.Network/networkInterfaces@2024-05-01' = {\n  name: 'app-nic'\n  location: location\n  properties: {\n    ipConfigurations: [\n      {\n        name: 'ipconfig1'\n        properties: {\n          privateIPAllocationMethod: 'Dynamic'\n        }\n      }\n    ]\n  }\n}\n\nresource vm 'Microsoft.Compute/virtualMachines@2024-07-01' = {\n  name: 'app-vm'\n  location: location\n  properties: {\n    hardwareProfile: {\n      vmSize: vmSize\n    }\n    storageProfile: {\n      imageReference: {\n        publisher: 'MicrosoftWindowsServer'\n        offer: 'WindowsServer'\n        sku: '2022-datacenter-azure-edition'\n        version: 'latest'\n      }\n      osProfile: {\n        computerName: 'appvm'\n        adminUsername: adminUsername\n        adminPassword: 'Placeholder-Pa55w0rd!'\n        windowsConfiguration: {\n          enableAutomaticUpdates: true\n        }\n      }\n      dataDisks: [\n        {\n          name: 'data-disk'\n          diskSizeGB: 128\n          createOption: 'Empty'\n          lun: 0\n        }\n      ]\n    }\n    networkProfile: {\n      networkInterfaces: [\n        {\n          id: nic.id\n        }\n      ]\n    }\n  }\n}\n"
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Add an integer parameter for the data disk capacity of the virtual machine that falls back to 128 and assign it to the disk's `diskSizeGB` property"
+					},
+					{
+						"id": "i2",
+						"text": "Add `@minValue(128)` and `@maxValue(4096)` to the data disk capacity parameter"
+					},
+					{
+						"id": "i3",
+						"text": "Wrap the virtual machine resource in an `if` expression driven by a boolean parameter"
+					},
+					{
+						"id": "i4",
+						"text": "Change `targetScope` to `subscription` and declare a `resourceGroup` resource"
+					},
+					{
+						"id": "i5",
+						"text": "Move the data disk out of the virtual machine's `storageProfile` and declare it as a separate resource that uses `parent`"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Supply the data disk capacity when the deployment runs, keeping today's number when nothing is supplied"
+					},
+					{
+						"id": "s2",
+						"label": "Reject a deployment that asks for a data disk capacity outside the range the platform team approved"
+					},
+					{
+						"id": "s3",
+						"label": "Create the virtual machine only when the deployment asks for it"
+					},
+					{
+						"id": "s4",
+						"label": "Create the resource group in the same run instead of expecting one to already exist"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "A parameter with a default value supplies the capacity at deployment time and falls back to today's hard-coded 128 when nothing is passed; the inclusive integer limits on that parameter make the deployment fail validation for a value outside the approved range; a conditional `if` expression on the resource makes the machine appear only when the condition evaluates true; and because the file has no target scope it deploys at resource group scope, so the same run can only create the resource group itself after the scope is raised to the subscription. The separate top-level declaration of the data disk tied to the machine with `parent` is valid Bicep, but no request calls for restructuring the disk declaration, so that edit is not needed.",
+				"perChoice": {
+					"i1": "Belongs with the request about supplying the capacity at deployment time: a parameter that carries a default value uses that value whenever the deployment supplies none, and the default keeps the behaviour that the file has today. The type must be integer because the disk's size property expects a number.",
+					"i2": "Belongs with the request about refusing values outside the approved range: the minimum and maximum decorators constrain an integer parameter, and the deployment is rejected when the supplied value falls outside those limits. Both limits are inclusive, so 128 and 4096 themselves are accepted.",
+					"i3": "Belongs with the request about creating the machine only on demand: a resource wrapped in an `if` expression is evaluated during deployment and is created only when the condition is true, so a boolean parameter controls whether the virtual machine appears.",
+					"i4": "Belongs with the request about creating the resource group in the same run: with no target scope declared the file deploys at resource group scope and expects the group to exist, so the scope must be raised to the subscription and a resource group resource declared before the machine and its interface are created inside it.",
+					"i5": "Fits no request. Declaring a child resource at the top level and tying it to its parent with `parent` is a legitimate alternative to nesting it, but none of the four requests asks for the disk declaration to be restructured, and this edit does not affect the capacity, the validation of the capacity, the creation of the machine, or the creation of the resource group."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/parameters"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/file"
+				}
+			],
+			"subtopics": [
+				"bicep-parameters",
+				"bicep-conditional-deployment",
+				"bicep-target-scope"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R4CX5E4GCMTBJ083ANT06B",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a Bicep file that creates a Linux virtual machine with data disks in an existing resource group. The administrator account name, the list of data disk names and the size of each data disk all arrive as parameters, and the file currently puts no restriction on any of them. Four rules were agreed with the platform team before this workload may be promoted to production. For each rule, choose the single edit you should make to the file; one of the edits listed below is not required by any of the rules.\n\nRule 1 - A deployment that supplies an administrator account name of fewer than 3 characters must be rejected before any resource is created.\n\nRule 2 - A deployment that supplies more than 5 data disk names must be rejected before any resource is created.\n\nRule 3 - A deployment that supplies a data disk size greater than 1024 GB must be rejected before any resource is created.\n\nRule 4 - When the deployment finishes, the caller must be able to read the resource identifier of the virtual machine that was created.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "param adminLogin string = 'azureuser'\nparam diskNames array = []\nparam diskSizeGB int = 128\n\nresource vm 'Microsoft.Compute/virtualMachines@2024-07-01' = {\n  name: 'app-vm01'\n  location: resourceGroup().location\n  properties: {\n    hardwareProfile: {\n      vmSize: 'Standard_D4s_v5'\n    }\n    storageProfile: {\n      imageReference: {\n        publisher: 'Canonical'\n        offer: '0001-com-ubuntu-server-jammy'\n        sku: '22_04-lts-gen2'\n        version: 'latest'\n      }\n      osProfile: {\n        computerName: 'app-vm01'\n        adminUsername: adminLogin\n        linuxConfiguration: {\n          disablePasswordAuthentication: true\n        }\n      }\n      dataDisks: [\n        for diskName in diskNames: {\n          name: diskName\n          diskSizeGB: diskSizeGB\n          createOption: 'Empty'\n          lun: 0\n        }\n      ]\n    }\n  }\n}"
+				},
+				"items": [
+					{
+						"id": "it1",
+						"text": "Add `@minLength(3)` to the `adminLogin` parameter."
+					},
+					{
+						"id": "it2",
+						"text": "Add `@maxLength(5)` to the `diskNames` parameter."
+					},
+					{
+						"id": "it3",
+						"text": "Add `@maxValue(1024)` to the `diskSizeGB` parameter."
+					},
+					{
+						"id": "it4",
+						"text": "Add `@minValue(64)` to the `diskSizeGB` parameter."
+					},
+					{
+						"id": "it5",
+						"text": "Add an `output` that returns the virtual machine's resource identifier."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Rule 1 - reject an account name that is too short"
+					},
+					{
+						"id": "s2",
+						"label": "Rule 2 - reject a disk list that is too long"
+					},
+					{
+						"id": "s3",
+						"label": "Rule 3 - reject a disk size that is too large"
+					},
+					{
+						"id": "s4",
+						"label": "Rule 4 - report the new server's handle at the end"
+					}
+				]
+			},
+			"key": {
+				"s1": "it1",
+				"s2": "it2",
+				"s3": "it3",
+				"s4": "it5"
+			},
+			"explanation": {
+				"correct": "Rule 1 is met by adding `@minLength(3)` to the `adminLogin` parameter, because `@minLength` constrains a string parameter by character count and the limit is inclusive, so a name with fewer than 3 characters fails validation while a 3-character name still deploys. Rule 2 is met by adding `@maxLength(5)` to the `diskNames` parameter, because for an array parameter `@maxLength` constrains the number of items, so a list of more than 5 disk names is rejected. Rule 3 is met by adding `@maxValue(1024)` to the `diskSizeGB` parameter, because `@maxValue` constrains integer parameters, so a size above 1024 GB is rejected. Rule 4 is met by adding an output that returns the virtual machine's resource identifier, because an output returns values from a finished deployment to the caller. The `@minValue(64)` change is not required by any of the rules, and it would reject disk sizes below 64 GB that the platform rules do not forbid.",
+				"perChoice": {
+					"it1": "Fits Rule 1. `@minLength` constrains a string parameter by character count and the limit is inclusive, so an administrator account name with fewer than 3 characters is rejected during deployment validation while a 3-character name is still accepted.",
+					"it2": "Fits Rule 2. `@maxLength` applied to an array parameter limits the number of items it may hold, so a list carrying more than 5 data disk names fails validation before any resource is created.",
+					"it3": "Fits Rule 3. `@maxValue` constrains an integer parameter and the limit is inclusive, so a data disk size of 1024 GB or less deploys and anything above it is rejected.",
+					"it4": "Not needed for any rule. No rule asks for a lower bound on the disk size, and adding `@minValue(64)` would reject sizes below 64 GB, which the platform rules do not forbid, so it stays out of the file.",
+					"it5": "Fits Rule 4. An `output` returns values from the deployment, so publishing the virtual machine's resource identifier lets the caller read it once the deployment has finished."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/parameters"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/file"
+				}
+			],
+			"subtopics": [
+				"bicep-parameter-decorators",
+				"bicep-outputs",
+				"deployment-validation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R4MF7S84S38TX80TNZB8F1",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a Bicep file that deploys a Linux virtual machine with its network interface and a storage account. The build reports a single warning, 'no-unused-params', for one of the inputs, and the last deployment failed while creating the virtual machine with the error code 'Conflict'. The platform team has asked for four changes before the file is promoted to production. Match each requirement below with the single edit you should make to the file.\n\nRequirement A - The failed virtual machine create call should be retried automatically, with the retry count set to the highest value the retry mechanism allows.\n\nRequirement B - Only the build warning about the unused input should be silenced, and the silencing must not extend to the rest of the deployment; every other diagnostic must still be reported.\n\nRequirement C - The portal deployment form should show a tip for the 'adminName' input, even though the file already declares a variable called 'description'.\n\nRequirement D - The file must create one file share for each name in the 'shareNames' array under the storage account, and the deployment must report the identifier of every share it created.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "param adminName string = 'azureuser'\nparam adminPassword string\nparam tags object = {}\nparam shareNames array = [ 'logs', 'backups' ]\n\nvar location = resourceGroup().location\nvar description = 'application workloads'\n\nresource nic 'Microsoft.Network/networkInterfaces@2024-05-01' = {\n  name: 'app-nic'\n  location: location\n  properties: {\n    ipConfigurations: [\n      {\n        name: 'ipconfig1'\n        properties: {\n          privateIPAllocationMethod: 'Dynamic'\n          subnet: { id: '/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/vnet/subnets/default' }\n        }\n      }\n    ]\n  }\n}\n\nresource vm 'Microsoft.Compute/virtualMachines@2024-07-01' = {\n  name: 'app-vm'\n  location: location\n  properties: {\n    hardwareProfile: { vmSize: 'Standard_D2s_v5' }\n    osProfile: {\n      computerName: 'app-vm'\n      adminUsername: adminName\n      adminPassword: adminPassword\n    }\n    storageProfile: {\n      imageReference: {\n        publisher: 'Canonical'\n        offer: '0001-com-ubuntu-server-jammy'\n        sku: '22_04-lts-gen2'\n        version: 'latest'\n      }\n      osDisk: {\n        createOption: 'FromImage'\n        name: 'app-osdisk'\n      }\n    }\n    networkProfile: {\n      networkInterfaces: [ { id: nic.id } ]\n    }\n  }\n}\n\nresource storageAcct 'Microsoft.Storage/storageAccounts@2025-06-01' = {\n  name: 'appstoracct'\n  location: location\n  kind: 'StorageV2'\n  sku: { name: 'Standard_LRS' }\n}\n\noutput vmId string = vm.id"
+				},
+				"items": [
+					{
+						"id": "retry-10",
+						"text": "Add `@retryOn('Conflict', 10)` directly above the `vm` resource declaration."
+					},
+					{
+						"id": "retry-25",
+						"text": "Add `@retryOn('Conflict', 25)` directly above the `vm` resource declaration."
+					},
+					{
+						"id": "suppress-one",
+						"text": "Add `#disable-next-line no-unused-params` immediately above the `tags` parameter declaration."
+					},
+					{
+						"id": "suppress-all",
+						"text": "Add `#disable-diagnostics no-unused-params` at the top of the template."
+					},
+					{
+						"id": "sys-desc",
+						"text": "Add `@sys.description('Administrator account name')` above the `adminName` parameter declaration."
+					},
+					{
+						"id": "plain-desc",
+						"text": "Add `@description('Administrator account name')` above the `adminName` parameter declaration."
+					},
+					{
+						"id": "share-top",
+						"text": "Declare the share as its own top-level resource with a `for` expression over the `shareNames` array, use the whole type path `Microsoft.Storage/storageAccounts/fileServices/shares@2025-06-01`, and set `parent: storageAcct`."
+					},
+					{
+						"id": "share-nested",
+						"text": "Declare the share as a nested resource inside the storage account body with a `for` expression over the `shareNames` array, using the relative type path `fileServices/shares@2025-06-01`."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Requirement A - the failed virtual machine create call"
+					},
+					{
+						"id": "s2",
+						"label": "Requirement B - the unused-input build warning"
+					},
+					{
+						"id": "s3",
+						"label": "Requirement C - the administrator account name input in the portal form"
+					},
+					{
+						"id": "s4",
+						"label": "Requirement D - the file shares under the storage account"
+					}
+				]
+			},
+			"key": {
+				"s1": "retry-10",
+				"s2": "suppress-one",
+				"s3": "sys-desc",
+				"s4": "share-top"
+			},
+			"explanation": {
+				"correct": "Each requirement maps to one edit. The failed virtual machine create call gets `@retryOn('Conflict', 10)` on the `vm` resource, because the retry decorator takes an error code plus a retry count and 10 is the highest count it accepts. The single unused-input warning is silenced with `#disable-next-line no-unused-params` placed immediately above the `tags` parameter, so that rule is switched off for that line only and every other diagnostic is still reported. The portal tip for `adminName` uses the namespace-qualified `@sys.description(...)`, because the file already contains an item called `description` and the decorator has to be written in its qualified form. The file shares are declared as a separate resource that loops over the `shareNames` array, uses the whole child type path `Microsoft.Storage/storageAccounts/fileServices/shares@2025-06-01` and ties itself to the account with `parent: storageAcct`, which is the form intended when a child resource is produced by a loop and read on its own so each share's identifier can be reported.",
+				"perChoice": {
+					"retry-10": "Correct for Requirement A. The retry decorator takes an error-code string and an optional retry count, and the count may be at most 10, so `@retryOn('Conflict', 10)` on the `vm` resource is the highest count the mechanism allows for the error code that was actually seen.",
+					"retry-25": "Not used. The retry count accepted by the decorator is 10 or less, so a count of 25 falls outside the supported range and the deployment would not behave as the operations team asked.",
+					"suppress-one": "Correct for Requirement B. `#disable-next-line no-unused-params` switches that one diagnostic rule off for the following line only, so putting it immediately above the `tags` parameter hides just that warning and leaves every other diagnostic in the build visible.",
+					"suppress-all": "Not used. `#disable-diagnostics` keeps the named rule silenced for the whole file (until it is re-enabled), so the suppression would spread across the entire deployment instead of being confined to the one declaration the build flags.",
+					"sys-desc": "Correct for Requirement C. Decorators live in the `sys` namespace, so when the file already declares an item called `description` the decorator must be written as `@sys.description(...)`; that is what attaches the portal tip to the `adminName` parameter.",
+					"plain-desc": "Not used. Because the file already declares something called `description`, the unqualified `@description(...)` spelling collides with that name and the file will not compile; the qualified form is needed instead.",
+					"share-top": "Correct for Requirement D. The shares are produced by a loop and each one's identifier has to be reported separately, and the separate declaration tied to the parent with `parent` is the form used when a child resource is created in a loop or referenced on its own; that form needs the whole type path `Microsoft.Storage/storageAccounts/fileServices/shares@2025-06-01`.",
+					"share-nested": "Not used. Nesting the share inside the storage account body keeps the hierarchy visible in one block, but the standalone declaration with `parent` is the right form when the child is created in a loop and its values are read individually, which is what Requirement D asks for."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/file"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/parameters"
+				}
+			],
+			"subtopics": [
+				"retry-decorator",
+				"diagnostic-directives",
+				"child-resource-parent"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R4SGHTHKAYSP3KZ1TBBSKG",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a Bicep file that deploys an application tier into a resource group: a storage account with a file share inside it, and a virtual machine that carries a telemetry extension. The current content of the file is shown below. The platform team has asked for four changes before this file is promoted to production. Match each request below with the single change you should make to the file; one of the listed changes is not needed for any of the requests.\n\nRequirement A - The telemetry extension on the virtual machine must be created only when the boolean input is set to true, and the deployment must still finish successfully when it is set to false.\n\nRequirement B - The file share under the storage account has to be declared on its own, outside the storage account's block, and that declaration has to name the storage account the share belongs to, because other tooling addresses the share directly.\n\nRequirement C - The file has to be able to create the resource group it deploys into, so that the pipeline can stand up a brand new environment from nothing. That means the file must be deployable one level above a resource group.\n\nRequirement D - The build fails with a name clash between one of the file's inputs and something else that the file declares. The deployment scripts choose the region by passing that input under its current name, so its name has to stay exactly as it is.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "param location string = 'westeurope'\nparam enableDiagnostics bool = false\n\nvar location = 'westeurope'\n\nresource stg 'Microsoft.Storage/storageAccounts@2025-06-01' = {\n  name: 'appstgapp01'\n  location: location\n  sku: {\n    name: 'Standard_LRS'\n  }\n  kind: 'StorageV2'\n\n  resource fileService 'fileServices' = {\n    name: 'default'\n\n    resource share 'shares' = {\n      name: 'appdata'\n    }\n  }\n}\n\nresource vm 'Microsoft.Compute/virtualMachines@2024-07-01' = {\n  name: 'app-vm'\n  location: location\n  properties: {\n    hardwareProfile: {\n      vmSize: 'Standard_D2s_v5'\n    }\n    osProfile: {\n      computerName: 'app-vm'\n      adminUsername: 'azureuser'\n      adminPassword: 'Pa55word-placeholder'\n      linuxConfiguration: {\n        disablePasswordAuthentication: false\n      }\n    }\n    storageProfile: {\n      imageReference: {\n        publisher: 'Canonical'\n        offer: '0001-com-ubuntu-server-jammy'\n        sku: '22_04-lts-gen2'\n        version: 'latest'\n      }\n    }\n    networkProfile: {\n      networkInterfaces: [\n        {\n          id: 'placeholder-nic-id'\n        }\n      ]\n    }\n\n    resource telemetry 'extensions' = {\n      name: 'AzureMonitorLinuxAgent'\n      properties: {\n        publisher: 'Microsoft.Azure.Monitor'\n        type: 'AzureMonitorLinuxAgent'\n        autoUpgradeMinorVersion: true\n      }\n    }\n  }\n}"
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Wrap the extension declaration in an `if` expression that tests the 'enableDiagnostics' input."
+					},
+					{
+						"id": "i2",
+						"text": "Move the share declaration out of the storage account block and tie it to that account with the `parent` property."
+					},
+					{
+						"id": "i3",
+						"text": "Add a `targetScope` declaration with the value 'subscription' at the top of the file."
+					},
+					{
+						"id": "i4",
+						"text": "Rename the variable so that it no longer shares its name with the parameter."
+					},
+					{
+						"id": "i5",
+						"text": "Rename the parameter so that it no longer shares its name with the variable."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Requirement A"
+					},
+					{
+						"id": "s2",
+						"label": "Requirement B"
+					},
+					{
+						"id": "s3",
+						"label": "Requirement C"
+					},
+					{
+						"id": "s4",
+						"label": "Requirement D"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Requirement A is satisfied by putting an `if` expression on the extension declaration: the condition is evaluated during deployment, so the extension is created only when 'enableDiagnostics' is true and the deployment still completes when it is false. Requirement B is satisfied by declaring the share on its own and pointing it at the storage account with the `parent` property - the form used when a child resource is addressed on its own - which means the separate declaration needs the full type path 'Microsoft.Storage/storageAccounts/fileServices/shares'. Requirement C is satisfied by adding `targetScope 'subscription'`: a deployment that creates the resource group it deploys into has to run at the scope where resource groups are managed, and resourceGroup is only the default when the declaration is left out. Requirement D is satisfied by renaming the variable: a parameter may not share its name with a variable in the same scope, and because the scripts fix the input's name, the clash has to be removed on the variable side (together with any references to it).",
+				"perChoice": {
+					"i1": "Fits Requirement A. A conditional resource declaration evaluates its expression during deployment and creates the item only when the expression is true, so the extension follows the boolean input and the deployment completes normally when the input is false.",
+					"i2": "Fits Requirement B. A child resource can either be nested in the parent's body or declared separately and tied to the parent with the `parent` property; the separate form is the one to use when the child is addressed on its own, and it requires the full type path of the child.",
+					"i3": "Fits Requirement C. `targetScope` sets where the whole file deploys, and the accepted values include subscription, managementGroup, tenant and resourceGroup; resourceGroup is the default only when the declaration is omitted, so the explicit declaration is needed to run one level above a resource group and create the resource group itself.",
+					"i4": "Fits Requirement D. A parameter may not share its name with a variable inside one scope, and the region input's name is fixed by the deployment scripts, so the variable (and its references) is what has to be renamed.",
+					"i5": "Fits no slot. Renaming the parameter would change the name the deployment scripts use to pass the region, which Requirement D forbids, and it does not address Requirements A, B or C."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/file"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/parameters"
+				}
+			],
+			"subtopics": [
+				"bicep-parameter-naming",
+				"bicep-conditional-resources",
+				"bicep-child-resources"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R4ZPV3PXG8FW75T1XSWD8H",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Bicep file that deploys an application tier into a resource group: a storage account for the application's data, plus two shared modules that each roll out a different virtual machine, one for the reporting service and one for the audit service. The current content of the file is shown below. Two things need fixing. The build fails with an error that points at the parameter named dataEndpoint, and the endpoint the application writes to must come from the storage account that this same deployment creates, with nobody passing the endpoint in when the pipeline runs. In addition, the two module calls carry one identical name, so one invocation's output can end up reported under the other's entry, and each invocation has to appear under a separate label that names the workload it deployed. Which changes should you make to the file?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "targetScope = 'resourceGroup'\n\n@description('Resource group that holds the shared data services')\nparam sharedRgName string = 'rg-shared-data'\n\n@description('Blob endpoint the application writes to')\nparam dataEndpoint string = reference(resourceId('Microsoft.Storage/storageAccounts', sharedRgName, 'stshared01'), '2023-05-01').primaryEndpoints.blob\n\nresource stg 'Microsoft.Storage/storageAccounts@2025-06-01' = {\n  name: 'stappdata01'\n  location: resourceGroup().location\n  sku: {\n    name: 'Standard_LRS'\n  }\n  kind: 'StorageV2'\n}\n\nmodule reports './modules/reports/main.bicep' = {\n  name: 'reportsDeploy'\n}\n\nmodule audit './modules/audit/main.bicep' = {\n  name: 'reportsDeploy'\n}\n\noutput blobEndpoint string = dataEndpoint"
+				},
+				"statement": "You must {{s1}} and {{s2}}.",
+				"slots": [
+					{
+						"id": "s1",
+						"options": [
+							{
+								"id": "a",
+								"text": "delete the parameter and let the deployment produce the value"
+							},
+							{
+								"id": "b",
+								"text": "keep the parameter and let the deployment team supply the value"
+							},
+							{
+								"id": "c",
+								"text": "keep the parameter and change its type so the value is accepted"
+							},
+							{
+								"id": "d",
+								"text": "keep the parameter and add an allowed list for the value"
+							}
+						]
+					},
+					{
+						"id": "s2",
+						"options": [
+							{
+								"id": "a",
+								"text": "give the module calls distinct names"
+							},
+							{
+								"id": "b",
+								"text": "keep the current name on both module calls"
+							},
+							{
+								"id": "c",
+								"text": "remove the name from both module calls"
+							},
+							{
+								"id": "d",
+								"text": "add a scope to both module calls and keep the current name"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "a"
+			},
+			"explanation": {
+				"correct": "Two independent edits are needed. First, the default value of dataEndpoint calls reference(), which reads a resource's runtime state; Azure Resource Manager resolves parameter values before any deployment operation starts, so that call cannot appear in the parameters section and the build fails. Because the endpoint must come from the account this same deployment creates and nobody is to supply it, the parameter is removed and the endpoint is taken from the created storage account instead - for example `output blobEndpoint string = stg.properties.primaryEndpoints.blob`. Second, the two module calls share one static name; deploying modules with the same static name at the same scope can make one deployment report the wrong output, so each call is given its own name (for example 'reportsDeploy' and 'auditDeploy') and every invocation is recorded under a label that names the workload it deployed.",
+				"perChoice": {
+					"s1:b": "Asking the deployment team for the endpoint contradicts the requirement that nobody supplies it, and the offending expression stays in the file, so the build keeps failing on the same line.",
+					"s1:c": "Changing the declared type has no effect: the default value calls a function that reads runtime state, and such calls are not allowed in the parameters section whatever type the parameter declares.",
+					"s1:d": "An allowed list only restricts which values may be passed for the parameter at deployment time; it does not make the expression in the default value legal, so the build still fails.",
+					"s2:b": "Leaving one name on both calls keeps the clash in place: the two nested deployments still share one static name in the same scope, so one of them can report the other's output.",
+					"s2:c": "Omitting the name makes the platform generate a GUID for the nested deployment, which removes the clash but leaves a label nobody can tie back to a workload, so it does not satisfy the requirement for a label that names the workload it deployed.",
+					"s2:d": "A scope only decides where a module runs; it does not change the label its nested deployment carries. Both calls would still share one name in the same resource group, so the mix-up remains."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/parameters"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/modules"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/file"
+				}
+			],
+			"subtopics": [
+				"bicep-parameters",
+				"bicep-modules"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R53FZW6Q0J1MV50TB6GZDZ",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Bicep file that is deployed into an application's resource group. It declares a virtual machine that already exists, takes a boolean flag that says whether monitoring should be rolled out, and takes the name of the resource group that holds the shared monitoring resources. The file then calls a shared module that installs the monitoring agent on that machine; the platform team owns that module and it cannot be changed. Two things must hold on the next deployment: the agent must be installed only in the environments where monitoring is switched on, and the deployment must still complete successfully when it is switched off; and the agent's resources belong to a resource group, so they must be created in the shared group whose name the pipeline supplies rather than in the group where this file runs. Which changes should you make to the file?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "param monitoringEnabled bool = true\nparam opsRgName string\n\nresource vm 'Microsoft.Compute/virtualMachines@2025-06-01' existing = {\n  name: 'app-vm'\n}\n\nmodule agentModule './modules/monitoringAgent.bicep' = {\n  name: 'monitoringDeploy'\n  params: {\n    virtualMachineName: vm.name\n  }\n}"
+				},
+				"statement": "The monitoring agent must be rolled out only in the environments where the monitoring flag is true, and the deployment must still complete successfully when it is false — {{whenDeployed}}; and the agent's resources must be created in the shared group whose name the pipeline supplies rather than in the group where this file runs — {{scopeEdit}}.",
+				"slots": [
+					{
+						"id": "whenDeployed",
+						"options": [
+							{
+								"id": "a",
+								"text": "Add an `if` condition to the module declaration in this file."
+							},
+							{
+								"id": "b",
+								"text": "Add an `if` condition to each resource inside the shared module's own file."
+							},
+							{
+								"id": "c",
+								"text": "Add a `for` loop over the flag to the module declaration in this file."
+							},
+							{
+								"id": "d",
+								"text": "Add a `for` loop over the flag to each resource inside the shared module's own file."
+							}
+						]
+					},
+					{
+						"id": "scopeEdit",
+						"options": [
+							{
+								"id": "a",
+								"text": "Give the module a `scope` set to the resource group that the built-in resource group function returns."
+							},
+							{
+								"id": "b",
+								"text": "Give the module a `scope` set to the resource group name as plain text."
+							},
+							{
+								"id": "c",
+								"text": "Give the module a `scope` set to the subscription that the built-in subscription function returns."
+							},
+							{
+								"id": "d",
+								"text": "Give the module a `scope` set to the management group that the built-in management group function returns."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"whenDeployed": "a",
+				"scopeEdit": "a"
+			},
+			"explanation": {
+				"correct": "Two edits are needed. First, put the condition on the module call in this file: Bicep evaluates a condition placed on a module during deployment, so the module is created only when the flag is true and the remaining deployment still finishes when the flag is false. Because the shared module belongs to the platform team and cannot be edited, the conditional has to live in the file you own. Second, redirect the module: a module's scope may be a scope object or the result of one of the scope functions, so handing the supplied group name to the built-in resource group function makes the module's resources land in that shared group instead of the group where the file itself runs. The scope cannot be written as plain text, and a subscription or management group scope sits too high for the agent's resource-group resources.",
+				"perChoice": {
+					"whenDeployed:b": "Conditioning each resource inside the shared module would mean editing the platform team's file, which is out of scope here; the conditional has to be applied to the module call in the file you own.",
+					"whenDeployed:c": "A loop produces one or more copies of an item from an array or a range; it does not decide whether the item is created, so the agent would still be installed when the flag is false.",
+					"whenDeployed:d": "Same two problems as the previous option: it changes a module this file does not own, and a loop over a flag cannot switch the installation off.",
+					"scopeEdit:b": "A module's scope has to be a scope object; handing it a plain name string is not accepted, so the file would not compile.",
+					"scopeEdit:c": "Pointing the module at the subscription would place its resources at subscription level, where resource-group resources such as the agent's do not belong, and the supplied group name would be ignored.",
+					"scopeEdit:d": "A management group sits above resource groups, so the agent's resource-group resources cannot be created there, and the named group would be ignored as well."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/file"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/modules"
+				}
+			],
+			"subtopics": [
+				"module-scope",
+				"conditional-deployment"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R5DB4K3PDM0202NCC7T926",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Bicep file that calls a shared module which deploys a SQL server and returns the administrator password for the account it creates; the parent file writes that password into a secret in a key vault that the same deployment creates. You need the password to stop appearing in the deployment's history and in the command-line output of the pipeline that runs the deployment. Which change should you apply to the file?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "// Bicep CLI on the build agent: 0.36.2\nparam vaultName string\nparam adminLogin string\n\nmodule dbModule '../modules/sql-server.bicep' = {\n  name: 'dbDeploy'\n  params: {\n    administratorLogin: adminLogin\n    keyVaultName: vaultName\n  }\n}\n\nresource vault 'Microsoft.KeyVault/vaults@2023-07-01' = {\n  name: vaultName\n  location: resourceGroup().location\n  properties: {\n    sku: {\n      family: 'A'\n      name: 'standard'\n    }\n    tenantId: subscription().tenantId\n    enableRbacAuthorization: true\n  }\n}\n\nresource dbAdminSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {\n  parent: vault\n  name: 'sql-admin-password'\n  properties: {\n    value: dbModule.outputs.adminPassword\n  }\n}"
+				},
+				"statement": "The change to make is to {{s1}}.",
+				"slots": [
+					{
+						"id": "s1",
+						"options": [
+							{
+								"id": "a",
+								"text": "add `@secure()` to the output declaration in the module file"
+							},
+							{
+								"id": "b",
+								"text": "add `@secure()` to the output declaration in the parent file"
+							},
+							{
+								"id": "c",
+								"text": "add `@secure()` to a parameter declaration in the parent file and pass the module's output value into it"
+							},
+							{
+								"id": "d",
+								"text": "add `@secure()` to a variable declaration in the parent file and store the module's output value in it"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"s1": "a"
+			},
+			"explanation": {
+				"correct": "The password is published by the module's own output, so that is where the sensitivity has to be applied. With Bicep 0.35.1 or later you can put the `@secure()` decorator on a module output, which makes Azure Resource Manager treat the returned value as sensitive so it is not saved to the deployment history and is not logged in the portal or in command-line output. The build agent already runs Bicep CLI 0.36.2, so the decorator is available. The parent file then consumes the sensitive value where it belongs - writing it into the key vault secret - without the password being published anywhere.",
+				"perChoice": {
+					"s1:b": "The decorator belongs on the output inside the module file, because that output is the value the nested deployment publishes and records. Marking an output in the parent file cannot withdraw it from the deployment history or the command-line output, and the parent file does not publish the password today.",
+					"s1:c": "`@secure()` on a parameter protects a value that the deployment team supplies at deployment time. The module's output only exists once the deployment is running, and parameter values are resolved before any deployment operation starts, so the module's value cannot be supplied as a parameter value; securing that parameter would also leave the published value unprotected.",
+					"s1:d": "`@secure()` can only decorate parameters and outputs - it is not valid on a variable. Storing the module's value in a variable also leaves the value published by the module unprotected, so it would still reach the deployment history and the command-line output."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/modules"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/file"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/parameters"
+				}
+			],
+			"subtopics": [
+				"module-outputs",
+				"secure-decorator",
+				"bicep-modules"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R5JQ23MW5ETMSNV1CMHKHJ",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Bicep file that deploys an application's data tier into an existing resource group: a storage account for the application's blobs, plus a call to a shared module that installs the monitoring agent. The current content of the file is shown below. The build fails on two points, and the platform team has asked for two changes before the file is promoted to production. Match each request with the single change you should make to the file.\n\nRequest 1 - The file declares an input whose default expression reads the endpoint of the storage account that the same deployment creates. The build rejects the file, and the pipeline has to be able to read that value once the deployment has finished so that it can be written into the application's configuration.\n\nRequest 2 - The build cannot find the shared module that sits beside the template in the source repository. The module has to keep coming from that repository copy, and the file has to keep working on build agents that run on Windows.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "param location string = resourceGroup().location\nparam storageAccountName string = 'stappdata001'\nparam blobEndpoint string = reference(stg.id).primaryEndpoints.blob\n\nresource stg 'Microsoft.Storage/storageAccounts@2025-06-01' = {\n  name: storageAccountName\n  location: location\n  sku: {\n    name: 'Standard_LRS'\n  }\n  kind: 'StorageV2'\n}\n\nmodule monitoring '.\\modules\\monitoring.bicep' = {\n  name: 'monitoringDeploy'\n  params: {\n    targetResourceId: stg.id\n  }\n}"
+				},
+				"statement": "To fix the two build failures, you should {{slotA}} and {{slotB}}.",
+				"slots": [
+					{
+						"id": "slotA",
+						"options": [
+							{
+								"id": "a",
+								"text": "declare an output that returns the storage account's endpoint"
+							},
+							{
+								"id": "b",
+								"text": "declare a variable that stores the storage account's endpoint"
+							},
+							{
+								"id": "c",
+								"text": "keep the parameter but replace its default expression with a literal value"
+							},
+							{
+								"id": "d",
+								"text": "keep the parameter but change its type to an object"
+							}
+						]
+					},
+					{
+						"id": "slotB",
+						"options": [
+							{
+								"id": "a",
+								"text": "rewrite the module path with forward slashes"
+							},
+							{
+								"id": "b",
+								"text": "publish the module to a container registry and reference it with its registry path"
+							},
+							{
+								"id": "c",
+								"text": "copy the module's contents into the file and delete the module call"
+							},
+							{
+								"id": "d",
+								"text": "reference the module with a path relative to the repository root instead of the current file"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slotA": "a",
+				"slotB": "a"
+			},
+			"explanation": {
+				"correct": "Request 1: a parameter's value is resolved before any deployment operation starts, and reference() reads a resource's runtime state, so the expression in the 'blobEndpoint' parameter cannot be evaluated there and the build is rejected. Moving that expression into the outputs section fixes the build error and publishes the storage account's endpoint to the caller when the deployment finishes, which is what the pipeline needs for the application configuration.\n\nRequest 2: a local module path is resolved relative to the file that declares it and must be written with the forward slash separator; the Windows backslash is not supported. The path in the file uses backslashes, so rewriting it with forward slashes makes the build find the module that sits beside the template in the repository, while keeping the module where the platform team maintains it.",
+				"perChoice": {
+					"slotA:b": "A variable is evaluated inside the file, so the build error disappears, but the value stays inside the deployment and the pipeline still cannot read the endpoint once the run finishes. Only a declaration in the outputs section hands the value back to the caller.",
+					"slotA:c": "The file would compile, but the endpoint would become a hard-coded string instead of the value the storage account actually returns, so the pipeline would receive the wrong value.",
+					"slotA:d": "Changing the declared type does not help: reference() is still evaluated in the parameters section, which is resolved before the deployment begins, so the same build error remains.",
+					"slotB:b": "The requirement is that the module keeps coming from the copy in the source repository, and a registry module would additionally need a restore step before the build can consume it.",
+					"slotB:c": "This sidesteps the path problem but drops the shared module that the platform team maintains in a single place, so future changes to that module would no longer reach this file.",
+					"slotB:d": "A local module path is resolved relative to the file that declares it, not relative to the repository root, so the module still would not be found."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/parameters"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/modules"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/file"
+				}
+			],
+			"subtopics": [
+				"bicep-parameters",
+				"bicep-outputs",
+				"bicep-modules"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R5NHFGPJMYKHHT0554R71D",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Bicep file that deploys an application's compute tier: a Linux virtual machine, its network interface, and a network security group whose inbound rule opens the port for the database tier. The pipeline supplies that port as a number, and the firewall rule has to keep receiving it as a number, so the change must not turn the value into text. The platform team also requires every value the pipeline supplies to stay out of the deployment's history and out of the pipeline's console output. The build fails on the way the port input is declared. Which change should you apply to the file?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "// excerpt: parameter and network security group sections\n\n@description('Port the application firewall rule opens for the database tier')\n@secure()\nparam dbPort int\n\nvar nsgName = 'app-nsg-${uniqueString(resourceGroup().id)}'\n\nresource nsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {\n  name: nsgName\n  location: resourceGroup().location\n  properties: {\n    securityRules: [\n      {\n        name: 'allow-db-tier'\n        properties: {\n          priority: 100\n          direction: 'Inbound'\n          access: 'Allow'\n          protocol: 'Tcp'\n          sourceAddressPrefix: '10.0.0.0/8'\n          destinationPortRange: string(dbPort)\n        }\n      }\n    ]\n  }\n}"
+				},
+				"statement": "You should {{change}}.",
+				"slots": [
+					{
+						"id": "change",
+						"options": [
+							{
+								"id": "a",
+								"text": "change the input's type to object, carry the port inside it, and keep the secure marking"
+							},
+							{
+								"id": "b",
+								"text": "change the input's type to array, carry the port inside it, and keep the secure marking"
+							},
+							{
+								"id": "c",
+								"text": "keep the input's type as int and keep the secure marking"
+							},
+							{
+								"id": "d",
+								"text": "keep the input's type as int and drop the secure marking"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"change": "a"
+			},
+			"explanation": {
+				"correct": "The secure marking (the decorator that hides a value) can only be applied to inputs whose type is string or object, so it cannot sit on an int input - that is exactly why the build fails. To pass a numeric value to a deployment while keeping it out of deployment history, the portal and command-line output, the number has to travel inside a secure object: declare the input as an object and carry the port as one of its values, then read it where the firewall rule needs it (for example string(dbPort.port)). The port stays a number for the rule, so the pipeline can keep supplying a number and no value has to be turned into text.",
+				"perChoice": {
+					"change:b": "The secure marking is not accepted on array inputs either, so declaring the input as an array and carrying the port inside it leaves the same compiler error. A number that must stay hidden has to travel inside a secure object (or be serialized as a secure string), not inside an array.",
+					"change:c": "This is what the file already does, and it is the reason the build fails: the secure marking is only valid on string and object inputs, so keeping the input as int with that decorator cannot compile.",
+					"change:d": "Removing the secure marking makes the file compile, but the port would then be recorded in the deployment's history and printed in the pipeline's console output, which the platform team explicitly forbids."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/parameters"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/file"
+				}
+			],
+			"subtopics": [
+				"secure-parameter",
+				"parameter-typing"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R5V7NCD6ZBEZJ2MJ534A5M",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Bicep file that deploys a landing-zone virtual network into a resource group, with the subnets produced by a loop over an array of subnet names that the pipeline supplies. The platform team keeps a fixed catalogue of subnet names, and a deployment that passes a name outside that catalogue has to be rejected before any resource is created, while a deployment that passes any subset of the catalogue has to be accepted. The deployment catalogue also has to be able to index this deployment by machine-readable custom properties such as the source repository and the contact group, which a tip shown on the portal form cannot carry. Which changes should you make to the file?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "param subnetNames array = []\nparam addressPrefix string = '10.20.0.0/16'\n\nresource vnet 'Microsoft.Network/virtualNetworks@2024-05-01' = {\n  name: 'platform-vnet'\n  location: resourceGroup().location\n  properties: {\n    addressSpace: {\n      addressPrefixes: [\n        addressPrefix\n      ]\n    }\n    subnets: [\n      for sn in subnetNames: {\n        name: sn\n        properties: {\n          addressPrefix: addressPrefix\n        }\n      }\n    ]\n  }\n}"
+				},
+				"statement": "To meet both requirements, the subnet name input needs the {{catalogueCheck}} decorator so that a name outside the platform team's catalogue is rejected, and the same input needs the {{cataloguing}} decorator so the deployment catalogue can index the deployment.",
+				"slots": [
+					{
+						"id": "catalogueCheck",
+						"options": [
+							{
+								"id": "a",
+								"text": "@allowed(['alpha','beta','gamma'])"
+							},
+							{
+								"id": "b",
+								"text": "@minLength(1)"
+							},
+							{
+								"id": "c",
+								"text": "@maxLength(3)"
+							},
+							{
+								"id": "d",
+								"text": "@minValue(1)"
+							}
+						]
+					},
+					{
+						"id": "cataloguing",
+						"options": [
+							{
+								"id": "a",
+								"text": "@metadata({ appId: 'compute-core' })"
+							},
+							{
+								"id": "b",
+								"text": "@description('Owned by the core compute team')"
+							},
+							{
+								"id": "c",
+								"text": "@sys.description('Owned by the core compute team')"
+							},
+							{
+								"id": "d",
+								"text": "@minValue(1)"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"catalogueCheck": "a",
+				"cataloguing": "a"
+			},
+			"explanation": {
+				"correct": "The subnet name input must carry @allowed([...]) and @metadata({ ... }).\n\nFor the catalogue rule, @allowed lists the accepted values in an array; the deployment fails during validation if a value that is not one of them is passed, and for an array-typed parameter the supplied value may be any subset of the listed values. That is exactly the required behaviour: a name outside the platform team's catalogue is rejected before any resource is created, while a deployment that names only approved subnets still succeeds. This decorator is permitted only on param statements, so the subnetNames parameter is the correct place for it. The length and integer decorators cannot express the rule: @minLength and @maxLength only constrain the number of items in an array (or characters in a string), and @minValue/@maxValue apply to integer parameters.\n\nFor the cataloguing rule, @metadata({ ... }) attaches arbitrary custom properties to the declaration, such as source or contact, which tooling can read; that is the machine-readable information the deployment catalogue needs. @description and its namespace-qualified form @sys.description produce only the tip text that the portal shows on the deployment form, so neither one carries the machine-readable custom properties, and the sys-qualified form is needed only when the file already declares an item named description.",
+				"perChoice": {
+					"catalogueCheck:b": "@minLength constrains the number of items in an array (here at least one); it never compares the content of the items against a fixed list, so a subnet name outside the platform team's catalogue would still be deployed.",
+					"catalogueCheck:c": "@maxLength caps the number of items in the array at three; it does not restrict which names may be supplied, so an unapproved name would still be accepted.",
+					"catalogueCheck:d": "@minValue applies to integer parameters; the subnet name input is an array of strings, and an integer bound cannot express a fixed list of accepted names in any case.",
+					"cataloguing:b": "@description turns the text into the tip shown for that parameter on the portal deployment form. It is human-facing help text and does not carry the machine-readable custom properties the deployment catalogue needs.",
+					"cataloguing:c": "@sys.description is the namespace-qualified form of the same portal tip; the qualification is only required when the file already declares an item named description, and even then it produces tip text rather than machine-readable custom properties.",
+					"cataloguing:d": "@minValue constrains the numeric value of an integer parameter and attaches no properties to the declaration, so the deployment catalogue would have nothing to index."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/parameters"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/file"
+				}
+			],
+			"subtopics": [
+				"parameter-decorators",
+				"input-validation",
+				"deployment-catalog"
+			],
+			"reviewed": false
+		}
+	]
+}

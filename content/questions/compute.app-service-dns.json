@@ -1,0 +1,1797 @@
+{
+	"skill": "compute.app-service-dns",
+	"questions": [
+		{
+			"id": "q_01M5SX48JH1QJR5WPR2V57GDV3",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You own the domain example.com and serve it from an Azure App Service web app named shop-prod that runs on the Basic B1 plan. The zone lives in Azure DNS, and the app's inbound address is displayed when you start mapping the name. Visitors must reach the site through the bare name as well as the 'www' name, the www name has to keep working after the app's inbound address changes, and you want the ownership check in place so that no other app can take over the name once the mapping is live. Which set of records should you create in the zone?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "App                                 : shop-prod (App Service plan: Basic B1)\nInbound address in add-domain dialog: 203.0.113.24\nDNS zone                            : example.com (public zone in Azure DNS)\nNames in scope                      : example.com (root), www.example.com (subdomain)\nResilience requirement              : www.example.com must keep resolving after the app's inbound address changes"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Root: A record, host @, value = app inbound address; www: CNAME, host www, value = shop-prod.azurewebsites.net; TXT, host asuid, value = domain verification ID"
+					},
+					{
+						"id": "b",
+						"text": "Root: CNAME, host @, value = shop-prod.azurewebsites.net; www: CNAME, host www, value = shop-prod.azurewebsites.net; TXT, host asuid, value = domain verification ID"
+					},
+					{
+						"id": "c",
+						"text": "Root: A record, host @, value = shop-prod.azurewebsites.net; www: CNAME, host www, value = app inbound address; TXT, host asuid, value = domain verification ID"
+					},
+					{
+						"id": "d",
+						"text": "Root: A record, host @, value = app inbound address; www: A record, host www, value = app inbound address; TXT record not included"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The root (apex) name cannot use a CNAME, so example.com needs an A record with host @ whose value is the app's inbound address (203.0.113.24) shown in the add-domain dialog. The www name is a subdomain, so it gets a CNAME with host www pointing at the app's default hostname shop-prod.azurewebsites.net; that keeps it resolving when the app's inbound address changes, which the requirement demands. Alongside the mapping record, App Service expects a TXT record with host asuid carrying the domain verification ID, which confirms ownership and blocks subdomain takeover. The Basic B1 plan (a paid tier) and the public Azure DNS zone also satisfy the plan and zone requirements.",
+				"perChoice": {
+					"b": "This sets a CNAME at the apex of the zone, which is invalid (RFC 1912 explains why an apex name cannot be a CNAME), so shop-prod.azurewebsites.net cannot be the value of a CNAME at host @. The root name must be an A record that points at the app's inbound address; only the subdomain uses the CNAME.",
+					"c": "The two values are swapped, so neither entry can work as written: an A record needs the app's inbound address rather than a hostname, and a CNAME target must be a hostname rather than an IP address.",
+					"d": "The www entry is pinned to the app's inbound address with an A record, so it breaks whenever that address changes, and the TXT record that carries the domain verification ID is missing, leaving the name exposed to takeover by another App Service app."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-web-tutorial-custom-domain"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-custom-dns-migrate-domain"
+				}
+			],
+			"subtopics": [
+				"custom-domain-dns-records",
+				"domain-verification-txt"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SX6R579TJNC68ZWSAE0EGT",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your team is moving the live domain shop.example.com from the source app web-legacy over to the new app web-new, and visitor traffic must not be interrupted during the cutover. Both apps already exist, and the new app currently serves only a placeholder page. The domain has to keep answering from the source app until the cutover is finished, and the new app must be able to take the name over while the source app is still using it. Based on the configuration below, which action should you take next?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"App",
+						"App Service plan",
+						"Resource group",
+						"Region",
+						"Default hostname",
+						"FTP/S hostname",
+						"Custom domains bound"
+					],
+					"rows": [
+						[
+							"web-legacy",
+							"legacy-plan",
+							"rg-shop-prod",
+							"East US",
+							"web-legacy.azurewebsites.net",
+							"EastUSWebSpace1.ftp.azurewebsites.windows.net",
+							"shop.example.com"
+						],
+						[
+							"web-new",
+							"new-plan",
+							"rg-shop-prod",
+							"East US",
+							"web-new.azurewebsites.net",
+							"EastUSWebSpace1.ftp.azurewebsites.windows.net",
+							"none"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Create an App Service plan in a new resource group or region and move the target app onto it, so both apps sit in different deployment units and the domain can be assigned to both at the same time."
+					},
+					{
+						"id": "b",
+						"text": "Move the target app onto the source app's App Service plan in the same region so both apps sit in one of the shared deployment units, then add the domain to the target app."
+					},
+					{
+						"id": "c",
+						"text": "Remove the domain from the source app first, then create a new App Service plan in a different resource group, move the target app onto it, and add the domain to the target app."
+					},
+					{
+						"id": "d",
+						"text": "Add the domain to the target app in its current deployment unit, then remove it from the source app once the certificate for the target app has been issued."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Both apps sit in the same deployment unit, which the table reveals through their identical FTP/S hostnames (EastUSWebSpace1...). The unit is inherited from the App Service plan, is picked when the plan is created, and cannot be changed afterwards, so the existing plan of the target app cannot be changed to separate the two apps. Within one deployment unit a domain name can be assigned to only one app, so for a cutover without downtime the source and target apps have to be in different units, and plan creation in a new resource group or region is the only way to land in a different unit (you keep creating plan instances until the FTP/S hostname differs). Moving the target app onto such a plan lets you add the domain to the target app while the source app still carries it, and only afterwards do you remap the live DNS record.",
+				"perChoice": {
+					"b": "Moving the target app onto the source app's plan keeps both apps in one deployment unit, because the unit comes from the plan and cannot be changed. Since a domain name can be assigned to only one app inside each unit, the target app cannot take the name while the source app still holds it, so this plan breaks the no-interruption cutover.",
+					"c": "The ordering is wrong: unbinding the name from the source app first leaves the live domain served by no app until the target app is bound, which breaks the requirement that the name keep answering from the source app until the cutover finishes. The zero-downtime flow keeps the name on the source app while the target app is bound to it, and remaps the live DNS record only afterwards.",
+					"d": "The target app remains in the same deployment unit as the source app (identical FTP/S hostname), so the two apps cannot both be assigned the domain and the add-then-remove sequence cannot work. Additionally, when migrating a live domain an App Service managed certificate can only be added after the active DNS name has been remapped, so a sequence that waits for the certificate before moving the name is not workable either."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-custom-dns-migrate-domain"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-web-tutorial-custom-domain"
+				}
+			],
+			"subtopics": [
+				"app-service-custom-domain",
+				"zero-downtime-domain-migration",
+				"deployment-unit"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TD457X432J9DKW1KRQGQRD",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a public DNS zone for contoso.com in Azure DNS that fronts an Azure App Service web app named shop-prod running on a paid plan. The zone and the app's Custom domains pane are shown below. The wildcard name is working today, but the api name never finishes validating, so no HTTPS binding is issued for it. You need api.contoso.com to pass validation and serve traffic, and the wildcard name that already works must keep working. Which action should you take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Azure DNS zone: contoso.com\n@      IN  A      203.0.113.24\n*      IN  CNAME  shop-prod.azurewebsites.net.\n*      IN  TXT    \"9d4c1f7a2b8e46d0a5c3e9f1b7d2048\"\napi    IN  CNAME  shop-prod.azurewebsites.net.\n\nApp Service app: shop-prod      Plan: Standard S1\nCustom domains pane:\n  *.contoso.com      Valid\n  api.contoso.com    Validation failed\n"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Create a TXT record for api.contoso.com whose value is the app's domain verification ID"
+					},
+					{
+						"id": "b",
+						"text": "Change the host of the existing wildcard TXT record to api.contoso.com and keep the same domain verification ID as its value"
+					},
+					{
+						"id": "c",
+						"text": "Remove the api.contoso.com CNAME record and create an A record for api.contoso.com that points to the app's inbound IP address"
+					},
+					{
+						"id": "d",
+						"text": "Extend the existing wildcard TXT record with a second value that lists api.contoso.com together with the domain verification ID"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A wildcard TXT record does not validate a subdomain that already has its own CNAME record. In this zone, api.contoso.com has its own CNAME entry, so it needs its own TXT record carrying the app's domain verification ID (the same value the wildcard TXT record already holds, 9d4c1f7a2b8e46d0a5c3e9f1b7d2048). Adding that per-subdomain TXT record lets api.contoso.com validate while leaving the working *.contoso.com entry untouched.",
+				"perChoice": {
+					"b": "Retargeting the host of the existing wildcard TXT record to api.contoso.com would remove the verification that currently makes *.contoso.com show as Valid, so the working wildcard name would stop validating. The wildcard entry must keep its own TXT record, and the subdomain needs one of its own as well.",
+					"c": "The failure is in the ownership check, not in the routing record. Replacing the CNAME with an A record aimed at the app's inbound IP does not satisfy the subdomain's validation, and it also gives up the CNAME-to-default-hostname mapping that keeps the name working if the app's inbound address changes.",
+					"d": "Because a wildcard TXT record does not validate subdomains that have their own CNAME record, adding api.contoso.com as an extra value on that same wildcard record does not provide the per-subdomain record the validation looks for. Each such subdomain needs its own TXT record."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-custom-dns-migrate-domain"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-web-tutorial-custom-domain"
+				}
+			],
+			"subtopics": [
+				"custom-domain-dns-records",
+				"wildcard-subdomain-validation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TD5K6ZFM1S3NXQ2G9XJCX7",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have the Azure App Service web app shown in the table below, and one hostname is already answering traffic for the business. You need to map api.northwind-demo.com to this app with a certificate that renews on its own at no extra cost, and the hostname already serving traffic must keep working on the app's current inbound address without giving the app a separate public IP. Which configuration should you select in the Add custom domain dialog?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"App name",
+							"portal-web"
+						],
+						[
+							"App Service plan",
+							"Basic B1"
+						],
+						[
+							"Current inbound address",
+							"20.55.120.34"
+						],
+						[
+							"Dedicated public IP",
+							"None"
+						],
+						[
+							"Hostname already serving traffic",
+							"shop.northwind-demo.com"
+						],
+						[
+							"Hostname to add",
+							"api.northwind-demo.com"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "App Service Managed Certificate with SNI SSL"
+					},
+					{
+						"id": "b",
+						"text": "App Service Managed Certificate with IP SSL"
+					},
+					{
+						"id": "c",
+						"text": "Add certificate later with SNI SSL"
+					},
+					{
+						"id": "d",
+						"text": "Add certificate later with IP SSL"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The App Service Managed Certificate is the no-cost, automatically renewed certificate that the Add custom domain dialog can request, and it is offered on Basic tier or higher, so Basic B1 qualifies. SNI SSL supports many SNI bindings on one shared inbound address, so shop.northwind-demo.com can keep serving on 20.55.120.34 while api.northwind-demo.com is added, with no dedicated public IP and no change to the existing hostname's records.",
+				"perChoice": {
+					"b": "The certificate choice is available on Basic B1, but IP SSL works only from Standard tier upward, permits just one IP SSL binding per app, secures a dedicated public IP, and requires the DNS records to be remapped for IP-based SSL. That conflicts with keeping the existing hostname on the current inbound address without assigning a separate public IP.",
+					"c": "SNI SSL is the right binding choice for several hostnames sharing one address, but choosing Add certificate later leaves the new hostname without any certificate binding - the entry stays marked with a red X and No binding until a certificate is added - so the hostname is not protected with a self-renewing certificate.",
+					"d": "This combines two unsuitable settings: Add certificate later leaves the new hostname with no certificate binding, and IP SSL allows only one binding per app, requires a dedicated public IP, and needs the DNS records remapped, which conflicts with the requirement to keep the current hostname on the same inbound address."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-web-tutorial-custom-domain"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-custom-dns-migrate-domain"
+				}
+			],
+			"subtopics": [
+				"custom-domain-mapping",
+				"tls-certificate-binding"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TD7RKP8G69N7BSX97JD16C",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have the Azure Function app shown below, and the service has to answer on the bare domain contoso.com instead of only on the www name that is mapped today. The zone is public and already publishes a verification TXT record for the domain, and the app's inbound address is displayed in the portal. Which action should you take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "App name                          : contoso-api\nApp type                          : Function app (Node.js 20)\nApp Service plan                  : Consumption\nPublic DNS zone                   : contoso.com - Azure DNS, public visibility\n\nZone records currently in contoso.com\n  TXT    asuid.contoso.com   = 9f2b6c4e51a8d0c7\n  CNAME  www.contoso.com    = contoso-api.azurewebsites.net\n\nCustom domains pane\n  contoso-api.azurewebsites.net (default)\n  www.contoso.com\n\nHostname requested by the business : contoso.com - no subdomain prefix\nInbound address shown in the portal : 20.190.144.31\nDefault hostname                   : contoso-api.azurewebsites.net"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Keep the app on the Consumption App Service plan and create an A record with host @ pointing to the app's inbound address, then validate contoso.com in the Add custom domain dialog."
+					},
+					{
+						"id": "b",
+						"text": "Move the app to a dedicated App Service plan on a Basic-or-higher tier, then create an A record with host @ pointing to the app's inbound address and validate contoso.com."
+					},
+					{
+						"id": "c",
+						"text": "Keep the app on the Consumption App Service plan and create a CNAME record with host @ pointing to contoso-api.azurewebsites.net, then validate contoso.com."
+					},
+					{
+						"id": "d",
+						"text": "Keep the app on the Consumption App Service plan and create a CNAME record with host www pointing to contoso-api.azurewebsites.net, then validate www.contoso.com as the public name."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "The name the business wants is the apex of the zone, and an apex cannot be served by a CNAME (RFC 1912, section 2.4 is the reason App Service only offers an A record for a root domain), so the zone needs an A record with host @ pointing to the app's inbound address; the verification TXT record for ownership is already published, so validation of the name can succeed. The remaining blocker is the plan: a function app on a Consumption plan accepts only the CNAME option, not an A record. Moving the app to a dedicated App Service plan on a paid tier (Basic or higher) first, and then creating the A record for the bare name, is what allows contoso.com to validate and serve traffic.",
+				"perChoice": {
+					"a": "The record type is right for an apex, but the app is a function app on a Consumption plan, and a function app in that configuration accepts only the CNAME option, not an A record, so the bare name cannot be validated against an A record while the plan stays as it is. The plan must be changed before this mapping works.",
+					"c": "A CNAME cannot exist at the root of a zone, which is exactly why App Service only offers an A record for a root domain; a CNAME with host @ pointing at the default hostname is not a valid way to map contoso.com.",
+					"d": "This only covers a name under www, which the zone and the Custom domains pane already handle, so the bare contoso.com name still would not reach the app. The requirement is that the root name itself resolves to the app and serves traffic, which requires an A record with host @ on a plan that accepts it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-web-tutorial-custom-domain"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-custom-dns-migrate-domain"
+				}
+			],
+			"subtopics": [
+				"custom-domain-mapping",
+				"dns-record-types",
+				"app-service-plan-limits"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TDA2DXD8PVPMHTDDA316B5",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have the web app shown below, and the retail group wants the storefront to answer on www.retail-demo.com instead of only on the Azure-provided hostname. The certificate for that name has to renew on its own at no extra cost, and the registrar's zone must hold the ownership proof that stops another app from claiming the name later. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"App",
+							"shop-front"
+						],
+						[
+							"App Service plan",
+							"plan-web"
+						],
+						[
+							"Plan SKU",
+							"Free (F1)"
+						],
+						[
+							"Plan state",
+							"Ready"
+						],
+						[
+							"Default hostname",
+							"shop-front.azurewebsites.net"
+						],
+						[
+							"App inbound address",
+							"203.0.113.24"
+						],
+						[
+							"Domain registrar",
+							"Contoso Domains (third-party provider)"
+						],
+						[
+							"DNS zone edit rights",
+							"Granted in the registrar's zone"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Scale the App Service plan up to a paid tier (Basic or higher), then add the custom domain to the app with an App Service Managed Certificate and create a CNAME record for www plus a TXT verification record in the registrar's zone."
+					},
+					{
+						"id": "b",
+						"text": "Add the custom domain to the app with an App Service Managed Certificate on the current Free plan, then create a CNAME record for www plus a TXT verification record in the registrar's zone."
+					},
+					{
+						"id": "c",
+						"text": "Scale the App Service plan up to a paid tier (Basic or higher), then add the custom domain to the app with an App Service Managed Certificate and create only a CNAME record for www in the registrar's zone."
+					},
+					{
+						"id": "d",
+						"text": "Scale the App Service plan up to a paid tier (Basic or higher), then add the custom domain to the app with Add certificate later and create a CNAME record for www plus a TXT verification record in the registrar's zone."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The app in the exhibit runs on a plan whose SKU is Free (F1). A custom domain requires the app's App Service plan to be a paid tier, because the Free tier cannot host a custom domain at all, so the plan has to be scaled up first. Basic tier or higher is also the level from which the Add custom domain dialog offers the App Service Managed Certificate, the free and automatically renewed certificate that meets the no-extra-cost, self-renewing requirement. Once the app is on a paid tier, www.retail-demo.com is a subdomain, so the zone gets a CNAME record pointing at the app's default hostname (shop-front.azurewebsites.net) rather than at the inbound address, plus a TXT record carrying the domain verification ID that proves ownership and prevents another app from taking the name over.",
+				"perChoice": {
+					"b": "The record set here is right, but the precondition is not: the plan SKU shown is Free (F1), and the Free tier cannot host a custom domain, so adding www.retail-demo.com to this app cannot succeed until the plan is scaled up to a paid tier. The managed certificate is likewise not offered below Basic tier.",
+					"c": "The scale-up and the managed certificate are correct, but the zone would be left with only the mapping record. The TXT record is what carries the domain verification ID that proves ownership and is the main defense against subdomain takeover, and the portal's validation checks read it, so the requirement that the registrar's zone hold the ownership proof is not satisfied.",
+					"d": "Scaling up is correct, but Add certificate later is the choice for staying on the Shared tier, for bringing your own certificate, or for a live migration where the managed certificate can only be added after the active DNS name is remapped. With that option the domain stays flagged with a red X and No binding until a private certificate is uploaded and a binding is configured, and browsers get an error or warning over HTTPS in the meantime, so the self-renewing, no-extra-cost certificate is not delivered."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-web-tutorial-custom-domain"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-custom-dns-migrate-domain"
+				}
+			],
+			"subtopics": [
+				"app-service-plan-tier",
+				"app-service-managed-certificate",
+				"custom-domain-dns-records"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TDDE1YZ6KN4XBVDYSQNAAT",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have the web app and the DNS zone shown below. The storefront has to answer on shop.northwind-demo.com over HTTPS, the certificate for that name has to renew on its own at no extra cost, and the zone has to publish the ownership proof so that no other app can claim the name later. Based on the configuration shown, which action should you take first?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "App                          : storefront-web\nApp Service plan             : plan-storefront-free\nPricing tier                 : Free (F1)\nPublic DNS zone              : northwind-demo.com (Azure DNS)\nHostname to publish          : shop.northwind-demo.com\nRecord type for the hostname : CNAME\nOwnership proof in the zone  : TXT record with the app's verification ID\n"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Scale up the App Service plan to a paid tier (Basic or above), then add the custom domain and request the App Service Managed Certificate"
+					},
+					{
+						"id": "b",
+						"text": "Request the App Service Managed Certificate before scaling up the App Service plan to a paid tier, then add the custom domain"
+					},
+					{
+						"id": "c",
+						"text": "Add the custom domain with the Add certificate later option before scaling up the App Service plan to a paid tier, then bind a private certificate"
+					},
+					{
+						"id": "d",
+						"text": "Scale up the App Service plan to a paid tier, then add the custom domain with a private certificate thumbprint and the IP SSL binding type"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A plan running on the Free (F1) tier cannot host a custom domain at all, so the app's plan has to be moved to a paid tier before shop.northwind-demo.com can be mapped. From Basic tier upward the Add custom domain dialog offers the App Service Managed Certificate, which costs nothing and renews automatically, which is what the requirement for a self-maintaining certificate calls for. Once the plan is scaled up, the CNAME record for shop.northwind-demo.com and the TXT record carrying the app's verification ID are created in the public zone, so ownership is proven and no other app can take the name over.",
+				"perChoice": {
+					"b": "On a Free (F1) plan the app cannot take a custom domain, and the managed certificate option is only offered from Basic tier upward, so neither the certificate nor the domain can be added before the plan is scaled up; the scale-up has to come first.",
+					"c": "A custom domain cannot be added while the plan is on the Free (F1) tier, so this sequence fails at its first step. Even after scaling up, choosing Add certificate later leaves the domain entry without a binding until a private certificate is supplied, and a bring-your-own certificate is not renewed automatically at no cost.",
+					"d": "Binding a private certificate by thumbprint does not satisfy a requirement for a certificate that renews itself at no cost. IP SSL also permits only one binding per app, secures a dedicated public IP, is available only from Standard tier upward, and requires the DNS records to be remapped for IP-based SSL."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-web-tutorial-custom-domain"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-custom-dns-migrate-domain"
+				}
+			],
+			"subtopics": [
+				"custom-domain-tier-limits",
+				"app-service-managed-certificate",
+				"domain-verification-txt-record"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TDF9H9PM4THPHWQYD0ET9T",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have the Azure App Service web app shown below. A partner organisation is taking over the checkout service and will answer on checkout.partner-brand.com. Their security policy only lets inbound traffic through from one static address that they can list in their firewall, and they will send you their own certificate for that name, which they replace every year. The name is not mapped to the app yet, and the app's plan cannot be changed. Which combination of TLS/SSL certificate and TLS/SSL type should you select in the Add custom domain dialog?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"App name",
+							"partner-portal"
+						],
+						[
+							"App Service plan",
+							"Standard S1 (paid tier)"
+						],
+						[
+							"Name to add",
+							"checkout.partner-brand.com"
+						],
+						[
+							"Zone holding the name",
+							"Registrar-hosted public zone for partner-brand.com"
+						],
+						[
+							"Domains mapped today",
+							"www.contoso.com"
+						],
+						[
+							"TLS/SSL type on the mapped domain",
+							"SNI SSL"
+						],
+						[
+							"Inbound IP address",
+							"203.0.113.45 (shared by the apps in the plan)"
+						],
+						[
+							"Public IP assigned to the app",
+							"None"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "TLS/SSL certificate: App Service Managed Certificate; TLS/SSL type: SNI SSL"
+					},
+					{
+						"id": "b",
+						"text": "TLS/SSL certificate: Add certificate later; TLS/SSL type: IP SSL"
+					},
+					{
+						"id": "c",
+						"text": "TLS/SSL certificate: Add certificate later; TLS/SSL type: SNI SSL"
+					},
+					{
+						"id": "d",
+						"text": "TLS/SSL certificate: App Service Managed Certificate; TLS/SSL type: IP SSL"
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "The partner needs the name served from one fixed public address they can allowlist, and they are supplying the certificate themselves. IP SSL is the binding type that secures a dedicated public IP address - only one IP SSL binding can be added per app, and it is supported from Standard tier upward, which the app's Standard S1 plan satisfies. Because the certificate comes from the partner, the TLS/SSL certificate value must be Add certificate later: you then upload that certificate and select it for the domain through the private certificate thumbprint. After the binding exists, the DNS records for the name must be remapped so the name resolves to the dedicated public IP address instead of the app's default hostname.",
+				"perChoice": {
+					"a": "This pair gives you a free certificate that Azure issues and renews, but that certificate is not the one the partner supplies, and SNI SSL binds every name to the app's shared inbound IP address, so the partner has no single static address to allowlist.",
+					"c": "This pair would indeed use the partner's certificate, but SNI SSL serves the name from the app's shared inbound IP address rather than a dedicated one, so the requirement that all traffic arrive on one fixed address for the firewall allowlist is not met.",
+					"d": "This pair gives the app its own dedicated public IP, but the certificate would be issued and renewed by Azure instead of being the file the partner supplies, so it does not satisfy the partner's requirement; a managed certificate also can only be issued for a name that already resolves to the app."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-web-tutorial-custom-domain"
+				}
+			],
+			"subtopics": [
+				"custom-domain-mapping",
+				"tls-ssl-binding",
+				"ip-ssl"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TDM9V1CXHHPHSM4QJ7051G",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have two Azure App Service web apps for one storefront. The name www.shop.example.com answers today from the app web-legacy, and the business wants the new app web-new to take that name over with no gap in service for visitors. The DNS entries are kept by an external domain provider, and once the move is finished the name has to work over HTTPS under a certificate that renews on its own at no extra cost. You need the handover to be safe for visitors. Which action belongs in each phase? Drag each action into the phase where it belongs.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "App currently answering for the name   : web-legacy (Standard S1 plan)\nApp that will take the name over       : web-new (Standard S1 plan)\nDeployment unit of web-legacy           : LegacyWest1-01\nDeployment unit of web-new              : NewWest1-02\nProvider of the DNS entries             : External domain provider (public)\nEntry now sending visitors to web-legacy: CNAME, host www, value web-legacy.azurewebsites.net"
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Publish the TXT record that carries the domain verification ID (host _asuid.www_) in the provider's zone"
+					},
+					{
+						"id": "i2",
+						"text": "Add www.shop.example.com to web-new and confirm the validation succeeds"
+					},
+					{
+						"id": "i3",
+						"text": "Change the CNAME for www so it targets web-new.azurewebsites.net"
+					},
+					{
+						"id": "i4",
+						"text": "Add the App Service Managed Certificate for www.shop.example.com"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Preparation, before web-new receives the name"
+					},
+					{
+						"id": "s2",
+						"label": "While web-legacy is still answering for the name"
+					},
+					{
+						"id": "s3",
+						"label": "The handover, when visitors reach web-new"
+					},
+					{
+						"id": "s4",
+						"label": "After web-new has been serving the name for a while"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "A live name is handed over without downtime by binding it to the new app before the current traffic is touched, then flipping the live entry, and only then protecting the name with the managed certificate. The ownership proof (TXT record) has to be published first, because that is what lets the target app validate the name while the old app is still serving it; the name is then added to web-new, which is allowed because the two apps sit in different deployment units and a name can be held by only one app per unit. Only after the live CNAME for www points at web-new.azurewebsites.net do visitors reach the new app, and the App Service Managed Certificate can be issued only once that remap is done. Both plans are paid tiers, so the free auto-renewing certificate is available.",
+				"perChoice": {
+					"i1": "Preparation phase: the ownership proof must be published at the provider before the target app can validate the name, and during a migration the check passes with the domain verification ID alone. It must exist before web-new is given the name, and it is left in place afterwards as the takeover safeguard.",
+					"i2": "Preemptive binding: the name is attached to web-new while web-legacy keeps answering, which is what removes the downtime from the cutover. This is possible here because the two apps are in different deployment units, and a name can only be assigned to one app within each unit.",
+					"i3": "The handover itself: once the name validates on web-new, the live entry for www is repointed at the target app's default hostname, and from that point on queries resolve to the new app. Doing this before the name is bound to web-new would interrupt service.",
+					"i4": "Final phase: while a live domain is being moved, an App Service managed certificate can only be added after the active DNS name has been remapped to the new app, so it comes last. Both apps run on a paid plan, so this certificate is offered and renews automatically at no extra cost."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-custom-dns-migrate-domain"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-web-tutorial-custom-domain"
+				}
+			],
+			"subtopics": [
+				"custom-domain-mapping",
+				"dns-migration-cutover",
+				"domain-verification"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V2PK69NQYNCFN7Q3D0YXRY",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have the Azure App Service web app and the public DNS zone shown below. The storefront has to answer on the bare name shop-demo.com, on the subdomain name www.shop-demo.com, and on a wildcard name that catches every other host under shop-demo.com. The subdomain name and the wildcard name must keep working even if the app's inbound address changes later, and the zone has to publish the ownership proof for the bare name and for the subdomain name so that no other app can claim them afterwards. Which records should you create in the zone? Drag each record into the slot where it belongs.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"App name",
+							"storefront-prod"
+						],
+						[
+							"App Service plan",
+							"Basic B1"
+						],
+						[
+							"Inbound address",
+							"20.58.112.36"
+						],
+						[
+							"Default hostname",
+							"storefront-prod.azurewebsites.net"
+						],
+						[
+							"Public DNS zone",
+							"shop-demo.com (records kept at an external registrar)"
+						],
+						[
+							"Custom Domain Verification ID",
+							"c41e7f9a2b8d46e0a3c75f1d9e6b2048"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "A record — host @ — value 20.58.112.36"
+					},
+					{
+						"id": "i2",
+						"text": "CNAME record — host www — value storefront-prod.azurewebsites.net"
+					},
+					{
+						"id": "i3",
+						"text": "CNAME record — host * — value storefront-prod.azurewebsites.net"
+					},
+					{
+						"id": "i4",
+						"text": "TXT record — host asuid — value c41e7f9a2b8d46e0a3c75f1d9e6b2048"
+					},
+					{
+						"id": "i5",
+						"text": "TXT record — host _asuid.www — value c41e7f9a2b8d46e0a3c75f1d9e6b2048"
+					},
+					{
+						"id": "i6",
+						"text": "CNAME record — host @ — value storefront-prod.azurewebsites.net"
+					},
+					{
+						"id": "i7",
+						"text": "A record — host www — value 20.58.112.36"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Record that routes the bare name to the app"
+					},
+					{
+						"id": "s2",
+						"label": "Record that routes the subdomain name to the app"
+					},
+					{
+						"id": "s3",
+						"label": "Record that routes the wildcard name to the app"
+					},
+					{
+						"id": "s4",
+						"label": "Record that proves control of the bare name"
+					},
+					{
+						"id": "s5",
+						"label": "Record that proves control of the subdomain name"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "The bare name shop-demo.com is the zone root, so its traffic record is an A record with host @ pointing at the app's inbound address 20.58.112.36; a CNAME cannot be placed at the apex. The subdomain name www.shop-demo.com and the wildcard name are not root names, so each gets a CNAME pointing at the app's default hostname storefront-prod.azurewebsites.net — that target keeps answering even after the inbound address changes, which the requirement demands. Ownership is proved with TXT records carrying the app's domain verification ID: host asuid for the bare name and host _asuid.www for the subdomain name, because a wildcard proof does not cover a subdomain that has its own CNAME.",
+				"perChoice": {
+					"i1": "This is the traffic record for the bare name: an A record with host @ pointing at the app's inbound address 20.58.112.36, which is the only record type allowed at the apex of a zone. It belongs in the slot for routing the bare name.",
+					"i2": "A CNAME at host www pointing at storefront-prod.azurewebsites.net routes the subdomain name and follows the app if its inbound address changes, so it belongs in the slot for routing the subdomain name.",
+					"i3": "A CNAME at host * pointing at storefront-prod.azurewebsites.net routes every host caught by the wildcard name and survives a change of the inbound address, so it belongs in the slot for routing the wildcard name.",
+					"i4": "The TXT record with host asuid carries the app's domain verification ID, which is how App Service confirms that you control the bare name, so it belongs in the slot that proves control of the bare name.",
+					"i5": "The TXT record with host _asuid.www carries the domain verification ID for the subdomain name; a wildcard proof would not validate a subdomain that has its own CNAME, so this belongs in the slot that proves control of the subdomain name.",
+					"i6": "No slot fits this record: a CNAME cannot be used at the apex of a zone, so the entry with host @ has to be an A record pointing at the app's inbound address.",
+					"i7": "No slot fits this record: an A record aimed straight at the inbound address stops working as soon as that address changes, so the subdomain name has to use a CNAME to the app's default hostname."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-web-tutorial-custom-domain"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-custom-dns-migrate-domain"
+				}
+			],
+			"subtopics": [
+				"custom-domain-mapping",
+				"dns-record-types",
+				"domain-verification-id"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V2ZBG16E83ESJ8B40JCPQJ",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have the two Azure App Service web apps shown in the table. The hostname www.shop-demo.com answers today from web-legacy, and the business wants web-new to take it over with no gap in service for visitors. Preparing that handover safely requires both apps to be able to hold the same hostname at the same moment, and the target app has to stay in the current region. Drag each detail into the slot where it belongs.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"web-legacy",
+						"web-new"
+					],
+					"rows": [
+						[
+							"App name",
+							"web-legacy",
+							"web-new"
+						],
+						[
+							"Resource group",
+							"rg-storefront",
+							"rg-storefront"
+						],
+						[
+							"Region",
+							"East US",
+							"East US"
+						],
+						[
+							"App Service plan",
+							"plan-storefront",
+							"plan-storefront"
+						],
+						[
+							"FTP/S hostname",
+							"storefront-eastus-01.ftp.azurewebsites.windows.net",
+							"storefront-eastus-01.ftp.azurewebsites.windows.net"
+						],
+						[
+							"Hostname mapped today",
+							"www.shop-demo.com",
+							"none"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "The two apps list the same FTP/S hostname, storefront-eastus-01.ftp.azurewebsites.windows.net"
+					},
+					{
+						"id": "i2",
+						"text": "Create the target app's plan in a new resource group, keeping the current region"
+					},
+					{
+						"id": "i3",
+						"text": "The deployment unit the plan was created in"
+					},
+					{
+						"id": "i4",
+						"text": "Two apps in one deployment unit cannot both be given the same hostname"
+					},
+					{
+						"id": "i5",
+						"text": "Create the target app's plan in a new resource group and move it out of the current region"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "What the table shows about the two apps today"
+					},
+					{
+						"id": "s2",
+						"label": "What you change so the handover can be prepared safely"
+					},
+					{
+						"id": "s3",
+						"label": "The value that is picked when the plan is made and never changes afterwards"
+					},
+					{
+						"id": "s4",
+						"label": "The limit that applies within a deployment unit"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "The table shows both apps reporting the identical FTP/S hostname storefront-eastus-01.ftp.azurewebsites.windows.net, and the deployment unit is what appears in that hostname, so both apps sit in one unit today. Inside a single deployment unit only one app can be given a given hostname, so web-new cannot be given www.shop-demo.com while web-legacy still holds it; a zero-downtime handover therefore needs the two apps in separate units. The unit is picked when the plan is created and cannot be changed afterwards, so the unit is not something you can edit on plan-storefront. The only remedy is to build a new App Service plan for web-new in a new resource group, which lands the target app in a different deployment unit while it stays in the current region.",
+				"perChoice": {
+					"i1": "Both apps publish the same FTP/S hostname, and the deployment unit shows up in that hostname, so the table shows that web-legacy and web-new currently sit in one and the same deployment unit.",
+					"i2": "This is the change that prepares the handover: a plan created in a new resource group puts web-new in a different deployment unit, so both apps can hold www.shop-demo.com at the same time, and the app still runs in the region it has today.",
+					"i3": "The deployment unit is taken from the App Service plan, is selected when the plan is created, and cannot be changed afterwards, so it is the plan itself that has to be replaced rather than the unit being edited.",
+					"i4": "Within one deployment unit a single hostname can be assigned to only one app, which is exactly why the two apps must end up in separate units before the domain can change hands without interrupting visitors.",
+					"i5": "This belongs in no slot. Moving the app out of the current region breaks the stated requirement to stay there, and a new resource group on its own is already enough to give the target app a separate deployment unit."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-custom-dns-migrate-domain"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-web-tutorial-custom-domain"
+				}
+			],
+			"subtopics": [
+				"app-service-custom-domain",
+				"deployment-unit",
+				"zero-downtime-migration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V35E4TJZP43PMC1BJHFDGF",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have the Azure App Service web app shown below. The business already owns the hostname www.havenwood.co and wants that name to serve its new site from this app, and the name sits below the zone apex. The zone for havenwood.co is kept with an outside registrar, and the site's certificate has to renew on its own at no extra charge. Two further names will be served by the same app on the inbound address it already uses, so the app must not be given a separate public IP. Drag each value into the slot where it belongs.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "App name          : havenwood-web\nApp Service plan  : Basic B1\nDefault hostname  : havenwood-web.azurewebsites.net\nInbound address   : 20.62.187.91\nHostname to map   : www.havenwood.co\nZone location     : outside registrar (not Azure DNS)"
+				},
+				"items": [
+					{
+						"id": "provider-third-party",
+						"text": "All other domain services"
+					},
+					{
+						"id": "managed-cert",
+						"text": "App Service Managed Certificate"
+					},
+					{
+						"id": "sni-binding",
+						"text": "SNI SSL"
+					},
+					{
+						"id": "cname-entry",
+						"text": "CNAME record"
+					},
+					{
+						"id": "cert-later",
+						"text": "Add certificate later"
+					},
+					{
+						"id": "ip-binding",
+						"text": "IP SSL"
+					}
+				],
+				"slots": [
+					{
+						"id": "provider",
+						"label": "Provider choice for a zone kept at an outside registrar"
+					},
+					{
+						"id": "certificate",
+						"label": "Choice that keeps the site's encryption valid on its own at no extra charge"
+					},
+					{
+						"id": "binding",
+						"label": "Binding choice for several names sharing one inbound address"
+					},
+					{
+						"id": "routing",
+						"label": "Routing choice the portal pre-fills for a host below the zone apex"
+					}
+				]
+			},
+			"key": {
+				"binding": "sni-binding",
+				"certificate": "managed-cert",
+				"provider": "provider-third-party",
+				"routing": "cname-entry"
+			},
+			"explanation": {
+				"correct": "The zone for havenwood.co is purchased and held at a non-Microsoft registrar, so the provider selection must be All other domain services. The app runs on Basic B1, which qualifies for the free, automatically renewed App Service Managed Certificate, so that value satisfies the requirement that the certificate renew itself at no extra charge. Because several names will share the inbound address the app already uses, the binding type must be SNI SSL, which allows many certificates to secure many domains on one IP address. The name being mapped, www.havenwood.co, is a host below the zone apex, so the portal pre-fills CNAME record as the routing entry kind for that shape of name.",
+				"perChoice": {
+					"cert-later": "Fits no slot. It defers the certificate to one you upload and bind yourself, so nothing renews on its own at no charge, and the plan already qualifies for the free automatically renewed certificate.",
+					"cname-entry": "Belongs in the routing slot. The name is a host below the zone apex rather than the apex itself, and for that shape the portal pre-fills this entry kind, which points at the app's default hostname and survives an inbound address change.",
+					"ip-binding": "Fits no slot. It allows only one binding per app, secures a dedicated public IP address, and is supported only from the Standard tier upward, which conflicts with both the shared inbound address and the Basic B1 plan.",
+					"managed-cert": "Belongs in the certificate slot. It is issued at no cost and renews automatically, and it is offered once the app is on the Basic tier or higher, which the Basic B1 plan satisfies.",
+					"provider-third-party": "Belongs in the provider slot. This is the provider option used for a domain bought from any third-party, non-Microsoft registrar, which is exactly where the havenwood.co zone is kept.",
+					"sni-binding": "Belongs in the binding slot. It permits multiple certificates to secure several domains that share a single IP address, which matches the plan to keep the app on its current inbound address and serve more names later."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-web-tutorial-custom-domain"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-custom-dns-migrate-domain"
+				}
+			],
+			"subtopics": [
+				"custom-domain-mapping",
+				"dns-record-types",
+				"tls-binding-options"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V3ED7SNF86J8FS55CYKGDZ",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have the Azure App Service web app and the DNS arrangement shown below. The storefront has to answer on www.northwind-demo.com over HTTPS under a certificate that renews on its own at no extra cost, the name has to keep serving visitors if the app's inbound address changes later, and the zone has to carry the proof that stops another app from claiming the name once the mapping is live. The name is not mapped to the app yet. Drag each item into the slot where it belongs.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"App name",
+							"web-orders"
+						],
+						[
+							"App Service plan",
+							"Free (F1)"
+						],
+						[
+							"Name to map",
+							"www.northwind-demo.com"
+						],
+						[
+							"Where records for northwind-demo.com are kept",
+							"Azure DNS zone, private"
+						],
+						[
+							"Custom domains listed for the app",
+							"none yet"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "A paid tier such as Basic or higher"
+					},
+					{
+						"id": "i2",
+						"text": "A public Azure DNS zone"
+					},
+					{
+						"id": "i3",
+						"text": "A TXT record carrying the domain verification ID"
+					},
+					{
+						"id": "i4",
+						"text": "A CNAME record to the app's default host name"
+					},
+					{
+						"id": "i5",
+						"text": "App Service Managed Certificate"
+					},
+					{
+						"id": "d1",
+						"text": "The Free (F1) tier"
+					},
+					{
+						"id": "d2",
+						"text": "A private Azure DNS zone"
+					},
+					{
+						"id": "d3",
+						"text": "An A record with host @ pointing to the app's inbound address"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "The plan that has to change"
+					},
+					{
+						"id": "s2",
+						"label": "The zone that has to hold the entries"
+					},
+					{
+						"id": "s3",
+						"label": "The entry that stops another app from claiming it"
+					},
+					{
+						"id": "s4",
+						"label": "The routing entry for the running site"
+					},
+					{
+						"id": "s5",
+						"label": "The TLS/SSL option that protects traffic and renews itself"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "The app cannot take the name at all in its current shape: the Free (F1) plan may not host a custom domain, so the plan has to be scaled to a paid tier, and Basic or higher is also the tier that unlocks the App Service Managed Certificate. App Service reads custom domain records only from a public zone, so the private zone has to be replaced by a public one. Two entries then go in that zone: a TXT record carrying the domain verification ID, which is the ownership proof that blocks another app from taking the name over, and a CNAME pointing at the app's default host name, so the name keeps working if the app's inbound address changes. Finally the TLS/SSL option is the App Service Managed Certificate, which is free and renews automatically.",
+				"perChoice": {
+					"i1": "Belongs in the plan slot: a custom domain requires a paid App Service plan instead of Free (F1), and Basic tier or higher is also the tier that makes the managed certificate available.",
+					"i2": "Belongs in the zone slot: custom domains have to live in a public DNS zone, so a public Azure DNS zone (or the registrar's public zone) must hold the entries.",
+					"i3": "Belongs in the ownership-proof slot: every custom domain needs a TXT record carrying the domain verification ID, and that record is what prevents another app from claiming the name later.",
+					"i4": "Belongs in the routing slot: a CNAME to the app's default host name keeps the name answering for visitors even when the app's inbound address changes.",
+					"i5": "Belongs in the TLS/SSL slot: the App Service Managed Certificate is issued at no cost, renews by itself, and can be used once the app runs on Basic tier or higher.",
+					"d1": "This is the plan the app is on today; it fits no slot because the Free tier cannot host a custom domain, so it has to be replaced.",
+					"d2": "This is the zone the company holds today; it fits no slot because private DNS zones are not supported for App Service custom domains.",
+					"d3": "Fits no slot here: the name being mapped sits below the zone apex, and pointing a record straight at the inbound address would break the moment that address changes."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-web-tutorial-custom-domain"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-custom-dns-migrate-domain"
+				}
+			],
+			"subtopics": [
+				"custom-domain-prerequisites",
+				"domain-verification-id",
+				"managed-certificate"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V3NRRBZ3WMZ3MN0X68FJAD",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have the Azure App Service web app and the domain arrangement shown below. The storefront has to answer on the bare name retail-demo.com as well as on www.retail-demo.com, and both names have to be served over HTTPS under a certificate that renews on its own at no extra charge. The www name also has to keep serving visitors after the app's inbound address changes, and the business wants the registrar's zone to hold the proof that stops a different app from claiming either name later. Which preparation and which records should you put in place? Drag each item into the slot where it belongs.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "App: Azure App Service web app named retail-store\nApp Service plan: Free (F1)\nDefault hostname: retail-store.azurewebsites.net\nInbound address shown in the Add custom domain dialog: 203.0.113.47\nDomain: retail-demo.com\nRecords live in: Public zone at the domain's registrar\nNames to answer on: retail-demo.com and www.retail-demo.com"
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Scale the app's plan up from the Free F1 tier to a paid tier"
+					},
+					{
+						"id": "i2",
+						"text": "An A record whose host is @ pointing to the app's inbound address"
+					},
+					{
+						"id": "i3",
+						"text": "A CNAME record whose host is www pointing to the app's default hostname"
+					},
+					{
+						"id": "i4",
+						"text": "A TXT record holding the domain verification ID"
+					},
+					{
+						"id": "i5",
+						"text": "A CNAME record whose host is @ pointing to the app's default hostname"
+					},
+					{
+						"id": "i6",
+						"text": "An A record whose host is www pointing to the app's inbound address"
+					},
+					{
+						"id": "i7",
+						"text": "Map the hostnames while the app stays on the Free F1 tier"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Preparation the app needs first"
+					},
+					{
+						"id": "s2",
+						"label": "Mapping for the name at the top level"
+					},
+					{
+						"id": "s3",
+						"label": "Mapping for the name below the top level"
+					},
+					{
+						"id": "s4",
+						"label": "Ownership proof for the mapped name"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "The app runs on the Free (F1) plan, and that tier cannot host a custom domain, so the plan is scaled up to a paid tier before anything is mapped (Basic tier or higher is also what makes the self-renewing managed certificate available). The name at the top level of the zone is routed with an A record whose host is @ pointing to the app's inbound address, because a CNAME is not valid at the apex. The name below the top level is routed with a CNAME to the app's default hostname, so it keeps working if the app's inbound address changes. The ownership proof is the TXT record that carries the domain verification ID, published alongside the traffic record.",
+				"perChoice": {
+					"i1": "Belongs in the preparation slot: the Free (F1) plan cannot host a custom domain, so the app's plan is scaled up to a paid tier first, and Basic tier or higher is also where the free, self-renewing managed certificate is offered.",
+					"i2": "Belongs in the slot for the name at the top level: an apex name is reached with an A record whose host is @ pointing to the app's inbound address.",
+					"i3": "Belongs in the slot for the name below the top level: a subdomain is mapped with a CNAME to the app's default hostname, which keeps working when the inbound address changes.",
+					"i4": "Belongs in the ownership proof slot: the TXT record carrying the domain verification ID is what proves ownership and blocks another app from taking the name over.",
+					"i5": "Fits no slot: a CNAME cannot be placed at the apex of the zone, so the top-level name has to be routed with an A record.",
+					"i6": "Fits no slot: an A record for the name below the top level works today but breaks as soon as the app's inbound address changes, which the requirement rules out; the CNAME to the default hostname is the record that survives such a change.",
+					"i7": "Fits no slot: the names cannot be mapped while the app stays on the Free F1 tier, because that tier cannot host a custom domain."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-web-tutorial-custom-domain"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-custom-dns-migrate-domain"
+				}
+			],
+			"subtopics": [
+				"custom-domain-mapping",
+				"dns-record-types",
+				"app-service-plan-tiers"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V3WTT6Q7VMXR6A61EC6DSD",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have the Azure App Service web app shown in the table below. The online shop has to answer on www.gearworks.dev rather than only on the name that the platform hands out, that name is not attached to the app yet, and the site must keep running on the inbound address the app uses today, because the team does not want a dedicated public address added for it. The site also has to be reachable over HTTPS under a certificate that renews on its own at no extra charge. Which action should you take first?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"App name",
+							"web-gear"
+						],
+						[
+							"App Service plan",
+							"Free (F1)"
+						],
+						[
+							"Operating system",
+							"Windows"
+						],
+						[
+							"Region",
+							"West Europe"
+						],
+						[
+							"Inbound address shown in the portal",
+							"203.0.113.24"
+						],
+						[
+							"Name to map",
+							"www.gearworks.dev"
+						],
+						[
+							"Zone that holds the records",
+							"External registrar"
+						]
+					]
+				},
+				"statement": "The first step is to {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "scale the app up from the Free (F1) plan to a paid tier such as Basic or higher, because the Free plan cannot serve a custom domain"
+							},
+							{
+								"id": "b",
+								"text": "scale the app up from the Free (F1) plan to a paid tier such as Basic or higher, but only after adding the hostname to the app"
+							},
+							{
+								"id": "c",
+								"text": "scale the app up from the Free (F1) plan to the Standard tier or higher and map the name with IP SSL, because a custom domain needs its own public address"
+							},
+							{
+								"id": "d",
+								"text": "leave the app on the Free (F1) plan and proceed with adding the hostname in the Custom domains pane, because the zone records decide whether the app can serve a custom domain"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "Attaching a custom domain requires a paid App Service plan; the Free (F1) tier is the one tier that cannot host a custom domain, so the app must be scaled up before the name can be mapped. Moving the app to a paid tier such as Basic keeps it on the inbound address it already uses, and at that tier the portal can issue an App Service Managed Certificate that renews automatically at no cost. Only after the scale-up can the mapping record and the verification TXT record be created in the zone and the name added from the Custom domains pane.",
+				"perChoice": {
+					"action:b": "The name cannot be attached while the app is still on the Free tier, so there is nothing to add first: the scale-up has to happen before the mapping, which makes the order in this option impossible.",
+					"action:c": "A custom domain does not require its own public address. IP SSL permits only one IP SSL binding per app, works only from Standard tier upward, and needs the DNS records remapped to the dedicated address afterwards, none of which the shop requires; any paid tier, such as Basic, satisfies the plan requirement.",
+					"action:d": "The plan tier, not the contents of the zone, decides whether the app can take the name. While the app stays on the Free tier the name cannot be attached, so the mapping in the Custom domains pane will not complete."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-web-tutorial-custom-domain"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-custom-dns-migrate-domain"
+				}
+			],
+			"subtopics": [
+				"custom-domain-mapping",
+				"app-service-plan-tier"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V43J68GNRT0WKA5D6924ET",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have the Azure App Service web app and the Azure DNS zone shown below. The company owns brightpath.co and has already pointed the bare name at the app with an A record. The storefront has to answer on brightpath.co for customers on the internet, and the zone must publish the ownership proof that the platform checks so that no other app can claim the name afterwards. Which two changes does the team need to make to get the name live on the app?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Property                       Value\n-----------------------------  -----------------------------------\nApp name                       storefront-prod\nApp Service plan               Free (F1)\nApp inbound address            203.0.113.24\nDNS service                    Azure DNS\nDNS zone                       Zone for brightpath.co\nRecords currently in the zone  A record, host @, value 203.0.113.24\nName the business wants to use  brightpath.co"
+				},
+				"statement": "Before the name can be attached to the app, the team must {{plan}} and the zone must also contain {{record}}.",
+				"slots": [
+					{
+						"id": "plan",
+						"options": [
+							{
+								"id": "a",
+								"text": "move the app onto a paid plan tier"
+							},
+							{
+								"id": "b",
+								"text": "attach the name to a deployment slot on the app's current plan"
+							},
+							{
+								"id": "c",
+								"text": "give the app its own inbound address and leave the plan unchanged"
+							},
+							{
+								"id": "d",
+								"text": "keep the app on its current plan and retry once the zone's A record has propagated"
+							}
+						]
+					},
+					{
+						"id": "record",
+						"options": [
+							{
+								"id": "a",
+								"text": "a TXT record carrying the domain verification ID shown for the app"
+							},
+							{
+								"id": "b",
+								"text": "a TXT record carrying the app's inbound address"
+							},
+							{
+								"id": "c",
+								"text": "an A record carrying the domain verification ID shown for the app"
+							},
+							{
+								"id": "d",
+								"text": "a CNAME record carrying the domain verification ID shown for the app"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"plan": "a",
+				"record": "a"
+			},
+			"explanation": {
+				"correct": "Two separate things stand between the team and a working name. First, the app runs on the Free (F1) plan, and a custom domain cannot be hosted on that tier, so the app must be scaled up to a paid tier before the name can be attached at all. Second, the zone already routes the bare name to the app with an A record, but App Service also expects a TXT record that carries the domain verification ID issued for the app; that TXT record is what proves ownership and is the main defense against the name being taken over by another app. The value for it is taken from the app's Custom domains pane, in the Custom Domain Verification ID box. Both records must exist at the provider before the validation step in the Add custom domain flow can succeed.",
+				"perChoice": {
+					"plan:b": "A deployment slot does not lift the restriction on the tier the app runs on; a Free (F1) plan cannot serve a custom domain, so the app has to be scaled up to a paid tier first.",
+					"plan:c": "A separate inbound address does not change the plan the app runs on, and the Free tier still cannot host a custom domain; the plan has to be scaled up to a paid tier.",
+					"plan:d": "Propagation of the A record has no bearing on the tier restriction; the plan must be moved to a paid tier before the name can be mapped.",
+					"record:b": "A TXT record holding the inbound address does not prove ownership; the value in that record has to be the domain verification ID issued for the app.",
+					"record:c": "An A record routes traffic by pointing an IP address at the app, so it cannot carry the ownership proof; that proof is published in a TXT record.",
+					"record:d": "A CNAME record is used to point a subdomain or wildcard name at the app's default hostname, and it cannot carry the ownership proof either."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-web-tutorial-custom-domain"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-custom-dns-migrate-domain"
+				}
+			],
+			"subtopics": [
+				"custom-domain-mapping",
+				"dns-verification-record",
+				"app-service-plan-tier"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V4A0702VBKZC4Q367R3FPE",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have the Azure App Service web app shown in the table below. The business owns the public zone lumenworks.dev, which is hosted in Azure DNS, and wants the storefront to answer on www.lumenworks.dev. The name has to keep serving visitors after the app's inbound address changes, the site must be reachable over HTTPS under a certificate that renews on its own at no extra charge, and the zone has to publish the ownership proof that stops a different app from claiming the name once the mapping is live. Which changes should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"App name",
+							"storefront"
+						],
+						[
+							"Plan tier",
+							"Free (F1)"
+						],
+						[
+							"Default hostname",
+							"storefront.azurewebsites.net"
+						],
+						[
+							"Current inbound address",
+							"20.190.144.88"
+						],
+						[
+							"DNS zone",
+							"lumenworks.dev (public zone in Azure DNS)"
+						],
+						[
+							"Name to map",
+							"www.lumenworks.dev"
+						]
+					]
+				},
+				"statement": "To get the name live you must first {{planAction}}, and then in the public zone you publish a {{mappingRecord}} that points at the app's default hostname together with a {{proofRecord}} that carries the ownership verification value shown in the Custom domains pane.",
+				"slots": [
+					{
+						"id": "planAction",
+						"options": [
+							{
+								"id": "a",
+								"text": "Upgrade the plan to a paid tier"
+							},
+							{
+								"id": "b",
+								"text": "Keep the plan on the Free tier and add the name as a custom domain now"
+							},
+							{
+								"id": "c",
+								"text": "Buy a certificate from the registrar and bind it to the app while the plan stays on the Free tier"
+							},
+							{
+								"id": "d",
+								"text": "Publish the name in a private DNS zone that points to the app"
+							}
+						]
+					},
+					{
+						"id": "mappingRecord",
+						"options": [
+							{
+								"id": "a",
+								"text": "CNAME record"
+							},
+							{
+								"id": "b",
+								"text": "A record"
+							},
+							{
+								"id": "c",
+								"text": "AAAA record"
+							},
+							{
+								"id": "d",
+								"text": "TXT record"
+							}
+						]
+					},
+					{
+						"id": "proofRecord",
+						"options": [
+							{
+								"id": "a",
+								"text": "TXT record"
+							},
+							{
+								"id": "b",
+								"text": "A record"
+							},
+							{
+								"id": "c",
+								"text": "CNAME record"
+							},
+							{
+								"id": "d",
+								"text": "MX record"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"mappingRecord": "a",
+				"planAction": "a",
+				"proofRecord": "a"
+			},
+			"explanation": {
+				"correct": "The app is still on the Free (F1) tier, and a web app can only host a custom domain when its plan sits on a tier above Free, so the plan has to be changed first; that change is also what makes the free, automatically renewed App Service Managed Certificate available for the HTTPS requirement, since it is offered from the Basic tier upward. In the public Azure DNS zone, www.lumenworks.dev sits below the apex, so it is aliased with a CNAME record pointing at the app's default hostname storefront.azurewebsites.net; aliasing the default hostname keeps the name working if the app's inbound address ever changes, unlike an A record that would send traffic only to today's address. The zone must additionally publish a TXT record carrying the domain verification ID taken from the app's Custom domains pane, and that record is what proves ownership and blocks another app from taking the name over afterwards.",
+				"perChoice": {
+					"mappingRecord:b": "An A record sends visitors to the app's current inbound address, so the name stops working whenever that address changes; aliasing the default hostname is the recommended option for a name below the zone apex.",
+					"mappingRecord:c": "Mapping the name to an address instead of to the app's hostname does not give the resilience to address changes that the business requires, and it is not the record type App Service recommends for a subdomain.",
+					"mappingRecord:d": "This record type only carries text such as the verification value; it does not route visitor traffic to the app.",
+					"planAction:b": "Hosting a custom domain requires a plan above the Free (F1) tier, so mapping the name while the plan stays on Free fails validation and no certificate is issued for it.",
+					"planAction:c": "A certificate bought from the registrar has to be replaced by hand rather than renewing on its own, and leaving the plan on the Free tier still prevents the app from hosting the custom domain at all.",
+					"planAction:d": "Custom domains for App Service must be published in a public DNS zone; private zones are not supported, so the name would never be resolvable for internet visitors.",
+					"proofRecord:b": "An A record maps a hostname to an address and cannot publish the ownership value that App Service reads to confirm who controls the name.",
+					"proofRecord:c": "A CNAME only aliases one hostname to another, so it cannot publish the verification value that App Service checks when it validates the domain.",
+					"proofRecord:d": "An MX record publishes the mail exchangers for a domain and plays no part in the ownership check."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-web-tutorial-custom-domain"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-custom-dns-migrate-domain"
+				}
+			],
+			"subtopics": [
+				"custom-domain-mapping",
+				"dns-record-types",
+				"app-service-plan-tier"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V4H3Y231P29SRBDXFEGRSC",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "The table lists the two web apps that the Cedar & Stone team operates. The name www.cedarandstone.com answers today from the app cedar-storefront, and the business wants the app cedar-rebuild to serve that name instead, with no interruption for visitors during the changeover. For that to work, both apps have to be able to serve the same name at the same time for a while, and the team is willing to rebuild the new app on a separate App Service plan wherever that leads. Which action should the team take first?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"App",
+						"App Service plan",
+						"Resource group",
+						"Region",
+						"Name mapped today"
+					],
+					"rows": [
+						[
+							"cedar-storefront",
+							"plan-cedar",
+							"rg-cedar",
+							"North Europe",
+							"www.cedarandstone.com"
+						],
+						[
+							"cedar-rebuild",
+							"plan-cedar",
+							"rg-cedar",
+							"North Europe",
+							"None"
+						]
+					]
+				},
+				"statement": "To prepare the changeover, the team should {{action}}, and then confirm that {{check}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "create a new App Service plan for the target app in a new resource group in another region"
+							},
+							{
+								"id": "b",
+								"text": "create a new App Service plan for the target app in the current resource group and region"
+							},
+							{
+								"id": "c",
+								"text": "move the name from the source app to the target app before the changeover starts"
+							},
+							{
+								"id": "d",
+								"text": "add the name to the target app while the source app keeps serving it"
+							}
+						]
+					},
+					{
+						"id": "check",
+						"options": [
+							{
+								"id": "a",
+								"text": "the FTP/S hostname reported for the target app's plan differs from the source app's"
+							},
+							{
+								"id": "b",
+								"text": "the default hostname of the target app differs from the source app's"
+							},
+							{
+								"id": "c",
+								"text": "the inbound IP address reported for the target app differs from the source app's"
+							},
+							{
+								"id": "d",
+								"text": "the plan name of the target app differs from the source app's"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a",
+				"check": "a"
+			},
+			"explanation": {
+				"correct": "Both apps run on the plan plan-cedar in the same resource group and region, so they are placed in the same deployment unit, and inside one deployment unit a single name can be assigned to only one of the apps. The unit comes from the App Service plan, is picked at random when the plan is created and cannot be changed afterwards, and apps created in the same resource group and region end up in the same unit, so the only way to separate them is to create a further plan in a fresh resource group (or in a different region). Creating the plan alone is not sufficient, because the new plan can still land in the same unit; the team has to keep creating plans and check the unit until the FTP/S hostname reported for the new plan no longer matches the one on plan-cedar. Only then can the name be attached to the target app while the source app still answers for it.",
+				"perChoice": {
+					"action:b": "A plan created inside the current resource group and region is placed in the same deployment unit as plan-cedar, so the two apps still cannot serve the same name at the same time and the changeover remains impossible.",
+					"action:c": "Taking the name off the source app first leaves the site unanswered for a period, which breaks the requirement that visitors see no interruption during the changeover.",
+					"action:d": "While both apps sit in one deployment unit, a name can only be assigned to one of its apps, so attaching it to the target app while the source app keeps it is refused.",
+					"check:b": "The platform-assigned default hostname always ends in azurewebsites.net and carries no information about the deployment unit an app sits in.",
+					"check:c": "The inbound IP address identifies where traffic for the plan is delivered, not the deployment unit the plan was placed in, so comparing addresses cannot confirm that the two apps are separated.",
+					"check:d": "The plan name is chosen by the team, so a different name says nothing about which deployment unit the plan landed in."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-custom-dns-migrate-domain"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-web-tutorial-custom-domain"
+				}
+			],
+			"subtopics": [
+				"custom-domain-mapping",
+				"deployment-units",
+				"app-service-plans"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V4R2SEP1WK15ETAGRD52SV",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have the Azure App Service web app shown below. The business owns the hostname www.harborline.co, the DNS records for it already point at this app, and the team added the name in the portal earlier today. Visitors now get an error in the browser on https://www.harborline.co, and the Custom domains pane lists the name with a red X. You need the hostname to serve visitors over HTTPS again. Which action should the team take next?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"App name",
+							"shop-front"
+						],
+						[
+							"App type",
+							"Web app"
+						],
+						[
+							"App Service plan",
+							"Shared (D1)"
+						],
+						[
+							"Inbound IP address",
+							"20.62.18.44"
+						],
+						[
+							"Hostname already mapped to the app",
+							"www.harborline.co"
+						],
+						[
+							"TLS/SSL certificate selected when the name was added",
+							"Add certificate later"
+						],
+						[
+							"Custom domains pane state for the name",
+							"Red X"
+						],
+						[
+							"Certificate on hand for this hostname",
+							"harborline-com.pfx, issued by the business's own certificate authority, valid for 12 months"
+						]
+					]
+				},
+				"statement": "To bring the hostname back for visitors over HTTPS, the team should {{certAction}}.",
+				"slots": [
+					{
+						"id": "certAction",
+						"options": [
+							{
+								"id": "a",
+								"text": "Upload the certificate for the name as a private certificate and add a TLS/SSL binding for it"
+							},
+							{
+								"id": "b",
+								"text": "Have the platform issue the certificate for the name as a managed certificate and add a TLS/SSL binding for it"
+							},
+							{
+								"id": "c",
+								"text": "Reuse the certificate already issued for the app's default hostname and add a TLS/SSL binding for it"
+							},
+							{
+								"id": "d",
+								"text": "Re-create the DNS records for the name as a CNAME and add a TLS/SSL binding for it"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"certAction": "a"
+			},
+			"explanation": {
+				"correct": "Choosing \"Add certificate later\" only registers the hostname: the Custom domains entry keeps its red X until a certificate is supplied and a binding is configured, and until then browser HTTPS requests to the name return an error. The team already holds a certificate for www.harborline.co, so it should be uploaded as a private certificate and bound to the name with a TLS/SSL binding. The platform cannot issue the certificate for them here, because the App Service Managed Certificate is offered only on Basic tier or higher and this app's plan is Shared.",
+				"perChoice": {
+					"certAction:b": "The platform-issued App Service Managed Certificate is offered only when the app runs on Basic tier or higher; this app's App Service plan is Shared (D1), so the platform will not issue the certificate for this name here.",
+					"certAction:c": "The certificate that covers the app's default hostname was issued for that platform name, not for www.harborline.co, so binding it to this name would leave visitors with a certificate name mismatch. The certificate that actually covers the hostname is the one the business already holds.",
+					"certAction:d": "The DNS mapping for the name was already accepted: the hostname is listed on the app and traffic reaches it, so re-creating the records changes nothing. What is missing is the certificate and its binding, not the hostname record."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-custom-dns-migrate-domain"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-web-tutorial-custom-domain"
+				}
+			],
+			"subtopics": [
+				"app-service-custom-domain",
+				"tls-ssl-binding",
+				"private-certificate"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V4XPY47PEW764G11W48GJJ",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have the Azure App Service web app and the DNS zone shown below. The business owns the hostname shop.westbay.co and wants the app to answer on it over HTTPS, and the site's certificate has to renew on its own at no extra charge. The name is not mapped to the app yet, and the team opened the Add custom domain dialog but could not complete the mapping as things stand. The hostname has to keep serving visitors if the app's inbound address changes later, and the zone has to publish the proof of ownership so that no other app can claim the name once the mapping is live. Which change should the team make to the App Service plan, and which record type should the zone use to route traffic to the hostname?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "App name: westbay-storefront\nApp Service plan: WestbayPlan, Free (F1)\nDeployment unit: westbay-unit-03\nInbound public address: 20.190.128.14\nDNS zone for westbay.co: Hosted in Azure DNS\nCustom domains mapped today: None\nRegistrar: Northwind Registrar (not a Microsoft service)"
+				},
+				"statement": "The team should {{s1}}, and the zone should use {{s2}} to send traffic for the hostname to the app.",
+				"slots": [
+					{
+						"id": "s1",
+						"options": [
+							{
+								"id": "a",
+								"text": "Change the App Service plan to a paid tier"
+							},
+							{
+								"id": "b",
+								"text": "Change the App Service plan to a different region"
+							},
+							{
+								"id": "c",
+								"text": "Change the App Service plan to a new resource group"
+							},
+							{
+								"id": "d",
+								"text": "Change the App Service plan to a different deployment unit"
+							}
+						]
+					},
+					{
+						"id": "s2",
+						"options": [
+							{
+								"id": "a",
+								"text": "CNAME record"
+							},
+							{
+								"id": "b",
+								"text": "A record"
+							},
+							{
+								"id": "c",
+								"text": "TXT record"
+							},
+							{
+								"id": "d",
+								"text": "AAAA record"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "a"
+			},
+			"explanation": {
+				"correct": "The app runs on the Free (F1) plan, and a custom domain cannot be mapped while the plan is free, so the plan has to be scaled up to a paid tier before the name can be added. shop.westbay.co sits below the zone apex westbay.co, so the zone should point that name at the app with a CNAME to the app's default hostname; that choice also keeps the hostname serving visitors if the app's inbound address changes, and the separate TXT record in the zone carries the domain verification ID that proves ownership.",
+				"perChoice": {
+					"s1:b": "Moving the plan to another region changes where the app runs, not what the plan offers, so the restriction that comes with the free plan shown in the exhibit would still block the mapping.",
+					"s1:c": "Creating a plan in a new resource group is what puts an app into a different deployment unit, which matters when a name has to be served by two apps at once, but it does not remove the restriction tied to a free plan; the plan still has to be a paid one.",
+					"s1:d": "The deployment unit is assigned to the plan when the plan is created and cannot be changed afterwards, and it has no bearing on whether a plan can host a custom domain.",
+					"s2:b": "An A record points the name straight at the app's current inbound address, so the hostname would stop resolving as soon as that address changed; for a name below the apex the recommended record is a CNAME to the app's default hostname.",
+					"s2:c": "The TXT record carries the domain verification ID that proves ownership of the name; it does not route traffic, so it cannot be the record that serves the hostname.",
+					"s2:d": "An AAAA record maps a hostname to an IPv6 address, and the inbound address shown for this app is IPv4; the documented mapping for a name below the zone apex is a CNAME to the app's default hostname."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-web-tutorial-custom-domain"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-custom-dns-migrate-domain"
+				}
+			],
+			"subtopics": [
+				"custom-domain-mapping",
+				"app-service-plan-tiers",
+				"dns-record-types"
+			],
+			"reviewed": false
+		}
+	]
+}

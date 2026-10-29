@@ -1,0 +1,1664 @@
+{
+	"skill": "storage.explorer-azcopy",
+	"questions": [
+		{
+			"id": "q_01M5MAZJ2EVJVK1S82QK69CDTS",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "A nightly pipeline on a Linux runner uploads the contents of the folder /srv/reports into the reports container of storage account contososa. This morning's check shows q2-summary.pdf still sitting in the container even though that file was removed from the source folder last week, and the container keeps growing because of stale data. You need the nightly run to leave the container holding exactly the same set of files as the source folder, with anything no longer in the source removed automatically. Which command should the pipeline use?",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "# /opt/pipeline/nightly.sh  (runs at 02:00 as a scheduled task)\nazcopy copy \"/srv/reports\" \"https://contososa.blob.core.windows.net/reports/<sas>\" --recursive=true\n\n# Source folder on the runner:            /srv/reports\n#   q3-summary.pdf\n#   notes.txt\n#\n# Blob listing reported by the monitoring job after the 02:00 run: contososa/reports\n#   q3-summary.pdf   last modified 2026-10-20 04:11\n#   q2-summary.pdf   last modified 2026-07-02 04:11\n#   notes.txt        last modified 2026-10-21 02:03"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "azcopy sync"
+					},
+					{
+						"id": "b",
+						"text": "azcopy copy"
+					},
+					{
+						"id": "c",
+						"text": "azcopy set-properties"
+					},
+					{
+						"id": "d",
+						"text": "azcopy jobs clean"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "`azcopy sync` replicates the source location onto the destination and removes destination blobs that no longer exist in the source, which is exactly the mirroring behaviour the nightly job needs. It also honors the recursive flag so subfolders are included.",
+				"perChoice": {
+					"b": "`azcopy copy` is the command currently in the script. It writes new and updated blobs but deliberately leaves unrelated destination content untouched, so q2-summary.pdf would stay forever. It suits one-off or ad-hoc transfers where extra files on the destination are harmless.",
+					"c": "`azcopy set-properties` changes blob access tier and replaces metadata and index tags after a transfer. It never deletes or adds blobs, so it cannot reconcile the container with the source folder.",
+					"d": "`azcopy jobs clean` deletes the log and plan files created by all transfer jobs; it operates on job metadata, not on the blobs in the container."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-authorize-user-identity"
+				}
+			],
+			"subtopics": [
+				"azcopy-sync-vs-copy",
+				"scheduled-jobs",
+				"blob-container-mirroring"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MB2FQ4G62HE4Y7M0TN8TVJ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You need to give an external partner working access to the Azure Files share contractdocs in your storage account contososa, and you have Storage Explorer open on your own workstation. The partner's situation is described in the table. They have no identity in Contoso's tenant, their application runs unattended with no interactive sign-in, and their operators must create, read, and delete files in the share using one self-contained value that the app stores in its own configuration. Which action should you take to hand over that access?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Partner detail",
+						"Value"
+					],
+					"rows": [
+						[
+							"Directory membership",
+							"No account in Contoso's tenant"
+						],
+						[
+							"Runtime",
+							"Unattended application, no interactive sign-in"
+						],
+						[
+							"Operations needed on contractdocs",
+							"Create, read, and delete files"
+						],
+						[
+							"What must be handed over",
+							"A single self-contained value the app keeps in its own configuration file"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Invite the partner's operators into the Contoso tenant and let them sign in with Microsoft Entra ID after adding the subscription in Storage Explorer."
+					},
+					{
+						"id": "b",
+						"text": "Send the partner the storage account key from Settings > Access keys and have them connect with Account name and key in Storage Explorer."
+					},
+					{
+						"id": "c",
+						"text": "Generate an account-level SAS for the storage account in Storage Explorer and send the partner the Connection string or Query string it produces."
+					},
+					{
+						"id": "d",
+						"text": "Turn on public anonymous access for contractdocs in Storage Explorer and send the partner the plain share URL."
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "Storage Explorer can mint an account-level SAS directly from the storage account node: right-click the account, choose Get Shared Access Signature, set the time frame and permissions, select Create, and copy the Connection string or the raw Query string. That is exactly the credential form the partner needs, because a SAS is the option for a party that cannot sign in interactively, and Azure Files shares are among the resources that accept Entra ID or a SAS. Requesting only the create/read/delete file permissions keeps the partner scoped to what its application actually does.",
+				"perChoice": {
+					"a": "Entra ID requires an identity that can actually authenticate to Contoso's tenant, and the partner has none. Adding a subscription through Account Management in Storage Explorer only surfaces accounts to principals who can sign in, so this leaves the partner's unattended application with nothing to use.",
+					"b": "Account name and key is supported only when attaching a whole storage account. File shares, queues, and tables must be connected with Microsoft Entra ID or a SAS. An account key is also all-or-nothing, with no way to limit it to the share or to the specific file operations the partner requires.",
+					"d": "Public anonymous access is offered only for blob containers and for ADLS Gen2 containers or directories, never for a file share or a whole storage account, so it cannot be enabled as a way to reach contractdocs."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/storage-explorer/vs-azure-tools-storage-manage-with-storage-explorer"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-authorize-user-identity"
+				}
+			],
+			"subtopics": [
+				"storage-explorer-authentication",
+				"shared-access-signature",
+				"azure-files"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MB483N0JSARW8MZB6TW09E",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You are writing a one-off migration script, /opt/migrate/run.sh, that uploads a local folder into Blob storage in the storage account contososa. The script runs on the shared jump box whose properties are listed below, and it must reach the account on every run with no manual pre-step by an administrator. Which step should the script take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property of the jump box",
+						"Observed value"
+					],
+					"rows": [
+						[
+							"Operating system",
+							"Ubuntu Server, used only by the operations team"
+						],
+						[
+							"OS secret store",
+							"Not installed"
+						],
+						[
+							"Azure CLI sign-in on the host",
+							"None; no session has ever been created"
+						],
+						[
+							"App registration credentials held on the host",
+							"None, and policy forbids storing any"
+						],
+						[
+							"Who runs the script",
+							"An operator, by hand, once a week"
+						],
+						[
+							"Operator can complete a browser-based sign-in",
+							"Yes"
+						],
+						[
+							"Credential retention policy",
+							"No credential may be written to the host or reused by a later run"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set AZCOPY_AUTO_LOGIN_TYPE=DEVICE in the script, then run the copy"
+					},
+					{
+						"id": "b",
+						"text": "Set AZCOPY_AUTO_LOGIN_TYPE=AZCLI in the script, then run the copy"
+					},
+					{
+						"id": "c",
+						"text": "Set AZCOPY_AUTO_LOGIN_TYPE=PSCRED in the script, then run the copy"
+					},
+					{
+						"id": "d",
+						"text": "Run azcopy login --tenant-id=<tenant-id> on the box once, then run the copy"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "With AZCOPY_AUTO_LOGIN_TYPE=DEVICE, AzCopy prompts the operator for an interactive Microsoft Entra ID sign-in, holds the resulting token in memory only, and discards it when the operation completes. That matches the host exactly: no secret store is installed, nothing is written to disk, no prior session is reused, and an operator is present who can finish the sign-in in a browser. The copy command then works without any manual pre-step.",
+				"perChoice": {
+					"b": "AZCLI makes AzCopy borrow the sign-in that already exists for the Azure CLI on that host. The table shows no CLI session exists, and any such session is itself a credential the CLI has stored, which the retention policy forbids.",
+					"c": "PSCRED is for a service principal: it expects a tenant ID together with the app's client ID and secret supplied through the environment. That would place a credential on the host, which policy forbids, and no such credentials are available on the box.",
+					"d": "azcopy login obtains an OAuth token and writes it to the OS secret store so later runs can reuse it. On a host with no secret store, such as this jump box, that command fails outright, so no reusable session is ever established; it also contradicts the rule that nothing may be kept for a later run."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-authorize-user-identity"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10"
+				}
+			],
+			"subtopics": [
+				"azcopy-authentication",
+				"azcopy-cli-commands"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MB5PB5ZHWKFE3Q308J45YD",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have Storage Explorer open on your workstation and you need to open the four items listed below. You can sign in to Contoso's tenant interactively, and you can also copy the account keys from the portal whenever you need them. Exactly one of the pairings below opens successfully. Which pairing should you use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item to open",
+						"What you know about it"
+					],
+					"rows": [
+						[
+							"Blob container marketing-assets in contososa",
+							"Read by website visitors who have no Contoso identity and are handed no credentials of any kind"
+						],
+						[
+							"Azure Files share drawings in contososa",
+							"Edited by the CAD team, whose members each sign in with their own Entra ID accounts"
+						],
+						[
+							"Queue invoices in contososa",
+							"Filled by a partner app that keeps one self-contained value in its own configuration file"
+						],
+						[
+							"Azurite instance running on dev-laptop-01",
+							"Started locally and listening on ports 10000, 10001, 10002, and 10003"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "marketing-assets (blob container) - Public anonymous"
+					},
+					{
+						"id": "b",
+						"text": "drawings (Azure Files share) - Account name and key"
+					},
+					{
+						"id": "c",
+						"text": "invoices (queue) - Account name and key"
+					},
+					{
+						"id": "d",
+						"text": "contososa (the whole storage account) - Public anonymous"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Blob containers are one of the resource types Storage Explorer can attach with Public anonymous, so a container whose readers are given no credentials is opened this way with no sign-in. Each of the other three pairings combines a resource type with a connection method that Storage Explorer rejects: file shares and queues never take account name and key, and a whole storage account is never reached with anonymous access.",
+				"perChoice": {
+					"b": "Azure Files shares are attached only by choosing Sign in using Microsoft Entra ID or by supplying a shared access signature URL. Account name and key is not an accepted option for file shares, so this pairing cannot connect.",
+					"c": "Queues behave like file shares and tables here: Storage Explorer offers only Sign in using Microsoft Entra ID or a shared access signature URL for them, so an account name and key pairing is rejected.",
+					"d": "Anonymous access attaches at the blob container or ADLS Gen2 container and directory level, never to an entire storage account. Sign in with an identity or use name and key for the account instead."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/storage-explorer/vs-azure-tools-storage-manage-with-storage-explorer"
+				}
+			],
+			"subtopics": [
+				"storage-explorer-connections",
+				"authentication-methods"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MBATYSF8GQX30H3QPNRNF6",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You are moving seven years of scanned documents from a Windows file server into Blob storage in storage account contososa by using AzCopy. The job handling the 2020 folder was still running overnight when the host lost power, and the AzCopy process ended. The job's log and state files are still present on that host, and nothing in the source folder changed during the interruption. You want the remaining files of that folder to reach the destination while the ones already sent are left alone and not sent a second time. Which command should you run?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "PS C:\\azcopy> azcopy jobs list\n\nJobId     Status      Source          Destination\n-------   ----------  -------------  ---------------------------------------------------------\n0f9a1c    Completed   C:\\Scans\\2019   https://contososa.blob.core.windows.net/scanarchive/2019/\n3b7d20    InProgress  C:\\Scans\\2020   https://contososa.blob.core.windows.net/scanarchive/2020/\nc4e881    Completed   C:\\Scans\\2021   https://contososa.blob.core.windows.net/scanarchive/2021/\n\nJob 3b7d20 progress: 1.58 TB of 5.04 TB transferred, 884,102 of 2,310,004 files"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "azcopy jobs resume with job ID 3b7d20"
+					},
+					{
+						"id": "b",
+						"text": "azcopy copy with the same source folder C:\\Scans\\2020 and destination container"
+					},
+					{
+						"id": "c",
+						"text": "azcopy sync with the same source folder C:\\Scans\\2020 and destination container"
+					},
+					{
+						"id": "d",
+						"text": "azcopy jobs remove with job ID 3b7d20"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "AzCopy keeps each copy or sync operation as a job with its own log and state files on the machine, and the jobs command family is how you recover work from it. `azcopy jobs resume` with the job ID continues an interrupted job from that stored state, transferring only what has not already been sent. The listing shows job 3b7d20 stuck InProgress part-way through the 5.04 TB folder, so that is the job to continue.",
+				"perChoice": {
+					"a": "Not applicable; this is the keyed choice.",
+					"b": "Starting a fresh `azcopy copy` run does not continue the recorded job: it begins a new transfer with its own plan and progress, so the work already done by 3b7d20 is not tracked or picked up by it. To pick up an interrupted transfer you use the jobs commands, not a new copy run.",
+					"c": "`azcopy sync` replicates the source onto the destination and deletes destination content that no longer exists in the source. It is for keeping two locations mirroring each other, not for picking up a stopped transfer, and on a partially populated destination it can remove content it does not consider part of the source.",
+					"d": "`azcopy jobs remove` drops the files associated with a job, discarding the job's records so that transfer is no longer resumable. The already-uploaded blobs stay in the destination, but the remaining 3.4 TB of the 2020 folder would then have to be transferred from the beginning."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10"
+				}
+			],
+			"subtopics": [
+				"azcopy-job-management",
+				"blob-migration",
+				"azcopy-commands"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MBFSYYT8XTVX9182Y1S6V1",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have storage account contososa with hierarchical namespace enabled. Nobody on your team can be given Entra ID data roles in this subscription, so the team's reach comes only from the ACL entries shown below. A nightly AzCopy job uploads new blobs into the /finance/2026 directory of the account, and every run now fails with an access denied error. You need that nightly upload to succeed without changing where the blobs are placed. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Path in the account",
+						"Principal",
+						"Actions currently granted"
+					],
+					"rows": [
+						[
+							"/ (container root)",
+							"devgrp",
+							"execute"
+						],
+						[
+							"/finance/2026",
+							"devgrp",
+							"write"
+						],
+						[
+							"/finance",
+							"no entry for devgrp",
+							"none"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add an ACL entry granting devgrp execute on /finance"
+					},
+					{
+						"id": "b",
+						"text": "Add an ACL entry granting devgrp write on /finance"
+					},
+					{
+						"id": "c",
+						"text": "Add an ACL entry granting devgrp execute on /finance/2026"
+					},
+					{
+						"id": "d",
+						"text": "Add an ACL entry granting devgrp read on /finance"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "On an account with hierarchical namespace, ACL entries can carry authorization on their own, without a data role. The documented requirement for such a principal is write on the target directory plus execute on the container and on every parent directory of the target. devgrp already has write on the target /finance/2026 and execute on the container root, but the intermediate directory /finance carries no entry for the group at all, so the traversal down the path is broken. Granting execute on /finance supplies the missing link and the upload succeeds. Missing execute on parent directories is a documented cause of access denied even when the other permissions are correct.",
+				"perChoice": {
+					"b": "write on /finance would only let the group create entries under that directory; it grants no traversal. The path requirement calls for execute on the container and on every parent directory, and /finance currently has no entry, so this change leaves the broken traversal in place.",
+					"c": "/finance/2026 is the target directory, and the write entry the group already has there is exactly the permission the upload needs. The gap sits on an ancestor directory, /finance, so adding execute on the target itself does not make the whole path traversable and the run still fails.",
+					"d": "read on a directory does not stand in for the traversal the rule requires. The documented requirement is execute on the container and on every parent directory, so granting read on /finance leaves the same access denied error at run time."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-authorize-user-identity"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10"
+				}
+			],
+			"subtopics": [
+				"hierarchical-namespace-acls",
+				"azcopy-authorization"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MBN4FTVBS4RB6K3VBMQ7GR",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You look after a CI pipeline that runs its integration tests against a local storage service on the agent described below. After each test run you open Storage Explorer on the agent's desktop session to review the containers and blobs the tests produced, but the last row shows what you actually get back. What should you do?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Agent operating system",
+							"Ubuntu 22.04 LTS"
+						],
+						[
+							"Local storage service used by the tests",
+							"Azurite, listening on its default ports 10000-10003"
+						],
+						[
+							"Service state once the test job exits",
+							"Stopped"
+						],
+						[
+							"Storage Explorer version installed on the agent",
+							"1.44.0"
+						],
+						[
+							"Result after choosing Local & Attached > Storage Accounts > Emulator - Default Ports",
+							"No containers returned"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Start Azurite yourself, then connect to it through the local storage emulator entry"
+					},
+					{
+						"id": "b",
+						"text": "Install the Azure Storage Emulator on the agent so Storage Explorer can start the local emulator for you"
+					},
+					{
+						"id": "c",
+						"text": "Swap Azurite in the tests for the Azure Storage Emulator, which Storage Explorer starts automatically"
+					},
+					{
+						"id": "d",
+						"text": "Attach to the local blob container with Account name and key from the storage account's Access keys page"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Azurite is the local storage emulator supported on Windows, macOS, and Linux, so it is the right service on this Ubuntu agent — but Storage Explorer never launches a local emulator for you. The service has to be running before you attach to it, and in this setup the test job leaves Azurite stopped, which is why the emulator selection returns nothing. Starting the service yourself and then pointing Storage Explorer at the local storage emulator restores access to the containers and blobs the tests wrote.",
+				"perChoice": {
+					"a": "Use this when Storage Explorer cannot reach a local emulator.",
+					"b": "Two problems here. The Azure Storage Emulator is a Windows-only local service and cannot be installed on this Ubuntu agent, and even on Windows Storage Explorer does not launch an emulator for you — the service must be started manually before you connect.",
+					"c": "Replacing Azurite does not help. Azurite is the emulator that is supported on Linux, and Storage Explorer never starts an emulator automatically whichever one you use, so the stopped service would still return nothing.",
+					"d": "Account name and key is a connection method for reaching an Azure storage account over its Azure endpoints; it does not apply to a local Azurite instance. A local service is reached through the local storage emulator connection, and it must already be running."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/storage-explorer/vs-azure-tools-storage-manage-with-storage-explorer"
+				}
+			],
+			"subtopics": [
+				"storage-explorer",
+				"local-storage-emulator",
+				"emulator-connection"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MBRQYEHKECMBNJY419JXH6",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You are onboarding Petra to the design team that works in storage account contososa. Her day-to-day work is listed in the table below, and the rest of the team is already covered. She currently holds only the Contributor role on the resource group that contains the storage account. Which additional role assignment should you give her so her AzCopy transfers succeed?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Team member",
+						"Resource they work with",
+						"What they do with it"
+					],
+					"rows": [
+						[
+							"Dana",
+							"Blob container reports in contososa",
+							"Lists and downloads the monthly report files"
+						],
+						[
+							"Petra",
+							"Azure Files share designdocs in contososa",
+							"Copies finished drawings up to the share, removes drawings that a colleague has replaced"
+						],
+						[
+							"Omar",
+							"Blob container assets in contososa",
+							"Copies finished marketing images up to the container"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Storage File Data Privileged Contributor"
+					},
+					{
+						"id": "b",
+						"text": "Storage File Data Privileged Reader"
+					},
+					{
+						"id": "c",
+						"text": "Storage Blob Data Contributor"
+					},
+					{
+						"id": "d",
+						"text": "Storage Blob Data Owner"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Petra writes to an Azure Files share: she uploads new drawings and deletes replaced ones. The data-plane role that covers those operations on file shares is Storage File Data Privileged Contributor, so assigning it lets her AzCopy transfers succeed without granting anything beyond her work. Her existing Contributor assignment is a management-plane role and gives her no reach to the data itself, so the extra data-plane assignment is required.",
+				"perChoice": {
+					"b": "Storage File Data Privileged Reader is read-only. It would let Petra download the drawings but her uploads and deletions would fail, which does not satisfy her work.",
+					"c": "Storage Blob Data Contributor applies to Blob Storage, not to Azure Files shares, so it would not authorize anything on designdocs. It fits Omar's uploads to the assets container, not Petra's share work.",
+					"d": "Storage Blob Data Owner also targets Blob Storage rather than file shares, and it goes beyond Petra's needs by granting ownership and access control over blobs she does not maintain."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-authorize-user-identity"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10"
+				}
+			],
+			"subtopics": [
+				"data-plane-roles",
+				"file-share-access",
+				"least-privilege"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MBW18CJ2MQ9118FGQK4M0J",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are writing the AzCopy v10 runbook that the release team follows to move each monthly billing export into blob storage in account contososa and then tidy up afterwards. The runbook has six stages left to fill in, and each stage must be covered by one AzCopy command. Drag each command into the stage it belongs to.",
+				"items": [
+					{
+						"id": "a",
+						"text": "azcopy make"
+					},
+					{
+						"id": "b",
+						"text": "azcopy bench"
+					},
+					{
+						"id": "c",
+						"text": "azcopy set-properties"
+					},
+					{
+						"id": "d",
+						"text": "azcopy remove"
+					},
+					{
+						"id": "e",
+						"text": "azcopy list"
+					},
+					{
+						"id": "f",
+						"text": "azcopy jobs clean"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Create the container that will receive the export, since it does not exist yet"
+					},
+					{
+						"id": "s2",
+						"label": "Estimate the transfer speed of the link before the migration window opens"
+					},
+					{
+						"id": "s3",
+						"label": "Move the finished blobs to a colder access tier and replace their metadata and index tags"
+					},
+					{
+						"id": "s4",
+						"label": "Delete one named blob that the compliance team reported as a mistake"
+					},
+					{
+						"id": "s5",
+						"label": "Write out what is currently in the destination so the team can record a pre-migration inventory"
+					},
+					{
+						"id": "s6",
+						"label": "Free up the disk space that earlier transfer runs left behind on the jump host"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d",
+				"s5": "e",
+				"s6": "f"
+			},
+			"explanation": {
+				"correct": "Each stage matches exactly one AzCopy v10 command by what it actually does. Creating a container or file share that does not exist yet is azcopy make. Measuring how fast a link moves data, by sending or pulling test data before a real migration, is azcopy bench. Changing the access tier of transferred blobs and replacing their metadata and index tags afterwards is azcopy set-properties. Deleting blobs or files is azcopy remove, which suits the compliance case of one wrongly reported blob. Printing what entities a container holds is azcopy list, which gives the team its pre-migration inventory. Deleting the log and plan files that earlier jobs left on disk is azcopy jobs clean, which is what reclaims host disk space.",
+				"perChoice": {
+					"a": "Belongs in the stage that creates the destination container before anything can be uploaded to it; azcopy make is the command that creates a container or file share.",
+					"b": "Belongs in the speed-estimation stage; azcopy bench moves test data to or from a location purely to measure throughput before a real migration.",
+					"c": "Belongs in the post-upload stage; azcopy set-properties is the command that changes blob access tier and replaces metadata and index tags after a transfer.",
+					"d": "Belongs in the stage that deletes a single wrongly reported blob; azcopy remove deletes blobs or files.",
+					"e": "Belongs in the inventory stage; azcopy list enumerates the entities in a resource so their contents can be printed.",
+					"f": "Belongs in the disk-reclamation stage; azcopy jobs clean deletes the log and plan files for all jobs, which is what frees space on the host."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10"
+				}
+			],
+			"subtopics": [
+				"azcopy-command-set",
+				"runbook-automation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MBY2PABDBAD6YE8DHMY35V",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have Storage Explorer open on your workstation and you have issued a shared access credential for the archive container in storage account contososa, so that an unattended application can reach the data with no account in Contoso's directory. The application team stores the credential in the two forms shown in the exhibit, and you have been asked to write a short note explaining it to them. Drag each part of the credential to the description of what it governs.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Query string form:\nhttps://contososa.blob.core.windows.net/archive?sv=2022-11-02&sp=rwdl&st=2026-01-01T00:00:00Z&se=2026-12-31T23:59:00Z&spr=https&sig=Ab3%2Fz%3D\n\nConnection string form:\nDefaultEndpointsProtocol=https;AccountName=contososa;SharedAccessSignature=sv=2022-11-02&sp=rwdl&st=2026-01-01T00:00:00Z&se=2026-12-31T23:59:00Z&spr=https;sig=Ab3%2Fz%3D"
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "sv="
+					},
+					{
+						"id": "i2",
+						"text": "sp="
+					},
+					{
+						"id": "i3",
+						"text": "st= and se="
+					},
+					{
+						"id": "i4",
+						"text": "spr="
+					},
+					{
+						"id": "i5",
+						"text": "sig="
+					},
+					{
+						"id": "i6",
+						"text": "SharedAccessSignature="
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "The storage service version the credential was issued for"
+					},
+					{
+						"id": "s2",
+						"label": "The read, write and delete actions the credential allows"
+					},
+					{
+						"id": "s3",
+						"label": "The dates that bound how long the credential stays usable"
+					},
+					{
+						"id": "s4",
+						"label": "The protocol that requests must use"
+					},
+					{
+						"id": "s5",
+						"label": "The value that proves the credential was issued with the account key"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "The parameters each carry one distinct decision: sv records the storage service version the token was created for, sp lists the operations the token permits, st and se give the start and end of the window in which it can be used, spr restricts requests to the allowed protocol, and sig is the cryptographic signature produced with the account key that lets the service validate the token. SharedAccessSignature= is only the marker that distinguishes the connection string form from the query string form, so it belongs in no slot.",
+				"perChoice": {
+					"i1": "Belongs in s1: sv is the service version value in the token, for example 2022-11-02 in the exhibit.",
+					"i2": "Belongs in s2: sp holds the permitted operations, which is why the token in the exhibit carries rwdl.",
+					"i3": "Belongs in s3: st and se are the two timestamps that open and close the validity window.",
+					"i4": "Belongs in s4: spr states the allowed protocol, and the token in the exhibit limits it to https.",
+					"i5": "Belongs in s5: sig is the cryptographic signature that the service checks to confirm the token was issued with the account key.",
+					"i6": "Fits no slot: SharedAccessSignature= is the prefix that marks the connection string form of the credential; it grants no access and controls no setting."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/storage-explorer/vs-azure-tools-storage-manage-with-storage-explorer"
+				}
+			],
+			"subtopics": [
+				"sas-parameters",
+				"storage-explorer"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MC3251HS6JVRC4ZFGX1NY3",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You support a platform team that copies data with AzCopy, and the six reports below came into the operations channel this week. Your checklist holds six actions, and each report is closed by exactly one of them. Drag each report into the slot of the action that resolves it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Host",
+						"Operating system",
+						"How the team uses it"
+					],
+					"rows": [
+						[
+							"jumpbox-01",
+							"Ubuntu Server 22.04",
+							"nightly schedule started from /opt/scripts"
+						],
+						[
+							"debian-02",
+							"Debian 12 minimal image",
+							"bastion host where the on-call engineer runs one-off commands"
+						],
+						[
+							"analyst-07",
+							"Windows 11",
+							"workstation used for ad-hoc work during the day"
+						],
+						[
+							"lab-runner",
+							"Windows Server 2022",
+							"CI pipeline that copies sample data on every build"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "The upload stopped a second after the new access assignment was made, and running the same command straight away returns the same 403."
+					},
+					{
+						"id": "i2",
+						"text": "debian-02 has no keyring package, and the command that saves what it obtains for later runs exits with an error before a single object moves."
+					},
+					{
+						"id": "i3",
+						"text": "The nightly schedule on jumpbox-01 fails at its first line because the tool is not recognized as an internal or external command; an operator gets it to run only from the unpacked location."
+					},
+					{
+						"id": "i4",
+						"text": "The archive move of 4 TB has to start on Friday, the window is two days, and the owner asks for a Microsoft-operated service to handle it."
+					},
+					{
+						"id": "i5",
+						"text": "Someone edited the container by hand while the nightly run was still working through the folder; the run ended early with an error instead of completing."
+					},
+					{
+						"id": "i6",
+						"text": "A request came in to publish last year's file under another name on the container, and the requester wants the team's usual command-line utility to carry it out."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Wait a few minutes before the next attempt; a freshly granted permission can take time to reach the data plane."
+					},
+					{
+						"id": "s2",
+						"label": "Set AZCOPY_AUTO_LOGIN_TYPE=DEVICE so the credential stays in memory and is discarded when the operation ends."
+					},
+					{
+						"id": "s3",
+						"label": "Add the AzCopy install folder to PATH so the name resolves from any working directory."
+					},
+					{
+						"id": "s4",
+						"label": "Hand the workload to Azure Storage Mover instead of running it on that machine."
+					},
+					{
+						"id": "s5",
+						"label": "Keep the source and the destination unchanged for the whole duration."
+					},
+					{
+						"id": "s6",
+						"label": "Use a different product; AzCopy offers nothing for it."
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5",
+				"s6": "i6"
+			},
+			"explanation": {
+				"correct": "Each report matches one distinct constraint of the tool. The 403 that follows immediately on a just-granted permission is the propagation delay: a newly assigned role can take up to five minutes to take effect, so the command should simply be issued again after a short wait. The failure on debian-02 comes from the missing secret store: the persistent sign-in command needs somewhere to keep the token, so the one-off interactive mode (AZCOPY_AUTO_LOGIN_TYPE=DEVICE), which holds the credential in memory only and drops it when the operation finishes, is the answer. The \"not recognized\" error on jumpbox-01 is a PATH problem: the name only resolves from the folder the utility was unpacked into, so that folder must be added to PATH. The 4 TB archive move is far beyond what a self-run copy is suited to; for migrations of roughly 1 TB or more the guidance points to the managed Azure Storage Mover service. The run that died after someone hand-edited the container hit the rule that a transfer will not proceed while its source or destination is being actively changed, so both ends must stay untouched until the job finishes. The rename request cannot be met at all: there is no AzCopy command that renames files, so it needs a different product.",
+				"perChoice": {
+					"i1": "Belongs with the \"wait a few minutes before the next attempt\" action. A data-plane role granted moments earlier can need up to five minutes to propagate, so the first command issued right after the assignment fails even though the assignment itself is correct.",
+					"i2": "Belongs with the AZCOPY_AUTO_LOGIN_TYPE=DEVICE action. The persistent sign-in command stores the token in the operating system's secret store and therefore aborts on a host with no keyring; the one-off interactive mode keeps the credential in memory only and discards it when the operation finishes.",
+					"i3": "Belongs with the PATH action. The utility is unpacked but not on the search path, so its name resolves only from its own folder; adding that folder to PATH lets the scheduled script call it from /opt/scripts.",
+					"i4": "Belongs with the Azure Storage Mover action. At 4 TB with a two-day window, the guidance is to use the managed Azure Storage Mover service rather than running the copy yourself.",
+					"i5": "Belongs with the \"leave both ends unchanged\" action. A transfer will not run while its source or destination is being actively changed, which is what the hand edit of the container caused.",
+					"i6": "Belongs with the \"use a different product\" action. AzCopy has no command that renames files, so the request cannot be fulfilled with the team's usual utility."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-authorize-user-identity"
+				}
+			],
+			"subtopics": [
+				"azcopy-troubleshooting",
+				"azcopy-authentication",
+				"azcopy-installation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MC4F21K02SAKAFR4M5PX34",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You support a team that copies data with AzCopy into and out of storage account contososa from four different hosts. The exhibit describes each host, and the runbook must name one exact command or environment setting per host so that the copy step authenticates in the way that host is able to work. Drag each command or setting into the slot for the host it belongs to.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Host",
+						"How the host is used",
+						"What the runbook has to achieve"
+					],
+					"rows": [
+						[
+							"Host A - engineer laptop",
+							"During an incident an engineer types a single command by hand to look at what is in a container, then shuts the laptop",
+							"Nothing about that engineer's access may stay behind on the machine"
+						],
+						[
+							"Host B - scheduler VM",
+							"An operator has already signed in to the VM with the Azure CLI as the identity that owns the data, then leaves; the schedule runs hours later",
+							"The script must take over the session that already exists there instead of asking for anything, and must work in the directory of that identity"
+						],
+						[
+							"Host C - Windows service host",
+							"No person ever signs in; the copy runs as an app registration whose own credentials are issued to automation",
+							"The copy must reach the account unattended as that app registration"
+						],
+						[
+							"Host D - migration workstation",
+							"An administrator sets things up the day before a weekend migration, then many copies run one after another over the weekend",
+							"Every later copy must keep working without the administrator signing in again"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "export AZCOPY_AUTO_LOGIN_TYPE=DEVICE"
+					},
+					{
+						"id": "i2",
+						"text": "export AZCOPY_AUTO_LOGIN_TYPE=AZCLI\nexport AZCOPY_TENANT_ID=<tenant-id>"
+					},
+					{
+						"id": "i3",
+						"text": "$Env:AZCOPY_AUTO_LOGIN_TYPE=\"PSCRED\"\n$Env:AZCOPY_TENANT_ID=<tenant-id>"
+					},
+					{
+						"id": "i4",
+						"text": "azcopy login"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Host A - engineer's single manual check, nothing kept afterwards"
+					},
+					{
+						"id": "s2",
+						"label": "Host B - reuse the session an operator already holds on the VM"
+					},
+					{
+						"id": "s3",
+						"label": "Host C - unattended run under an app registration"
+					},
+					{
+						"id": "s4",
+						"label": "Host D - set up once in advance, then reused by every later copy"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Each host is matched to the mechanism that fits how it runs. Host A needs a throwaway credential: with AZCOPY_AUTO_LOGIN_TYPE=DEVICE AzCopy returns a device code for the engineer to confirm, keeps the token only in the process memory, and discards it when the operation finishes, so nothing survives on the laptop. Host B needs to borrow the session already present: AZCOPY_AUTO_LOGIN_TYPE=AZCLI makes AzCopy use the operator's existing Azure CLI session, and AZCOPY_TENANT_ID pins it to the directory of that identity, so the scheduled script needs no prompt. Host C has no person at the keyboard: AZCOPY_AUTO_LOGIN_TYPE=PSCRED authenticates the copy as the app registration (service principal), with AZCOPY_TENANT_ID selecting its directory. Host D is prepared once and reused: azcopy login obtains an OAuth token and stores it in the operating system secret store, so every later copy on that workstation keeps working without a new sign-in.",
+				"perChoice": {
+					"i1": "Belongs in Host A. This is the one-off interactive option: the sign-in happens per command, the token is kept in memory only and dropped when the operation completes, which matches an engineer who must leave nothing behind.",
+					"i2": "Belongs in Host B. This reuses an existing Azure CLI session instead of creating a new credential, and the tenant setting selects the directory of the identity that owns the data, which is what a schedule running after the operator has left needs.",
+					"i3": "Belongs in Host C. This option authenticates as a service principal using credentials supplied to the process, with no interactive step, so a Windows service host can reach the account on its own.",
+					"i4": "Belongs in Host D. This command acquires a token once and stores it in the OS secret store, so the prepared workstation keeps copying without repeated sign-ins; it also requires that the OS offers a secret store, which a hardened desktop does."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-authorize-user-identity"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10"
+				}
+			],
+			"subtopics": [
+				"azcopy-authentication",
+				"auto-login-types",
+				"service-principal-auth"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MC8Q6JV06FNSGE7EX692WR",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Storage Explorer is already installed on the support workstation described below, but the engineer's session is empty: nothing is listed in the navigation pane. She needs storage account contososa, its containers and the blobs inside them to appear under her own Contoso tenant, and that account lives in the public Azure cloud. She has decided to reach it by signing in rather than by attaching one resource. Drag each action into the slot of the wizard stage it belongs to; two of the actions do not belong to this route at all.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Detail"
+					],
+					"rows": [
+						[
+							"Workstation",
+							"Windows 11 laptop, Storage Explorer 1.42.0, .NET 10 runtime installed"
+						],
+						[
+							"Current session",
+							"No identity added; the navigation pane lists no subscriptions"
+						],
+						[
+							"Tenant membership",
+							"Member of contoso.onmicrosoft.com and of one unrelated directory"
+						],
+						[
+							"Subscription count",
+							"12 subscriptions under contoso.onmicrosoft.com"
+						],
+						[
+							"Account under review",
+							"contososa, public Azure, standard (non-hierarchical) namespace"
+						],
+						[
+							"Role assignments",
+							"Reader on rg-prod, plus Storage Blob Data Contributor on contososa"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Open View > Account Management, or the Manage Accounts button, then choose Add account..."
+					},
+					{
+						"id": "i2",
+						"text": "Under Select Resource choose Subscription, and in Select Azure Environment pick global Azure, the national cloud or Azure Stack"
+					},
+					{
+						"id": "i3",
+						"text": "Choose Next, sign in with the Contoso tenant account, and tick the subscriptions to load"
+					},
+					{
+						"id": "i4",
+						"text": "Choose Apply to load the ticked subscriptions into the navigation pane"
+					},
+					{
+						"id": "i5",
+						"text": "Choose Connect, pick Storage account, then paste the connection string copied from the portal's Settings > Access keys"
+					},
+					{
+						"id": "i6",
+						"text": "Choose Connect, pick Blob container, then paste a SAS URL for the archive container"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Stage 1 — opening the place from which a new identity is registered"
+					},
+					{
+						"id": "s2",
+						"label": "Stage 2 — naming the kind of listing to load and the Microsoft destination it belongs to"
+					},
+					{
+						"id": "s3",
+						"label": "Stage 3 — authenticating yourself and marking the listings you want"
+					},
+					{
+						"id": "s4",
+						"label": "Stage 4 — confirming the selection so the view updates"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Bringing your subscriptions into Storage Explorer runs through the account-addition flow: open View > Account Management (or the Manage Accounts button) and start Add account...; in the wizard say what kind of thing you are adding and which Microsoft environment it lives in (Subscription under Select Resource, then the choice in Select Azure Environment); continue with Next, sign in, and tick the subscriptions you want; then choose Apply to load them into the navigation pane. The two Connect-based actions attach a single resource with an account key or a SAS instead of loading a subscription list, so they fit none of the four stages.",
+				"perChoice": {
+					"i1": "Stage 1 — this is the starting point of the account-addition flow: it opens the account list where a new connection is begun.",
+					"i2": "Stage 2 — the wizard asks what kind of resource you are adding and which environment to use, and this is where Subscription plus the Microsoft cloud are set before moving on.",
+					"i3": "Stage 3 — moving to the next screen, completing the interactive sign-in with the tenant account, and marking the subscriptions to include all happen at this stage.",
+					"i4": "Stage 4 — the final button is what commits the marked subscriptions and brings them into the view.",
+					"i5": "Fits no stage: choosing Connect > Storage account with an account key attaches just that one storage account (keys are read from the portal under Settings > Access keys); it does not add your subscription list.",
+					"i6": "Fits no stage: choosing Connect > Blob container with a SAS URL attaches a single container as a separate attached resource; it does not add your subscription list."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/storage-explorer/vs-azure-tools-storage-manage-with-storage-explorer"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10"
+				}
+			],
+			"subtopics": [
+				"storage-explorer-sign-in",
+				"subscription-browsing"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MCCRPBQSP7STY2M8BJ2RYZ",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are using Storage Explorer on your workstation to reach four places inside storage account contososa. The exhibit lists each place together with the condition its owner imposes on the connection, and one of the connection options offered under the Connect menu has to serve each of them. Drag each option to the target it belongs to.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Target",
+						"Condition set by the owner"
+					],
+					"rows": [
+						[
+							"contososa itself, opened so that every container, file share and queue appears together",
+							"The engineer has no identity in Contoso's directory. What the security team issued is a single credential that spells out the blob, file, queue and table endpoints of the account."
+						],
+						[
+							"The presskit blob container, whose images are embedded straight into a marketing site",
+							"The request carries no credential at all, because the container's own settings already allow that."
+						],
+						[
+							"The contracts file share, read by a partner application that sits outside Contoso",
+							"That application stores one credential value built from the share's web address plus query parameters."
+						],
+						[
+							"The ingest queue, drained every minute by an Azure function",
+							"The function runs under its own managed identity, which was granted a data-plane role on the account."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "m",
+						"text": "Microsoft Entra ID"
+					},
+					{
+						"id": "cs",
+						"text": "Shared access signature connection string"
+					},
+					{
+						"id": "su",
+						"text": "Shared access signature (SAS) URL"
+					},
+					{
+						"id": "pa",
+						"text": "Public anonymous"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Target 1 - the whole storage account"
+					},
+					{
+						"id": "s2",
+						"label": "Target 2 - a blob container served with no credential"
+					},
+					{
+						"id": "s3",
+						"label": "Target 3 - a file share used by an app outside the directory"
+					},
+					{
+						"id": "s4",
+						"label": "Target 4 - a queue drained by a function under its own managed identity"
+					}
+				]
+			},
+			"key": {
+				"s1": "cs",
+				"s2": "pa",
+				"s3": "su",
+				"s4": "m"
+			},
+			"explanation": {
+				"correct": "A whole storage account can be attached with Entra ID, name and key, or a SAS connection string, but never anonymously; since target 1 has no directory identity and its credential enumerates the blob, file, queue and table endpoints of the account, it takes the connection string form. Blob containers (and ADLS containers and directories) are the only resources that additionally accept anonymous access, which is exactly what target 2 needs for its credential-free requests. File shares and queues accept Entra ID or a SAS resource URL only: the partner app in target 3 holds one value made of the share's address plus query parameters, the URL form, while target 4's function authenticates with a managed identity that already has a data-plane role, so it takes Microsoft Entra ID.",
+				"perChoice": {
+					"cs": "Target 1. The account-level credential that lists the blob, file, queue and table endpoints is the connection string form, and accounts cannot be attached anonymously.",
+					"pa": "Target 2. Anonymous attachment is possible only at blob container or ADLS container/directory level, never for a whole account, and it is the only way to satisfy a request that carries no credential.",
+					"su": "Target 3. File shares can only be attached with Entra ID or a SAS URL; the partner app's single value of a resource address plus query parameters is the URL form, since it holds no identity in the directory.",
+					"m": "Target 4. Queues can only be attached with Entra ID or a SAS URL; the function runs under a managed identity holding a data-plane role and stores no credential, so it uses its identity."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/storage-explorer/vs-azure-tools-storage-manage-with-storage-explorer"
+				}
+			],
+			"subtopics": [
+				"storage-explorer-connections",
+				"shared-access-signature",
+				"entra-id-authentication"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MCHGJ39NWMFZMN7QVV47S9",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your platform team is standardising how AzCopy v10 is delivered to the three build hosts in the exhibit. On the two desktops a compressed file can simply be unpacked by hand, but build-agent-07 runs Linux and two rules apply there: AzCopy's own libraries must not be left for someone to chase by hand, and a version bump must arrive as an ordinary update rather than as a folder someone edits on disk. The runbook step for that host currently tells the engineer to unpack the archive and add its folder to the PATH. Which change should the team make to that runbook step?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Host",
+						"Operating system",
+						"How the host is used"
+					],
+					"rows": [
+						[
+							"win-build-21",
+							"Windows 11",
+							"Interactive desktop session"
+						],
+						[
+							"mac-build-04",
+							"macOS 14",
+							"Interactive desktop session"
+						],
+						[
+							"build-agent-07",
+							"Ubuntu 24.04 LTS",
+							"Unattended runs only; version bumps handled by the platform team"
+						]
+					]
+				},
+				"statement": "On build-agent-07 the runbook step should instead {{method}}.",
+				"slots": [
+					{
+						"id": "method",
+						"options": [
+							{
+								"id": "a",
+								"text": "install AzCopy from the distribution package manager"
+							},
+							{
+								"id": "b",
+								"text": "unpack the AzCopy zip archive into /opt/azcopy and add that folder to PATH"
+							},
+							{
+								"id": "c",
+								"text": "unpack the AzCopy tar archive into /opt/azcopy and add that folder to PATH"
+							},
+							{
+								"id": "d",
+								"text": "copy an AzCopy binary off another host and add that folder to PATH"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"method": "a"
+			},
+			"explanation": {
+				"correct": "The two rules on build-agent-07 — AzCopy's dependencies being taken care of automatically and version bumps staying simple — are exactly the reasons Microsoft gives for putting AzCopy on Linux through the distribution's package manager, which is the documented Linux route. The portable compressed binary (zip on Windows and macOS, tar on Linux) is the route documented for the other operating systems, and unpacking it on the Linux host would leave the platform team responsible for dependencies and for every later bump. So the runbook step must switch to the distribution package manager.",
+				"perChoice": {
+					"method:b": "The zip archive is the portable binary documented for Windows and macOS; unpacking it on the Ubuntu host leaves the platform team chasing AzCopy's libraries and handling each version bump by hand, which breaks both rules on build-agent-07.",
+					"method:c": "The tar archive is the correct artifact type for Linux, but unpacking it is still the manual portable-binary route: dependency resolution and later updates stay the platform team's problem, and the documented Linux route for automatic dependency resolution and simpler updates is the distribution package manager.",
+					"method:d": "Copying a binary from another machine puts a file on disk but resolves none of AzCopy's dependencies on the target host, and every version bump then depends on whoever copied the file, so neither rule is satisfied."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10"
+				}
+			],
+			"subtopics": [
+				"azcopy-installation",
+				"os-support"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MCMW808JF62CB8BZSWZ8T6",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your team is retiring the on-premises NAS at Contoso's Leipzig site and placing its archive in storage account contososa. Two entries in the cutover runbook are still blank, and the exhibit lists what the storage team has established so far. You need both entries filled in so the plan states what performs the transfer of the data set and so the engineer has a measured figure for how fast this site can actually transfer data before the window is signed off. Which pair of entries should you use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Data set",
+							"1.4 TB of scanned documents held in roughly 6 million files"
+						],
+						[
+							"Source",
+							"On-premises NAS, exposed to the migration host as a network share"
+						],
+						[
+							"Destination",
+							"Blob container archive in storage account contososa"
+						],
+						[
+							"Window agreed with the business",
+							"Three consecutive nights"
+						],
+						[
+							"Condition set by the storage team",
+							"A measured speed figure for this site's network and disks before the plan is approved"
+						]
+					]
+				},
+				"statement": "The cutover plan should list {{tool}} as the component that carries the data set across, and the pre-cutover test entry should call for {{speed}} so the team has a speed figure for this site.",
+				"slots": [
+					{
+						"id": "tool",
+						"options": [
+							{
+								"id": "a",
+								"text": "Azure Storage Mover"
+							},
+							{
+								"id": "b",
+								"text": "AzCopy v10"
+							},
+							{
+								"id": "c",
+								"text": "Storage Explorer"
+							},
+							{
+								"id": "d",
+								"text": "azcopy sync"
+							}
+						]
+					},
+					{
+						"id": "speed",
+						"options": [
+							{
+								"id": "a",
+								"text": "azcopy bench"
+							},
+							{
+								"id": "b",
+								"text": "azcopy list"
+							},
+							{
+								"id": "c",
+								"text": "azcopy jobs list"
+							},
+							{
+								"id": "d",
+								"text": "azcopy env"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"speed": "a",
+				"tool": "a"
+			},
+			"explanation": {
+				"correct": "The data set is 1.4 TB, and for migrations of more than about 1 TB the documentation points to the managed Azure Storage Mover service rather than AzCopy, so that is what the plan should name as the component that carries the data. azcopy bench is the command that pushes or pulls test data to or from a location in order to measure throughput before a real migration, which is exactly the speed figure the storage team requires for this site; the other three commands only report on entities, on jobs and on environment settings.",
+				"perChoice": {
+					"tool:b": "AzCopy v10 is the general command-line utility for transferring data to, from and between storage accounts, but at this data set's size the guidance is to use the managed Azure Storage Mover service, so naming AzCopy v10 as the component that carries the data does not fit the plan.",
+					"tool:c": "Storage Explorer is a standalone desktop app for visual, interactive work on a workstation, so it is not the component that performs a bulk transfer of 1.4 TB from a network share.",
+					"tool:d": "azcopy sync is a single command that mirrors a source onto a destination; it belongs to the AzCopy tooling and is not the service this plan should name for a data set above the roughly 1 TB guidance.",
+					"speed:b": "azcopy list enumerates the entities held in a container, share or queue, so it reports what is already in a resource and produces no speed measurement.",
+					"speed:c": "azcopy jobs list shows the jobs AzCopy has recorded on the machine, which tells you what has run rather than how fast the site transfers data.",
+					"speed:d": "azcopy env prints the environment variables that shape AzCopy's behaviour, which helps with authentication diagnostics but yields no throughput figure."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10"
+				}
+			],
+			"subtopics": [
+				"migration-tool-selection",
+				"throughput-measurement",
+				"azcopy-command-set"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MCP9K0YYE88R818SFC24X8",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a nightly AzCopy job that pushes a month of scans into the scans container of storage account contososa, and the upload line of the runbook already looks like the one shown below. The transfer succeeds every night, but the next morning the archive team finds that the freshly arrived blobs are still in the hot tier and still carry the previous season's index tag, so a separate system has to open the container and correct each blob individually. You need the blobs that are already in the container moved to a cooler tier and given new metadata and index tags where they sit, without sending the data again. Which command should the runbook use for that step?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "azcopy copy \"/srv/scan\" \"https://contososa.blob.core.windows.net/scans\" --recursive=true\n\nCurrent state of the container after the job finishes:\n  Tier of new blobs ............ Hot\n  Index tag on new blobs ...... season=2025\n\nRequired end state for those same blobs:\n  Tier ......................... Cool\n  Index tag .................... season=2026"
+				},
+				"statement": "The runbook's post-upload step should run {{cmd}} against the scans container.",
+				"slots": [
+					{
+						"id": "cmd",
+						"options": [
+							{
+								"id": "a",
+								"text": "azcopy set-properties"
+							},
+							{
+								"id": "b",
+								"text": "azcopy copy"
+							},
+							{
+								"id": "c",
+								"text": "azcopy make"
+							},
+							{
+								"id": "d",
+								"text": "azcopy bench"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"cmd": "a"
+			},
+			"explanation": {
+				"correct": "Blobs that are already in the destination container need their settings changed where they sit, and set-properties is the command that changes blob access tier and replaces metadata and index tags after a transfer. Running it against the scans container moves the new blobs from hot to cool and rewrites the index tag to season=2026 without moving the data again.",
+				"perChoice": {
+					"cmd:b": "copy is the transfer command: it writes new and updated objects from a source to a destination and leaves unrelated destination content alone, so running it again would move data rather than change the tier, metadata or tags of the blobs that have already landed.",
+					"cmd:c": "make creates a container or a file share. The scans container already exists, so this command would do nothing for the blobs inside it and would not change their tier, metadata or index tags.",
+					"cmd:d": "bench uploads or downloads test data to measure throughput before a real migration. It leaves test objects behind and does not adjust the tier, metadata or index tags of the blobs already in the container."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10"
+				}
+			],
+			"subtopics": [
+				"azcopy-set-properties",
+				"blob-access-tier",
+				"metadata-and-index-tags"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MCTWCJAM1JY32Z7JM9KK4Z",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your nightly pipeline for Contoso's finance group puts each night's CSV exports into the container named nightlycsv in storage account contososa, and the finance application reads only ordinary files from the Azure Files share named archive in that same account. The table shows what the pipeline does today. Last night's exports never reached the share, and the pipeline has to deliver them by itself with no person involved. Using AzCopy v10 on that pipeline runner, which approach should the pipeline take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Detail"
+					],
+					"rows": [
+						[
+							"Runner",
+							"Scheduled Linux agent that starts itself nightly and cannot prompt anyone for a sign-in"
+						],
+						[
+							"What it does now",
+							"Uploads the night's CSV exports into the nightlycsv container of storage account contososa"
+						],
+						[
+							"Where the files must land",
+							"The archive Azure Files share of the same account, readable by the finance application"
+						],
+						[
+							"Last night's outcome",
+							"All exports are present in the container; nothing arrived in the share"
+						]
+					]
+				},
+				"statement": "The pipeline should use {{s1}}.",
+				"slots": [
+					{
+						"id": "s1",
+						"options": [
+							{
+								"id": "a",
+								"text": "a single azcopy copy whose source is the nightlycsv container and whose destination is the archive share"
+							},
+							{
+								"id": "b",
+								"text": "azcopy jobs resume against the previous attempt, which had already copied part of the nightlycsv container into the archive share"
+							},
+							{
+								"id": "c",
+								"text": "a Storage Explorer session that drags the nightlycsv container over into the archive share by hand"
+							},
+							{
+								"id": "d",
+								"text": "two azcopy invocations, one to bring the nightlycsv container down to the runner and one to push the local copy into the archive share"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"s1": "a"
+			},
+			"explanation": {
+				"correct": "AzCopy v10 is not limited to account-to-account or on-premises-to-cloud moves; it can also move data between services, for example from a Blob Storage container into an Azure Files share and back. So one azcopy copy run whose source is the nightlycsv container and whose destination is the archive share places the night's CSV exports in the share as ordinary files in a single unattended step. AzCopy is also the tool intended for scripted, scheduled and batch work such as this nightly pipeline, whereas Storage Explorer is an interactive desktop application.",
+				"perChoice": {
+					"s1:b": "azcopy jobs resume continues an interrupted job using the plan and log files that job saved earlier. The scenario describes no earlier transfer job and nothing that ever started moving into the share, so there is nothing to resume and no data would reach the share.",
+					"s1:c": "Storage Explorer is a desktop application for visual, interactive, one-off work on a workstation; it cannot serve as an unattended pipeline step, and AzCopy already performs the container-to-share transfer on its own.",
+					"s1:d": "AzCopy moves data between a Blob Storage container and an Azure Files share directly, so staging the files on the runner's local disk first is an unnecessary extra hop; a single copy operation takes them straight to the share."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/storage-explorer/vs-azure-tools-storage-manage-with-storage-explorer"
+				}
+			],
+			"subtopics": [
+				"azcopy-cross-service-copy",
+				"azcopy-command-set",
+				"storage-explorer-vs-azcopy"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MCWTWZSQ35SMTHM03NCX7Y",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are standing up a new media archive in storage account contososa. The account holds nothing yet, and the transfer job you already wrote copies the two source folders shown in the exhibit into the destinations beside them. On its first run the job stops immediately, before a single file is transferred, because neither destination is present. You need both destinations to exist first. Which command should you add to the runbook?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Source folder on the Linux runner",
+						"Destination name in contososa",
+						"Destination type"
+					],
+					"rows": [
+						[
+							"/srv/media",
+							"media",
+							"Blob container"
+						],
+						[
+							"/srv/replays",
+							"replays",
+							"Azure Files share"
+						]
+					]
+				},
+				"statement": "Before the transfer job is started, the runbook must call {{slot1}} once for each destination listed in the exhibit.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "azcopy make"
+							},
+							{
+								"id": "b",
+								"text": "azcopy copy"
+							},
+							{
+								"id": "c",
+								"text": "azcopy sync"
+							},
+							{
+								"id": "d",
+								"text": "azcopy remove"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a"
+			},
+			"explanation": {
+				"correct": "The two destinations listed are a blob container and an Azure Files share, and azcopy make is the command whose purpose is to create a container or a file share. Running it once for media and once for replays gives the existing transfer job somewhere to write, which is exactly what the failing first run needs.",
+				"perChoice": {
+					"slot1:b": "azcopy copy writes new and updated objects from the source into the destination. It moves data into places that already exist and does not create an empty blob container or file share, so it cannot clear the failure reported here.",
+					"slot1:c": "azcopy sync replicates the source onto the destination and removes destination files that no longer exist at the source. It is a data movement command, not one that establishes the container or the share.",
+					"slot1:d": "azcopy remove deletes blobs or files that already exist in a container or share. Nothing is in place yet, so there is nothing to delete and this command will not bring the two destinations into being."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10"
+				}
+			],
+			"subtopics": [
+				"azcopy-make",
+				"blob-container-creation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MCY00YJY7XKC7QG68PGHS3",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Contoso's payroll team keeps an Azure Files share named payrolldocs in storage account contososa that staff keep changing all day, and the group wants that share's whole contents sitting in Blob storage in the same account. AzCopy v10 is the tool they chose, and every run so far has ended without placing a single file at the destination. You need the transfer to actually complete. Which change should the team make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Tool",
+							"AzCopy v10"
+						],
+						[
+							"Source",
+							"Azure Files share payrolldocs, roughly 3 TB"
+						],
+						[
+							"Destination",
+							"Blob container payrollarchive in the same account"
+						],
+						[
+							"Activity on the source",
+							"About 200 staff create and edit documents during every working day"
+						],
+						[
+							"Current run pattern",
+							"Runs during business hours and ends with an error before anything is transferred"
+						]
+					]
+				},
+				"statement": "The payroll team should {{action}} so the transfer completes.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Hold all activity on the source and destination still for the duration of the transfer"
+							},
+							{
+								"id": "b",
+								"text": "Sign in with a shared access signature appended to the source and destination URLs"
+							},
+							{
+								"id": "c",
+								"text": "Add the AzCopy install folder to the system PATH on the transfer runner"
+							},
+							{
+								"id": "d",
+								"text": "Wait about five minutes for the data role assignment to propagate, then start the transfer again"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "AzCopy does not run a transfer whose source or destination is being actively changed while the job executes. The payroll share changes continuously during business hours, so every run started in that window is refused before any data moves. Freezing activity on both ends for the length of the run is what lets the transfer proceed; any other authentication or installation change leaves the conflict in place.",
+				"perChoice": {
+					"action:b": "A shared access signature only supplies credentials for the source and destination URLs; it has no effect on the restriction that stops a transfer whose endpoints keep changing, so the runs would still end early.",
+					"action:c": "Putting the install folder on the PATH only matters when the azcopy command is not recognised from another directory. Here the command is recognised and runs, then ends early, so the PATH is not the problem.",
+					"action:d": "The short wait for a newly assigned data role to propagate applies only to role assignments. No role is being granted in this situation, and five minutes of waiting cannot quiet a share that staff edit all day."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-authorize-user-identity"
+				}
+			],
+			"subtopics": [
+				"azcopy-transfer-limits",
+				"azcopy-authentication"
+			],
+			"reviewed": false
+		}
+	]
+}

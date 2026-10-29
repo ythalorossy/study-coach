@@ -1,0 +1,1692 @@
+{
+	"skill": "storage.access-keys",
+	"questions": [
+		{
+			"id": "q_01M5KBAFCPN08H5RJS9Z585A0B",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "One of the account credentials of storage account stcontosoarchive was disclosed, so you start a rotation. The table shows how four applications reach the account today. Once key1 has been regenerated and before any application configuration is touched, which two applications can still authenticate?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Application",
+						"Authorization",
+						"Credential or token in use"
+					],
+					"rows": [
+						[
+							"Reporting app",
+							"Shared Key",
+							"key2"
+						],
+						[
+							"Mobile app",
+							"Shared Key",
+							"key1"
+						],
+						[
+							"Partner portal",
+							"User delegation SAS",
+							"Microsoft Entra credentials"
+						],
+						[
+							"Legacy sync tool",
+							"Service SAS",
+							"Signed with key1"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Reporting app and Partner portal"
+					},
+					{
+						"id": "b",
+						"text": "Mobile app and Reporting app"
+					},
+					{
+						"id": "c",
+						"text": "Reporting app and Legacy sync tool"
+					},
+					{
+						"id": "d",
+						"text": "Partner portal and Legacy sync tool"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The Reporting app authorizes with Shared Key using key2, and only key1 was regenerated, so its requests are still signed with a valid key. The Partner portal's user delegation SAS tokens are protected by Microsoft Entra credentials rather than an account key, so those tokens stay usable after an account key is regenerated. Both therefore authenticate unchanged.",
+				"perChoice": {
+					"b": "The Mobile app authenticates with Shared Key using key1. Regenerating key1 immediately breaks every client that relied on it, so this application stops working until its connection string is updated with the new value of key1.",
+					"c": "The Legacy sync tool presents a service SAS token that was signed with key1. Regenerating a key invalidates the service SAS and account SAS tokens signed with that key, so the token is rejected until a new one is issued.",
+					"d": "The Partner portal keeps working, but the Legacy sync tool does not: its service SAS token was signed with key1, and regenerating key1 invalidates service SAS tokens signed with that key."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/shared-key-authorization-prevent"
+				}
+			],
+			"subtopics": [
+				"key-rotation",
+				"sas-token-invalidation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KBCV1Q5SRQANNBW16VSAGP",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have storage account stcontosomedia in resource group rg-media. A member of the security team reported that key-based credentials are still accepted on this account, and your standard is that requests signed with an account access key must be rejected by the service. You ran the following from a terminal on your workstation. Which command should you run?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "PS> az storage account show --name stcontosomedia --resource-group rg-media --query \"allowSharedKeyAccess\"\n\nPS>"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "az storage account update --name stcontosomedia --resource-group rg-media --set allowSharedKeyAccess=false"
+					},
+					{
+						"id": "b",
+						"text": "az storage account update --name stcontosomedia --resource-group rg-media --set allowSharedKeyAccess=true"
+					},
+					{
+						"id": "c",
+						"text": "az storage account update --name stcontosomedia --resource-group rg-media --set allowSharedKeyAccess=null"
+					},
+					{
+						"id": "d",
+						"text": "az storage account show --name stcontosomedia --resource-group rg-media --query \"allowSharedKeyAccess\""
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The query returned an empty result, which means the property has never been given a value at that account. An unset property and an explicit true behave identically: the service still accepts requests signed with an account access key. Only writing false explicitly changes the behavior, after which every key-authorized request is rejected with a 403 and the same show query reports false. Because the key-based requests have to be rejected, the value must be written with an update command.",
+				"perChoice": {
+					"b": "Setting the property to true keeps key-signed requests accepted, which is the opposite of what the security standard requires; it also makes the property report true rather than leaving it empty.",
+					"c": "Assigning null removes the configured value and returns the account to its default behaviour, in which the service applies no restriction and continues to accept key-signed requests.",
+					"d": "show only reads the property and reports it; it never writes a new value, so running it again still returns an empty result and the requests remain accepted."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/shared-key-authorization-prevent"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage"
+				}
+			],
+			"subtopics": [
+				"shared-key-authorization",
+				"allow-shared-key-access",
+				"azure-cli"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KBHM1R6JC66G9569KEJDKA",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have storage account stcontosolog01 in resource group rg-logistics. You need to hand rotation of this account's shared secrets to the storage platform team, so its members can inspect and replace them on demand instead of asking the subscription owner every time. Nobody on that team may gain read or write access to data in the account. The assignments that exist today are listed below. Which assignment should you create?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Team",
+						"Assignment already in place",
+						"Scope"
+					],
+					"rows": [
+						[
+							"Storage platform team",
+							"Reader",
+							"rg-logistics"
+						],
+						[
+							"Data engineering",
+							"Storage Blob Data Contributor",
+							"stcontosolog01"
+						],
+						[
+							"Data science",
+							"Storage Blob Data Reader",
+							"stcontosolog01"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Storage Account Key Operator Service Role at the resource group scope"
+					},
+					{
+						"id": "b",
+						"text": "Storage Blob Data Reader at the resource group scope"
+					},
+					{
+						"id": "c",
+						"text": "Storage Account Contributor at the resource group scope"
+					},
+					{
+						"id": "d",
+						"text": "Reader at the subscription scope"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The Storage Account Key Operator Service Role is built for exactly this job: it carries the listKeys and regenerateKey actions, so holders can display the account's shared secrets and replace them, and it grants no data-plane permissions on blobs, queues or tables. Because it is a management-plane role, it also satisfies the requirement that team members must not be able to read or write data in the account. Assigning it on the resource group lets the team rotate the accounts in rg-logistics.",
+				"perChoice": {
+					"b": "Storage Blob Data Reader only grants read access to blob contents; it exposes neither the account's shared secrets nor the ability to replace them. It would also give the team exactly the data access the requirement forbids.",
+					"c": "Storage Account Contributor manages the account and, because it includes the listKeys action, a holder can display the secrets. It does not carry the regenerateKey action, however, so it cannot perform the replacement half of a rotation; that action is limited to Owner, Contributor and Storage Account Key Operator Service Role.",
+					"d": "Reader is read-only on management metadata and contains neither the listKeys nor the regenerateKey action, so those members could not view or replace the account's secrets. It also gives them no ability to manage the account itself."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/shared-key-authorization-prevent"
+				}
+			],
+			"subtopics": [
+				"access-key-roles",
+				"least-privilege-rbac",
+				"key-rotation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KBPV0MZ85FCEJAMSWJZN7J",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You regenerate key1 on storage account stcontosodata in resource group rg-data. The table lists the shared access signature tokens you handed out to three partners last week; none of them has reached its expiry time yet. After the regeneration finishes, which tokens can the partners keep using?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Token",
+						"Service",
+						"Credential that was used to create it",
+						"Granted access"
+					],
+					"rows": [
+						[
+							"t1",
+							"Blob Storage",
+							"Microsoft Entra ID user identity",
+							"read on container reports"
+						],
+						[
+							"t2",
+							"Queue",
+							"account access key",
+							"read and write on queue jobs"
+						],
+						[
+							"t3",
+							"Azure Files",
+							"account access key",
+							"read and write on share documents"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Token t1 remains usable; t2 and t3 stop working"
+					},
+					{
+						"id": "b",
+						"text": "Tokens t1 and t3 remain usable; t2 stops working"
+					},
+					{
+						"id": "c",
+						"text": "Tokens t2 and t3 remain usable; t1 stops working"
+					},
+					{
+						"id": "d",
+						"text": "All three tokens stop working"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "t1 was created from a Microsoft Entra ID user identity, which makes it a user delegation SAS; that kind of token is secured by the Entra credentials of the user who requested it, not by the account access key, so regenerating key1 does not affect it and it keeps working until its own expiry. t2 (a service SAS) and t3 (an account SAS) were both produced with the account access key, and regenerating that key invalidates every signature made with it, so those two partners lose access immediately even though their tokens have not expired.",
+				"perChoice": {
+					"b": "t3 was created with the account access key, so regenerating that key invalidates it just as it invalidates any other key-signed token; the fact that it has not reached its expiry time is irrelevant once the signing key is replaced.",
+					"c": "The reverse of what happens here: t2 and t3 are both key-signed and are invalidated by the regeneration, while t1, being backed by Entra credentials rather than the account key, is the one that keeps working.",
+					"d": "Regenerating a key only invalidates tokens that were signed with it. t1 rests on Entra ID credentials and survives, so it is not true that every token in the table stops working."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage"
+				}
+			],
+			"subtopics": [
+				"key-rotation",
+				"shared-access-signatures"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KBW7PJZ49F8AWYG7AAW2Q6",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have storage account stcontosoapp in resource group rg-apps. The table shows the four components that reach this account and the credential each one carries today. Your security policy requires the account access keys to be renewed every 90 days, and none of the components may be taken offline or have its source code or deployment settings changed. Which approach should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Component",
+						"How it reaches the account",
+						"Credential it uses"
+					],
+					"rows": [
+						[
+							"Web front end stcontoso-web",
+							"Connection string held in app configuration",
+							"Account key1"
+						],
+						[
+							"Nightly billing job",
+							"Connection string held in the job's config file",
+							"Account key1"
+						],
+						[
+							"Partner sync application",
+							"Connection string held in a private repository",
+							"Account key2"
+						],
+						[
+							"Stcontoso mobile app",
+							"Connection string embedded in the shipped package",
+							"Account key1"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Regenerate key1 in the Azure portal, then update the key in each component's connection string"
+					},
+					{
+						"id": "b",
+						"text": "Keep the account access keys in Azure Key Vault and let the vault renew them automatically"
+					},
+					{
+						"id": "c",
+						"text": "Issue shared access signature tokens with a long expiry and stop renewing the account access keys"
+					},
+					{
+						"id": "d",
+						"text": "Apply a Microsoft Entra Conditional Access policy to the account and turn off key-based requests"
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "The requirement is to renew shared secrets on a recurring timetable while the applications keep running and nobody edits code or deployment settings. Azure Key Vault holds the keys and can swap them for new values without any application downtime; the components read their credential from the vault, so the requirement is met. The other approaches either require changing each component's configuration, leave the credentials untouched, or address user sign-in rather than the account keys.",
+				"perChoice": {
+					"a": "Regenerating key1 by hand changes the credential value itself, so every client holding it stops authenticating until its connection string is edited. That means changing deployment configuration for all four components in the table and risks an outage, which the requirement rules out.",
+					"c": "A shared access signature is signed with an account key, so it depends on that key and is invalidated when the key changes; handing these out instead leaves the account keys un-renewed, which fails the 90-day requirement. Tokens with a long expiry also outlive any change to the account's shared secrets.",
+					"d": "Conditional Access governs interactive user sign-in, not the account keys that these components use. Microsoft guidance also states it protects a storage account only when Shared Key authorization has already been disallowed, so it cannot be the mechanism that renews the keys."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/shared-key-authorization-prevent"
+				}
+			],
+			"subtopics": [
+				"key-rotation",
+				"azure-key-vault"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KBZAX2ZTDKMJYRQEQFH6HM",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have storage account stcontosoaudit in resource group rg-audit. You must produce a list of the individual client IP addresses and user agents that authenticated to this account with an account access key during the last seven days. The results of the investigation so far are shown below. Which change should you make to get the data you need?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Where you looked",
+						"What you applied",
+						"What came back"
+					],
+					"rows": [
+						[
+							"Metrics, namespace Account, metric Transactions, aggregation Sum",
+							"Add filter: Property = Authentication, value Account Key",
+							"A single number for the whole account: 18,402"
+						],
+						[
+							"Metrics, namespace Account, metric Transactions, aggregation Sum",
+							"Add filter: Property = Authentication, value SAS",
+							"A single number for the whole account: 2,910"
+						],
+						[
+							"Log Analytics workspace named law-audit",
+							"Searched the tables that already exist in the workspace",
+							"No records returned"
+						],
+						[
+							"Diagnostics on the storage account",
+							"Inspected the current configuration",
+							"No diagnostic setting is configured"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add a diagnostic setting that sends Storage resource logs to a Log Analytics workspace, then query the StorageBlobLogs table grouping by CallerIpAddress and UserAgentHeader"
+					},
+					{
+						"id": "b",
+						"text": "Add a diagnostic setting that sends Storage resource logs to a Log Analytics workspace, then query the StorageBlobLogs table grouping by ResourceType and AccountName"
+					},
+					{
+						"id": "c",
+						"text": "Change the Metrics filter so that Property = Authentication uses the value SAS instead of Account Key, and read the calling applications from the result"
+					},
+					{
+						"id": "d",
+						"text": "Run an Azure Resource Graph query that returns the allowSharedKeyAccess value of every storage account in the subscription, then contact the owners of the accounts that allow it"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Per-client detail about key-authorized traffic is only available in the Storage resource logs, and those logs only land in a workspace once a diagnostic setting routes them there. After adding the diagnostic setting, a query over the StorageBlobLogs table that groups by CallerIpAddress and UserAgentHeader produces exactly the list of calling clients, for example StorageBlobLogs | where AuthenticationType in (\"AccountKey\", \"SAS\") and TimeGenerated > ago(7d) | summarize count() by CallerIpAddress, UserAgentHeader, AccountName | top 10 by count_ desc.",
+				"perChoice": {
+					"b": "Grouping by ResourceType and AccountName only tells you which resource types inside which accounts were touched; it does not break the traffic down by caller, so you still cannot name the clients.",
+					"c": "Metrics Explorer returns aggregate numbers, not per-client records, and the SAS filter also reports every kind of SAS rather than account key traffic alone, so the Applications column cannot be recovered this way.",
+					"d": "A Resource Graph query lists the allowSharedKeyAccess setting per account, which tells you whether an account still accepts key-authorized requests but nothing about who sent them."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/shared-key-authorization-prevent"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage"
+				}
+			],
+			"subtopics": [
+				"monitoring-shared-key-usage",
+				"diagnostic-settings",
+				"shared-key-authorization"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KC8GY3956HSDSAPCRDABCH",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You asked for an inventory of the storage accounts in your subscription so you can report how many of them would still honour a request signed with a shared credential. A colleague ran the query shown below against four accounts and marked each account that returned no output as compliant, reasoning that nothing reported means nothing is accepted. Three of the four accounts were reported that way. You have to correct the report before it reaches the auditor. What should you do?",
+				"exhibit": {
+					"kind": "code",
+					"language": "powershell",
+					"text": "PS> az storage account show --name stcontosoa01 --resource-group rg-core --query \"allowSharedKeyAccess\"\n\nPS> az storage account show --name stcontosoa02 --resource-group rg-core --query \"allowSharedKeyAccess\"\n\"true\"\n\nPS> az storage account show --name stcontosoa03 --resource-group rg-core --query \"allowSharedKeyAccess\"\n\nPS> az storage account show --name stcontosoa04 --resource-group rg-core --query \"allowSharedKeyAccess\""
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Keep the three blank results marked as compliant and close the report, because the query only prints a value once key-based requests are being rejected."
+					},
+					{
+						"id": "b",
+						"text": "Write the setting as false on each account listed here, then re-run the query so the output actually confirms the result."
+					},
+					{
+						"id": "c",
+						"text": "Regenerate key2 on each account listed here, so that no credential in circulation can be used to reach the account."
+					},
+					{
+						"id": "d",
+						"text": "Assign the built-in policy Storage account keys should not be expired at subscription scope with its effect switched to Deny."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "The account setting that controls key-based authorization has no default and returns no value until somebody sets it explicitly, so an empty result is not evidence that such requests are refused: both null and true mean the account still accepts them. Only an account whose query prints false has genuinely stopped accepting them. The three accounts that returned nothing therefore cannot be reported as compliant — the setting has to be written as false on each of them and the query re-run so the output proves the outcome.",
+				"perChoice": {
+					"a": "This inverts the behaviour of the setting. Because it has no default and stays empty until it is set, a blank result tells you nothing about whether key-based requests are accepted, so the three accounts remain unverified and the report is wrong.",
+					"c": "Swapping which shared secret is current leaves the account just as willing to serve requests signed with it; the account always holds one valid credential, so this changes nothing about whether key-based authorization is in use.",
+					"d": "That built-in policy evaluates whether keys have passed their expiry date. It says nothing about whether the account accepts key-based requests, so it will not turn the three unverified accounts into compliant ones. The policy that targets this behaviour is Storage accounts should prevent shared key access."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/shared-key-authorization-prevent"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage"
+				}
+			],
+			"subtopics": [
+				"shared-key-authorization",
+				"allow-shared-key-access"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KCGZDDTNWDVJ7P172KJHYR",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have storage account stcontosoreports in resource group rg-reporting. You want the portal to warn you before the account's shared secrets grow old enough for your organization's policy to flag them, and today you cannot turn that warning on. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Current state"
+					],
+					"rows": [
+						[
+							"Account",
+							"stcontosoreports in rg-reporting"
+						],
+						[
+							"key1",
+							"Unchanged since the account was created"
+						],
+						[
+							"key2",
+							"Unchanged since the account was created"
+						],
+						[
+							"Set rotation reminder on the Access keys page",
+							"Greyed out"
+						],
+						[
+							"Policy assignment 'Storage account keys should not be expired'",
+							"Assigned at rg-reporting; stcontosoreports is listed in its compliance report"
+						],
+						[
+							"Your role on this account",
+							"Storage Account Key Operator"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Regenerate key1 and key2, then save the rotation reminder for the account"
+					},
+					{
+						"id": "b",
+						"text": "Give the account's shared secrets an expiry date in Azure Key Vault, then save the rotation reminder for the account"
+					},
+					{
+						"id": "c",
+						"text": "Change the effect of the policy assignment from Audit to Deny, then save the rotation reminder for the account"
+					},
+					{
+						"id": "d",
+						"text": "Ask an Owner to assign Storage Account Contributor on the account, then save the rotation reminder for the account"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The Set rotation reminder control on the Access keys page remains greyed out until each account access key has been rotated at least once. Neither key1 nor key2 on stcontosoreports has ever been rotated, so the first step is to bring both keys forward. After that you can select the control, tick Enable key rotation reminders, choose a frequency and save. Your Storage Account Key Operator assignment already contains the permission needed to rotate the keys, so no extra role is required, and the compliance report will stop listing the account once its keys are inside the recommended interval.",
+				"perChoice": {
+					"b": "Expiry handling in Azure Key Vault has no bearing on this control. The control is unavailable because neither access key of the account has ever been rotated, and rotating each key is what unlocks it; Key Vault is used to store keys and can swap them for running applications, not to mark a storage account access key as rotated.",
+					"c": "The policy assignment only reports whether the account's keys fall inside the recommended interval; the effect setting changes how a non-compliant account is reported or enforced, not whether the reminder can be configured. The documented way to bring the account back into compliance is to rotate its access keys, which is exactly what is missing here.",
+					"d": "The availability of the control depends on the rotation history of the account's keys, not on role assignments. Storage Account Contributor does not unlock it, and you already hold Storage Account Key Operator, which includes the action needed to rotate the keys."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/shared-key-authorization-prevent"
+				}
+			],
+			"subtopics": [
+				"key-rotation",
+				"key-expiration-policy"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KCTNBB04VPV2T1WT60NH3R",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have storage account stcontosoedge in resource group rg-edge. Our data-protection standard says that from today no request may reach this account using one of its long-lived shared credentials, so you applied the change shown below and altered nothing else on the account. The next morning three complaints arrived, one for each target described below. Match each complaint to the cause that actually explains it.",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "$ az storage account show --name stcontosoedge --resource-group rg-edge --query allowSharedKeyAccess\nfalse"
+				},
+				"items": [
+					{
+						"id": "c1",
+						"text": "The portal uses a shared secret for Azure Files requests rather than an Entra token"
+					},
+					{
+						"id": "c2",
+						"text": "Resources registered in the same Microsoft Entra tenant are trusted by the account"
+					},
+					{
+						"id": "c3",
+						"text": "Cloud Shell keeps its persistent data in an Azure file share on the account"
+					},
+					{
+						"id": "d1",
+						"text": "The connection string used by one reporting application was edited with the wrong value"
+					},
+					{
+						"id": "d2",
+						"text": "A container in the account was set to allow anonymous readers"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Colleagues who are signed in with their own credentials cannot open the team share"
+					},
+					{
+						"id": "s2",
+						"label": "Diagnostics keep listing successful requests authenticated with a shared secret"
+					},
+					{
+						"id": "s3",
+						"label": "A user's saved work from yesterday has vanished from the usual place"
+					}
+				]
+			},
+			"key": {
+				"s1": "c1",
+				"s2": "c2",
+				"s3": "c3"
+			},
+			"explanation": {
+				"correct": "The share that will not open (s1) is explained by c1: the portal defaults to a shared secret for Azure Files requests, and once the account no longer honours such requests the share cannot be opened even for someone who signed in with their own credentials. The diagnostics that keep listing shared-secret authenticated requests (s2) are explained by c2: that pattern means resources registered in the same Microsoft Entra tenant are trusted by the account, and trusted access keeps using the account's shared secret. The vanished saved work (s3) is explained by c3: Cloud Shell stores its persistent data in an Azure file share on the account, which the change has made unreachable.",
+				"perChoice": {
+					"c1": "Belongs to the share that will not open. The portal falls back to a shared secret for Azure Files requests, and those requests are now refused, so the share stays closed unless the user also has suitable data-plane roles.",
+					"c2": "Belongs to the diagnostics complaint. Entries that still show shared-secret authenticated requests after the change point to trusted access: resources registered in the same Microsoft Entra tenant keep being authorized with the account's shared secret.",
+					"c3": "Belongs to the vanished saved work. Cloud Shell keeps its persistent data in an Azure file share on the account, and a share served from an account that refuses shared-secret requests is unreachable.",
+					"d1": "Fits none of the three complaints. A connection string edited with the wrong value explains one named client failing to authenticate, not a share that will not open, lingering shared-secret entries in diagnostics, or lost Cloud Shell data.",
+					"d2": "Fits none of the three complaints. Anonymous reader access is untouched by this change, so it explains neither a refused share, nor diagnostics entries, nor missing Cloud Shell data."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/shared-key-authorization-prevent"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage"
+				}
+			],
+			"subtopics": [
+				"block-shared-key",
+				"trusted-access",
+				"azure-files-share"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KD2PG3KWBFVEV9TMBG2NHT",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have storage account stcontosoarchive in resource group rg-archive, and both of the account's keys must be replaced as part of the annual rotation. The notes below list five candidate changes: four of them belong in the plan, and one is the shortcut that guarantees an outage. Place the four valid changes in the order you must carry them out so that the account stays reachable for the whole rotation, and leave the shortcut out.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Detail",
+						"Value"
+					],
+					"rows": [
+						[
+							"Clients authenticating with key1",
+							"contoso-web app, nightly-backup agent, internal reporting script"
+						],
+						[
+							"Clients authenticating with key2",
+							"none"
+						],
+						[
+							"Requirement",
+							"Both account keys replaced, no client may lose access at any moment"
+						],
+						[
+							"Candidates from the colleague's notes",
+							"A. Point every connection string at key2"
+						],
+						[
+							"",
+							"B. Select Regenerate next to key1"
+						],
+						[
+							"",
+							"C. Point every connection string at the new key1"
+						],
+						[
+							"",
+							"D. Select Regenerate next to key2"
+						],
+						[
+							"",
+							"E. Select Regenerate next to key1, then repair each client as it starts to fail"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Point every connection string at key2"
+					},
+					{
+						"id": "b",
+						"text": "Select Regenerate next to key1"
+					},
+					{
+						"id": "c",
+						"text": "Point every connection string at the new key1"
+					},
+					{
+						"id": "d",
+						"text": "Select Regenerate next to key2"
+					},
+					{
+						"id": "e",
+						"text": "Select Regenerate next to key1, then repair each client as it starts to fail"
+					}
+				],
+				"slots": [
+					{
+						"id": "step1",
+						"label": "Step 1"
+					},
+					{
+						"id": "step2",
+						"label": "Step 2"
+					},
+					{
+						"id": "step3",
+						"label": "Step 3"
+					},
+					{
+						"id": "step4",
+						"label": "Step 4"
+					}
+				]
+			},
+			"key": {
+				"step1": "a",
+				"step2": "b",
+				"step3": "c",
+				"step4": "d"
+			},
+			"explanation": {
+				"correct": "An account always has two keys, key1 (primary) and key2 (secondary), and that second key is what allows a rotation with no interruption. Because every client in this account authenticates with key1, the first change is to move them all onto key2, which removes the last dependency on the key that is about to be replaced. Once nothing uses key1, key1 can be regenerated, and the clients are then pointed at the new key1 value so the account is running on the primary again. With key1 back in service and key2 now unused by anyone, key2 is the only one left to regenerate, and doing it last has no effect on any client. Microsoft also advises running all applications on a single key at a time, since splitting them across key1 and key2 makes rotation impossible without something losing access.",
+				"perChoice": {
+					"a": "Step 1. Moving the three clients to the secondary key first is what keeps the account reachable; after this change no client depends on key1, so the primary can safely be replaced.",
+					"b": "Step 2. Regenerating the primary is only safe once nothing is signing requests with it, which the first step guarantees.",
+					"c": "Step 3. Repointing the connection strings at the new primary value restores normal operation on key1, and it also leaves key2 unused so it can be replaced last.",
+					"d": "Step 4. Once traffic is back on key1, the spare key is no longer in use by anyone, so regenerating it cannot interrupt a single client; it completes the rotation.",
+					"e": "Fits no slot. Every client currently signs requests with key1, so regenerating key1 first breaks them all at once, which is exactly the outage the rotation is meant to avoid, and it also invalidates any account or service SAS signed with that key."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage"
+				}
+			],
+			"subtopics": [
+				"key-rotation",
+				"zero-downtime-rotation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KDD95S15ZGM2DSBR4060QB",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have storage account stcontosoinsights in resource group rg-insights, and the security review has to decide this week whether this account can stop honouring key-based requests. The current state of the account and of your governance configuration is shown below. Four questions came out of the review, and the four investigative sources at your disposal are listed as draggable items. Match each question to the source that answers it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Current state"
+					],
+					"rows": [
+						[
+							"Account under review",
+							"stcontosoinsights in rg-insights, kind StorageV2, ARM deployment model"
+						],
+						[
+							"Allow storage account key access",
+							"Not set"
+						],
+						[
+							"Organization's assignment covering key-based access",
+							"Assigned at subscription scope, effect Audit"
+						],
+						[
+							"Other accounts in the same subscription",
+							"14 storage accounts, settings never checked"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Azure Monitor metrics: the Transactions metric summed over the chosen window, with an added filter on the Authentication property"
+					},
+					{
+						"id": "i2",
+						"text": "Azure Resource Graph Explorer: a query that pulls the allowSharedKeyAccess value out of every object's properties"
+					},
+					{
+						"id": "i3",
+						"text": "Azure Policy: the compliance view of the assignment, plus the compliance reason recorded for each object"
+					},
+					{
+						"id": "i4",
+						"text": "The CLI: a read-only command that prints the key-access property of a single resource that you name"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Report how many calls reached the account in the past hour carrying a long-lived shared credential"
+					},
+					{
+						"id": "s2",
+						"label": "Find the storage accounts in the subscription that would still honour a call signed with a long-lived shared credential"
+					},
+					{
+						"id": "s3",
+						"label": "Work out why one account is flagged as failing the organization's control over long-lived shared secrets"
+					},
+					{
+						"id": "s4",
+						"label": "Confirm that the change you made last week is really in force on one of your accounts right now"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Each of the four open questions is answered by exactly one source. Counting traffic that arrived with a long-lived shared credential is a job for the Transactions metric summed over the window and filtered on the Authentication property, which is where account-key traffic is reported. Listing every account in the subscription whose value is still null or true, and therefore would still accept a key-signed call, needs a query that parses allowSharedKeyAccess out of each object's properties. Understanding why an account is recorded as failing the organization's control comes from the assignment's compliance view together with the compliance reason recorded for it. Finally, proving that a change you made is genuinely in force on one named account means reading that one account's key-access value from the command line, because the aggregated views only report totals or statuses and never show that a single account's setting changed.",
+				"perChoice": {
+					"i1": "Belongs in the counting target: summing the Transactions metric for the chosen window with an added filter on the Authentication property gives the number of account-key requests the service handled, which is the only listed source that produces totals.",
+					"i2": "Belongs in the subscription-wide target: parsing allowSharedKeyAccess out of each object's properties returns one row per storage account, and the rows reveal which accounts would still accept a request signed with a key because the value is null or true rather than false.",
+					"i3": "Belongs in the compliance-reason target: the assignment's compliance view lists which resources are out of compliance, and its compliance reason explains the cause for each one, which neither metrics nor a property query reports.",
+					"i4": "Belongs in the single-account confirmation target: running a read-only command that prints the key-access property of one named account shows the value currently stored for it, which is how you confirm that a change is actually in force on that account today."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/shared-key-authorization-prevent"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage"
+				}
+			],
+			"subtopics": [
+				"detecting-shared-key-usage",
+				"policy-compliance-checks",
+				"verifying-account-properties"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KDQSCS8PCP3S8B1HA5QYFY",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You govern the storage accounts in resource group rg-audit2 with Azure Policy, and your organization's standard is that no storage account may be left able to honour a request signed with one of its shared secrets. The team agreed a two-stage plan: first establish which accounts break the rule today, then stop anyone holding create or update permission from keeping it that way. The auditors separately asked for a recurring view of how long each account's secrets have gone unreplaced. The four deliverables in the table came out of that work. Match each deliverable to the part of the policy experience that produces it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Ticket",
+						"Agreed deliverable"
+					],
+					"rows": [
+						[
+							"T1",
+							"Produce the list of storage accounts that break the rule today, without stopping anyone's work."
+						],
+						[
+							"T2",
+							"From the end of the week, stop anyone who holds create or update permission from saving an account that breaks the rule."
+						],
+						[
+							"T3",
+							"Tell the team what put one named account on that list."
+						],
+						[
+							"T4",
+							"Give the auditors a recurring view of which accounts have gone longest without their shared secrets being replaced."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "An assignment whose Effect value is Audit"
+					},
+					{
+						"id": "i2",
+						"text": "That same assignment with its Effect value switched to Deny"
+					},
+					{
+						"id": "i3",
+						"text": "View compliance, then Compliance reason > Details for the failing account"
+					},
+					{
+						"id": "i4",
+						"text": "The built-in policy 'Storage account keys should not be expired', assigned at the scope you want covered and checked from the compliance view"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "T1 - produce the list of storage accounts that break the rule today"
+					},
+					{
+						"id": "s2",
+						"label": "T2 - stop anyone holding create or update permission from saving an account that breaks the rule"
+					},
+					{
+						"id": "s3",
+						"label": "T3 - tell the team what put one named account there"
+					},
+					{
+						"id": "s4",
+						"label": "T4 - give the auditors a recurring view of which accounts have gone longest without their secrets being replaced"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "The staged rollout of the shared-secret rule is done with the built-in policy that stops accounts from accepting key-authorized requests. T1 is the first stage: the assignment is left in Audit mode, which enumerates every in-scope account that breaks the rule while letting all work continue. T2 is the second stage: on the same assignment you open Parameters, clear the 'Only show parameters that need input or review' filter and switch the effect from Audit to Deny, and only then is a create or update of a non-compliant account actually refused (allow up to 30 minutes for the change to take effect). T3 is answered per resource from View compliance, where Compliance reason > Details records what put that account on the list. T4 belongs to a different built-in definition, 'Storage account keys should not be expired', which you assign at the scope you want monitored and read back through the compliance view; the portal's per-account rotation reminder is only a notification and would not appear in the auditors' report.",
+				"perChoice": {
+					"i1": "T1. Report-only mode is the deliberate starting point: the assignment lists the offending accounts so the team can migrate their clients to Microsoft Entra ID before anything is refused.",
+					"i2": "T2. Changing the effect from Audit to Deny is what converts the assignment from a report into a block on creating or updating an account that still honours shared secrets.",
+					"i3": "T3. View compliance lists the flagged resources, and Compliance reason > Details on the individual account gives the recorded cause.",
+					"i4": "T4. Reporting how long shared secrets have gone unrotated to the auditors is the job of this separate built-in definition, assigned per scope and reviewed from the compliance view."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/shared-key-authorization-prevent"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage"
+				}
+			],
+			"subtopics": [
+				"shared-key-blocking",
+				"azure-policy-assignment",
+				"key-rotation-compliance"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KE1SV0BEFHP8Z9CHSRSPS6",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have storage account stcontosoaudit2 in resource group rg-audit2, and before it is handed to another team the change board wants four separate pieces of evidence. The four lines below are all the detail anyone wrote down. Match each line to the portal page or command that delivers it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account",
+							"stcontosoaudit2"
+						],
+						[
+							"Resource group",
+							"rg-audit2"
+						],
+						[
+							"Deployment model",
+							"Resource Manager"
+						],
+						[
+							"Keys regenerated during the last 12 months",
+							"key1 only"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "az storage account show --name <storage-account-name> --resource-group <resource-group-name> --query \"allowSharedKeyAccess\""
+					},
+					{
+						"id": "i2",
+						"text": "Storage account > Settings > Configuration: set Allow storage account key access to Disabled"
+					},
+					{
+						"id": "i3",
+						"text": "Monitoring > Metrics: Transactions (Sum) with a filter on Property = Account Key"
+					},
+					{
+						"id": "i4",
+						"text": "Access keys > Set rotation reminder"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Record evidence that the account no longer accepts requests signed with one of its long-lived secrets."
+					},
+					{
+						"id": "s2",
+						"label": "Make the account stop accepting any request that carries one of its long-lived secrets."
+					},
+					{
+						"id": "s3",
+						"label": "Count the requests in the past hour that carried a long-lived secret instead of a token."
+					},
+					{
+						"id": "s4",
+						"label": "Ask the portal to raise a warning when the long-lived secrets go unreplaced for too long."
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "The four lines ask for four different things, and each one has its own surface. Proving the account now refuses key-signed requests is done by reading the account's allowSharedKeyAccess value with az storage account show; that value returns false only once the refusal is in force, which is exactly the evidence the board wants. Making the account refuse them is a configuration change, done on Settings > Configuration by setting Allow storage account key access to Disabled. Counting how many requests in the last hour arrived with the account's own secret instead of a token is a monitoring job: in Metrics use the Account namespace, the Transactions metric with Sum, and a filter on Property = Account Key. The automatic warning about ageing secrets comes from Set rotation reminder on the Access keys page, where you enable the reminders and choose a frequency. Note that this button stays greyed out until each key has been regenerated at least once, and the table shows only key1 has been regenerated, so key2 must be replaced before the reminders can be switched on.",
+				"perChoice": {
+					"i1": "az storage account show with --query \"allowSharedKeyAccess\" is the documented way to confirm that key-based requests are now being turned away; the command reports false only after the refusal is actually in place, so it is the evidence-gathering step, not the step that changes anything.",
+					"i2": "This is the change itself rather than evidence about it: the account's Configuration page holds the Allow storage account key access toggle, and switching it to Disabled is what makes the service reject key-authorized requests from then on.",
+					"i3": "Metrics on the account with Metric Namespace Account, the Transactions metric aggregated as Sum, and a filter on Property = Account Key produce the aggregate number of requests that carried the account's own secret, which is the count the line asks for; per-client detail would instead need a diagnostic setting to Log Analytics.",
+					"i4": "Set rotation reminder on the Access keys page is where the portal is told to enable key rotation reminders and pick a frequency, which produces the ageing warning the line describes."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/shared-key-authorization-prevent"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage"
+				}
+			],
+			"subtopics": [
+				"shared-key-authorization",
+				"key-rotation",
+				"monitoring-metrics"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KEAHMGEWPMHNQB4GXHJ4XF",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have storage account stcontosomix in resource group rg-mixed, and four workloads depend on it as listed in the table. From Monday your data-protection standard requires the service to refuse every request that carries one of this account's long-lived shared credentials, and none of the four workloads may be taken offline. Match each workload to the credential mechanism it must be switched to.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Workload",
+						"Where it runs",
+						"What it does"
+					],
+					"rows": [
+						[
+							"1 - Inventory job",
+							"A virtual machine in the cloud",
+							"A .NET web app reads a blob container every night"
+						],
+						[
+							"2 - Reports folder",
+							"Windows desktops in the finance office",
+							"Staff open the share from mapped drives in File Explorer over SMB"
+						],
+						[
+							"3 - Partner download links",
+							"A web application",
+							"Issues links that let any browser download one object from a blob container for 24 hours; each link must stop working as soon as the staff member who issued it loses access"
+						],
+						[
+							"4 - Build artifact publisher",
+							"An on-premises machine on the corporate network, outside the cloud",
+							"Uploads build output to the account and must identify itself without holding a stored secret"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Microsoft Entra ID with a managed identity"
+					},
+					{
+						"id": "i2",
+						"text": "Kerberos"
+					},
+					{
+						"id": "i3",
+						"text": "User delegation SAS"
+					},
+					{
+						"id": "i4",
+						"text": "Azure Arc-enabled servers"
+					},
+					{
+						"id": "i5",
+						"text": "An account access key kept in Azure Key Vault"
+					},
+					{
+						"id": "i6",
+						"text": "An account SAS signed with key2"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Workload 1 - the nightly inventory job"
+					},
+					{
+						"id": "s2",
+						"label": "Workload 2 - the finance reports folder"
+					},
+					{
+						"id": "s3",
+						"label": "Workload 3 - the partner download links"
+					},
+					{
+						"id": "s4",
+						"label": "Workload 4 - the build artifact publisher"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Once the account stops honouring key-signed requests, only credentials authorized through Microsoft Entra ID keep working. Workload 1 reads blob data from a cloud-hosted app, so it belongs on Microsoft Entra ID with a managed identity, the model Microsoft recommends for blob, queue and table data. Workload 2 opens an Azure Files share over SMB from Windows desktops, which should be authorized with Kerberos. Workload 3 hands out expiring blob links that must stop working when the issuer loses access, which is the behaviour of a user delegation SAS - the only SAS type that is Entra-authorized, and limited to Blob Storage. Workload 4 is on-premises and outside Azure, where managed identities are obtained through Azure Arc-enabled servers. The two unused items both rely on Shared Key authorization: an account access key stored in Key Vault and an account SAS signed with key2 are rejected once key-based authorization is blocked.",
+				"perChoice": {
+					"i1": "Correct for Workload 1. A cloud-hosted app reading a blob container should use Microsoft Entra ID with a managed identity, the recommended authorization model for blob, queue and table data, and the only option here that carries no long-lived shared secret.",
+					"i2": "Correct for Workload 2. Azure Files accessed over SMB should be authorized with Kerberos, so Windows users keep opening the share from mapped drives after key-based requests are refused.",
+					"i3": "Correct for Workload 3. A user delegation SAS is backed by an Entra identity rather than by an account key, works for Blob Storage, and can be issued so that access disappears when the user who obtained it loses permissions - exactly what the partner links require.",
+					"i4": "Correct for Workload 4. The publisher runs on-premises, and managed identities for workloads outside Azure are available through Azure Arc-enabled servers, which lets the machine identify itself without a stored secret.",
+					"i5": "Fits no slot. Storing the account access key in Azure Key Vault is good practice for rotation, but the key itself is Shared Key authorization, so every request signed with it is refused once the account blocks key-based access.",
+					"i6": "Fits no slot. An account SAS is a Shared Key-authorized token, so it is denied on all services once key-based authorization is blocked, regardless of which of the two keys signed it or whether it has expired."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/shared-key-authorization-prevent"
+				}
+			],
+			"subtopics": [
+				"shared-key-authorization",
+				"entra-id-authentication",
+				"sas-tokens"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KEK1R4WBBD1GA0DYEG0MJZ",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have storage account stcontosowww in resource group rg-web that hosts the brochure downloads offered on your public website. Your security standard says that from today the service must refuse every request that presents one of the account's two long-lived shared secrets, so you set allowSharedKeyAccess to false and changed nothing else. The next morning an auditor fetched a brochure from the account's data endpoint while supplying no credential at all, and the download succeeded. You also owe three teams a short plan for the shared access signature types they already hold. Complete the two statements.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "PS> az storage account show -n stcontosowww -g rg-web --query \"allowSharedKeyAccess\"\nfalse\n\nGET /brochures/q3.pdf\n(no Authorization header supplied)\n\nHTTP/1.1 200 OK\nContent-Type: application/pdf\nContent-Length: 214093"
+				},
+				"statement": "The brochure still downloaded because {{download}} is not affected by the value of allowSharedKeyAccess. Of the shared access signature types your teams hold, {{sasType}} keeps working against this account after the change.",
+				"slots": [
+					{
+						"id": "download",
+						"options": [
+							{
+								"id": "a",
+								"text": "Unauthenticated read access"
+							},
+							{
+								"id": "b",
+								"text": "A request signed with the account key"
+							},
+							{
+								"id": "c",
+								"text": "A request signed with the secondary key"
+							},
+							{
+								"id": "d",
+								"text": "A request signed with a stored access policy"
+							}
+						]
+					},
+					{
+						"id": "sasType",
+						"options": [
+							{
+								"id": "a",
+								"text": "User delegation SAS"
+							},
+							{
+								"id": "b",
+								"text": "Service SAS"
+							},
+							{
+								"id": "c",
+								"text": "Account SAS"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"download": "a",
+				"sasType": "a"
+			},
+			"explanation": {
+				"correct": "Disallowing shared key authorization only rejects requests that the service authorizes with one of the account's access keys. Anonymous reads are granted by their own public access configuration on the account or container, so the credential-free brochure download still succeeds with 200 OK. Of the token types, user delegation SAS is authorized with Microsoft Entra credentials rather than an account key, so it keeps working (for Blob Storage data only); service SAS and account SAS are both signed with an account key and are therefore refused on all services.",
+				"perChoice": {
+					"download:b": "A request that presents an account access key is exactly what allowSharedKeyAccess = false blocks; such a request fails with 403 Forbidden and cannot explain a successful download.",
+					"download:c": "Both account keys are refused when the setting is false, so which of the two keys signed the request makes no difference; a signed request would have failed.",
+					"download:d": "A stored access policy does not change the authorization mechanism: the resulting service SAS or account SAS is signed with an account key and is denied while the account disallows shared key authorization.",
+					"sasType:b": "Service SAS tokens are signed with an account key, so they are rejected on every service of the account once shared key authorization is disallowed.",
+					"sasType:c": "Account SAS tokens are also signed with an account key, so they are rejected on all services of the account once shared key authorization is disallowed."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/shared-key-authorization-prevent"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage"
+				}
+			],
+			"subtopics": [
+				"shared-key-authorization",
+				"sas-types",
+				"anonymous-access"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KEQQPN9ZVNXC8H41Y1H572",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You administer storage account stcontosohub in resource group rg-hub. Last week you changed the account so that the service refuses any request signed with one of its two long-lived shared secrets, and you re-ran your configuration check to confirm the change had taken effect. You also enabled a diagnostic setting that sends this account's storage logs to the Log Analytics workspace law-hub. This morning you ran the query below against that workspace and it returned the result rows shown. No client, connection string or script has been touched since last week. Which of the following best explains the rows the query returned?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "StorageBlobLogs\n| where AccountName == \"stcontosohub\"\n| where AuthenticationType == \"AccountKey\"\n| summarize Requests = count() by CallerIpAddress, UserAgentHeader\n| order by Requests desc\n\nCallerIpAddress   UserAgentHeader   Requests\n20.240.10.14       ContosoSync/2.3      18422\n20.240.10.31       BackupAgent/1.0       9043\n20.240.10.77       ContosoSync/2.3       1376"
+				},
+				"statement": "The rows returned by the query are best explained by {{why}}.",
+				"slots": [
+					{
+						"id": "why",
+						"options": [
+							{
+								"id": "a",
+								"text": "the account permitting an application in the customer's own directory to keep authenticating with its keys"
+							},
+							{
+								"id": "b",
+								"text": "the service still honouring the account's previous value for key-based requests"
+							},
+							{
+								"id": "c",
+								"text": "the diagnostic setting writing an extra copy of each event for each of the two keys"
+							},
+							{
+								"id": "d",
+								"text": "user delegation SAS calls being logged under the AccountKey value in the AuthenticationType field"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"why": "a"
+			},
+			"explanation": {
+				"correct": "Once the account no longer accepts key-signed requests, ordinary callers presenting key1 or key2 would be refused, so the AccountKey rows cannot come from applications that were never migrated. Key-based authorization that keeps showing up in storage logs after the setting has been applied points to trusted access: a resource registered in the account's Microsoft Entra tenant is allowed to authenticate with the account keys and is not blocked by the setting. Switching those callers to Microsoft Entra ID is what makes the entries disappear from the log.",
+				"perChoice": {
+					"why:b": "When the property is set to false the service rejects every key-authorized request immediately with a 403, and the configuration check in the scenario already confirmed the new value, so no stale or cached value can keep the previous behaviour alive.",
+					"why:c": "A diagnostic setting forwards each storage log event once; it does not multiply events by the number of keys the account holds, so the row counts correspond to real requests.",
+					"why:d": "Storage logging reports any shared access signature as the SAS value of AuthenticationType, so calls authorized with a user delegation SAS token would never be returned by a query that filters on AccountKey."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/shared-key-authorization-prevent"
+				}
+			],
+			"subtopics": [
+				"shared-key-authorization",
+				"trusted-access",
+				"storage-monitoring"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5M98Z872CN2XXTK9PG1RETE",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You administer storage account stcontosofin in resource group rg-fin. Over the coming month every workload that reaches this account must authenticate with Microsoft Entra ID instead of using the long-lived secrets issued with the account, and the table below is what the review found. Two problems showed up. First, the nightly export job reads the account's queue endpoint with a client taken from our approved tooling list, and the job fails as soon as it is handed a Microsoft Entra ID identity. Second, the identity team is about to publish a Conditional Access policy that requires multifactor authentication for everyone who opens data in the account, and the security lead warns that some requests will still be served without ever being evaluated by that policy. Complete the statement: the nightly export job must stop using {{client}}, and you must make sure that {{setting}}.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"What the review found on stcontosofin",
+						"State today"
+					],
+					"rows": [
+						[
+							"Endpoints in use",
+							"Blob, queue, table, file share"
+						],
+						[
+							"Ways a request can be authorized",
+							"A Microsoft Entra ID identity, or one of the two secrets issued with the account"
+						],
+						[
+							"Requests that present no credential",
+							"Rejected"
+						]
+					]
+				},
+				"statement": "The nightly export job must stop using {{client}}, and you must make sure that {{setting}}.",
+				"slots": [
+					{
+						"id": "client",
+						"options": [
+							{
+								"id": "a",
+								"text": "Azure portal"
+							},
+							{
+								"id": "b",
+								"text": "Azure PowerShell"
+							},
+							{
+								"id": "c",
+								"text": "Azure CLI"
+							},
+							{
+								"id": "d",
+								"text": "AzCopy"
+							}
+						]
+					},
+					{
+						"id": "setting",
+						"options": [
+							{
+								"id": "a",
+								"text": "allowSharedKeyAccess is set to false"
+							},
+							{
+								"id": "b",
+								"text": "allowBlobPublicAccess is set to false"
+							},
+							{
+								"id": "c",
+								"text": "key rotation reminders are enabled"
+							},
+							{
+								"id": "d",
+								"text": "access to the account is limited to a selected virtual network"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"client": "d",
+				"setting": "a"
+			},
+			"explanation": {
+				"correct": "The nightly export job works against queue data, and AzCopy can use a Microsoft Entra ID credential against blob data only, so this job has to move to a different client from the approved list. Separately, a Conditional Access policy only evaluates requests authorized through Microsoft Entra ID; on this account a request can still be authorized with one of the two secrets issued with the account, so such requests arrive without ever being evaluated. Only once the account refuses them (allowSharedKeyAccess set to false) is every accepted request Entra ID-authorized and therefore in scope for the new policy.",
+				"perChoice": {
+					"client:a": "The portal can authorize requests with a Microsoft Entra ID account, so it keeps working against the queue endpoint after the job moves to an identity.",
+					"client:b": "PowerShell can authorize both blob and queue operations with Microsoft Entra ID credentials, so it does not have to be replaced.",
+					"client:c": "The CLI can authorize blob and queue data with Microsoft Entra ID credentials, so it still works once the job runs under an identity.",
+					"setting:b": "Requests that present no credential are already rejected on this account, so refusing anonymous reads again changes nothing; requests signed with one of the account's secrets would still be accepted and would still skip the policy.",
+					"setting:c": "A rotation reminder only tells you when the account's secrets are due for replacement; it leaves requests signed with those secrets accepted and therefore unevaluated by Conditional Access.",
+					"setting:d": "A network rule limits which networks may connect, but a client inside an allowed network can still present one of the account's secrets and reach the data with no Entra ID evaluation."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/shared-key-authorization-prevent"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage"
+				}
+			],
+			"subtopics": [
+				"tool-compatibility",
+				"conditional-access",
+				"shared-key-authorization"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MNC1G8JA979RE1KK49A8B4",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You look after storage account stcontosoconf in resource group rg-conf. From next month the platform team must be able to change this account's settings on their own — for example, to make the account stop honouring requests that present the account's own long-lived credentials. They must not be given any read or write access to the containers, queues, tables or files inside the account, and you want the assignment to be the narrowest one that still lets them do the job. Complete the statement: the built-in role you should assign to that team is the {{role}}.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"allowSharedKeyAccess",
+							"true"
+						],
+						[
+							"Role assignments held by the platform team",
+							"None"
+						],
+						[
+							"Data the platform team must reach",
+							"None"
+						]
+					]
+				},
+				"statement": "Complete the statement: the built-in role you should assign to that team is the {{role}}.",
+				"slots": [
+					{
+						"id": "role",
+						"options": [
+							{
+								"id": "a",
+								"text": "Storage Account Contributor"
+							},
+							{
+								"id": "b",
+								"text": "Storage Account Key Operator Service Role"
+							},
+							{
+								"id": "c",
+								"text": "Contributor"
+							},
+							{
+								"id": "d",
+								"text": "Owner"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"role": "a"
+			},
+			"explanation": {
+				"correct": "Making the account refuse requests signed with its own keys is a change to a property of the storage account, so the platform team needs create/manage permission on the account itself (Microsoft.Storage/storageAccounts/write or Microsoft.Storage/storageAccounts/*). Three built-in roles carry that permission — Owner, Contributor and Storage Account Contributor — and none of them grants Entra data-plane access to the blobs, queues, tables and files in the account. Because the team only has to maintain account properties, the narrowest of the three is Storage Account Contributor, assigned at the scope of this storage account (that role also allows listing the account's keys, so keep the assignment tight and at account scope). Owner and Contributor would also let the change through, but they hand the team full management of the subscription or of access assignments, which this requirement does not ask for. The Storage Account Key Operator Service Role is the role for listing and replacing the account's keys, not for changing account settings.",
+				"perChoice": {
+					"role:b": "This role's permissions cover listing and replacing the account's keys. It does not include the create/manage permission on the storage account itself, so with this assignment the platform team could not change the account's settings at all.",
+					"role:c": "Contributor does carry the create/manage permission on the account and grants no data-plane access, so the change would succeed, but it also grants full management of every resource type in the subscription rather than only this account's properties. It is a valid but far wider assignment than the requirement calls for.",
+					"role:d": "Owner also allows the change and adds no data-plane access, but it additionally allows managing access and role assignments across the subscription, so it is broader than needed for a team that only maintains account settings."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/shared-key-authorization-prevent"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage"
+				}
+			],
+			"subtopics": [
+				"access-key-roles",
+				"shared-key-authorization"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MNYB53WC4N385DQYZGKSVC",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You administer storage account stcontosotelemetry in resource group rg-telemetry. Six workloads reach this account, and the table shows which of the account's two shared secrets each workload presents today. Your security policy requires both shared secrets to be replaced this quarter, and no workload may be interrupted while that happens.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Workload",
+						"Shared secret presented today"
+					],
+					"rows": [
+						[
+							"Edge upload agent",
+							"key2"
+						],
+						[
+							"Device registration service",
+							"key2"
+						],
+						[
+							"Central analytics pipeline",
+							"key1"
+						],
+						[
+							"Data science notebooks",
+							"key1"
+						],
+						[
+							"Reporting service",
+							"key1"
+						],
+						[
+							"Nightly archive job",
+							"key1"
+						]
+					]
+				},
+				"statement": "The change you make first should be to {{moveClients}}.",
+				"slots": [
+					{
+						"id": "moveClients",
+						"options": [
+							{
+								"id": "a",
+								"text": "point the workloads that present key2 at key1, so that key1 becomes the only shared secret in use and key2 stays spare"
+							},
+							{
+								"id": "b",
+								"text": "replace key1 and key2 in the same maintenance window, so that every workload resumes together"
+							},
+							{
+								"id": "c",
+								"text": "leave the workloads as they are, because replacing a shared secret does not affect workloads that present the other one"
+							},
+							{
+								"id": "d",
+								"text": "point the workloads that present key2 at key1, then issue each workload a shared access signature signed with key2"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"moveClients": "a"
+			},
+			"explanation": {
+				"correct": "The account issues exactly two shared secrets, and Microsoft advises using only one of them across all applications while reserving the other for rotation work. While workloads are split across key1 and key2, the secrets cannot be replaced one after the other without some workload losing access, because regenerating a secret breaks every connection string and every account or service SAS signed with it. Pointing the two workloads that present key2 at key1 leaves key1 as the single secret in use and keeps key2 free to be regenerated at any time with no client impact; later key1 can be replaced by moving traffic to key2, regenerating key1 and then moving traffic back, which is the two-key rotation pattern that keeps access available throughout.",
+				"perChoice": {
+					"moveClients:b": "Regenerating a secret invalidates the connection strings and the account or service SAS tokens signed with it, so every workload presenting that secret stops working until its configuration is updated. Replacing both secrets in a single window therefore interrupts the workloads that were using each of them, which is what the requirement forbids.",
+					"moveClients:d": "Moving the key2 workloads to key1 is right, but signing shared access signatures with key2 undoes the benefit: those tokens are authorized with the shared secret and are revoked as soon as that secret is regenerated, and while key2 is still in use it cannot be replaced safely. Only a user delegation SAS, which is backed by Microsoft Entra credentials, survives rotation of the account secrets.",
+					"moveClients:c": "Replacing key2 does affect the workloads that present key2, because their connection strings and any SAS signed with key2 stop working once that secret is regenerated. With workloads spread over both secrets, Microsoft states that the keys cannot be rotated without some application losing access, so the arrangement cannot simply be left as it is."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/shared-key-authorization-prevent"
+				}
+			],
+			"subtopics": [
+				"access-key-rotation",
+				"shared-key-authorization"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5MPF1T3XN41XB3YA6NHETNN",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You look after the account stcontosofiles2 in resource group rg-files2. The finance team's documents are kept in a file share that an on-premises server mounts over SMB, and the account's two long-lived shared secrets are being retired so that no client can present them any more. The on-premises server stays online, but from now on it has to authenticate with Microsoft Entra ID credentials, and the platform team wants to be able to tell its other customers what they will hit if some client is missed during the change. Complete the statement: the on-premises server's SMB mount must use {{mechanism}}, and a client that still presents one of the account's shared secrets after the change will receive {{status}}.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Client",
+						"What it reaches",
+						"Credential it presents today"
+					],
+					"rows": [
+						[
+							"On-premises finance server",
+							"The finance file share over SMB",
+							"Account access key"
+						],
+						[
+							"Nightly reporting agent",
+							"A table of monthly figures",
+							"Account access key"
+						],
+						[
+							"Marketing site",
+							"A blob container",
+							"Account access key"
+						]
+					]
+				},
+				"statement": "the on-premises server's SMB mount must use {{mechanism}}, and a client that still presents one of the account's shared secrets after the change will receive {{status}}.",
+				"slots": [
+					{
+						"id": "mechanism",
+						"options": [
+							{
+								"id": "a",
+								"text": "Kerberos"
+							},
+							{
+								"id": "b",
+								"text": "A shared access signature token"
+							},
+							{
+								"id": "c",
+								"text": "The account access key"
+							},
+							{
+								"id": "d",
+								"text": "Anonymous read access"
+							}
+						]
+					},
+					{
+						"id": "status",
+						"options": [
+							{
+								"id": "a",
+								"text": "HTTP 403 (Forbidden)"
+							},
+							{
+								"id": "b",
+								"text": "HTTP 401 (Unauthorized)"
+							},
+							{
+								"id": "c",
+								"text": "HTTP 404 (Not Found)"
+							},
+							{
+								"id": "d",
+								"text": "HTTP 409 (Conflict)"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"mechanism": "a",
+				"status": "a"
+			},
+			"explanation": {
+				"correct": "The on-premises server reaches the account over SMB, and Microsoft documents that Azure Files over SMB authenticates with Kerberos, so that is the mechanism the mount has to move to once the account's long-lived shared secrets are retired. Once key-based authorization is turned off for the account, the service rejects every request that presents an account access key with error code 403 (Forbidden) and reports that key-based authorization is not permitted on that account, which is what a client that has not been migrated will see.",
+				"perChoice": {
+					"mechanism:b": "The guidance that pairs shared access signature tokens with file data applies to REST access; over SMB the file endpoint authenticates with Kerberos. On top of that, once key-based requests are rejected, service and account shared access signatures are denied on all services, and user delegation shared access signatures work only with blob data.",
+					"mechanism:c": "That is exactly the long-lived secret the change is meant to retire, so the mount cannot keep using it once key-based requests are refused.",
+					"mechanism:d": "Anonymous access supplies no identity, so it cannot satisfy the requirement that the server authenticate with Microsoft Entra ID, and it would leave the documents readable by anyone who knows the path.",
+					"status:b": "Blocking shared-key access is documented as failing such requests with 403 (Forbidden) and a message that key-based authorization is not permitted on the account; 401 is not the code described for this outcome.",
+					"status:c": "The account, the table and the file share all still exist. A credential that the service refuses does not make the resource look missing, so 404 is not the answer here.",
+					"status:d": "409 signals a conflict with the state of the resource itself. The documented outcome of refusing key-authorized requests is 403 (Forbidden)."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/shared-key-authorization-prevent"
+				}
+			],
+			"subtopics": [
+				"azure-files-authentication",
+				"shared-key-authorization",
+				"account-access-keys"
+			],
+			"reviewed": false
+		}
+	]
+}

@@ -1,0 +1,1421 @@
+{
+	"skill": "compute.templates-interpret",
+	"questions": [
+		{
+			"id": "q_01M5Q84RVZVH7GS4H3ZHYMVKZV",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an ARM JSON template that declares a virtual machine and a custom script extension inside that virtual machine's resource collection. The deployment fails with an error saying the virtual machine can't be found when the extension is submitted. You need the extension to be created only after the virtual machine has been deployed. Which change should you make to the template?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"$schema\": \"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#\",\n  \"contentVersion\": \"1.0.0.0\",\n  \"resources\": [\n    {\n      \"type\": \"Microsoft.Compute/virtualMachines\",\n      \"apiVersion\": \"2024-07-01\",\n      \"name\": \"vm-app01\",\n      \"location\": \"[resourceGroup().location]\",\n      \"properties\": {\n        \"hardwareProfile\": { \"vmSize\": \"Standard_D2s_v5\" }\n      },\n      \"resources\": [\n        {\n          \"type\": \"extensions\",\n          \"apiVersion\": \"2024-07-01\",\n          \"name\": \"customScript\",\n          \"properties\": {\n            \"publisher\": \"Microsoft.Compute\",\n            \"type\": \"CustomScriptExtension\",\n            \"autoUpgradeMinorVersion\": true\n          }\n        }\n      ]\n    }\n  ]\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add a dependsOn entry to the nested extension that names the parent virtual machine resource"
+					},
+					{
+						"id": "b",
+						"text": "Add a dependsOn entry to the parent virtual machine that names the nested extension resource"
+					},
+					{
+						"id": "c",
+						"text": "Move the nested extension declaration out of the parent's resources collection and add it to the top-level resources array"
+					},
+					{
+						"id": "d",
+						"text": "Set the apiVersion of the nested extension to the same apiVersion as the parent virtual machine resource"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "When a child resource is declared inside a parent's resources collection, Resource Manager does not imply a dependency between the child and its parent, so that dependency must be defined explicitly. Adding a dependsOn entry in the extension declaration that names the parent virtual machine resource tells Resource Manager to deploy the virtual machine first and only then submit the extension, which resolves the not-found error. The entry can only name resources that are defined in the same template, so the parent virtual machine in this file is the correct target. (A Bicep file would infer this ordering from a symbolic-name reference to the parent, but an ARM JSON template requires the explicit dependsOn entry.)",
+				"perChoice": {
+					"b": "This reverses the ordering that is needed. The parent resource is what must exist before the child can be created, so making the parent wait on the child produces the wrong order and can create a circular dependency that stalls the deployment.",
+					"c": "Relocating the extension to the top-level resources array without expressing a dependency on the virtual machine removes any ordering guarantee, so Resource Manager is free to deploy the extension in parallel with, or ahead of, the virtual machine.",
+					"d": "The apiVersion value selects the REST API version used for the resource provider operation; it does not influence the order in which Resource Manager deploys resources, so changing it leaves the extension free to be submitted before the virtual machine exists."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/syntax"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/file"
+				}
+			],
+			"subtopics": [
+				"arm-json-dependencies",
+				"child-resources",
+				"resource-ordering"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q894FYHC44BF0VKG0DJVH3",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an ARM JSON template that creates virtual machines from an array of names supplied at deployment time. Deploying it into a subscription that limits how many virtual machine deployments can run at the same time fails with a quota error, because every machine in the array is submitted together. You need the deployment to never have more than one virtual machine deployment running at the same time. Which change should you make to the template?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"$schema\": \"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#\",\n  \"contentVersion\": \"1.0.0.0\",\n  \"parameters\": {\n    \"vmNames\": {\n      \"type\": \"array\",\n      \"defaultValue\": [ \"app-01\", \"app-02\", \"app-03\" ]\n    }\n  },\n  \"resources\": [\n    {\n      \"copy\": {\n        \"name\": \"vmLoop\",\n        \"count\": \"[length(parameters('vmNames'))]\",\n        \"mode\": \"parallel\"\n      },\n      \"type\": \"Microsoft.Compute/virtualMachines\",\n      \"apiVersion\": \"2025-04-01\",\n      \"name\": \"[parameters('vmNames')[copyIndex()]]\",\n      \"location\": \"[resourceGroup().location]\",\n      \"properties\": {\n        \"hardwareProfile\": { \"vmSize\": \"Standard_D2s_v5\" }\n      }\n    }\n  ]\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set the copy block's mode to serial and set its batchSize to 1"
+					},
+					{
+						"id": "b",
+						"text": "Set the copy block's mode to serial and set its batchSize to the number of names in the vmNames array"
+					},
+					{
+						"id": "c",
+						"text": "Keep the copy block's mode as parallel and set its batchSize to 1"
+					},
+					{
+						"id": "d",
+						"text": "Keep the copy block's mode as parallel and set its batchSize to 2"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A copy loop in an ARM JSON template runs in parallel by default, and in parallel mode Resource Manager creates the instances together with no limit on how many are created at once other than the template's overall resource limit. Changing the mode to serial makes Resource Manager create a dependency on earlier instances in the loop, so it does not start a batch until the previous batch has completed, and batchSize gives the number of instances deployed at a time. With batchSize 1, each batch holds a single virtual machine, so no more than one virtual machine deployment runs at the same time, which satisfies the subscription limit and clears the quota error.",
+				"perChoice": {
+					"b": "With the mode set to serial but batchSize equal to the number of names, the whole loop forms a single batch, so all of the virtual machines are still created together and the quota error returns. A serial loop only staggers the instances when the batch size is smaller than the count.",
+					"c": "batchSize sizes the batches of a serial loop; while the mode stays parallel, the instances continue to be submitted at the same time, so adding batchSize 1 throttles nothing.",
+					"d": "This has the same problem as the other parallel option: leaving the mode as parallel means every instance is still submitted together, and batchSize has no effect on how many run at once."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/syntax"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/overview"
+				}
+			],
+			"subtopics": [
+				"arm-json-copy-loop",
+				"serial-deployment-batching"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q8CXQ8KYFJR61RYH537SB7",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an ARM JSON template that creates a storage account and returns the account's primary access key as one of the template's outputs. A security review found that the key is written in clear text into the deployment record for the resource group. You need the key to be returned as an output value that the deployment record does not reveal. Which change should you make to the template?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"$schema\": \"2019-04-01/deploymentTemplate.json#\",\n  \"contentVersion\": \"1.0.0.0\",\n  \"resources\": [\n    {\n      \"type\": \"Microsoft.Storage/storageAccounts\",\n      \"apiVersion\": \"2023-05-01\",\n      \"name\": \"stgapp001\",\n      \"location\": \"eastus\",\n      \"kind\": \"StorageV2\",\n      \"sku\": { \"name\": \"Standard_LRS\" },\n      \"properties\": {}\n    }\n  ],\n  \"outputs\": {\n    \"storageKey\": {\n      \"type\": \"string\",\n      \"value\": \"[reference(resourceId('Microsoft.Storage/storageAccounts', 'stgapp001')).primaryKey]\"\n    }\n  }\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Change the output's declared type from string to securestring."
+					},
+					{
+						"id": "b",
+						"text": "Change the output's declared type from string to secureObject."
+					},
+					{
+						"id": "c",
+						"text": "Declare the key expression as a variable and reference that variable from the output, leaving the output's declared type as string."
+					},
+					{
+						"id": "d",
+						"text": "Add a condition to the output so that it is only produced when a deployment parameter named publishKey is set to true."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "An output whose declared type is securestring is hidden from deployment history, so the deployment record no longer shows the returned key in clear text. The fix is confined to the output's declared type: the rest of the template, including the reference expression that fetches the account's primary key, can stay exactly as it is. Be aware that a value published this way is deliberately not readable from the deployment record afterwards.",
+				"perChoice": {
+					"b": "secureObject is for sensitive values that are objects, but this output returns a single key string, so the declared type would not match the value the template produces. The behavior that keeps a returned value out of the deployment record is documented for an output declared as securestring, not secureObject.",
+					"c": "A variable only holds a reusable value; it does not change how the output is recorded. Because the output still declares its type as string, the key is written into the deployment record as a readable value. Only the output's own declared type governs this behavior.",
+					"d": "A condition decides whether an output is produced at all, not how the produced value is recorded. When the condition evaluates to true the key is still written to the deployment record as a readable string, so the review finding remains."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/syntax"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/overview"
+				}
+			],
+			"subtopics": [
+				"arm-template-outputs",
+				"sensitive-output-values"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q8GV1GT4TPAMDBH2C5YH1A",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Bicep file that deploys a virtual machine and returns the machine size as an output value. The build fails with an error saying the 'allowed' decorator isn't valid on an output declaration. You need the file to build, and the output declaration itself to permit only the virtual machine sizes that this file accepts. Which change should you make to the Bicep file?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "param vmSize 'Standard_D2s_v5' | 'Standard_D4s_v5'\n\nresource vm 'Microsoft.Compute/virtualMachines@2024-07-01' = {\n  name: 'vm-prod-01'\n  location: 'eastus'\n  properties: {\n    hardwareProfile: {\n      vmSize: vmSize\n    }\n  }\n}\n\n@allowed([\n  'Standard_D2s_v5'\n  'Standard_D4s_v5'\n])\noutput deployedSize string = vmSize"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Remove the `@allowed` decorator from the output and change the output's declared type to a union type containing the same two sizes."
+					},
+					{
+						"id": "b",
+						"text": "Keep the `@allowed` decorator on the output and change the output's declared type from `string` to a union type containing the same two sizes."
+					},
+					{
+						"id": "c",
+						"text": "Move the `@allowed` decorator from the output to the `param` declaration and leave the output declared as `string`."
+					},
+					{
+						"id": "d",
+						"text": "Remove the `@allowed` decorator from the output and add the `@maxLength` decorator to the output instead."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The `allowed` decorator is permitted only on `param` statements, so the compiler rejects it on the `output` declaration; it has to be taken off the output. To keep the output restricted to the same set of sizes, express that restriction with union type syntax in the output's declared type, for example `output deployedSize 'Standard_D2s_v5' | 'Standard_D4s_v5' = vmSize`. Because the `vmSize` parameter is already typed as that union, the assignment still type-checks and the file builds.",
+				"perChoice": {
+					"b": "Changing the output's declared type does not make the decorator legal. `allowed` is permitted only on `param` statements, so leaving it attached to the `output` produces the same build failure; the decorator must be removed before a union type can express the restriction.",
+					"c": "Placing the decorator on the `param` is legal, but the output would still be declared as `string`, so the output declaration itself would no longer limit which sizes it can return. Restricting the values of an output is done with union syntax in its declared type, not with a decorator.",
+					"d": "`maxLength` bounds the length of a string rather than the set of values it may hold. After this change the file would build, but the output would accept any string instead of permitting only the two listed sizes, so the stated requirement is not met."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/file"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/syntax"
+				}
+			],
+			"subtopics": [
+				"bicep-decorators",
+				"bicep-outputs",
+				"bicep-types"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q8PXEZPQRXFHQNY14S9FWT",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Bicep file that declares a resource group and calls a module that deploys virtual machines into that new group. Running the file as a resource group deployment fails with an error saying the resource group resource isn't valid at that scope. You need the file to be deployed at the scope that owns the resource group, so the group and the virtual machines inside it are created together. Which change should you make to the Bicep file?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "# main.bicep\nparam location string = 'westeurope'\nparam prefix string = 'app'\n\nresource networkRg 'Microsoft.Resources/resourceGroups@2024-11-01' = {\n  name: '${prefix}-rg'\n  location: location\n}\n\nmodule app 'app.bicep' = {\n  name: 'appDeployment'\n  scope: networkRg\n  params: {\n    location: location\n  }\n}\n\noutput resourceGroupId string = networkRg.id\n\n# how the file is run today\naz deployment group create --resource-group rg-app --template-file main.bicep"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add `targetScope = 'subscription'` at the top of the Bicep file"
+					},
+					{
+						"id": "b",
+						"text": "Add `targetScope = 'tenant'` at the top of the Bicep file"
+					},
+					{
+						"id": "c",
+						"text": "Add `targetScope = 'managementGroup'` at the top of the Bicep file"
+					},
+					{
+						"id": "d",
+						"text": "Replace the module's `scope: networkRg` with `scope: subscription()`"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A resource group lives inside a subscription, and creating resource groups is one of the resource types a subscription-level deployment supports, so the file has to run at that scope. In Bicep, the file-level `targetScope` declaration sets the scope for the whole file, and it defaults to `resourceGroup`, which is why the resource group resource is rejected today. Adding `targetScope = 'subscription'` at the top of the file makes that declaration valid, and because the module already points at the new group with `scope: networkRg`, the module's virtual machines are still deployed into that group.",
+				"perChoice": {
+					"b": "'tenant' is the scope for directory-wide resources such as management groups and tenant role assignments; a resource group isn't created at that level, so the deployment would still be rejected.",
+					"c": "'managementGroup' is used to apply policy and role assignments across the subscriptions in a management group; resource groups are created in the subscription that owns them, not directly at management group scope.",
+					"d": "The `scope` property on a module only chooses where that module's own nested deployment runs. The resource group declared in the file is still submitted at the file's own scope, so the failure would remain, and a module deployed at subscription scope can't create virtual machines, which must live in a resource group."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/file"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/syntax"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/overview"
+				}
+			],
+			"subtopics": [
+				"bicep-target-scope",
+				"deployment-scope",
+				"modules"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q8V69Y4TT1JM049ZKE7MEX",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an ARM JSON template that creates a virtual machine and a managed disk. The same file has to be deployed to global Azure and to an Azure Stack environment whose resource providers expose older versions of their APIs, but every resource declaration in the file pins its own version string, so the run against Azure Stack fails with an unsupported-version error and the team keeps a hand-edited copy of the file for that environment. You need one file that works in both environments, where each resource type automatically resolves to a version supported in the environment being deployed to. Which change should you make to the template?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"$schema\": \"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#\",\n  \"contentVersion\": \"1.0.0.0\",\n  \"parameters\": {\n    \"location\": {\n      \"type\": \"string\",\n      \"defaultValue\": \"[resourceGroup().location]\"\n    },\n    \"vmName\": {\n      \"type\": \"string\"\n    }\n  },\n  \"resources\": [\n    {\n      \"type\": \"Microsoft.Compute/virtualMachines\",\n      \"apiVersion\": \"2025-04-01\",\n      \"name\": \"[parameters('vmName')]\",\n      \"location\": \"[parameters('location')]\",\n      \"sku\": { \"name\": \"Standard_D2s_v3\" },\n      \"properties\": {\n        \"hardwareProfile\": { \"vmSize\": \"Standard_D2s_v3\" }\n      }\n    },\n    {\n      \"type\": \"Microsoft.Storage/disks\",\n      \"apiVersion\": \"2025-01-01\",\n      \"name\": \"[parameters('vmName')]\",\n      \"location\": \"[parameters('location')]\",\n      \"sku\": { \"name\": \"Premium_LRS\" },\n      \"properties\": {\n        \"diskSizeGB\": 128,\n        \"creationData\": { \"createOption\": \"Empty\" }\n      }\n    }\n  ],\n  \"outputs\": {}\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add an apiProfile property to the template and remove the apiVersion value from each resource declaration."
+					},
+					{
+						"id": "b",
+						"text": "Add an apiVersion property to the template and remove the apiProfile value from each resource declaration."
+					},
+					{
+						"id": "c",
+						"text": "Set the apiVersion property on each resource declaration to the oldest version the target environment supports."
+					},
+					{
+						"id": "d",
+						"text": "Add an apiProfile property to the template and keep the apiVersion value on each resource declaration."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "An apiProfile element in the root of an ARM template acts as an alias for one API version per resource type, so Resource Manager resolves the version for every resource type the template declares instead of using a version hard-coded in the file. That is exactly the situation the element was created for: one template deployed to environments such as global Azure and Azure Stack, where the same resource type has different supported API versions. The per-resource apiVersion entries must be dropped, because a profile supplies a version only for resource types that do not declare one, so a pinned apiVersion on a resource wins and the profile has no effect. Note that Bicep has no equivalent of this concept (the version is written into each type string, such as Microsoft.Compute/virtualMachines@2025-04-01), so the change belongs in the ARM JSON file.",
+				"perChoice": {
+					"b": "apiVersion is a per-resource element in an ARM template, not a template-level element, so declaring one at the root and dropping apiProfile leaves no mapping of versions for many resource types. The element that collects one version per resource type for the whole file is apiProfile, and it only takes effect for resources that don't carry their own apiVersion.",
+					"c": "Pinning each resource to a single older version would make the file run on Azure Stack, but the same file would then also force that old version in global Azure and would still have to be edited to use newer versions there, so the per-environment copy you want to eliminate stays in place. A profile lets one unchanged file resolve versions for many resource types at once.",
+					"d": "Adding an apiProfile while leaving the apiVersion value on every resource declaration has no effect at all: Resource Manager uses the profile only for resource types that don't specify an apiVersion, so the pinned values keep deciding which version is used and the Azure Stack run fails exactly as before."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/syntax"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/file"
+				}
+			],
+			"subtopics": [
+				"api-profile",
+				"api-version",
+				"arm-json-template"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q90Z6S1RZJ5ACSJANT77N0",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an ARM JSON template that deploys a storage account and a virtual machine, and that reuses a type definition for the virtual machine size. The file selects the newer template language version, but every deployment is rejected during validation with an error about the `resources` property. You need the template to deploy successfully while keeping the shared type definition in place. Which change should you make to the template?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"$schema\": \"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#\",\n  \"languageVersion\": \"2.0\",\n  \"contentVersion\": \"1.0.0.0\",\n  \"definitions\": {\n    \"vmSizeType\": {\n      \"type\": \"string\",\n      \"allowedValues\": [ \"Standard_D2s_v5\", \"Standard_D4s_v5\" ]\n    }\n  },\n  \"parameters\": {\n    \"vmSize\": {\n      \"$ref\": \"#/definitions/vmSizeType\"\n    },\n    \"adminPassword\": {\n      \"type\": \"securestring\"\n    }\n  },\n  \"resources\": [\n    {\n      \"type\": \"Microsoft.Storage/storageAccounts\",\n      \"apiVersion\": \"2023-05-01\",\n      \"name\": \"appstorage001\",\n      \"location\": \"eastus\",\n      \"sku\": { \"name\": \"Standard_LRS\" },\n      \"kind\": \"StorageV2\"\n    },\n    {\n      \"type\": \"Microsoft.Compute/virtualMachines\",\n      \"apiVersion\": \"2024-07-01\",\n      \"name\": \"app-vm-01\",\n      \"location\": \"eastus\",\n      \"properties\": {\n        \"hardwareProfile\": { \"vmSize\": \"[parameters('vmSize')]\" },\n        \"osProfile\": {\n          \"computerName\": \"app-vm-01\",\n          \"adminUsername\": \"azureuser\",\n          \"adminPassword\": \"[parameters('adminPassword')]\"\n        },\n        \"storageProfile\": {\n          \"imageReference\": {\n            \"publisher\": \"MicrosoftWindowsServer\",\n            \"offer\": \"WindowsServer\",\n            \"sku\": \"2022-datacenter-azure-edition\",\n            \"version\": \"latest\"\n          }\n        }\n      }\n    }\n  ]\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Change the `resources` property from a JSON array into a JSON object, giving each resource a symbolic key."
+					},
+					{
+						"id": "b",
+						"text": "Change the `resources` property from a JSON array into a JSON object, grouping the resources by their resource type."
+					},
+					{
+						"id": "c",
+						"text": "Change the `resources` property from a JSON array into a JSON object, using each resource's API version as its key."
+					},
+					{
+						"id": "d",
+						"text": "Change the `resources` property from a JSON array into a JSON object, using each resource's location as its key."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "With `languageVersion` 2.0 selected, the `resources` section must be a JSON object rather than a JSON array, and each resource is an entry in that object identified by the resource's symbolic name. Converting the array into an object with one symbolic key per resource matches the structure the selected language version requires, keeps the file's shared type definition (definitions are only supported in language version 2.0), and lets the deployment proceed.",
+				"perChoice": {
+					"b": "Grouping the entries by resource type is not how the object form works. Each entry is keyed by the resource's symbolic name, and because a key must identify one resource, two resources of the same type could not share a single type-based key.",
+					"c": "The API version is the REST API version used when the resource is created, not the identifier of the entry. The key of each entry in the `resources` object is the resource's symbolic name.",
+					"d": "A location only indicates where a resource is deployed, and several resources in the same template usually share one location, so it cannot identify an entry. Each entry in the `resources` object is keyed by the resource's symbolic name."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/syntax"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/overview"
+				}
+			],
+			"subtopics": [
+				"arm-language-version-2",
+				"resource-symbolic-names",
+				"type-definitions"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q97DFV8QEV64THY14DEZVN",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Bicep file that declares four resources: a virtual network that contains a subnet, a network interface, a managed disk, and a virtual machine. The file sets no dependsOn entries, and every deployment of it completes successfully. You want the test-environment deployment to finish sooner by starting the work that has no prerequisites at the same time. Which two resources can be created in parallel?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "param location string = resourceGroup().location\n\nresource vnet 'Microsoft.Network/virtualNetworks@2025-04-01' = {\n  name: 'app-vnet'\n  location: location\n  properties: {\n    addressSpace: {\n      addressPrefixes: [\n        '10.10.0.0/16'\n      ]\n    }\n    subnets: [\n      {\n        name: 'app-subnet'\n        properties: {\n          addressPrefix: '10.10.1.0/24'\n        }\n      }\n    ]\n  }\n}\n\nresource nic 'Microsoft.Network/networkInterfaces@2025-04-01' = {\n  name: 'app-nic'\n  location: location\n  properties: {\n    ipConfigurations: [\n      {\n        name: 'ipconfig1'\n        properties: {\n          privateIPAllocationMethod: 'Dynamic'\n          subnet: {\n            id: vnet.properties.subnets[0].id\n          }\n        }\n      }\n    ]\n  }\n}\n\nresource osdisk 'Microsoft.Compute/disks@2025-04-01' = {\n  name: 'app-vm-osdisk'\n  location: location\n  sku: {\n    name: 'Premium_LRS'\n  }\n  properties: {\n    diskSizeGB: 127\n    creationData: {\n      createOption: 'Empty'\n    }\n  }\n}\n\nresource vm 'Microsoft.Compute/virtualMachines@2025-04-01' = {\n  name: 'app-vm'\n  location: location\n  properties: {\n    hardwareProfile: {\n      vmSize: 'Standard_D2s_v5'\n    }\n    storageProfile: {\n      imageReference: {\n        publisher: 'MicrosoftWindowsServer'\n        offer: 'WindowsServer'\n        sku: '2022-datacenter-azure-edition'\n        version: 'latest'\n      }\n      osDisk: {\n        createOption: 'Attach'\n        managedDisk: {\n          id: osdisk.id\n        }\n      }\n    }\n    osProfile: {\n      computerName: 'app-vm'\n      adminUsername: 'azureuser'\n      adminPassword: 'S3cure-Passw0rd!'\n    }\n    networkProfile: {\n      networkInterfaces: [\n        {\n          id: nic.id\n          properties: {\n            primary: true\n          }\n        }\n      ]\n    }\n  }\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "The virtual network and the managed disk"
+					},
+					{
+						"id": "b",
+						"text": "The network interface and the managed disk"
+					},
+					{
+						"id": "c",
+						"text": "The network interface and the virtual machine"
+					},
+					{
+						"id": "d",
+						"text": "The virtual network and the virtual machine"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The deployment order comes from the values the resources take from one another. The network interface pulls the subnet id out of the virtual network, and the virtual machine pulls in the id of the network interface and the id of the managed disk, so the virtual network has to exist before the interface, and the interface and the disk have to exist before the machine. The virtual network and the managed disk take no value from each other, so nothing orders them relative to one another and they are the pair that can be created at the same time.",
+				"perChoice": {
+					"b": "The network interface reads the subnet id from the virtual network, so the virtual network must already exist before the interface can be created. This pair is ordered, not created at the same time.",
+					"c": "The virtual machine references the network interface by its id, so the interface must be in place before the machine is created. These two are created one after the other.",
+					"d": "The virtual machine depends on the network interface, and the interface in turn depends on the virtual network, so the machine is created last and cannot run at the same time as the network."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/file"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/overview"
+				}
+			],
+			"subtopics": [
+				"bicep-resource-dependencies",
+				"deployment-ordering"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q9CPYN674F25GE32328XYJ",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have the Bicep file below, which is deployed to a resource group to roll out a web tier of virtual machines. The operations team wants a written description of what each named element in the file contributes before anyone edits it. Drag each name from the file into the slot that matches its role in the run.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "targetScope = 'resourceGroup'\n\n@description('Names of the virtual machines to create')\nparam hostnames array\n\n@allowed(['Standard_D2s_v5', 'Standard_D4s_v5'])\nparam machineSize string = 'Standard_D2s_v5'\n\nvar location = resourceGroup().location\nvar production = deployment().name == 'prod'\n\nresource vnet 'Microsoft.Network/virtualNetworks@2024-05-01' = {\n  name: 'webVnet'\n  location: location\n  properties: {\n    addressSpace: {\n      addressPrefixes: ['10.10.0.0/16']\n    }\n  }\n}\n\nresource nics 'Microsoft.Network/networkInterfaces@2024-05-01' = [for (name, i) in hostnames: {\n  name: 'nic-${name}'\n  location: location\n  properties: {\n    ipConfigurations: [\n      {\n        name: 'ipconfig'\n        properties: {\n          subnet: { id: vnet.id }\n          privateIPAllocationMethod: 'Dynamic'\n        }\n      }\n    ]\n  }\n}]\n\nresource vms 'Microsoft.Compute/virtualMachines@2024-07-01' = [for (name, i) in hostnames: {\n  name: name\n  location: location\n  properties: {\n    hardwareProfile: {\n      vmSize: machineSize\n    }\n    networkProfile: {\n      networkInterfaces: [\n        { id: nics[i].id }\n      ]\n    }\n  }\n}]\n\nresource dataDisk 'Microsoft.Compute/disks@2024-04-01' = if (production) {\n  name: 'webDataDisk'\n  location: location\n  sku: { name: 'Premium_LRS' }\n  properties: { diskSizeGB: 128 }\n}\n\nmodule addons './addons.bicep' = {\n  name: 'deployAddons'\n  params: {\n    targetVnetId: vnet.id\n  }\n}\n\noutput vmIds array = [for (name, i) in hostnames: vms[i].id]"
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "hostnames"
+					},
+					{
+						"id": "i2",
+						"text": "location"
+					},
+					{
+						"id": "i3",
+						"text": "production"
+					},
+					{
+						"id": "i4",
+						"text": "vnet"
+					},
+					{
+						"id": "i5",
+						"text": "addons"
+					},
+					{
+						"id": "i6",
+						"text": "vmIds"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "The list of names the operator supplies at run time, with one network interface and one virtual machine created per entry"
+					},
+					{
+						"id": "s2",
+						"label": "Computed once inside the file and reused for the region setting on every object the file creates"
+					},
+					{
+						"id": "s3",
+						"label": "Decides whether the extra managed disk is created during the run"
+					},
+					{
+						"id": "s4",
+						"label": "Created before the network interfaces, because those interfaces point to it"
+					},
+					{
+						"id": "s5",
+						"label": "A separate file that this file calls to deploy one part of the solution"
+					},
+					{
+						"id": "s6",
+						"label": "Values handed back to the caller once the deployment finishes"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5",
+				"s6": "i6"
+			},
+			"explanation": {
+				"correct": "Each name in the file plays exactly one role, and the roles are decided by the kind of declaration used. hostnames is a param declaration with no default value, so the operator must supply the list of names when the deployment starts; the two for expressions iterate over that list, producing one network interface and one virtual machine per entry. location is a var declaration that evaluates resourceGroup().location a single time and is then reused by every resource declaration in the file for its region property. production is a var declaration whose boolean result is evaluated by the if expression on the managed disk, so the disk is provisioned only for a deployment with that name. vnet is a resource declaration whose symbolic name is read by the network interface loop, and because Bicep manages dependencies from the use of a symbolic name in another declaration, the virtual network is created before the interfaces that reference it. addons is a module declaration that links to a separate Bicep file, and deploying the main file also deploys the resources declared in that file. vmIds is an output declaration that returns the virtual machine resource IDs to the caller once the deployment has finished.",
+				"perChoice": {
+					"i1": "Fits the slot about the list supplied at run time. It is a param declaration with no default value, so the value must be provided when the deployment starts, and the for expressions that declare the network interfaces and the virtual machines iterate over it, creating one of each per entry.",
+					"i2": "Fits the slot about a value computed once and reused. It is a var declaration that evaluates resourceGroup().location, and every resource declaration in the file uses it for the location property, so the region is written in one place only.",
+					"i3": "Fits the slot about the extra managed disk. It is a var declaration that compares the deployment name with 'prod', and the if expression on the managed disk resource evaluates that result to decide whether the disk is provisioned.",
+					"i4": "Fits the slot about the object created ahead of the network interfaces. It is a resource declaration, and the network interface loop reads its resource ID, so the dependency is inferred and the virtual network is created first.",
+					"i5": "Fits the slot about a separate file being called. It is a module declaration that links to './addons.bicep', so deploying the main file also deploys the resources declared in that file.",
+					"i6": "Fits the slot about values handed back to the caller. It is an output declaration that returns an array of the virtual machine resource IDs after the deployment completes."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/file"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/syntax"
+				}
+			],
+			"subtopics": [
+				"bicep-file-structure",
+				"bicep-parameters-and-outputs"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q9GNMRM9BFWFYJ4Y1SDQCK",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have an ARM JSON template that rolls out the test-environment virtual machine tier, and the resource declaration in that file carries several entries beyond type, name, and location. New engineers joining the platform team are expected to read the file without guessing what each entry does, so the team lead wants a written map of those entries and their effect on the run. Drag each entry from the file into the slot that matches what it controls.",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"$schema\": \"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#\",\n  \"contentVersion\": \"1.0.0.0\",\n  \"resources\": [\n    {\n      \"condition\": \"[equals(parameters('deployTestTier'), 'true')]\",\n      \"type\": \"Microsoft.Compute/virtualMachines\",\n      \"apiVersion\": \"2025-04-01\",\n      \"name\": \"[format('vm{0}', copyIndex())]\",\n      \"location\": \"[parameters('location')]\",\n      \"tags\": {\n        \"environment\": \"test\",\n        \"owner\": \"platform\"\n      },\n      \"sku\": {\n        \"name\": \"Standard_D2s_v5\",\n        \"capacity\": 2\n      },\n      \"identity\": {\n        \"type\": \"SystemAssigned\"\n      },\n      \"copy\": {\n        \"name\": \"vmLoop\",\n        \"count\": 3,\n        \"mode\": \"serial\"\n      },\n      \"properties\": {\n        \"hardwareProfile\": {\n          \"vmSize\": \"[parameters('vmSize')]\"\n        }\n      }\n    }\n  ]\n}"
+				},
+				"items": [
+					{
+						"id": "item1",
+						"text": "condition"
+					},
+					{
+						"id": "item2",
+						"text": "copy"
+					},
+					{
+						"id": "item3",
+						"text": "sku"
+					},
+					{
+						"id": "item4",
+						"text": "tags"
+					},
+					{
+						"id": "item5",
+						"text": "identity"
+					},
+					{
+						"id": "item6",
+						"text": "apiVersion"
+					}
+				],
+				"slots": [
+					{
+						"id": "slot1",
+						"label": "Controls whether the resource is created during the deployment or left out of it"
+					},
+					{
+						"id": "slot2",
+						"label": "Controls how many instances of the resource a single declaration produces"
+					},
+					{
+						"id": "slot3",
+						"label": "Controls the size, family, and redundancy variant of the resource that is deployed"
+					},
+					{
+						"id": "slot4",
+						"label": "Controls the indexed key/value pairs that organize the resource across a subscription"
+					},
+					{
+						"id": "slot5",
+						"label": "Controls the managed credential that lets the resource sign in to other Azure services, assigned by the platform or by you"
+					},
+					{
+						"id": "slot6",
+						"label": "Controls the REST interface release that the deployment calls when creating the resource"
+					}
+				]
+			},
+			"key": {
+				"slot1": "item1",
+				"slot2": "item2",
+				"slot3": "item3",
+				"slot4": "item4",
+				"slot5": "item5",
+				"slot6": "item6"
+			},
+			"explanation": {
+				"correct": "Each entry in an ARM resource declaration has a single, distinct purpose. The boolean expression in condition decides whether the resource is provisioned (true) or skipped (false) during that deployment. copy repeats the declaration to create several instances of the resource, running in parallel by default or one at a time in serial mode. sku names the SKU to deploy, which carries the size, family, tier, and redundancy choice such as Standard_LRS for a storage account. tags attaches the key/value pairs that logically organize resources across a subscription. identity sits at the root of the declaration and attaches a managed identity, either system-assigned or user-assigned, so the resource can authenticate to other services without storing a credential. apiVersion is the version of the REST API used in the create request for the resource, and it is normally kept stable once it works.",
+				"perChoice": {
+					"item1": "Belongs in the slot about whether the resource is created during the deployment or left out of it. condition holds a boolean expression: when it evaluates to true the resource is created, when it evaluates to false the resource is skipped for that deployment.",
+					"item2": "Belongs in the slot about how many instances a single declaration produces. copy carries a count plus an optional mode; the default mode is parallel, and serial mode deploys the instances one at a time.",
+					"item3": "Belongs in the slot about the size, family, and redundancy variant that is deployed. sku holds the values that define the SKU to deploy, for example the redundancy type for a storage account or the size and capacity of a virtual machine.",
+					"item4": "Belongs in the slot about the indexed key/value pairs that organize the resource. tags associates key/value pairs with the resource so it can be logically organized across a subscription.",
+					"item5": "Belongs in the slot about the managed credential that lets the resource sign in to other Azure services. identity sits at the root of the resource declaration and selects a system-assigned or user-assigned managed identity, with user-assigned identities listed by resource ID.",
+					"item6": "Belongs in the slot about the REST interface release used when creating the resource. apiVersion is the version of the REST API used for the create call; keep it at a known-good version and change it only when a later feature is needed."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/syntax"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/overview"
+				}
+			],
+			"subtopics": [
+				"arm-template-syntax",
+				"resource-declaration-properties"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q9KZ1144SZ06Q5W1VRW5X7",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a Bicep file that rolls out a web tier of virtual machines into a resource group. The file takes the number of instances, the machine size, an administrator password and a database connection string from whoever runs the deployment, and the platform team has written rules for how each of those inputs has to be treated. Drag each declaration from the file into the slot that matches the treatment it provides.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "targetScope = 'resourceGroup'\n\n@description('Number of web instances to roll out')\nparam instanceCount int = 3\n\n@allowed([\n  'Standard_D2s_v5'\n  'Standard_D4s_v5'\n])\nparam vmSize string = 'Standard_D2s_v5'\n\n@minLength(12)\nparam adminPassword string\n\n@secure()\nparam dbConnectionString string\n\n@minValue(1)\nparam monitorIntervalInSeconds int = 60\n\n@maxLength(24)\nparam adminUsername string = 'azureuser'\n"
+				},
+				"items": [
+					{
+						"id": "d1",
+						"text": "@description('Number of web instances to roll out')"
+					},
+					{
+						"id": "d2",
+						"text": "@allowed(['Standard_D2s_v5', 'Standard_D4s_v5'])"
+					},
+					{
+						"id": "d3",
+						"text": "@minLength(12)"
+					},
+					{
+						"id": "d4",
+						"text": "@secure()"
+					},
+					{
+						"id": "d5",
+						"text": "@minValue(1)"
+					},
+					{
+						"id": "d6",
+						"text": "@maxLength(24)"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Shows the operator the purpose of the input"
+					},
+					{
+						"id": "s2",
+						"label": "Rejects any machine size that the file does not list"
+					},
+					{
+						"id": "s3",
+						"label": "Rejects a password shorter than twelve characters"
+					},
+					{
+						"id": "s4",
+						"label": "Keeps the entered connection string from appearing in the deployment record and logs"
+					}
+				]
+			},
+			"key": {
+				"s1": "d1",
+				"s2": "d2",
+				"s3": "d3",
+				"s4": "d4"
+			},
+			"explanation": {
+				"correct": "Each rule in the scenario is implemented by a different Bicep decorator. The description decorator supplies the text shown for a parameter, so it satisfies the slot about showing the operator the purpose of the input. The allowed decorator is permitted only on a parameter statement and is used to make sure the person deploying supplies one of a set of predefined values, which matches the slot about rejecting a machine size the file does not list. The minLength decorator sets the inclusive minimum length for a string, so a password of fewer than twelve characters is refused. The secure decorator marks a string or object parameter so that its value is not saved to the deployment history and is not logged, which matches the slot about keeping the connection string out of the deployment record and logs. The remaining two decorators set bounds that no rule in this scenario asks for.",
+				"perChoice": {
+					"d1": "Belongs in the slot 'Shows the operator the purpose of the input': the description decorator adds explanatory text for an element, and in this file it explains what the instance count is for.",
+					"d2": "Belongs in the slot 'Rejects any machine size that the file does not list': the allowed decorator takes an array of permitted values, is valid only on a parameter statement, and makes sure the deployer supplies one of those predefined values.",
+					"d3": "Belongs in the slot 'Rejects a password shorter than twelve characters': minLength sets the inclusive minimum length for a string, so values below twelve characters are not accepted.",
+					"d4": "Belongs in the slot 'Keeps the entered connection string from appearing in the deployment record and logs': the secure decorator marks a string or object parameter as secure, so the value is not saved to the deployment history and is not logged.",
+					"d5": "Fits no slot. The minValue decorator sets the inclusive minimum for an integer, and this scenario has no rule about the smallest acceptable number for a numeric input such as the monitoring interval.",
+					"d6": "Fits no slot. The maxLength decorator sets the inclusive maximum length for a string, which is the opposite bound from the one the password rule requires, and no slot covers an upper character limit on the operator name."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/file"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/syntax"
+				}
+			],
+			"subtopics": [
+				"bicep-decorators",
+				"template-syntax"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R48WC8DJ5BY89DQCN87PEB",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have an ARM JSON template that deploys a virtual machine tier. Resource Manager rejects the file before any resource is created, and the validation complaint points at one of the four helper definitions in the functions section. You need to know which helper produces which complaint. Drag each helper into the slot that matches the validation error it causes.",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"functions\": [\n    {\n      \"name\": \"buildName\",\n      \"type\": \"string\",\n      \"parameters\": {\n        \"prefix\": { \"type\": \"string\" }\n      },\n      \"value\": \"[concat(parameters.prefix, variables.environment)]\"\n    },\n    {\n      \"name\": \"wrap\",\n      \"type\": \"string\",\n      \"parameters\": {\n        \"text\": { \"type\": \"string\" }\n      },\n      \"value\": \"[buildName(parameters.text)]\"\n    },\n    {\n      \"name\": \"currentSize\",\n      \"type\": \"string\",\n      \"parameters\": {\n        \"vmName\": { \"type\": \"string\" }\n      },\n      \"value\": \"[reference(resourceId('Microsoft.Compute/virtualMachines', parameters.vmName)).vmSize]\"\n    },\n    {\n      \"name\": \"greeting\",\n      \"type\": \"string\",\n      \"parameters\": {\n        \"name\": { \"type\": \"string\", \"defaultValue\": \"there\" }\n      },\n      \"value\": \"[concat('Hello ', parameters.name)]\"\n    }\n  ]\n}"
+				},
+				"items": [
+					{
+						"id": "f1",
+						"text": "buildName"
+					},
+					{
+						"id": "f2",
+						"text": "wrap"
+					},
+					{
+						"id": "f3",
+						"text": "currentSize"
+					},
+					{
+						"id": "f4",
+						"text": "greeting"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Rejected because it reads a value stored elsewhere in the template"
+					},
+					{
+						"id": "s2",
+						"label": "Rejected because it calls another function defined in the same file"
+					},
+					{
+						"id": "s3",
+						"label": "Rejected because it asks for the live state of an already deployed object"
+					},
+					{
+						"id": "s4",
+						"label": "Rejected because one of its arguments carries a fallback value"
+					}
+				]
+			},
+			"key": {
+				"s1": "f1",
+				"s2": "f2",
+				"s3": "f3",
+				"s4": "f4"
+			},
+			"explanation": {
+				"correct": "ARM template user-defined functions can work only with the parameters passed to them. buildName is rejected because its body reads variables.environment, a value stored outside the function; user-defined functions cannot access template variables. wrap is rejected because its body calls buildName, and user-defined functions cannot call other user-defined functions. currentSize is rejected because its body calls reference(), and user-defined functions cannot use reference. greeting is rejected because it declares defaultValue on one of its function parameters, and user-defined function parameters cannot have default values.",
+				"perChoice": {
+					"f1": "Belongs with the complaint about reading a value stored elsewhere in the template: the body of buildName concatenates parameters.prefix with variables.environment, and user-defined functions cannot access variables.",
+					"f2": "Belongs with the complaint about calling another function in the same file: the body of wrap calls buildName, and user-defined functions cannot call other user-defined functions.",
+					"f3": "Belongs with the complaint about asking for the live state of a deployed object: the body of currentSize calls reference(), and user-defined functions cannot use reference.",
+					"f4": "Belongs with the complaint about an argument carrying a fallback value: greeting sets defaultValue on a function parameter, and user-defined function parameters cannot have default values."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/syntax"
+				}
+			],
+			"subtopics": [
+				"arm-user-defined-functions",
+				"template-validation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R4BZX080M8YRVY5JHY8X76",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have an ARM JSON template that rolls out a web tier of virtual machines. The parameters section of the file attaches a rule to each input, so that a bad value is rejected before any resource is created and so that the run still completes when the operator leaves an input out. The platform team wants a written map of which input carries which rule, so that new engineers can read the file without guessing. Drag each parameter from the file into the slot that matches the rule it carries.",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"parameters\": {\n    \"vmSize\": {\n      \"type\": \"string\",\n      \"allowedValues\": [\n        \"Standard_D2s_v5\",\n        \"Standard_D4s_v5\",\n        \"Standard_D8s_v5\"\n      ]\n    },\n    \"webServerCount\": {\n      \"type\": \"int\",\n      \"minValue\": 10\n    },\n    \"standbyCount\": {\n      \"type\": \"int\",\n      \"maxValue\": 5\n    },\n    \"adminUsername\": {\n      \"type\": \"string\",\n      \"minLength\": 12\n    },\n    \"tagPrefix\": {\n      \"type\": \"string\",\n      \"maxLength\": 4\n    },\n    \"deploymentRegion\": {\n      \"type\": \"string\",\n      \"defaultValue\": \"eastus\"\n    }\n  }\n}"
+				},
+				"items": [
+					{
+						"id": "vmSize",
+						"text": "vmSize"
+					},
+					{
+						"id": "webServerCount",
+						"text": "webServerCount"
+					},
+					{
+						"id": "standbyCount",
+						"text": "standbyCount"
+					},
+					{
+						"id": "adminUsername",
+						"text": "adminUsername"
+					},
+					{
+						"id": "tagPrefix",
+						"text": "tagPrefix"
+					},
+					{
+						"id": "deploymentRegion",
+						"text": "deploymentRegion"
+					}
+				],
+				"slots": [
+					{
+						"id": "s-fixed-list",
+						"label": "Restricts the parameter to a fixed list of accepted choices"
+					},
+					{
+						"id": "s-lowest-number",
+						"label": "Sets the smallest whole number the parameter may be given"
+					},
+					{
+						"id": "s-highest-number",
+						"label": "Sets the largest whole number the parameter may be given"
+					},
+					{
+						"id": "s-shortest-text",
+						"label": "Sets the fewest characters or entries the parameter may hold"
+					},
+					{
+						"id": "s-longest-text",
+						"label": "Sets the greatest number of characters or entries the parameter may hold"
+					},
+					{
+						"id": "s-fallback",
+						"label": "Supplies what the parameter falls back to when the operator leaves it out"
+					}
+				]
+			},
+			"key": {
+				"s-fixed-list": "vmSize",
+				"s-lowest-number": "webServerCount",
+				"s-highest-number": "standbyCount",
+				"s-shortest-text": "adminUsername",
+				"s-longest-text": "tagPrefix",
+				"s-fallback": "deploymentRegion"
+			},
+			"explanation": {
+				"correct": "Each parameter in the file carries exactly one constraint, and the meaning of each constraint fixes the slot. vmSize carries allowedValues, which restricts the input to a fixed list of accepted choices. webServerCount carries minValue, the inclusive lower bound on an integer, so it sets the smallest whole number accepted; standbyCount carries maxValue, the inclusive upper bound on an integer, so it sets the largest whole number accepted. adminUsername carries minLength, the inclusive lower bound for strings, secure strings and arrays, so it sets the fewest characters or entries; tagPrefix carries maxLength, the inclusive upper bound for those types, so it sets the greatest number of characters or entries. deploymentRegion carries defaultValue, which is the value used when no value is supplied for the parameter.",
+				"perChoice": {
+					"vmSize": "Belongs in the slot about restricting the parameter to a fixed list of accepted choices: the file gives vmSize an allowedValues array holding the three machine sizes the tier supports.",
+					"webServerCount": "Belongs in the slot about the smallest whole number: webServerCount is an int parameter with minValue, the inclusive lower bound for integer parameters.",
+					"standbyCount": "Belongs in the slot about the largest whole number: standbyCount is an int parameter with maxValue, the inclusive upper bound for integer parameters.",
+					"adminUsername": "Belongs in the slot about the fewest characters or entries: adminUsername is a string parameter with minLength, the inclusive lower bound on the length of a string.",
+					"tagPrefix": "Belongs in the slot about the greatest number of characters or entries: tagPrefix is a string parameter with maxLength, the inclusive upper bound on the length of a string.",
+					"deploymentRegion": "Belongs in the slot about the fallback value: deploymentRegion carries defaultValue, the value applied when no value is provided for the parameter at deployment time."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/syntax"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/overview"
+				}
+			],
+			"subtopics": [
+				"arm-template-parameters",
+				"parameter-validation",
+				"template-syntax"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R4FXGVD4366SY475Y9XEDT",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a Bicep file that rolls out a web tier of virtual machines into a resource group, and the platform team has written five deployment requirements. Each requirement is handled by a different part of the Bicep language. Drag each part into the slot that matches the requirement it satisfies.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Requirement: Tier size\n  The web tier always runs one virtual machine per name in the list handed to the deployment.\n\nRequirement: Monitoring agent\n  The monitoring agent joins the tier on the production run only; on every other run nothing extra is created.\n\nRequirement: Network configuration\n  Subnet settings and network security rules come from a separate file owned by the platform team.\n\nRequirement: Interface wiring\n  The network interface is written as its own entry in the file and must be tied to the virtual machine it belongs to.\n\nRequirement: Endpoint hand-back\n  The pipeline that starts the deployment needs the web endpoint value handed back to it once the run finishes."
+				},
+				"items": [
+					{
+						"id": "i_for",
+						"text": "`for` expression"
+					},
+					{
+						"id": "i_if",
+						"text": "`if` expression"
+					},
+					{
+						"id": "i_module",
+						"text": "`module` declaration"
+					},
+					{
+						"id": "i_parent",
+						"text": "`parent` property"
+					},
+					{
+						"id": "i_output",
+						"text": "`output` declaration"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "One machine per name in the supplied list"
+					},
+					{
+						"id": "s2",
+						"label": "Monitoring agent on the production run only"
+					},
+					{
+						"id": "s3",
+						"label": "Network settings taken from a separately maintained file"
+					},
+					{
+						"id": "s4",
+						"label": "Network interface tied to the virtual machine"
+					},
+					{
+						"id": "s5",
+						"label": "Web endpoint value returned to the caller"
+					}
+				]
+			},
+			"key": {
+				"s1": "i_for",
+				"s2": "i_if",
+				"s3": "i_module",
+				"s4": "i_parent",
+				"s5": "i_output"
+			},
+			"explanation": {
+				"correct": "The five requirements map one-to-one onto five Bicep constructs: a `for` expression produces one copy per entry of the supplied list, an `if` expression limits the monitoring agent to the production run, a `module` declaration brings in the separately maintained network file, a `parent` property ties the separately written network interface to the virtual machine, and an `output` declaration hands the endpoint value back to the pipeline that started the deployment.",
+				"perChoice": {
+					"i_for": "The `for` expression repeats a resource, module, variable, property, or output once per entry of an array, object, or index range. It is the construct that turns the list of names into one virtual machine per name, so it fits the \"one machine per name in the supplied list\" slot.",
+					"i_if": "The `if` expression is added to a resource or module; during deployment the condition is evaluated and the resource or module is created only when the result is true. That is how the monitoring agent can appear on the production run and be skipped on every other run, so it fits the monitoring slot.",
+					"i_module": "A `module` declaration links to another file by path and deploys it as part of the run, passing it parameters through the `params` block. It is the reuse mechanism that pulls subnet settings and network security rules in from the file the platform team maintains, so it fits the separately maintained file slot.",
+					"i_parent": "The `parent` property is used on a child resource that is written as its own entry in the file instead of being nested inside the parent; its value points at the parent's symbolic name. That is what ties the network interface to the virtual machine it belongs to, so it fits the interface wiring slot.",
+					"i_output": "An `output` declaration returns a value from the deployment to whatever invoked it, which is how the web endpoint value reaches the pipeline once the run finishes, so it fits the endpoint hand-back slot."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/file"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/overview"
+				}
+			],
+			"subtopics": [
+				"bicep-syntax",
+				"conditional-deployment",
+				"child-resources"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R4JV8HR5DQ9B1RX29BQ9KK",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a platform team that publishes one reusable virtual machine rollout to the whole organization. Today the team sends the template file to each application team as an email attachment, so every recipient ends up holding an editable copy and nobody can tell which copy was actually run. The team wants one shared copy kept in the organization's own catalog, with access to it granted through Azure role-based access control, so that application teams can start it while only the platform team can change what is published. The same rollout must also install a local certificate on every new virtual machine, and the PowerShell code for that step is maintained in a separate file that is fetched when the rollout runs. Which approach should the platform team take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"$schema\": \"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#\",\n  \"contentVersion\": \"1.0.0.0\",\n  \"parameters\": {\n    \"vmName\": { \"type\": \"string\" },\n    \"vmSize\": { \"type\": \"string\", \"defaultValue\": \"Standard_D2s_v3\" }\n  },\n  \"resources\": [\n    {\n      \"type\": \"Microsoft.Compute/virtualMachines\",\n      \"apiVersion\": \"2024-07-01\",\n      \"name\": \"[parameters('vmName')]\",\n      \"location\": \"[resourceGroup().location]\",\n      \"properties\": {\n        \"hardwareProfile\": { \"vmSize\": \"[parameters('vmSize')]\" }\n      }\n    }\n  ],\n  \"outputs\": {\n    \"vmId\": { \"type\": \"string\", \"value\": \"[resourceId('Microsoft.Compute/virtualMachines', parameters('vmName'))]\" }\n  }\n}"
+				},
+				"statement": "The platform team should publish the shared rollout as a {{s1}}, and should add the certificate installation to the same file as a {{s2}}.",
+				"slots": [
+					{
+						"id": "s1",
+						"options": [
+							{
+								"id": "a",
+								"text": "template spec"
+							},
+							{
+								"id": "b",
+								"text": "linked template"
+							},
+							{
+								"id": "c",
+								"text": "nested template"
+							},
+							{
+								"id": "d",
+								"text": "template parameter file"
+							}
+						]
+					},
+					{
+						"id": "s2",
+						"options": [
+							{
+								"id": "a",
+								"text": "deployment script"
+							},
+							{
+								"id": "b",
+								"text": "resource group deployment"
+							},
+							{
+								"id": "c",
+								"text": "template parameter file"
+							},
+							{
+								"id": "d",
+								"text": "linked template"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "a"
+			},
+			"explanation": {
+				"correct": "The shared rollout belongs in a template spec: it stores the template as an Azure resource type whose access is managed with role-based access control, so users who only have read access can deploy it but cannot change it — exactly the 'application teams can start it, only the platform team can change it' goal. The certificate step belongs in a deployment script: deployment scripts add PowerShell or Bash to a template so end-to-end setup completes in a single deployment, and the code can be kept in an external source that the template references, which matches the team's separately maintained PowerShell file.",
+				"perChoice": {
+					"s1:b": "A linked template is only a reference from a parent template to another template location; it creates no shared catalog artifact with its own Azure role-based access control, so it cannot give readers run-only rights over a single approved copy.",
+					"s1:c": "A nested template is a sub-deployment called from a parent template; it is a way to break a rollout into pieces, not a way to publish one shared copy that other teams can run without altering it.",
+					"s1:d": "A parameter file only carries input values into a run; it does not store the rollout itself, publish it to a catalog, or control who may change it.",
+					"s2:b": "A resource group deployment is the run of the template against a resource group scope; it adds no executable PowerShell code to the rollout, so the certificate would never be installed on the new virtual machines.",
+					"s2:c": "A parameter file only supplies values such as the machine name or size at run time; it cannot execute code on the newly created virtual machines.",
+					"s2:d": "A linked template reuses another template as part of a run; it does not run PowerShell or Bash code to finish the environment setup inside a single deployment."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/syntax"
+				}
+			],
+			"subtopics": [
+				"template-specs",
+				"deployment-scripts"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R4XVXDA1RBM36ZY744N9GC",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an ARM JSON template that rolls out a tier of virtual machines, and each machine has to read images from a storage account. The security team does not want an account key stored in the template or on the machine, so the machines need an Azure identity that the storage account grants access to. The file creates the machines successfully, but the storage account rejects the image reads because the machines carry no identity. The platform team also wants to review the planned effect of the tier rollout before the file is run against their production resource group.",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"type\": \"Microsoft.Compute/virtualMachines\",\n  \"apiVersion\": \"2023-09-01\",\n  \"name\": \"vm-app-01\",\n  \"location\": \"[parameters('location')]\",\n  \"sku\": {\n    \"name\": \"Standard_D2s_v3\"\n  },\n  \"properties\": {\n    \"hardwareProfile\": {\n      \"vmSize\": \"Standard_D2s_v3\"\n    },\n    \"osProfile\": {\n      \"computerName\": \"vm-app-01\",\n      \"adminUsername\": \"azureuser\"\n    }\n  }\n}"
+				},
+				"statement": "The identity object has to be added {{identitySlot}}, and the platform team should run {{previewSlot}} to review the planned outcome before the tier reaches their production resource group.",
+				"slots": [
+					{
+						"id": "identitySlot",
+						"options": [
+							{
+								"id": "a",
+								"text": "to the root level of the resource declaration"
+							},
+							{
+								"id": "b",
+								"text": "to the properties section of the resource declaration"
+							},
+							{
+								"id": "c",
+								"text": "to the sku section of the resource declaration"
+							},
+							{
+								"id": "d",
+								"text": "to the tags section of the resource declaration"
+							}
+						]
+					},
+					{
+						"id": "previewSlot",
+						"options": [
+							{
+								"id": "a",
+								"text": "the what-if operation"
+							},
+							{
+								"id": "b",
+								"text": "the template validation operation"
+							},
+							{
+								"id": "c",
+								"text": "the template deployment operation"
+							},
+							{
+								"id": "d",
+								"text": "the deployment script operation"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"identitySlot": "a",
+				"previewSlot": "a"
+			},
+			"explanation": {
+				"correct": "A managed identity is declared beside type, apiVersion, name and location — directly in the resource declaration rather than inside the resource-specific settings — so the identity object has to be added there, next to those other properties. For the preview, the operation that compares the file with the live state of the environment and reports the resources that would be created, updated, or deleted plus any resource property changes, without altering anything, is the one the platform team needs before the tier reaches production.",
+				"perChoice": {
+					"identitySlot:b": "The properties section only accepts the settings defined for that resource type; an identity declaration is not one of those settings, so it cannot go there.",
+					"identitySlot:c": "The sku section carries the size, tier, family and capacity of the resource and has no place for an identity declaration.",
+					"identitySlot:d": "The tags section holds name and value pairs used for organizing and reporting resources; an identity declaration does not belong there.",
+					"previewSlot:b": "Template validation only confirms that the file itself is valid before the run starts; it does not report the resources or property changes the rollout would bring, so the team still has no plan to review.",
+					"previewSlot:c": "Deploying the file creates and updates the resources it declares, so the environment changes while the run proceeds rather than handing back a plan first.",
+					"previewSlot:d": "A deployment script runs PowerShell or Bash commands to finish setup during a deployment, so it changes the environment instead of previewing the effect of the file."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/syntax"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/overview"
+				}
+			],
+			"subtopics": [
+				"arm-template-identity",
+				"deployment-preview"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R50XV69GQ4BG4VEEQFVTV7",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an ARM JSON template that a pipeline generates for the application team, and the generator emits a separate parameter for every tier setting. The generated file is rejected during validation before any resource is created, with a message saying that the file declares more parameters than the template format allows. You need the template to deploy successfully, while still letting whoever runs it supply every tier setting at deployment time and while each resource declaration keeps reading the one setting it needs. Which change should you make to the template?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Section of the generated file",
+						"What the generator emits"
+					],
+					"rows": [
+						[
+							"Parameters",
+							"312 declarations, one for each tier setting"
+						],
+						[
+							"Variables",
+							"8 declarations"
+						],
+						[
+							"Resources",
+							"23 declarations"
+						],
+						[
+							"Outputs",
+							"4 declarations"
+						]
+					]
+				},
+				"statement": "The team should {{fix}} so that the generated file passes validation and every tier setting can still be supplied when the deployment runs.",
+				"slots": [
+					{
+						"id": "fix",
+						"options": [
+							{
+								"id": "a",
+								"text": "Group the tier settings into one parameter of type object"
+							},
+							{
+								"id": "b",
+								"text": "Group the tier settings into one parameter of type string"
+							},
+							{
+								"id": "c",
+								"text": "Group the tier settings into one variable of type object"
+							},
+							{
+								"id": "d",
+								"text": "Keep the tier settings as separate parameters and set a default value on each one"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"fix": "a"
+			},
+			"explanation": {
+				"correct": "A template may declare at most 256 parameters, and the generated file declares 312, so Resource Manager rejects it during validation before any resource is created (the variables, resources, and outputs in the file are all far below their own limits). The template format lets several related values travel together in a single parameter of type object, and the resource declarations then read the individual tier settings from that parameter's members. Grouping the settings that way drops the declared parameter count below the limit while keeping the settings as deployment-time input that the operator supplies and that each resource declaration can still read by name.",
+				"perChoice": {
+					"fix:b": "A parameter of type string carries one text value, so it cannot hold the several separately named tier settings that the resource declarations must each read; the settings would have to be packed into one opaque string instead of addressable members.",
+					"fix:c": "Variables are values defined inside the template file, not inputs supplied when the deployment runs. Moving the tier settings there would cut the parameter count, but the operator could no longer supply the settings at deployment time, which is exactly what the requirement asks for.",
+					"fix:d": "Giving each setting a default value does not change how many parameters the file declares. The validation complaint is about the number of declared parameters, so the file would still be rejected."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/syntax"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/overview"
+				}
+			],
+			"subtopics": [
+				"template-limits",
+				"arm-parameters",
+				"deployment-validation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R55QKQKF4SEN6TCZV0KTJN",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Bicep file that rolls out a web tier of virtual machines into a resource group. Alongside the machines, the file declares an availability set that is only supposed to be created when the boolean input controlling it is set to true by whoever runs the deployment. The file does not build: the compiler reports a syntax error at that resource declaration, so no deployment can be started at all. You need the file to build and the availability set to be created only when that input is true. Which change should you make to the Bicep file?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "param deployAvailabilitySet bool = true\n\nresource webAvailabilitySet 'Microsoft.Compute/availabilitySets@2024-01-01' =\n  if (deployAvailabilitySet) {\n    name: 'web-aset-01'\n    location: resourceGroup().location\n    sku: {\n      name: 'Aligned'\n    }\n  }"
+				},
+				"statement": "The build failure is resolved by {{fix}}.",
+				"slots": [
+					{
+						"id": "fix",
+						"options": [
+							{
+								"id": "a",
+								"text": "putting the `if` expression on the same line as the assignment operator"
+							},
+							{
+								"id": "b",
+								"text": "putting the resource's opening brace on the same line as the assignment operator and leaving the `if` expression where it is"
+							},
+							{
+								"id": "c",
+								"text": "putting the `if` expression on the same line as the resource type and leaving the assignment operator where it is"
+							},
+							{
+								"id": "d",
+								"text": "putting the resource's opening brace on the same line as the `if` expression and leaving the assignment operator where it is"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"fix": "a"
+			},
+			"explanation": {
+				"correct": "Bicep ignores spaces and tabs but is sensitive to newlines, so a resource declaration cannot be split so that the `if` expression starts on the line after the assignment operator. Moving the `if` expression onto the same line as the '=' sign makes the declaration parse correctly, keeps the availability set tied to the boolean input, and leaves the rest of the file unchanged.",
+				"perChoice": {
+					"fix:b": "This leaves the `if` expression starting on the line after the assignment operator, which is exactly the layout the compiler rejects. The conditional expression has to follow the '=' sign on the same line, and the opening brace comes after it.",
+					"fix:c": "The conditional expression has to follow the assignment operator in the declaration. Placing it beside the resource type puts it before the '=' sign, so the declaration is still not in a form the compiler accepts.",
+					"fix:d": "The assignment operator would still end one line, with the `if` expression starting on the next line, so the same build error is still raised. Moving the brace does not change where the conditional expression begins."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/file"
+				}
+			],
+			"subtopics": [
+				"bicep-syntax",
+				"conditional-deployment",
+				"template-formatting"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R58W8CETC6DAKBBWYZK3FV",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Bicep file that rolls out a tier of virtual machines together with their managed disks. The pipeline runs against a busy platform, and a noticeable share of the runs is stopped part-way through because the platform temporarily turns down one of the resources, so the whole rollout is abandoned and the operators have to start it again by hand. You need the file to handle this on its own: the turned-down resource should be put forward again automatically, the pause between the repeated runs should grow with each one, and the total count of runs must stay within the ceiling the platform permits. Which change should you make to the Bicep file?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "targetScope = 'resourceGroup'\n\nparam vmNames array = [\n  'app-vm-01'\n  'app-vm-02'\n  'app-vm-03'\n]\n\nresource disks 'Microsoft.Compute/disks@2025-06-01' = [for name in vmNames: {\n  name: '${name}-osdisk'\n  location: resourceGroup().location\n  sku: { name: 'Premium_LRS' }\n  properties: { diskSizeGB: 128, createOption: 'Empty' }\n}]\n\nresource vms 'Microsoft.Compute/virtualMachines@2025-06-01' = [for name in vmNames: {\n  name: name\n  location: resourceGroup().location\n  properties: {\n    hardwareProfile: { vmSize: 'Standard_D2s_v3' }\n    storageProfile: {\n      imageReference: { publisher: 'MicrosoftWindowsServer', offer: 'WindowsServer', sku: '2022-datacenter', version: 'latest' }\n      osDisk: { createOption: 'FromImage' }\n    }\n  }\n}]"
+				},
+				"statement": "To make the rollout survive the turn-downs, the platform team needs to {{fix}}.",
+				"slots": [
+					{
+						"id": "fix",
+						"options": [
+							{
+								"id": "a",
+								"text": "apply the retryOn decorator to the resource declarations, listing the error codes that trigger another submission and capping the number of extra submissions at 10"
+							},
+							{
+								"id": "b",
+								"text": "apply the batchSize decorator to the resource declarations, so the loop instances are deployed sequentially in batches of one"
+							},
+							{
+								"id": "c",
+								"text": "apply the secure decorator to the string parameters, so their values are kept out of the deployment history and the logs"
+							},
+							{
+								"id": "d",
+								"text": "apply the allowed decorator to the string parameters, so only the machine sizes on an approved list are accepted"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"fix": "a"
+			},
+			"explanation": {
+				"correct": "The requirement is that the file itself puts a resource deployment that the platform turned down forward again, waits longer before each repeated run, and stops after a bounded number of extra runs. In Bicep this is exactly what the retryOn decorator on a resource declaration does: it accepts a list of error code strings and an optional retry count (maximum 10, with exponential back-off). Putting it on the virtual machine and managed disk declarations makes the file re-submit the resource that was rejected, without the operators having to run the rollout by hand. The other decorators do not provide this behavior: batchSize only controls how many loop instances are deployed per batch (sequential deployment), secure only hides a parameter value from deployment history and the logs, and allowed only restricts a parameter to a fixed set of values.",
+				"perChoice": {
+					"fix:b": "batchSize sets up instances to deploy sequentially in batches, which controls how many loop instances run at a time. It never puts a resource deployment that the platform rejected forward again, so the rollout would still stop at the same point and the file would still have to be run by hand.",
+					"fix:c": "secure marks a string or object parameter as secure so its value is not saved to the deployment history and is not logged. It changes how a value is recorded, not what happens to a resource deployment that was turned down, so it does not satisfy the requirement.",
+					"fix:d": "allowed makes sure the operator supplies one of an approved list of values for a parameter, and it is permitted only on param statements. It constrains input values before the run and has no effect on how the file handles a turned-down resource deployment."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/file"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/overview"
+				}
+			],
+			"subtopics": [
+				"bicep-decorators",
+				"deployment-retries",
+				"bicep-loops"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R5K0N4STJ1WNR99KGQ6FMN",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an ARM JSON template that rolls out a tier of virtual machines. The file keeps the tier's name prefix in its variables section, and it defines a user-defined function named `nameFor` whose job is to form each machine's name from that prefix and the instance number. Every deployment of the file is rejected during validation, and the message names `nameFor` as the cause. You need the tier to roll out successfully, with every machine name still formed from the prefix that the file keeps and the instance number, and with the prefix still read from the variables section. Which change should you make to the template?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "\"functions\": [\n  {\n    \"name\": \"nameFor\",\n    \"type\": \"string\",\n    \"parameters\": { \"index\": { \"type\": \"int\" } },\n    \"value\": \"[concat(variables('vmPrefix'), '-', string(parameters('index')))]\"\n  }\n]"
+				},
+				"statement": "To roll out the tier successfully, with every machine name still formed from the prefix held in the template's variables section and the instance number, you should {{slot1}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "Let the helper take the prefix as a parameter and join it with the index inside the helper."
+							},
+							{
+								"id": "b",
+								"text": "Let the helper take the prefix as a literal string instead of a parameter, and join it with the index inside the helper."
+							},
+							{
+								"id": "c",
+								"text": "Let the helper take the prefix as a template parameter, and join it with the index inside the helper."
+							},
+							{
+								"id": "d",
+								"text": "Let the helper take the index as a template parameter, and join it with the prefix inside the helper."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a"
+			},
+			"explanation": {
+				"correct": "A user-defined function in an ARM JSON template can only use the parameters it declares itself; it has no access to the template's variables section and cannot call other user-defined functions. Declaring the prefix as a parameter of `nameFor` lets the helper build each machine name from the value it is handed plus the index it is called with, and the call sites can hand it the value held in the variables section.",
+				"perChoice": {
+					"slot1:b": "Hardcoding the prefix as a literal means the file no longer reads it from the variables section, so the tier prefix could not be changed in one place.",
+					"slot1:c": "A template parameter is not visible inside a user-defined function body, because a function sees only the parameters declared on the function itself, so the helper would still be unable to read the prefix.",
+					"slot1:d": "Moving the instance number to a template parameter does not reach the helper either, because a function body cannot see template parameters, so the per-call index would still be out of reach."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/syntax"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/overview"
+				}
+			],
+			"subtopics": [
+				"arm-user-defined-functions"
+			],
+			"reviewed": false
+		}
+	]
+}

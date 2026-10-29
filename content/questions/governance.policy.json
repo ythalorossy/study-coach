@@ -1,0 +1,1219 @@
+{
+	"skill": "governance.policy",
+	"questions": [
+		{
+			"id": "q_01M5GATXKB6F9YWJRBEQFYAZ9Z",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You are rolling out a new tag policy across a subscription. You first want to see which existing resources are missing the required tag so you can communicate with resource owners, but you don't want to alter any resources or block new deployments yet. After the report is reviewed, you intend to switch to a stricter setting. Which effect should the initial policy assignment use?",
+				"options": [
+					{
+						"id": "a",
+						"text": "audit"
+					},
+					{
+						"id": "b",
+						"text": "deny"
+					},
+					{
+						"id": "c",
+						"text": "modify"
+					},
+					{
+						"id": "d",
+						"text": "deployIfNotExists"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The audit effect records the compliance state of existing and new resources in the dashboard but does not change the resources or block new deployments. The Azure Policy overview recommends starting with an audit or auditIfNotExists effect so that you can see the impact on your environment before switching to an enforcement effect.",
+				"perChoice": {
+					"b": "deny blocks the resource action; it would prevent the resource from being created or updated, which is exactly what the scenario is trying to avoid for the initial assessment.",
+					"c": "modify adds or updates fields (such as tags) on the resource at create or update time; it would alter resource state rather than just report on it.",
+					"d": "deployIfNotExists deploys a related template (such as a diagnostic setting) when the condition matches; it changes the environment instead of only reporting on it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/effect-basics"
+				}
+			],
+			"subtopics": [
+				"policy-effects",
+				"evaluation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GAWB4P7TMT8JGD90HXHKHV",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your team bundles multiple occurrences of the same built-in tag policy inside a single initiative so they can be assigned together. The policyReferences portion of the initiative definition appears below. Each occurrence should map to a different tag-name value at assignment time. Per the documentation, how does the initiative distinguish these two occurrences?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Policy definition name",
+						"Parameters block"
+					],
+					"rows": [
+						[
+							"Append tag and its value to resources",
+							"{ \"tagName\": { \"value\": \"[parameters('tagName')]\" } }"
+						],
+						[
+							"Append tag and its value to resources",
+							"{ \"tagName\": { \"value\": \"[parameters('costCenter')]\" } }"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Each occurrence is given a unique reference ID that you supply when adding the policy to the initiative."
+					},
+					{
+						"id": "b",
+						"text": "The initiative automatically appends a numeric suffix to the policy's displayName."
+					},
+					{
+						"id": "c",
+						"text": "Azure Policy rejects the initiative because the same policy definition cannot be referenced twice."
+					},
+					{
+						"id": "d",
+						"text": "The second occurrence silently overrides the first one during the assignment."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "When you add a policy definition to an initiative that already contains that policy, each occurrence is given a distinct reference ID you choose, which is also what you reference from the initiative's parameters. The create-and-manage tutorial describes this: when the same definition is added twice, each entry gets a different reference ID so the initiative can configure each occurrence with different parameter values during the assignment.",
+				"perChoice": {
+					"b": "Initiatives do not auto-rewrite the displayName of a member policy; they rely on the reference ID rather than displayName to disambiguate duplicate policies.",
+					"c": "Azure Policy does accept the same policy definition more than once inside an initiative; the create-and-manage tutorial explicitly adds the same tag policy twice and assigns each instance a different reference ID.",
+					"d": "The second entry is not silently dropped or merged. Both occurrences are kept in the initiative and each applies independently with its own reference ID and parameter values."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/tutorials/create-and-manage"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/overview"
+				}
+			],
+			"subtopics": [
+				"initiative-definition",
+				"policy-references"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GB1G97M3WGGZAQY3FNVKMA",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "A developer authors a custom policy that requires every resource group in scope to carry a specific tag. The relevant portion of the policy definition JSON is shown below. The mode property was left blank by mistake. Per the documentation, which mode value should the developer set so that the rule also evaluates resource groups (and not only resources that support tags and locations)?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"displayName\": \"Require tag on resource groups\",\n  \"mode\": \"\",\n  \"policyRule\": {\n    \"if\": {\n      \"allOf\": [\n        { \"field\": \"type\", \"equals\": \"Microsoft.Resources/subscriptions/resourceGroups\" }\n      ]\n    },\n    \"then\": { \"effect\": \"deny\" }\n  },\n  \"metadata\": { \"category\": \"Tags\" }\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "\"all\""
+					},
+					{
+						"id": "b",
+						"text": "\"Indexed\""
+					},
+					{
+						"id": "c",
+						"text": "\"Microsoft.Kubernetes.Data\""
+					},
+					{
+						"id": "d",
+						"text": "\"Microsoft.KeyVault.Data\""
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The 'all' mode evaluates resource groups, subscriptions, and resource types. Per the definition-structure basics docs, policies that enforce location or tags on a resource group or subscription must set mode to 'all' and specifically target the Microsoft.Resources/subscriptions/resourceGroups or Microsoft.Resources/subscriptions type. Leaving mode blank in Azure CLI results in a null value that behaves like Indexed, which would not evaluate resource groups — so the developer needs to explicitly set 'all'.",
+				"perChoice": {
+					"b": "The 'Indexed' mode only evaluates resource types that support tags and location; resource groups are skipped, which defeats the purpose of a policy that targets Microsoft.Resources/subscriptions/resourceGroups.",
+					"c": "'Microsoft.Kubernetes.Data' is a Resource Provider mode used for managing Kubernetes cluster components like pods, containers, and ingresses — not for resource group tag enforcement.",
+					"d": "'Microsoft.KeyVault.Data' is a Resource Provider mode used for managing Key Vault vaults and certificates — not for resource group tag enforcement."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/definition-structure-basics"
+				}
+			],
+			"subtopics": [
+				"definition-structure",
+				"mode"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GB1TEB3FFYZZXGGWHZKW0G",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You assign a built-in policy whose rule applies a default tag and its value to resources that don't already carry it. The assignment is also set to create a remediation task so existing resources are updated. Per the documentation, what is automatically created and granted the necessary permissions so the assignment can apply those changes?",
+				"options": [
+					{
+						"id": "a",
+						"text": "A system-assigned managed identity with the Contributor role on the assignment scope"
+					},
+					{
+						"id": "b",
+						"text": "A user-assigned managed identity with the Contributor role on the assignment scope"
+					},
+					{
+						"id": "c",
+						"text": "A system-assigned managed identity with the Reader role on the assignment scope"
+					},
+					{
+						"id": "d",
+						"text": "A Microsoft Entra application with a client secret and the Contributor role on the assignment scope"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Assignments that use the modify or deployIfNotExists effects require an identity so the assignment can alter or deploy resources. The create-and-manage tutorial walks through exactly this scenario: 'Create a Managed Identity is automatically checked since this policy definition uses the modify effect. Type of Managed Identity is set to System Assigned. Permissions is set to Contributor automatically based on the policy definition.' The system identity is created on the assignment and granted the Contributor role at the scope of the assignment.",
+				"perChoice": {
+					"b": "Azure Policy assignments do not create user-assigned managed identities; they only auto-provision a system-assigned identity. A user-assigned identity would need to be created separately and referenced.",
+					"c": "The Reader role only permits reading resources. The modify effect must write tags onto existing resources, which requires write permissions like Contributor.",
+					"d": "Azure Policy assignments do not register a Microsoft Entra application with a client secret. They provision a managed identity associated with the assignment itself."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/tutorials/create-and-manage"
+				}
+			],
+			"subtopics": [
+				"assignment-structure",
+				"managed-identity"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GB2XFY26Q5W6R8723JAJNA",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your organization has two policy assignments on overlapping scopes. Their definitions are shown below. A user attempts to deploy a new resource into the Finance scope using a location allowed by the Finance-rg row but blocked by the row on the subscription. According to the documentation, what is the result?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"assignments\": [\n    {\n      \"name\": \"enforce-locations-sub\",\n      \"scope\": \"/subscriptions/Sub1\",\n      \"definition\": \"Allowed locations (built-in)\",\n      \"effect\": \"deny\"\n    },\n    {\n      \"name\": \"finance-locations-rg\",\n      \"scope\": \"/subscriptions/Sub1/rgs/Finance\",\n      \"definition\": \"Allowed locations for finance (custom, more permissive)\",\n      \"effect\": \"deny\"\n    }\n  ]\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "The deployment is prevented because both are evaluated and the parent's restriction also applies."
+					},
+					{
+						"id": "b",
+						"text": "The deployment succeeds because the more specific child scope overrides the parent."
+					},
+					{
+						"id": "c",
+						"text": "The deployment succeeds because the assignment created most recently takes precedence."
+					},
+					{
+						"id": "d",
+						"text": "The deployment succeeds because the more permissive child rule overrides the parent."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Azure Policy evaluates every assignment that applies to a resource scope, and the resulting behavior is cumulative-most-restrictive. From the policy effects page: 'If both policy 1 and policy 2 had a deny effect, a resource would be blocked by the overlapping and conflicting policy definitions... Each assignment is individually evaluated. As such, there isn't an opportunity for a resource to slip through a gap from differences in scope.' Because the subscription assignment still denies the requested location, the deployment is blocked even though the child resource group assignment would otherwise allow it. To let the Finance scope accept extra regions, the subscription assignment must be excluded or amended for that scope.",
+				"perChoice": {
+					"b": "A child-scope assignment does not override its parent. Both assignments are evaluated independently and the parent's restriction remains in force.",
+					"c": "Azure Policy does not pick a winner by creation time. All assignments that match the resource scope are evaluated together, not just the newest one.",
+					"d": "A more permissive child assignment does not override a more restrictive parent. The union of applicable assignments is cumulative-most-restrictive, so the parent's deny still applies."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/effect-basics"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/overview"
+				}
+			],
+			"subtopics": [
+				"scope-inheritance",
+				"evaluation-behavior"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GBHZ99DG82JWJND7WQG3FB",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your team needs to create a custom policy definition and assign it to resources across three different subscriptions in your organization. The three subscriptions are direct children of the same management group. Where should you save the policy definition so it can be assigned to resources in all three subscriptions?",
+				"options": [
+					{
+						"id": "a",
+						"text": "In one of the three subscriptions"
+					},
+					{
+						"id": "b",
+						"text": "In a resource group inside one of the three subscriptions"
+					},
+					{
+						"id": "c",
+						"text": "In the management group that contains the three subscriptions"
+					},
+					{
+						"id": "d",
+						"text": "In a management group that does not contain the three subscriptions"
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "Per the documentation, the definition location determines which scopes the policy can be assigned to. A subscription-scoped definition can only be assigned within that same subscription. A management-group-scoped definition can only be assigned to child management groups and child subscriptions. To assign a policy definition to several subscriptions, the location must be a management group that contains each subscription. The shared parent management group contains all three subscriptions as children, so saving the definition there enables assignment to all three.",
+				"perChoice": {
+					"a": "A policy definition stored at the subscription scope can only be assigned to resources within that same subscription. Selecting one of the three subscriptions would prevent the definition from being assigned to the other two subscriptions.",
+					"b": "A policy definition must be stored at the subscription or management group scope; resource group is not a valid definition location. Even if a resource group were valid, the definition must be reusable across all three subscriptions, not just one.",
+					"d": "A management group that does not contain the target subscriptions cannot have the definition assigned to them, because the management group's assignments can only target its own child scopes."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/definition-structure-basics"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/overview"
+				}
+			],
+			"subtopics": [
+				"definition-location",
+				"scope"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GBJDCQ3B1V8AZGDFQ2RFMT",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You're authoring a custom policy definition to enforce pod-level settings in a managed container service on Azure. The JSON snippet below shows the policy structure with the mode field left blank. Per the documentation, which value should fill the blank?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"mode\": \"???\",\n  \"policyRule\": {\n    \"if\": {\n      \"field\": \"kind\",\n      \"equals\": \"Pod\"\n    },\n    \"then\": {\n      \"effect\": \"deny\"\n    }\n  }\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "all"
+					},
+					{
+						"id": "b",
+						"text": "indexed"
+					},
+					{
+						"id": "c",
+						"text": "Microsoft.Kubernetes.Data"
+					},
+					{
+						"id": "d",
+						"text": "Microsoft.KeyVault.Data"
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "Per the documentation, Microsoft.Kubernetes.Data is the Resource Provider mode for managing Kubernetes clusters and components such as pods, containers, and ingresses, supported for Azure Kubernetes Service clusters and Azure Arc-enabled Kubernetes clusters. When a custom policy must evaluate pod-level properties (not general Resource Manager properties), the policy definition must specify this mode so the engine knows how to evaluate the resources.",
+				"perChoice": {
+					"a": "The 'all' mode applies to general Resource Manager properties across subscriptions, resource groups, and resource types. It does not enable evaluation of pod-level Kubernetes components.",
+					"b": "The 'indexed' mode is restricted to resources that support tags and location. Pod-level Kubernetes components fall outside that scope.",
+					"d": "Microsoft.KeyVault.Data is for managing vaults, certificates, and secrets in Azure Key Vault, not Kubernetes pods or cluster components."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/definition-structure-basics"
+				}
+			],
+			"subtopics": [
+				"mode",
+				"definition-structure"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GBKFYEP14S6QZWN4KSBA57",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your organization has several service identities and user accounts that interact with Azure resources. You need to author a custom policy rule that distinguishes between these identity types so it can block resource deletions when they are initiated by a user account but still allow deletes triggered by an automated service identity. Per the documentation, which policy rule construct can be used to inspect the identity of the requestor?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"if\": {\n    \"allOf\": [\n      {\n        \"field\": \"type\",\n        \"equals\": \"Microsoft.Storage/storageAccounts\"\n      },\n      {\n        \"???\": {\n          \"claimType\": \"action\",\n          \"equals\": \"Microsoft.Storage/storageAccounts/delete\"\n        }\n      }\n    ]\n  },\n  \"then\": {\n    \"effect\": \"deny\"\n  }\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "principalType()"
+					},
+					{
+						"id": "b",
+						"text": "requestContext().identity"
+					},
+					{
+						"id": "c",
+						"text": "caller()"
+					},
+					{
+						"id": "d",
+						"text": "resourceGroup().identity"
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "Per the documentation, the requestContext().identity property in policy rules provides access to identity information about who is making the request. This enables identity-aware rules that can block or allow actions based on the calling principal (for example, blocking deletes initiated by a user account while allowing those initiated by an automated service principal).",
+				"perChoice": {
+					"a": "principalType() is not a documented Azure Policy rule construct for inspecting requestor identity; Azure Policy rules do not expose requestor information through a function with that name.",
+					"c": "caller() is not a documented Azure Policy rule construct for inspecting the calling identity. The documentation identifies requestContext().identity as the construct that exposes identity information.",
+					"d": "resourceGroup() in Azure Policy rules returns information about the resource group context, not the identity of the requestor. The .identity suffix on this construct does not retrieve requestor identity."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/definition-structure-basics"
+				}
+			],
+			"subtopics": [
+				"identity",
+				"definition-structure"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GBTG9GYFX6FSDQKWNTPQB1",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are configuring Azure Policy definitions for several governance requirements at the subscription level. Drag each effect to the requirement it best satisfies.",
+				"items": [
+					{
+						"id": "deny",
+						"text": "Deny"
+					},
+					{
+						"id": "audit",
+						"text": "Audit"
+					},
+					{
+						"id": "modify",
+						"text": "Modify"
+					},
+					{
+						"id": "append",
+						"text": "Append"
+					},
+					{
+						"id": "deployIfNotExists",
+						"text": "DeployIfNotExists"
+					},
+					{
+						"id": "auditIfNotExists",
+						"text": "AuditIfNotExists"
+					}
+				],
+				"slots": [
+					{
+						"id": "s_block",
+						"label": "Block the resource change entirely when the rule's condition is met"
+					},
+					{
+						"id": "s_log",
+						"label": "Record an entry about the resource in the activity log without preventing the change"
+					},
+					{
+						"id": "s_after",
+						"label": "Alter the resource after it is changed (such as adding a default tag)"
+					},
+					{
+						"id": "s_before",
+						"label": "Insert extra fields into the request payload before the resource provider processes it"
+					},
+					{
+						"id": "s_template",
+						"label": "Run a template to create a related compliant resource when the rule matches"
+					},
+					{
+						"id": "s_related_check",
+						"label": "Flag the resource as non-compliant only when a related or extension resource is absent"
+					}
+				]
+			},
+			"key": {
+				"s_block": "deny",
+				"s_log": "audit",
+				"s_after": "modify",
+				"s_before": "append",
+				"s_template": "deployIfNotExists",
+				"s_related_check": "auditIfNotExists"
+			},
+			"explanation": {
+				"correct": "Each effect has the documented behavior described in the slot, and these pair as expected per the overview and effects pages.",
+				"perChoice": {
+					"deny": "Belongs in 'Block the resource change entirely when the rule's condition is met'. Deny stops the request from being processed.",
+					"audit": "Belongs in 'Record an entry about the resource in the activity log without preventing the change'. Audit only reports compliance.",
+					"modify": "Belongs in 'Alter the resource after it is changed (such as adding a default tag)'. Modify adds or updates properties on the resource during create or update.",
+					"append": "Belongs in 'Insert extra fields into the request payload before the resource provider processes it'. Append mutates the request payload itself.",
+					"deployIfNotExists": "Belongs in 'Run a template to create a related compliant resource when the rule matches'. DeployIfNotExists provisions child or extension resources.",
+					"auditIfNotExists": "Belongs in 'Flag the resource as non-compliant only when a related or extension resource is absent'. AuditIfNotExists evaluates against the properties of a related resource."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/effect-basics"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/definition-structure-basics"
+				}
+			],
+			"subtopics": [
+				"policy-effects"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GBVEY47WQ4RKQPFKKRXBRW",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Your team needs to decide at which scope to apply Azure Policy definitions. Drag each scope to the scenario it best fits.",
+				"items": [
+					{
+						"id": "mg",
+						"text": "Management group"
+					},
+					{
+						"id": "sub",
+						"text": "Subscription"
+					},
+					{
+						"id": "rg",
+						"text": "Resource group"
+					},
+					{
+						"id": "res",
+						"text": "Individual resource"
+					}
+				],
+				"slots": [
+					{
+						"id": "s_root",
+						"label": "Define a policy at the root organizational level above multiple Azure billing boundaries"
+					},
+					{
+						"id": "s_one_sub",
+						"label": "Apply a definition across every resource within a single Azure billing boundary"
+					},
+					{
+						"id": "s_one_rg",
+						"label": "Apply a definition only within one grouping of related resources inside a billing boundary"
+					},
+					{
+						"id": "s_single",
+						"label": "Apply a definition only to a single specific resource such as one VM"
+					}
+				]
+			},
+			"key": {
+				"s_root": "mg",
+				"s_one_sub": "sub",
+				"s_one_rg": "rg",
+				"s_single": "res"
+			},
+			"explanation": {
+				"correct": "Management groups sit above multiple subscriptions, subscriptions cover one billing boundary, resource groups cover a related set of resources within that boundary, and individual resources are the narrowest scope.",
+				"perChoice": {
+					"mg": "Belongs in 'Define a policy at the root organizational level above multiple Azure billing boundaries'. A definition saved at the management group can be assigned down to subscriptions or resource groups underneath it.",
+					"sub": "Belongs in 'Apply a definition across every resource within a single Azure billing boundary'. A subscription assignment applies to all resources in that subscription.",
+					"rg": "Belongs in 'Apply a definition only within one grouping of related resources inside a billing boundary'. A resource group assignment applies to every resource in that group.",
+					"res": "Belongs in 'Apply a definition only to a single specific resource such as one VM'. An individual-resource assignment has the narrowest scope."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/definition-structure-basics"
+				}
+			],
+			"subtopics": [
+				"policy-scope"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GBW5BHM1Y0FV2KN9SJK41P",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Your team is building an initiative definition that bundles several policy rules with parameters. On the policy-parameters step of the wizard each parameter row has a value-type selector. Drag each value type to its correct role.",
+				"items": [
+					{
+						"id": "def_val",
+						"text": "Default value"
+					},
+					{
+						"id": "set_val",
+						"text": "Set value"
+					},
+					{
+						"id": "uip",
+						"text": "Use Initiative Parameter"
+					}
+				],
+				"slots": [
+					{
+						"id": "s_default",
+						"label": "Pick the value that was defined inline on the underlying rule, with no extra input"
+					},
+					{
+						"id": "s_set",
+						"label": "Type a concrete value here that overrides what was defined inline on the underlying rule"
+					},
+					{
+						"id": "s_uip",
+						"label": "Forward a placeholder from the outer level so that one value can be reused across multiple child rules"
+					}
+				]
+			},
+			"key": {
+				"s_default": "def_val",
+				"s_set": "set_val",
+				"s_uip": "uip"
+			},
+			"explanation": {
+				"correct": "Per the tutorial, the three value types on the policy-parameters step of the initiative wizard correspond to these exact roles.",
+				"perChoice": {
+					"def_val": "Belongs in 'Pick the value that was defined inline on the underlying rule, with no extra input'. This value type uses whatever default was authored on the inner rule itself.",
+					"set_val": "Belongs in 'Type a concrete value here that overrides what was defined inline on the underlying rule'. This value type supplies a literal value when the initiative is assigned.",
+					"uip": "Belongs in 'Forward a placeholder from the outer level so that one value can be reused across multiple child rules'. This binds the inner parameter to an initiative-level parameter so a single value flows to every referencing inner rule."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/tutorials/create-and-manage"
+				}
+			],
+			"subtopics": [
+				"initiative-parameters"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GBXWQP6YFCE9RJCEQDV6TP",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Your team is authoring a custom Azure Policy definition. You need to understand the role of each top-level property in the policy-definition JSON. Drag each JSON property to what it represents.",
+				"items": [
+					{
+						"id": "displayName",
+						"text": "displayName"
+					},
+					{
+						"id": "description",
+						"text": "description"
+					},
+					{
+						"id": "mode",
+						"text": "mode"
+					},
+					{
+						"id": "parameters",
+						"text": "parameters"
+					},
+					{
+						"id": "policyRule",
+						"text": "policyRule"
+					}
+				],
+				"slots": [
+					{
+						"id": "s_displayName",
+						"label": "Human-readable string up to 128 characters that identifies the definition"
+					},
+					{
+						"id": "s_description",
+						"label": "Longer text up to 512 characters that explains the context and intended use of the definition"
+					},
+					{
+						"id": "s_mode",
+						"label": "Determines which resource types are evaluated, such as all resource types versus only ones that support tags and location"
+					},
+					{
+						"id": "s_parameters",
+						"label": "Allows the same definition to be reused across scenarios by accepting values supplied at assignment time"
+					},
+					{
+						"id": "s_policyRule",
+						"label": "Holds the if/then JSON logic that defines what is evaluated and what happens when the criteria is met"
+					}
+				]
+			},
+			"key": {
+				"s_displayName": "displayName",
+				"s_description": "description",
+				"s_mode": "mode",
+				"s_parameters": "parameters",
+				"s_policyRule": "policyRule"
+			},
+			"explanation": {
+				"correct": "These are the top-level properties of an Azure Policy definition as documented under definition structure basics, and each property has a distinct role.",
+				"perChoice": {
+					"displayName": "Belongs in 'Human-readable string up to 128 characters that identifies the definition'. displayName is the short identifier shown in the portal.",
+					"description": "Belongs in 'Longer text up to 512 characters that explains the context and intended use of the definition'. description provides the longer context.",
+					"mode": "Belongs in 'Determines which resource types are evaluated, such as all resource types versus only ones that support tags and location'. mode controls Resource Manager vs Resource Provider evaluation behaviour.",
+					"parameters": "Belongs in 'Allows the same definition to be reused across scenarios by accepting values supplied at assignment time'. parameters reduce the number of definitions you have to author.",
+					"policyRule": "Belongs in 'Holds the if/then JSON logic that defines what is evaluated and what happens when the criteria is met'. policyRule contains the rule of the definition."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/definition-structure-basics"
+				}
+			],
+			"subtopics": [
+				"policy-definition-structure"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GBYVVXG3K4TWHSHKPQW5BA",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Your team is authoring a custom Azure Policy and needs to set the mode property of the definition. Drag each mode value to the resource types it is designed to evaluate or manage.",
+				"items": [
+					{
+						"id": "indexed",
+						"text": "Indexed"
+					},
+					{
+						"id": "all",
+						"text": "All"
+					},
+					{
+						"id": "kube",
+						"text": "Microsoft.Kubernetes.Data"
+					},
+					{
+						"id": "keyvault",
+						"text": "Microsoft.KeyVault.Data"
+					},
+					{
+						"id": "network",
+						"text": "Microsoft.Network.Data"
+					}
+				],
+				"slots": [
+					{
+						"id": "s_indexed",
+						"label": "Evaluate only resource types that support tags and location (the historic default)"
+					},
+					{
+						"id": "s_all",
+						"label": "Evaluate resource groups and subscriptions as well as every resource type"
+					},
+					{
+						"id": "s_kube",
+						"label": "Manage pods, containers, and ingresses on a managed container cluster"
+					},
+					{
+						"id": "s_keyvault",
+						"label": "Manage certificates and items in a managed secure store"
+					},
+					{
+						"id": "s_network",
+						"label": "Manage custom group membership in a virtual connectivity manager"
+					}
+				]
+			},
+			"key": {
+				"s_indexed": "indexed",
+				"s_all": "all",
+				"s_kube": "kube",
+				"s_keyvault": "keyvault",
+				"s_network": "network"
+			},
+			"explanation": {
+				"correct": "mode determines which resource types are evaluated. Resource Manager modes (Indexed, All) evaluate Azure resources while Resource Provider modes (Microsoft.Kubernetes.Data, Microsoft.KeyVault.Data, Microsoft.Network.Data) manage specific component types within those provider namespaces.",
+				"perChoice": {
+					"indexed": "Belongs in 'Evaluate only resource types that support tags and location (the historic default)'. The indexed mode skips resource types that cannot carry tags or location.",
+					"all": "Belongs in 'Evaluate resource groups and subscriptions as well as every resource type'. The All mode evaluates resource groups, subscriptions, and any resource type.",
+					"kube": "Belongs in 'Manage pods, containers, and ingresses on a managed container cluster'. Microsoft.Kubernetes.Data evaluates pods, containers, and ingresses for Kubernetes clusters.",
+					"keyvault": "Belongs in 'Manage certificates and items in a managed secure store'. Microsoft.KeyVault.Data governs vaults and certificates.",
+					"network": "Belongs in 'Manage custom group membership in a virtual connectivity manager'. Microsoft.Network.Data governs Azure Virtual Network Manager custom membership rules."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/definition-structure-basics"
+				}
+			],
+			"subtopics": [
+				"policy-mode"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GC1K96DTAXCKT4JCNZ0TDZ",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Your team maintains a catalogue of Azure Policy definitions. When you review SDK responses for the entries in the catalogue, you notice the metadata falls into three patterns: some entries are supplied and maintained by Microsoft, others were authored and owned by your team inside the tenant, and a third pattern is surfaced only in shared-responsibility compliance reporting. Drag each type label to the description it best matches.",
+				"items": [
+					{
+						"id": "builtin",
+						"text": "Builtin"
+					},
+					{
+						"id": "custom",
+						"text": "Custom"
+					},
+					{
+						"id": "static",
+						"text": "Static"
+					}
+				],
+				"slots": [
+					{
+						"id": "slot-microsoft",
+						"label": "Supplied and maintained by Microsoft as part of the Azure service"
+					},
+					{
+						"id": "slot-tenant",
+						"label": "Authored and owned by your team inside the tenant"
+					},
+					{
+						"id": "slot-shared",
+						"label": "Reflect non-Microsoft audit results on Microsoft infrastructure under shared responsibility"
+					}
+				]
+			},
+			"key": {
+				"slot-microsoft": "builtin",
+				"slot-tenant": "custom",
+				"slot-shared": "static"
+			},
+			"explanation": {
+				"correct": "The policyType property is read-only and takes one of three values in SDK responses. 'Builtin' marks definitions that Microsoft provides and maintains (and that ship with the service). 'Custom' is set on every definition a customer creates in their own tenant. 'Static' indicates a Regulatory Compliance policy definition with Microsoft Ownership whose compliance results reflect non-Microsoft audits of Microsoft infrastructure (in the portal these are sometimes labelled 'Microsoft managed').",
+				"perChoice": {
+					"builtin": "Per the definition-structure-basics reference, 'Builtin' is the value returned for every definition that Microsoft provides and maintains. It belongs in the 'Supplied and maintained by Microsoft' slot.",
+					"custom": "Per the same reference, 'Custom' is the value returned for every policy definition created by customers in their own tenant. It belongs in the 'Authored and owned by your team inside the tenant' slot.",
+					"static": "Per the same reference, 'Static' indicates a Regulatory Compliance policy definition with Microsoft Ownership whose compliance results are produced by non-Microsoft audits of Microsoft infrastructure and surfaced under shared responsibility. It belongs in the third slot."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/definition-structure-basics"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/overview"
+				}
+			],
+			"subtopics": [
+				"policy-type-values",
+				"policy-definition-basics"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GC3S6SKXW3747XJVX5M59P",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your platform team is trialling a new assignment in the production subscription that deploys a diagnostic setting to storage accounts. During the trial, application teams must not have their deployments rejected or altered by the assignment, the compliance state of accounts that already exist still needs to be reported, and the team wants to launch a remediation task for the accounts that are already missing the setting. According to the documentation, which value should the assignment use for enforcementMode?",
+				"statement": "The assignment should use the enforcementMode value {{enforcementValue}}.",
+				"slots": [
+					{
+						"id": "enforcementValue",
+						"options": [
+							{
+								"id": "default",
+								"text": "Default"
+							},
+							{
+								"id": "donotenforce",
+								"text": "DoNotEnforce"
+							},
+							{
+								"id": "enroll",
+								"text": "Enroll"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"enforcementValue": "donotenforce"
+			},
+			"explanation": {
+				"correct": "DoNotEnforce is the setting that leaves the assignment in place for evaluation without applying its effect when resources are created or updated, so application deployments are neither rejected nor altered while compliance is still reported for resources that already exist. The assignment-structure documentation also states that remediation tasks can still be started for deployIfNotExists policies when enforcementMode is set to DoNotEnforce, which is exactly what the team needs for the accounts already missing the setting.",
+				"perChoice": {
+					"enforcementValue:default": "Default is the standard setting and enforces the policy effect for all resources in scope during creation or update, so deployments that don't satisfy the rule would be blocked or altered — the opposite of what this trial requires.",
+					"enforcementValue:enroll": "Enroll makes the assignment available for staged enforcement through policy enrollments, where the effect applies only once a scope owner creates an enrollment resource for a given scope. It isn't the setting that simply stops enforcement while leaving remediation tasks available."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/assignment-structure"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/how-to/remediate-resources"
+				}
+			],
+			"subtopics": [
+				"policy-assignments",
+				"enforcement-mode",
+				"remediation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GC3ZQYDCMB9XK8QS5JHBDC",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "A regulator granted your team a time-limited waiver for a single production resource group, and the waiver is recorded on an exception ticket with a scheduled end date. The resource group must still show up in compliance reporting with its waived state visible to auditors, and the rules assigned above it should no longer be assessed there. According to the documentation, which should you create?",
+				"statement": "To implement the waiver, you should create {{approach}}.",
+				"slots": [
+					{
+						"id": "approach",
+						"options": [
+							{
+								"id": "exemption",
+								"text": "A policy exemption on the resource group"
+							},
+							{
+								"id": "notscopes",
+								"text": "An exclusion in the assignment's notScopes array"
+							},
+							{
+								"id": "selector",
+								"text": "A resource selector in the assignment"
+							},
+							{
+								"id": "group",
+								"text": "A policy group in the initiative definition"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"approach": "exemption"
+			},
+			"explanation": {
+				"correct": "A policy exemption is created on the resource hierarchy or individual resource as a child object, identifies a portion of an assignment that isn't evaluated, and leaves those resources showing as Exempted in compliance reports so they can still be tracked. It can also be configured to expire on a schedule through the expiresOn property, which matches the time-limited waiver with an end date, and it can be granted to a resource that is exempt from multiple assignments.",
+				"perChoice": {
+					"approach:notscopes": "notScopes removes the resource group from the assignment entirely, so its resources are neither evaluated nor counted in the compliance state — the waived resource would disappear from reporting rather than appear with a waived status. It also requires editing the policy assignment object rather than adding something at the resource group.",
+					"approach:selector": "A resource selector narrows which resources an assignment is evaluated for based on characteristics such as resource location or resource type. It has no expiry behavior and doesn't record a reason for waiving assessment.",
+					"approach:group": "A policy group inside an initiative definition only categorizes the policy definitions included in the initiative (the Regulatory Compliance feature uses these groups as controls). It doesn't stop evaluation for any resource group."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/scope"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/assignment-structure"
+				}
+			],
+			"subtopics": [
+				"policy-exemptions",
+				"scope",
+				"policy-assignments"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GC4H1WX9KVY1EVNBBQ78DM",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "A governance team maintains a policy assignment created against a built-in policy definition; the assignment JSON is shown below. Leadership wants the assignment restricted to the major and minor release in use today, while still picking up the text-level corrections Microsoft publishes so that urgent fixes don't require editing assignments by hand. According to the documentation, how does Azure Policy read the definitionVersion value shown?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"properties\": {\n    \"displayName\": \"Enforce resource naming rules\",\n    \"description\": \"Force resource names to begin with DeptA\",\n    \"policyDefinitionId\": \"/providers/Microsoft.Authorization/policyDefinitions/ResourceNaming\",\n    \"definitionVersion\": \"2.#.*\",\n    \"enforcementMode\": \"Default\",\n    \"notScopes\": []\n  }\n}"
+				},
+				"statement": "Azure Policy reads this definitionVersion value as {{interpretation}}.",
+				"slots": [
+					{
+						"id": "interpretation",
+						"options": [
+							{
+								"id": "majorMinorPath",
+								"text": "It stays on the major.minor version the engineer selected and automatically takes every text-level fix"
+							},
+							{
+								"id": "latestMajor",
+								"text": "It always follows the latest major version of the definition and automatically takes new minor versions and text-level fixes"
+							},
+							{
+								"id": "frozen",
+								"text": "It stays on the major.minor version the engineer selected and never picks up anything further for the life of the assignment"
+							},
+							{
+								"id": "allMajors",
+								"text": "It follows every major version of the definition, including ones Microsoft publishes after the assignment was created"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"interpretation": "majorMinorPath"
+			},
+			"explanation": {
+				"correct": "The '#.#.*' format holds the assignment to the chosen major and minor version path, and the trailing wildcard means updates at the remaining level are ingested automatically. The documentation states that all patch changes must be autoingested for security reasons, and that patch changes are limited to text changes and break glass scenarios — which is exactly the combination the team needs.",
+				"perChoice": {
+					"interpretation:latestMajor": "That describes the default behaviour of an assignment, where the latest major version is used and minor and patch changes are ingested automatically. Choosing it would move the assignment onto any new minor version as soon as one is released.",
+					"interpretation:frozen": "There's no way to use the wildcard to stop ingestion: text-level changes are always picked up automatically, so an assignment written this way doesn't freeze at the version it was pinned to.",
+					"interpretation:allMajors": "A wildcard never causes an assignment to follow future major versions. Moving to a later major version has to be an explicit choice made in the first number of the version string."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/assignment-structure"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/definition-structure-basics"
+				}
+			],
+			"subtopics": [
+				"policy-versions",
+				"policy-assignments",
+				"policy-definitions"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GC4T5Q231F5C3V1QV2BFS7",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your team wrote a custom deployIfNotExists definition in its own tenant that deploys a diagnostic setting to storage accounts. Remediation fails during deployment because the assignment's managed identity has no permission to create that setting, and built-in definitions aren't an option for this rule. According to the documentation, which property must the custom definition declare so that the identity can be given the access it needs?",
+				"statement": "The custom definition must declare {{property}}.",
+				"slots": [
+					{
+						"id": "property",
+						"options": [
+							{
+								"id": "details",
+								"text": "details.roleDefinitionIds"
+							},
+							{
+								"id": "metadata",
+								"text": "metadata.roleDefinitionIds"
+							},
+							{
+								"id": "parameters",
+								"text": "parameters.roleDefinitionIds"
+							},
+							{
+								"id": "identity",
+								"text": "identity.roleDefinitionIds"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"property": "details"
+			},
+			"explanation": {
+				"correct": "For a custom deployIfNotExists or modify definition, the roles required to deploy the template or apply the change are declared in the roleDefinitionIds array inside the details property, and each entry is the full resource identifier of a role rather than the short role name. Once declared, the managed identity on the assignment must be granted those roles before a remediation task can run; built-in definitions already have these roles prepopulated.",
+				"perChoice": {
+					"property:metadata": "The metadata property stores descriptive values such as category, version, preview, or deprecated that drive how the definition is listed and displayed in the portal. It doesn't carry the roles the assignment identity needs.",
+					"property:parameters": "The parameters property declares the values supplied at assignment time, such as allowed locations or tag names, and is consumed through the parameters() function in the rule. Remediation access isn't expressed there.",
+					"property:identity": "identity is a property of the policy assignment, not of the policy definition. It records which single managed identity performs deployment or modification and whether it is system-assigned or user-assigned."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/how-to/remediate-resources"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/definition-structure-basics"
+				}
+			],
+			"subtopics": [
+				"policy-definitions",
+				"remediation",
+				"managed-identity"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GC518N86TP4KYS9CPG7H9F",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your security team wants to roll out a new policy assignment in phases: during phase one only resources located in East US and West US should be evaluated, and in later phases the team wants to add more locations and keep the existing definition untouched. According to the documentation, which property of the policy assignment should they use?",
+				"statement": "The team should configure {{property}} on the policy assignment.",
+				"slots": [
+					{
+						"id": "property",
+						"options": [
+							{
+								"id": "resourceSelectors",
+								"text": "resourceSelectors"
+							},
+							{
+								"id": "notScopes",
+								"text": "notScopes"
+							},
+							{
+								"id": "overrides",
+								"text": "overrides"
+							},
+							{
+								"id": "evidenceStorages",
+								"text": "evidenceStorages"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"property": "resourceSelectors"
+			},
+			"explanation": {
+				"correct": "resourceSelectors is the optional property that narrows the set of resources an assignment is evaluated for, using a selector kind such as resourceLocation with an in list of regions. It's designed for gradual rollouts, and expanding the rollout later is done by updating the same property on the assignment. Up to ten resource selectors can be set on one assignment, a resource must satisfy all selectors in a selector to be evaluated, and each in or notIn list can contain up to 50 values.",
+				"perChoice": {
+					"property:notScopes": "notScopes takes child resource containers and resources out of the assignment, so they are neither evaluated nor counted in compliance. That removes those resources from the picture entirely, which is the opposite of assessing a growing subset of locations.",
+					"property:overrides": "overrides changes the assigned definition or initiative itself — for example replacing the effect of specific policy definitions inside an initiative with a different effect, or overriding a definition version. It alters what the policy does, not which resources are evaluated.",
+					"property:evidenceStorages": "evidenceStorages is a metadata setting that names the default storage account, its resource ID, and the blob container used to hold evidence for attestations to assignments that use a manual effect. It has no bearing on which resources are evaluated."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/assignment-structure"
+				}
+			],
+			"subtopics": [
+				"policy-assignments",
+				"resource-selectors",
+				"safe-deployment"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GC6AKX3WCWBPVSMBZYNZV9",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your platform team is standardizing Azure Policy governance across a management group. The exhibit lists the Azure Policy objects already registered in that scope and one additional item requested for each type. According to the documentation, which requested change cannot be made until an existing object of that type is removed?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Object type registered at the management group scope",
+						"Count currently in that scope",
+						"Requested change"
+					],
+					"rows": [
+						[
+							"Policy definitions",
+							"500",
+							"Add 1 more"
+						],
+						[
+							"Initiative definitions",
+							"199",
+							"Add 1 more"
+						],
+						[
+							"Policy or initiative assignments",
+							"187",
+							"Add 1 more"
+						],
+						[
+							"Exemptions",
+							"940",
+							"Add 1 more"
+						]
+					]
+				},
+				"statement": "Before the requested item can be created, your team must first delete one of the existing {{object}} in that scope.",
+				"slots": [
+					{
+						"id": "object",
+						"options": [
+							{
+								"id": "a",
+								"text": "policy definitions"
+							},
+							{
+								"id": "b",
+								"text": "initiative definitions"
+							},
+							{
+								"id": "c",
+								"text": "policy or initiative assignments"
+							},
+							{
+								"id": "d",
+								"text": "exemptions"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"object": "a"
+			},
+			"explanation": {
+				"correct": "The documented maximum is 500 policy definitions per scope, where scope means a management group or a subscription. The management group in the exhibit already holds 500, so the requested extra definition would be the 501st and cannot be created until one existing definition is deleted.",
+				"perChoice": {
+					"object:b": "Initiative definitions are capped at 200 per scope, and the scope already contains 199. Adding one more reaches exactly 200, which is still within the allowed maximum.",
+					"object:c": "Policy or initiative assignments are capped at 200 per scope, where scope may be a management group, subscription, resource group, or individual resource. With 187 already present, adding one more stays well inside that ceiling.",
+					"object:d": "Exemptions have a documented maximum of 1,000 per scope, so a scope holding 940 can still accept another one without any deletion."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/governance/policy/overview"
+				}
+			],
+			"subtopics": [
+				"object-limits",
+				"management-group-scope"
+			],
+			"reviewed": false
+		}
+	]
+}

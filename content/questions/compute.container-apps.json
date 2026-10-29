@@ -1,0 +1,1715 @@
+{
+	"skill": "compute.container-apps",
+	"questions": [
+		{
+			"id": "q_01M5RSE1QA0ZD42EH36XVS89Y9",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a container app running on the Consumption plan in Azure Container Apps. You want the app to shut down completely during the hours when no requests arrive, so that you stop paying for idle compute, while still adding replicas during busy periods. Which scaling configuration should you apply to the app?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Workload profile",
+							"Consumption"
+						],
+						[
+							"Scale rule",
+							"Custom - CPU utilization, target 65%"
+						],
+						[
+							"Minimum replicas",
+							"1"
+						],
+						[
+							"Maximum replicas",
+							"10"
+						],
+						[
+							"Ingress",
+							"External, port 80"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "A scale rule based on HTTP traffic with a minimum replica count of 0"
+					},
+					{
+						"id": "b",
+						"text": "A scale rule based on CPU utilization with a minimum replica count of 0"
+					},
+					{
+						"id": "c",
+						"text": "A scale rule based on memory utilization with a minimum replica count of 0"
+					},
+					{
+						"id": "d",
+						"text": "A scale rule based on CPU utilization with a minimum replica count of 1"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Most applications can scale to zero, and the documented exception is apps that scale on CPU or memory load, which can never reach zero replicas. HTTP traffic is one of the supported scale triggers, so pairing a rule driven by incoming requests with a minimum replica count of 0 is the configuration that lets the app shut down completely when nothing is arriving and restart automatically when requests resume. Scale rules can be edited after the app is deployed, and scaling changes are applied through the app's revision model.",
+				"perChoice": {
+					"b": "CPU utilization is a valid scale trigger, but apps that scale on CPU or memory load are the exception to scale-to-zero: the platform keeps at least one replica running for them, so they never reach zero replicas even when the minimum replica count is 0 and idle compute is still billed.",
+					"c": "Memory load behaves the same way as CPU load here: an app whose scaling is driven by memory utilization can never scale to zero, so one replica remains running and continues to cost you during the idle hours.",
+					"d": "This keeps both obstacles in place: a CPU-based trigger already prevents the app from reaching zero replicas, and a minimum replica count of 1 additionally guarantees that one replica stays running and billable at all times, including overnight."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/environment"
+				}
+			],
+			"subtopics": [
+				"scale-to-zero",
+				"scale-rules",
+				"consumption-plan"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RSG5RWQD777BQ624XNWB6C",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Container Apps environment that hosts two container apps, and you need to change how each app is hosted. One app must run on specialized hardware with a predictable monthly cost, while the other must shut down completely when idle and be charged only for the time it is actually running. The two apps also have to keep exchanging calls through the Dapr service invocation API. Which change should you make to the environment and its apps?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Environment env-orders-prod",
+							"Type: Workload profiles"
+						],
+						[
+							"orders-api",
+							"Needs specialized hardware and a steadier cost prediction"
+						],
+						[
+							"report-worker",
+							"Must scale to zero and be billed only while it is running"
+						],
+						[
+							"Interaction between apps",
+							"orders-api calls report-worker through the Dapr service invocation API"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Keep the environment as a workload profiles environment, and assign orders-api to a Dedicated workload profile and report-worker to a Consumption workload profile."
+					},
+					{
+						"id": "b",
+						"text": "Convert the environment to a consumption only environment, then assign orders-api to a Dedicated workload profile and report-worker to a Consumption workload profile."
+					},
+					{
+						"id": "c",
+						"text": "Keep the environment as a workload profiles environment, and assign both orders-api and report-worker to the same Dedicated workload profile rather than giving report-worker a Consumption workload profile of its own."
+					},
+					{
+						"id": "d",
+						"text": "Keep the environment as a workload profiles environment, but create a second environment for report-worker on a Consumption workload profile and leave orders-api on a Dedicated workload profile in the first environment."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A workload profiles environment can host apps on either the Consumption plan or the Dedicated plan, but each plan is reached through its own workload profile, so the two apps have to sit on different profiles. Putting orders-api on a Dedicated workload profile gives it the customized hardware and the steadier, more predictable cost, and putting report-worker on a Consumption workload profile preserves serverless scale-to-zero with pay-per-use billing. Because both apps remain inside one environment, the built-in Dapr service invocation path between them keeps working.",
+				"perChoice": {
+					"b": "Consumption only environments are the legacy option and support only the Consumption plan, so a Dedicated workload profile cannot be used in them at all. Since orders-api requires specialized hardware and steadier cost, the environment has to be a workload profiles environment.",
+					"c": "Placing both apps on one Dedicated workload profile means report-worker is charged per instance and the environment carries a fixed management fee, instead of the pay-per-use billing that was required. The Consumption plan inside a workload profiles environment is what provides that billing model for report-worker.",
+					"d": "Splitting the apps across two environments breaks the stated requirement, because the built-in Dapr service invocation does not cross environment boundaries out of the box and reaching across them would require third-party solutions. It also spreads two tightly coupled apps across two environments instead of one shared boundary."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/environment"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/overview"
+				}
+			],
+			"subtopics": [
+				"container-apps-environments",
+				"container-apps-workload-profiles",
+				"container-apps-dapr"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RSK6NW3BEAGVV8542WQCNR",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You operate a Container Apps environment that hosts five container apps, and one of them has Dapr enabled. Your operations team needs the container output, the container app scaling events, and the Dapr sidecar logs produced in that environment to be searchable together in the Log Analytics workspace they already use for other services, and the Dapr sidecar traces have to be correlated with the Application Insights instance managed by your platform team. Which change should you make to the environment?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"environmentName\": \"platform-env\",\n  \"currentSettings\": {\n    \"logRouting\": \"built-in Azure Monitor integration only; the operations Log Analytics workspace is not linked\",\n    \"properties.containerAppsConfiguration.daprAIInstrumentationKey\": \"\",\n    \"appsHosted\": [\n      \"orders-api\",\n      \"web-frontend\",\n      \"payments-api\",\n      \"report-worker\",\n      \"dapr-bridge\"\n    ],\n    \"appsWithDaprEnabled\": [\n      \"dapr-bridge\"\n    ]\n  }\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set properties.appLogsConfiguration so it points at the Log Analytics workspace, and set properties.containerAppsConfiguration.daprAIInstrumentationKey to the Application Insights instrumentation key."
+					},
+					{
+						"id": "b",
+						"text": "Set properties.appLogsConfiguration so it points at the Application Insights instance, and set properties.containerAppsConfiguration.daprAIInstrumentationKey to the Log Analytics shared key."
+					},
+					{
+						"id": "c",
+						"text": "Set properties.appLogsConfiguration so it points at the Log Analytics workspace, and set properties.containerAppsConfiguration.daprAIInstrumentationKey to the Log Analytics workspace ID."
+					},
+					{
+						"id": "d",
+						"text": "Set properties.appLogsConfiguration so it points at the Log Analytics workspace, and store the Dapr instrumentation key as a secret in each container app instead of setting properties.containerAppsConfiguration.daprAIInstrumentationKey."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Both requirements are handled by environment-level properties. Environment-level log routing is controlled by properties.appLogsConfiguration, which points at the Log Analytics workspace that receives the logs of all apps in the environment; the data collected there covers container stdout/stderr output, container app scaling events and Dapr sidecar logs when Dapr is enabled. Dapr tracing is configured separately through properties.containerAppsConfiguration.daprAIInstrumentationKey, whose value is the App Insights instrumentation key that is handed to the Dapr sidecar. So the environment must reference the Log Analytics workspace in properties.appLogsConfiguration and the Application Insights instrumentation key in properties.containerAppsConfiguration.daprAIInstrumentationKey.",
+				"perChoice": {
+					"b": "The two targets are reversed. properties.appLogsConfiguration must reference the Log Analytics workspace that stores the environment's logs, and the value of properties.containerAppsConfiguration.daprAIInstrumentationKey is an Application Insights instrumentation key, not the Log Analytics shared key, which is a credential used to write to the workspace.",
+					"c": "The Log Analytics workspace ID is not an instrumentation key. The value placed in properties.containerAppsConfiguration.daprAIInstrumentationKey must be the Application Insights instrumentation key that gets handed to Dapr; a workspace identifier would not give the sidecar a valid target.",
+					"d": "Dapr tracing is configured at the environment level through properties.containerAppsConfiguration.daprAIInstrumentationKey, which is how the App Insights instrumentation key reaches the Dapr sidecar. Storing a value as a secret inside each container app does not hand it to the sidecar, and the same reasoning means log routing stays in properties.appLogsConfiguration for every app in the environment."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/environment"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/overview"
+				}
+			],
+			"subtopics": [
+				"environment-log-routing",
+				"dapr-instrumentation",
+				"log-analytics"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RSRCFBJSMBKEN94TKMK1A9",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a container app named checkout in Azure Container Apps. You have deployed a new image for it, which is now available as an additional revision, while the earlier revision still handles every incoming request. You need the newer image to take a small portion of live requests so that you can compare how it behaves against the current version before rolling it out more widely. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Current state"
+					],
+					"rows": [
+						[
+							"Container app",
+							"checkout"
+						],
+						[
+							"Revision checkout-v1",
+							"Image tag 1.0.0 - handles 100% of requests today"
+						],
+						[
+							"Revision checkout-v2",
+							"Image tag 2.0.0 - handles 0% of requests today"
+						],
+						[
+							"Testing objective",
+							"Send 10% of live requests to the newer image while the current image keeps serving the rest"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Split traffic between the revisions so that checkout-v1 receives 90% of requests and checkout-v2 receives 10%."
+					},
+					{
+						"id": "b",
+						"text": "Split traffic between the revisions so that checkout-v1 receives 90% of requests, checkout-v2 receives 0%, and a new revision cloned from checkout-v1 receives 10%."
+					},
+					{
+						"id": "c",
+						"text": "Split traffic between the container apps so that the app running checkout-v1 receives 90% of requests and the app running checkout-v2 receives 10%."
+					},
+					{
+						"id": "d",
+						"text": "Split traffic between the revisions so that checkout-v1 receives 0% of requests and checkout-v2 receives 100%."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Every deployed version of a container app is a revision, and Azure Container Apps can split traffic across the versions of an application for Blue/Green and A/B testing scenarios. Because checkout-v2 already exists as a revision of the checkout app, assigning 90% of the requests to checkout-v1 and 10% to checkout-v2 keeps a single app in place, exposes the newly deployed image to a small share of live traffic, and keeps the current version running for comparison.",
+				"perChoice": {
+					"b": "The 10% here goes to a copy of checkout-v1, so the newly deployed image checkout-v2 continues to receive no requests and the intended comparison never happens. Traffic weights belong to the revisions that already exist for the deployed images.",
+					"c": "This treats the two images as two separate container apps. Weighting in Azure Container Apps is applied across the multiple versions of one application, so dividing requests between two distinct apps would require extra routing infrastructure outside the app's own revision configuration.",
+					"d": "This sends all live requests to checkout-v2, which is a full rollout rather than the small exposure that was requested. With checkout-v1 at 0%, the two versions never run side by side under live traffic."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/environment"
+				}
+			],
+			"subtopics": [
+				"revisions",
+				"traffic-splitting"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RSV10XRKW82936EQWSABE4",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You are responsible for the Container Apps environments listed below, and each of them still has workloads, integrations, or release plans attached to it. Leadership has decided that none of these environments may be taken away without notice. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Environment",
+						"Observed state",
+						"Days in this state"
+					],
+					"rows": [
+						[
+							"env-orders",
+							"Nothing deployed and running inside the environment",
+							"89"
+						],
+						[
+							"env-reporting",
+							"Nothing deployed and running inside the environment",
+							"34"
+						],
+						[
+							"env-billing",
+							"Environment provisioning failed because of virtual network or Azure Policy settings",
+							"41"
+						],
+						[
+							"env-search",
+							"Environment cannot receive infrastructure updates because of virtual network or Azure Policy settings",
+							"12"
+						],
+						[
+							"env-live",
+							"Container apps are deployed and running inside the environment",
+							"120"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Keep at least one container app or job running in env-orders and env-reporting, correct the virtual network and Azure Policy configuration in env-billing and env-search, and leave env-live unchanged"
+					},
+					{
+						"id": "b",
+						"text": "Keep at least one container app or job running in env-orders only and leave env-reporting, env-billing, env-search and env-live unchanged, because only environments with nothing running are ever removed"
+					},
+					{
+						"id": "c",
+						"text": "Correct the virtual network and Azure Policy configuration in env-billing and env-search only and leave env-orders, env-reporting and env-live unchanged, because only environments that failed or could not be updated are ever removed"
+					},
+					{
+						"id": "d",
+						"text": "Enable Azure Monitor alerts for env-live, env-orders, env-reporting, env-billing and env-search, because alerting on each environment is what stops it from being removed automatically"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "An environment is removed automatically when one of three states persists for more than 90 days: sitting idle with nothing deployed and running, having failed because of virtual network or Azure Policy settings, or being unable to take infrastructure updates because of those same settings. env-orders (89 days idle) and env-reporting (34 days idle) therefore need at least one container app or job kept running; env-billing and env-search need their virtual network and Azure Policy configuration corrected so they can function and accept updates again; and env-live, which has apps running, is not in any of the removable states, so it needs no change. You also have to respond to notifications about a problematic environment state, since monitoring alone does not protect it.",
+				"perChoice": {
+					"b": "The removable states are not limited to idle environments. An environment is also removed when it has failed because of virtual network or Azure Policy settings, or when it cannot take infrastructure updates for the same reason, once that state lasts beyond the same 90-day window. So env-reporting, env-billing and env-search need attention too, and env-orders at 89 days idle is about to cross that threshold.",
+					"c": "This protects only the two environments whose problems come from virtual network or Azure Policy settings and leaves the two idle ones unprotected. env-orders has been idle for 89 days and will be removed once that state persists beyond 90 days, so it needs at least one container app or job running inside it. The idle state is just as much a removal trigger as the failed and update-blocked ones.",
+					"d": "Azure Monitor alerts, the portal and the CLI are ways to watch environment health and status and to act on notifications about a problematic environment; they do not by themselves prevent an environment from being removed. The protection comes from keeping at least one container app or job running and from keeping the virtual network and Azure Policy configuration valid."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/environment"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/overview"
+				}
+			],
+			"subtopics": [
+				"container-apps-environments",
+				"environment-retention"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RSZFR6XNMEVM6QE01657TP",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have two container apps, gateway and reporting, running in the same Container Apps environment. The gateway calls reporting at an address that the platform team maintains by hand, and reporting is published to the public internet today. You need reporting to stop being exposed publicly while the gateway keeps calling it by its app name, and your networking team has frozen any changes to the environment's virtual network and DNS configuration. Which change should you make to reporting?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Current configuration"
+					],
+					"rows": [
+						[
+							"Container Apps environment",
+							"env-shared — gateway and reporting both run in it"
+						],
+						[
+							"reporting — ingress external",
+							"true"
+						],
+						[
+							"reporting — ingress transport",
+							"http"
+						],
+						[
+							"reporting — ingress target port",
+							"8080"
+						],
+						[
+							"gateway — ingress external",
+							"true"
+						],
+						[
+							"Address the gateway uses for reporting",
+							"A record created by hand in the environment's virtual network"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set reporting's ingress to internal only and have gateway call it by name using the environment's DNS based service discovery"
+					},
+					{
+						"id": "b",
+						"text": "Set reporting's ingress to internal only and publish a private endpoint for reporting plus a private DNS zone so gateway can reach it by its private IP address"
+					},
+					{
+						"id": "c",
+						"text": "Leave reporting's ingress external but switch its transport to TCP and have gateway call reporting over TCP"
+					},
+					{
+						"id": "d",
+						"text": "Set reporting's ingress to internal only and create your own DNS zone with an A record for reporting's name instead of using the environment's service discovery"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Azure Container Apps delivers internal-only ingress together with DNS-based service discovery as part of the platform, so an app that is no longer published externally can still be called by name from another app in the same environment. Both apps here run in env-shared, so they share that environment's virtual network and its name resolution. Setting reporting's ingress to internal only removes its public endpoint and lets gateway resolve reporting by name with no extra network components, which also honors the networking team's freeze on changes to the environment's virtual network and DNS configuration.",
+				"perChoice": {
+					"b": "A private endpoint plus a private DNS zone introduces additional network components, and they are not needed here: the environment already includes DNS-based service discovery, so app-to-app name resolution between apps in the same environment works without them. It also conflicts with the frozen DNS configuration.",
+					"c": "Changing the transport to TCP while ingress stays external leaves reporting published to the public internet, so the requirement to stop exposing the app publicly is not met. The transport setting also has no bearing on how apps in the environment resolve one another.",
+					"d": "The environment already resolves the apps it hosts by name, so a separately created DNS zone is redundant and adds a component the networking team has frozen. Duplicating the capability the platform provides only creates a second source of truth to maintain."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/environment"
+				}
+			],
+			"subtopics": [
+				"ingress-configuration",
+				"service-discovery",
+				"container-apps-environment"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RT38PBED8K8JA0FRYTKN21",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have packaged your team's API into the container image contoso.azurecr.io/orders-api:1.4.0 and want the portal to publish it as a regular container app. A teammate ran the Create > Container App wizard, and the app that appeared exposes function-style behavior instead of behaving like the packaged API. You need the wizard settings adjusted so that your own image is published as a plain container app. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Wizard step",
+						"Field",
+						"Current setting"
+					],
+					"rows": [
+						[
+							"Basics",
+							"Subscription",
+							"Contoso-Prod"
+						],
+						[
+							"Basics",
+							"Resource group",
+							"Create new: my-container-apps"
+						],
+						[
+							"Basics",
+							"Container app name",
+							"my-container-app"
+						],
+						[
+							"Basics",
+							"Optimize for Azure Functions",
+							"Selected"
+						],
+						[
+							"Basics",
+							"Container Apps environment",
+							"Default (a new environment)"
+						],
+						[
+							"Container",
+							"Deployment source",
+							"Container image"
+						],
+						[
+							"Container",
+							"Image",
+							"contoso.azurecr.io/orders-api:1.4.0"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Deselect the Optimize for Azure Functions option and retain the Container image deployment source"
+					},
+					{
+						"id": "b",
+						"text": "Leave the Optimize for Azure Functions option enabled and change the deployment source to Use quickstart image"
+					},
+					{
+						"id": "c",
+						"text": "Leave the Optimize for Azure Functions option enabled and point the Container Apps environment at an existing environment"
+					},
+					{
+						"id": "d",
+						"text": "Leave the Optimize for Azure Functions option disabled and change the deployment source to Use quickstart image"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The Optimize for Azure Functions setting is selected in the Basics tab, and that setting produces a function app rather than a plain container app, which changes the runtime and the features that are available. Removing that setting and keeping the deployment source on Container image with contoso.azurecr.io/orders-api:1.4.0 publishes the team's own image as a regular container app.",
+				"perChoice": {
+					"b": "Leaving the Optimize for Azure Functions setting enabled still creates a function app, so the runtime and available features remain different from a plain container app. In addition, Use quickstart image deploys the Microsoft sample container instead of the team's own API image.",
+					"c": "Pointing the Container Apps environment at an existing environment changes what the app inherits from that environment, such as its virtual network, logging destination, and deletion policy, but it does not change the kind of app being created: the Optimize for Azure Functions setting is still enabled, so a function app is produced.",
+					"d": "Disabling the Optimize for Azure Functions setting is the right direction, but changing the deployment source to Use quickstart image publishes the Microsoft sample container rather than contoso.azurecr.io/orders-api:1.4.0, so the team's API image would not be deployed."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/quickstart-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/overview"
+				}
+			],
+			"subtopics": [
+				"container-app-creation",
+				"deployment-source"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RT72RXWP50S2Y5C0FMYG54",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You support a containerized payments API named orders-api that runs in Azure Container Apps. The image contoso.azurecr.io/orders-api:2.1.0 is produced by your CI pipeline, and the revision definition shown below carries the live payment API key written out as plain text beside the LOG_LEVEL variable. Security has ruled that the credential may not ship inside the image, may not stay written out in the resource definition, and may not be committed to source control, and the application already expects the key to arrive through its environment once the container starts. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"name\": \"orders-api\",\n  \"properties\": {\n    \"template\": {\n      \"containers\": [\n        {\n          \"image\": \"contoso.azurecr.io/orders-api:2.1.0\",\n          \"env\": [\n            { \"name\": \"PAYMENT_API_KEY\", \"value\": \"sk-live-9f2c41ab77d0\" },\n            { \"name\": \"LOG_LEVEL\", \"value\": \"info\" }\n          ]\n        }\n      ]\n    }\n  }\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Store the payment API key in a secret in the container app and configure the app to reference that secret"
+					},
+					{
+						"id": "b",
+						"text": "Store the payment API key in a shared configuration in the container app environment and configure the app to reference that configuration"
+					},
+					{
+						"id": "c",
+						"text": "Rebuild the container image with the payment API key embedded and configure the container to read it at startup"
+					},
+					{
+						"id": "d",
+						"text": "Store the payment API key in the revision configuration and configure the app to reference that value"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Azure Container Apps lets you hold sensitive values as secrets on the container app and reference them from the app's configuration, so the credential is resolved by the platform instead of being baked into the container image or written out in the revision definition. The application keeps picking the key up from its environment, so no code change or image rebuild is needed, which satisfies all three conditions from the security team.",
+				"perChoice": {
+					"b": "A Container Apps environment's own properties cover log routing to Log Analytics and Dapr instrumentation, not per-application credentials, so there is no shared environment-level place where an individual app's credential belongs. Putting the key there would also leave it written out in the resource definition.",
+					"c": "Embedding the key in the image is exactly what the requirement forbids, because the credential then ships inside the artifact and is exposed to anyone who can pull the image. It also forces a rebuild and republication of the image for every rotation.",
+					"d": "This keeps the payment API key written out in the revision configuration, which is precisely what the security team ruled out; an app that references a value stored that way still exposes the credential in the resource definition."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/environment"
+				}
+			],
+			"subtopics": [
+				"container-app-secrets",
+				"app-configuration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RTCXXTBGMB0VE9WABTKJAM",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are publishing the team's service to Azure Container Apps with the Azure portal for the first time. The service owner has written down what the rollout must satisfy, and the facts about the workload are listed below. Match each requirement to the wizard setting and value that satisfies it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Fact about this workload",
+						"Value"
+					],
+					"rows": [
+						[
+							"Corporate Azure account nominated for the rollout",
+							"contoso-prod-subscription"
+						],
+						[
+							"Container image produced by the release pipeline",
+							"contoso.azurecr.io/catalog-api:3.2.0"
+						],
+						[
+							"Geography cleared by the residency review",
+							"West Europe"
+						],
+						[
+							"Shared environment already in place for the team",
+							"contoso-prod-env"
+						],
+						[
+							"Host name the calling applications use today",
+							"catalog-api"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Subscription: contoso-prod-subscription"
+					},
+					{
+						"id": "i2",
+						"text": "Resource group: create new, named my-container-apps"
+					},
+					{
+						"id": "i3",
+						"text": "Container app name: catalog-api"
+					},
+					{
+						"id": "i4",
+						"text": "Deployment source: Container image"
+					},
+					{
+						"id": "i5",
+						"text": "Region: West Europe"
+					},
+					{
+						"id": "i6",
+						"text": "Container Apps environment: contoso-prod-env (pre-existing)"
+					},
+					{
+						"id": "i7",
+						"text": "Use quickstart image"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Everything has to land in the corporate account that carries the billing agreement"
+					},
+					{
+						"id": "s2",
+						"label": "The workload and everything around it has to be removable in a single action when the project ends"
+					},
+					{
+						"id": "s3",
+						"label": "The workload has to answer at the host address the calling clients have in their configuration"
+					},
+					{
+						"id": "s4",
+						"label": "The release pipeline built the artifact, so nobody should type into the wizard what the workload runs"
+					},
+					{
+						"id": "s5",
+						"label": "The workload has to run in the geography that the residency review cleared"
+					},
+					{
+						"id": "s6",
+						"label": "The workload has to sit alongside the team's other services so it shares their virtual network and log destination"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5",
+				"s6": "i6"
+			},
+			"explanation": {
+				"correct": "Each requirement lines up with exactly one entry on the portal's Basics tab. The corporate account that carries the billing agreement is chosen with Subscription, which selects the Azure subscription to deploy into. The requirement about removing everything in one action points to the resource group, because a group holds the app together with its environment and cleanup happens by deleting that group, so a new group named my-container-apps is created for the workload. The address the calling clients already use is the Container app name, set to catalog-api. The artifact the release pipeline produced is published by choosing the Container image deployment source, which is what you pick when deploying an image from a registry such as contoso.azurecr.io/catalog-api:3.2.0. The approved geography comes from Region, which the residency review cleared for West Europe. Finally, sitting alongside the team's other services with a shared virtual network and one log destination means pointing the Container Apps environment at the pre-existing contoso-prod-env; leaving the default creates a separate environment with its own network and logging destination instead. The quickstart image sample satisfies none of these requirements.",
+				"perChoice": {
+					"i1": "Fits the requirement about the corporate account. On the Basics tab, Subscription selects the Azure subscription you deploy into, so choosing contoso-prod-subscription puts the workload under the account that carries the billing agreement.",
+					"i2": "Fits the requirement about removing everything in a single action. The resource group holds the container app and the environment it sits in, and cleanup happens by deleting that group, so a new group named my-container-apps is created for this workload.",
+					"i3": "Fits the requirement about the host address the callers already have. The Container app name field sets the name that clients and other apps in the environment resolve the workload by, and the calling applications already target catalog-api.",
+					"i4": "Fits the requirement about the artifact the release pipeline built. Deployment source is set to Container image when the workload is deployed from a registry image, which is how contoso.azurecr.io/catalog-api:3.2.0 gets published without typing image details into the wizard.",
+					"i5": "Fits the requirement about the approved geography. Region on the Basics tab sets where the workload runs, and the residency review cleared West Europe.",
+					"i6": "Fits the requirement about sharing the team's setup. Apps that live in the same environment share one virtual network and write to the same logging destination, so pointing the Container Apps environment at the pre-existing contoso-prod-env joins the workload to that setup rather than producing a separate one.",
+					"i7": "Fits no requirement. The quickstart image deploys a sample container, which contradicts the requirement to publish the artifact the release pipeline already produced."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/quickstart-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/environment"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/overview"
+				}
+			],
+			"subtopics": [
+				"portal-provisioning",
+				"basics-tab-settings",
+				"environment-selection"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RTGPJ2665ZR9T6EHFEXV30",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are onboarding two engineers who have never published a container through the portal's Container Apps workflow. One of them cannot even get to the creation form, and the other cannot find the running endpoint once the deployment finishes. You need a single ordered checklist that both engineers can follow, starting from a subscription that has no container app resource type registered yet and ending with an application they can open in a browser. Match each action to the step where it belongs in the sequence.",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"subscription\": {\n    \"registeredResourceProviders\": [\n      \"Microsoft.Compute\",\n      \"Microsoft.Storage\",\n      \"Microsoft.Web\"\n    ]\n  },\n  \"engineerA\": \"Choosing Create > Container App fails with an error before any form is displayed.\",\n  \"engineerB\": \"The portal reported the deployment as complete, but there is no link to the running app.\"\n}"
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Register the Microsoft.App resource provider in the subscription."
+					},
+					{
+						"id": "i2",
+						"text": "Search the portal for Container Apps, pick the subscription, and choose Create > Container App."
+					},
+					{
+						"id": "i3",
+						"text": "On the Basics tab, create the resource group my-container-apps and enter the container app name my-container-app."
+					},
+					{
+						"id": "i4",
+						"text": "Leave Optimize for Azure Functions unselected and set Deployment source to Container image."
+					},
+					{
+						"id": "i5",
+						"text": "Select Next: Container, choose Use quickstart image or supply your own image, then select Review + create."
+					},
+					{
+						"id": "i6",
+						"text": "Select Create, wait for the deployment to complete, then use Go to resource and the Application Url link."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Step 1: Prepare the target subscription"
+					},
+					{
+						"id": "s2",
+						"label": "Step 2: Open the creation experience"
+					},
+					{
+						"id": "s3",
+						"label": "Step 3: Supply the project details for the new workload"
+					},
+					{
+						"id": "s4",
+						"label": "Step 4: Confirm the workload type and where the image comes from"
+					},
+					{
+						"id": "s5",
+						"label": "Step 5: Choose the image and validate the configuration before deploying"
+					},
+					{
+						"id": "s6",
+						"label": "Step 6: Start the deployment and open the running endpoint"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5",
+				"s6": "i6"
+			},
+			"explanation": {
+				"correct": "The portal flow is strictly sequential. The Microsoft.App resource provider must be registered first, because the creation flow fails before the Basics tab when it is missing (the subscription in the exhibit has no such provider). You then reach the wizard from the portal search results, where you also pick the target subscription, and the Basics tab collects the project details: a new resource group and the container app name. Still on Basics, you keep Optimize for Azure Functions unselected for a plain container app and set Deployment source to Container image. Moving to the Container tab lets you pick the image (the built-in quickstart image or your own registry image), and Review + create validates the configuration, enabling the Create button. Finally, Create starts the deployment; once the portal reports it complete, Go to resource and the Application Url link are how you reach the running app.",
+				"perChoice": {
+					"i1": "Step 1. Registering the resource provider is a prerequisite: without it the portal creation flow fails before the Basics tab, which is exactly the error the first engineer hits.",
+					"i2": "Step 2. The wizard is started from the Container Apps entry in the portal search results (Create > Container App), and the target subscription is chosen at that point.",
+					"i3": "Step 3. The Basics tab's project details collect the resource group (Create new, named my-container-apps) and the container app name (my-container-app) before anything else is configured.",
+					"i4": "Step 4. These are also Basics tab settings: Optimize for Azure Functions stays unselected for a regular container app, and Deployment source is set to Container image when deploying from a registry image.",
+					"i5": "Step 5. After Next: Container, the image is chosen (Use quickstart image or your own image) and Review + create validates the configuration before the Create button becomes enabled.",
+					"i6": "Step 6. Selecting Create starts the deployment (Deployment is in progress, then Your deployment is complete), and Go to resource plus the Application Url link is how the engineer opens the running app."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/quickstart-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/overview"
+				}
+			],
+			"subtopics": [
+				"container-app-provisioning",
+				"portal-deployment-flow"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5STYYR8GCJKDY6SBQG5HMNH",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have four sets of containerized services that will run in Azure Container Apps. You need to organize them so that every requirement in the exhibit is satisfied. Which arrangement should be assigned to each group?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Group",
+						"Apps",
+						"Requirement"
+					],
+					"rows": [
+						[
+							"A",
+							"checkout-api, payment-worker",
+							"The apps must exchange calls with one another through the built-in Dapr service invocation API, and they must write to the same log destination."
+						],
+						[
+							"B",
+							"web-prod, web-test",
+							"The apps must never share compute resources, and the platform owner wants them isolated by usage, for example test versus production."
+						],
+						[
+							"C",
+							"gpu-inference, bursty-api",
+							"The apps must sit in one environment. One of them needs specialized hardware with steadier cost predictability; the other must shut down completely when idle and be charged only while it is running."
+						],
+						[
+							"D",
+							"api-hub",
+							"The security team must define the address allocation and routing rules for the environment's traffic, because the setup that the platform generates automatically cannot accommodate them."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Put both apps in one environment"
+					},
+					{
+						"id": "b",
+						"text": "Place the two apps in separate environments"
+					},
+					{
+						"id": "c",
+						"text": "Use the default workload profiles environment, with one app on the Consumption plan and the other on the Dedicated plan"
+					},
+					{
+						"id": "d",
+						"text": "Bring your own virtual network into the environment"
+					}
+				],
+				"slots": [
+					{
+						"id": "gA",
+						"label": "Group A"
+					},
+					{
+						"id": "gB",
+						"label": "Group B"
+					},
+					{
+						"id": "gC",
+						"label": "Group C"
+					},
+					{
+						"id": "gD",
+						"label": "Group D"
+					}
+				]
+			},
+			"key": {
+				"gA": "a",
+				"gB": "b",
+				"gC": "c",
+				"gD": "d"
+			},
+			"explanation": {
+				"correct": "Group A's apps talk to each other through the Dapr service invocation API and share a log destination, so they belong together in a single environment. Group B's apps must never share compute resources and must be isolated by usage, so each one goes into its own environment. Group C needs one app on customized hardware with steadier cost predictability and the other scaling to zero and being charged only while running, inside one environment, which the default workload profiles environment supports by hosting the apps on separate workload profiles under the Dedicated and Consumption plans. Group D needs control over address allocation and routing, so an existing virtual network is supplied instead of the one the platform generates.",
+				"perChoice": {
+					"a": "This belongs with Group A: one environment is recommended for related apps that communicate through the Dapr service invocation API and share the same log destination.",
+					"b": "This belongs with Group B: more than one environment is recommended when apps must never share the same compute resources or must be isolated by usage such as test versus production.",
+					"c": "This belongs with Group C: the default workload profiles environment supports the Consumption and Dedicated plans, and apps on the two plans run on separate workload profiles inside it, so one app can have customized hardware with steadier cost predictability while the other scales to zero and is charged only for running.",
+					"d": "This belongs with Group D: an existing virtual network can be supplied instead of the one the platform creates, which gives fine-grained control over the environment's network configuration and therefore over address allocation and routing."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/environment"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/overview"
+				}
+			],
+			"subtopics": [
+				"environment-planning",
+				"workload-profiles",
+				"virtual-network"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SV255CAJV1EF2F5XN5V9KP",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Your platform team is moving four workloads onto Azure Container Apps, and each of them has to keep the way it is started today once the move is finished. Match each workload in the exhibit to the option that should run it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Workload",
+						"What it does",
+						"How it is started today",
+						"Typical run length"
+					],
+					"rows": [
+						[
+							"Ledger rollup",
+							"Aggregates the day's transactions into a monthly accounting ledger",
+							"A Windows virtual machine starts it by itself at 02:00 every night",
+							"About 15 minutes"
+						],
+						[
+							"Mail helper",
+							"Sends a confirmation e-mail for each item that lands in a storage queue",
+							"A worker process watches the queue and acts whenever something new appears",
+							"A few seconds per item"
+						],
+						[
+							"Orphan cleanup",
+							"Deletes orphaned blobs older than one year",
+							"An engineer runs a script by hand whenever they decide it is needed",
+							"Up to an hour"
+						],
+						[
+							"Customer API",
+							"Answers customer requests over HTTPS and must stay reachable at all times",
+							"A web server behind a load balancer receives inbound requests",
+							"Continuously"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "On-demand job"
+					},
+					{
+						"id": "b",
+						"text": "Scheduled job"
+					},
+					{
+						"id": "c",
+						"text": "Event-triggered job"
+					},
+					{
+						"id": "d",
+						"text": "Container app"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "A cleanup that an engineer starts by hand from a command line, runs a single time, and never repeats by itself"
+					},
+					{
+						"id": "s2",
+						"label": "A consolidation that must begin by itself at 02:00 every night, whether or not anyone is at the keyboard"
+					},
+					{
+						"id": "s3",
+						"label": "A confirmation sender that must react by itself whenever a new item appears in a storage queue, handling one item per execution"
+					},
+					{
+						"id": "s4",
+						"label": "A public-facing web endpoint that clients call at any hour and that must keep serving and grow as request volume rises"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d"
+			},
+			"explanation": {
+				"correct": "The Orphan cleanup is run deliberately by an engineer whenever they choose, which is exactly what an on-demand job provides: it runs only when someone explicitly asks for it and then finishes. The Ledger rollup must begin by itself at 02:00 every night, which matches a scheduled job that runs on a recurring timetable. The Mail helper reacts to each new item that appears in a storage queue, which matches an event-triggered job that starts when an event arrives and processes it. The Customer API must stay reachable at all times and answer inbound requests, so it is a continuously running container app rather than work that runs and completes; deploying API endpoints is a typical container app workload, while jobs exist for background processing that runs to completion.",
+				"perChoice": {
+					"a": "Belongs in the slot describing the cleanup an engineer starts by hand: an on-demand job runs only when it is explicitly requested and then finishes, with no repeating pattern.",
+					"b": "Belongs in the slot describing the nightly consolidation: a scheduled job starts by itself on a recurring timetable, such as every night at a fixed time.",
+					"c": "Belongs in the slot describing the confirmation sender: an event-triggered job starts when an event arrives and processes that event, one item at a time.",
+					"d": "Belongs in the slot describing the public-facing API: a container app stays available and scales with inbound requests, while jobs are intended for work that runs and then completes."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/overview"
+				}
+			],
+			"subtopics": [
+				"container-apps-jobs",
+				"job-types",
+				"workload-selection"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SVFK8ZMD481F5FS3DMPV29",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have taken over the platform side of a retail company's Azure Container Apps estate, and the five requests in the exhibit have to be answered by the platform itself rather than by each application team. Match each request to the mechanism that satisfies it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Request",
+						"What the team asked for"
+					],
+					"rows": [
+						[
+							"A",
+							"The team wants the container hosts to receive the periodic updates that Azure applies to them, and it refuses to maintain a patch pipeline of its own."
+						],
+						[
+							"B",
+							"The operations team wants to hear from the platform automatically whenever an environment stops serving traffic or starts to misbehave."
+						],
+						[
+							"C",
+							"Before four more services are migrated, the team must know how many container apps and jobs the environment is still allowed to hold."
+						],
+						[
+							"D",
+							"Security wants the subnets and routes of the environment's network to be owned by their own team instead of by the service that hosts the workloads."
+						],
+						[
+							"E",
+							"An integration team wants to run an event-driven Azure Functions app and an Azure Spring Apps service on the platform, and they must be able to reach the container apps that the estate already runs."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Rely on the Container Apps runtime that manages the environment: it handles the operating system upgrades, the scale operations, the failover procedures and the resource balancing inside it."
+					},
+					{
+						"id": "i2",
+						"text": "Set up an Azure Monitor alert for the environment so that important changes in its health and status are pushed to the team."
+					},
+					{
+						"id": "i3",
+						"text": "Check the Quotas for Azure Container Apps page for the quotas that apply to the environment, and confirm the current numbers on the Azure subscription service limits page."
+					},
+					{
+						"id": "i4",
+						"text": "Create the environment with your own virtual network, which gives you fine-grained control over the environment's networking."
+					},
+					{
+						"id": "i5",
+						"text": "Add the Azure Functions app and the Azure Spring Apps service to the environment that already hosts the container apps."
+					},
+					{
+						"id": "i6",
+						"text": "Maintain the updates yourself: publish a rebuilt container image whenever a new host build is released and roll it out to each workload as a new revision."
+					},
+					{
+						"id": "i7",
+						"text": "Give the Azure Functions app and the Azure Spring Apps service an environment each, so they never share compute resources or a log destination with the container apps."
+					},
+					{
+						"id": "i8",
+						"text": "Accept the virtual network that the service creates for the environment, which comes with limited network capabilities."
+					}
+				],
+				"slots": [
+					{
+						"id": "ra",
+						"label": "Request A"
+					},
+					{
+						"id": "rb",
+						"label": "Request B"
+					},
+					{
+						"id": "rc",
+						"label": "Request C"
+					},
+					{
+						"id": "rd",
+						"label": "Request D"
+					},
+					{
+						"id": "re",
+						"label": "Request E"
+					}
+				]
+			},
+			"key": {
+				"ra": "i1",
+				"rb": "i2",
+				"rc": "i3",
+				"rd": "i4",
+				"re": "i5"
+			},
+			"explanation": {
+				"correct": "Each request maps to a different platform mechanism. A is met by the runtime that manages the environment, because that runtime handles operating system upgrades, scale operations, failover procedures and resource balancing inside the environment. B is met by an Azure Monitor alert, which is the documented way to be notified automatically about changes in an environment's health and status. C is met by reading the Quotas for Azure Container Apps page and cross-checking the authoritative numbers on the Azure subscription service limits page. D is met by supplying your own virtual network when the environment is created, which gives fine-grained control over the environment's networking instead of the generated network with limited network capabilities. E is met by adding the Azure Functions app and the Azure Spring Apps service to the environment that already hosts the container apps, since an environment supports multi-service integration.",
+				"perChoice": {
+					"i1": "This satisfies request A. The Container Apps runtime manages each environment and handles operating system upgrades, scale operations, failover procedures and resource balancing, so the hosts pick up the periodic updates with no patch pipeline of the team's own.",
+					"i2": "This satisfies request B. Azure Monitor alerts automatically notify you of important changes or issues in your environments, which is what the operations team asked for.",
+					"i3": "This satisfies request C. The quotas relevant to an environment are listed on the Quotas for Azure Container Apps page, and the authoritative limits and quotas are on the Azure subscription service limits page.",
+					"i4": "This satisfies request D. Providing your own virtual network when the environment is created gives you fine-grained control over the environment's networking, so your own team can own the subnets and routes.",
+					"i5": "This satisfies request E. Azure Functions and Azure Spring Apps can be added to an existing Container Apps environment for multi-service integration, so they run alongside the container apps that already live there.",
+					"i6": "This does not satisfy request A. The runtime applies operating system upgrades inside the environment, so rebuilding images and rolling out new revisions is manual work the platform already covers on its own.",
+					"i7": "This does not satisfy request E. Separate environments are meant for apps that must never share compute resources or be isolated by team or usage; an environment can host Azure Functions and Azure Spring Apps alongside container apps, so isolating them is unnecessary.",
+					"i8": "This does not satisfy request D. The virtual network the service creates for an environment comes with limited network capabilities; to control the subnets and routes yourself, you have to supply your own network."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/environment"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/overview"
+				}
+			],
+			"subtopics": [
+				"container-apps-environments",
+				"container-apps-networking",
+				"container-apps-monitoring"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SVQ5RPX5A48PQQQDQV22A9",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have four containerized services running in Azure Container Apps, and the platform team wants each one to add or remove replicas in response to a different signal. You need to decide what drives each service's replica count. Match each service in the exhibit to the trigger that should be configured for it.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Service          Signal the platform team observed\nstorefront-api   Callers reach it through the web endpoint published for the app, and the number of requests follows the shopping season.\nsync-worker      It consumes messages that appear in an Azure Service Bus queue, and the team wants a replica to start as soon as work is waiting there.\nrender-service   The team watches how much of the host's compute the container uses, and wants the number of replicas to follow that measurement.\ntelemetry-proxy  Its number of replicas has to follow a metric published by a third-party monitoring system, and the platform team has already wired that metric source into the environment's configuration."
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "HTTP traffic"
+					},
+					{
+						"id": "i2",
+						"text": "Event-driven processing"
+					},
+					{
+						"id": "i3",
+						"text": "CPU or memory load"
+					},
+					{
+						"id": "i4",
+						"text": "KEDA-supported scaler"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "storefront-api"
+					},
+					{
+						"id": "s2",
+						"label": "sync-worker"
+					},
+					{
+						"id": "s3",
+						"label": "render-service"
+					},
+					{
+						"id": "s4",
+						"label": "telemetry-proxy"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Container Apps decides the replica count from declarative scaling rules, and the trigger category must match the signal that actually drives the workload. storefront-api is reached through the endpoint the platform publishes, so its demand is inbound requests and it uses the HTTP trigger (concurrent requests). sync-worker reacts to messages sitting in an Azure Service Bus queue, which is event-driven processing. render-service follows the container's own consumption of the host's resources, so it uses CPU or memory load; note that an app with this trigger can never scale to zero, so at least one instance stays running and is billed. telemetry-proxy follows a metric produced by a third-party monitoring system, which is neither inbound requests, nor a queue of messages, nor the container's own resource usage, so it needs a scaler from the KEDA ecosystem.",
+				"perChoice": {
+					"i1": "Belongs with storefront-api. Its demand arrives as requests to the web endpoint published for the app, and the HTTP trigger measures exactly that (the number of concurrent requests) to decide when to add or remove replicas.",
+					"i2": "Belongs with sync-worker. The work arrives as messages in an Azure Service Bus queue, and services that react to incoming events use event-driven processing, so a replica can be started as soon as messages are waiting.",
+					"i3": "Belongs with render-service. The replica count has to follow how much of the host's compute the container consumes, which is resource-usage-based scaling on CPU or memory. Keep in mind that apps driven by CPU or memory can never scale to zero, so this service always keeps at least one running instance and is billed for it.",
+					"i4": "Belongs with telemetry-proxy. A metric published by a third-party monitoring system is a custom metric that only a scaler from the KEDA ecosystem can read, so this is the trigger that fits the fourth service."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/overview"
+				}
+			],
+			"subtopics": [
+				"scale-triggers",
+				"autoscaling"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SVV4BER2PXB5QT128TXJW1",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are standing up the first Azure Container Apps environment for Fabrikam, and the first workload is a fraud-detection model that has to run on a GPU. Two more containerized HTTP APIs are planned for the same environment next quarter; they receive no traffic for hours at a time, so they must be able to shut down when idle and cost nothing while they are down, while the fraud model's monthly spend must not rise and fall with request volume. The network team owns every network in the company and will not allow Azure to create new networking resources for this deployment, so the environment must land on the network the team already runs. Which environment and app-hosting setup should you choose?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "First workload      : contoso.azurecr.io/fraud-model:4.1.0  (needs a GPU)\nSpend for workload  : a monthly amount that does not rise and fall with request volume\nTwo APIs next quarter: no traffic for hours at a time; nothing to pay while they are down\nNetwork             : must run on the corporate virtual network the network team already\n                      operates; Azure must not create networking resources for this deployment"
+				},
+				"statement": "The setup the platform team should choose is {{setup}}.",
+				"slots": [
+					{
+						"id": "setup",
+						"options": [
+							{
+								"id": "a",
+								"text": "a workload profiles environment placed on the corporate virtual network, with the fraud model on a Dedicated workload profile"
+							},
+							{
+								"id": "b",
+								"text": "a consumption only environment placed on the corporate virtual network, with the fraud model on a Consumption workload profile"
+							},
+							{
+								"id": "c",
+								"text": "a workload profiles environment placed on a generated virtual network, with the fraud model on a Dedicated workload profile"
+							},
+							{
+								"id": "d",
+								"text": "a consumption only environment placed on a generated virtual network, with the fraud model on a Consumption workload profile"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"setup": "a"
+			},
+			"explanation": {
+				"correct": "The workload profiles environment is the default environment type and it supports both the Consumption and Dedicated plans, and inside it apps can run on either plan or on both at once by sitting on separate workload profiles. That lets the GPU-based fraud model go on a Dedicated workload profile - the plan intended for workloads needing customized hardware and steadier cost prediction, where you pay per-instance charges plus a fixed environment management fee that does not grow or shrink with the number of workload profiles - while the two pay-per-use APIs planned for next quarter can later go on Consumption ones and shut down completely when idle. The environment also has to sit on the corporate virtual network the network team operates, which means the team supplies that network when the environment is created, because the network the platform generates on its own has only limited network capabilities and does not satisfy the requirement.",
+				"perChoice": {
+					"setup:b": "Consumption only environments (legacy) support only the Consumption plan, so they cannot offer the Dedicated plan that a GPU workload needs, and usage-based Consumption billing does not give the steady monthly amount the fraud model requires. The network choice is right here, but the environment type cannot host the first workload.",
+					"setup:c": "The environment type and the app-hosting choice are right, but the platform-generated virtual network does not meet the requirement: the environment must use the corporate virtual network that the network team owns and manages, and that network has to be supplied when the environment is created.",
+					"setup:d": "Both the environment type and the network are wrong. A consumption only environment supports only the Consumption plan and so cannot host the GPU workload, and a generated virtual network does not satisfy the requirement to run on the corporate virtual network."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/environment"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/overview"
+				}
+			],
+			"subtopics": [
+				"container-apps-environments",
+				"workload-profiles",
+				"virtual-network"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SW4MC4SJKBF4GXSY77V2B9",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Fabrikam Streams encodes customer-uploaded video in a container, and that container is hosted in the Azure Container Apps environment shown in the exhibit. That environment has been in place for several years. Marketing has committed to a launch date, so the encoding service has to run on customized hardware under a plan whose monthly cost does not rise and fall with the upload volume, and the platform team expects to put a second app in that environment on its own profile later this year. Which change should you make to the environment, and what happens to the environment fee when that second profile is added?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Environment name",
+							"transcode-env"
+						],
+						[
+							"Environment type",
+							"Consumption only (legacy)"
+						],
+						[
+							"Region",
+							"East US"
+						],
+						[
+							"Resource group",
+							"rg-media"
+						],
+						[
+							"Container apps hosted",
+							"transcode-api"
+						],
+						[
+							"Plan used by transcode-api",
+							"Consumption"
+						]
+					]
+				},
+				"statement": "The correct approach is to {{envChange}}; additionally, {{feeEffect}}.",
+				"slots": [
+					{
+						"id": "envChange",
+						"options": [
+							{
+								"id": "a",
+								"text": "enable the Dedicated plan on the existing consumption only environment and keep the app where it is"
+							},
+							{
+								"id": "b",
+								"text": "add a dedicated workload profile to the existing consumption only environment and move the app onto it"
+							},
+							{
+								"id": "c",
+								"text": "create a workload profiles environment and place the app on a dedicated workload profile"
+							},
+							{
+								"id": "d",
+								"text": "create a workload profiles environment and place the app on a consumption workload profile"
+							}
+						]
+					},
+					{
+						"id": "feeEffect",
+						"options": [
+							{
+								"id": "a",
+								"text": "the environment fee is unchanged when workload profiles are added"
+							},
+							{
+								"id": "b",
+								"text": "the environment fee is increased when workload profiles are added to the environment"
+							},
+							{
+								"id": "c",
+								"text": "the environment fee is replaced by per-instance charges when workload profiles are added to the environment"
+							},
+							{
+								"id": "d",
+								"text": "the environment fee is removed when workload profiles are added to the environment"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"envChange": "c",
+				"feeEffect": "a"
+			},
+			"explanation": {
+				"correct": "The environment in the exhibit is of the Consumption only (legacy) type, and the documentation states that consumption only environments support only the Consumption plan, so no dedicated workload profile can be added to it and the Dedicated plan cannot be enabled on it. The default environment type, a workload profiles environment, supports both the Consumption and Dedicated plans by placing apps on separate workload profiles, so the encoding app must be deployed into a new workload profiles environment on a dedicated workload profile, which is what provides the customized hardware and the steadier cost prediction the service needs. Once the environment runs on the Dedicated plan, it carries a fixed plan management cost for the environment as a whole, and that cost does not grow or shrink with the number of workload profiles, so adding the second profile leaves the environment fee unchanged; only the variable per-instance cost of the running workload profile instances changes.",
+				"perChoice": {
+					"envChange:a": "The Dedicated plan is available only in a workload profiles environment. A consumption only (legacy) environment supports the Consumption plan alone, so this environment cannot simply be switched over to the Dedicated plan.",
+					"envChange:b": "Consumption only environments have no dedicated workload profiles and support only the Consumption plan, so the app cannot be moved onto dedicated hardware inside the environment shown in the exhibit.",
+					"envChange:d": "A consumption workload profile runs on the Consumption plan, which is billed per use as the upload volume changes and provides no customized or dedicated hardware, so it fails both the hardware and the predictable-cost requirement.",
+					"feeEffect:b": "The plan management cost of the environment is a fixed amount for the environment as a whole, so it does not increase when another workload profile is added.",
+					"feeEffect:c": "The environment keeps its fixed plan management cost. The per-instance charges for the workload profile instances are billed in addition to that fee, not instead of it.",
+					"feeEffect:d": "An environment that uses the Dedicated plan still carries the environment-level plan management cost once it is in place; adding workload profiles does not remove that fee."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/environment"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/overview"
+				}
+			],
+			"subtopics": [
+				"container-apps-environments",
+				"workload-profiles",
+				"dedicated-plan"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TCMKKMR7M8TKDCBC01Z3RR",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have containerized a partner gateway. You need the partner to reach it from outside your network, and your team does not want to deploy or manage a load balancer or any other Azure networking resources. The facts about the partner's client are shown below. Which ingress configuration should you apply?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"clientLibrary\": \"Opens a raw socket connection and sends data that is not an HTTP or HTTPS request\",\n  \"endpointScope\": \"Must be reachable by the partner from the public internet\"\n}"
+				},
+				"statement": "Apply {{ingressType}} to the container app so the partner's client can connect.",
+				"slots": [
+					{
+						"id": "ingressType",
+						"options": [
+							{
+								"id": "a",
+								"text": "TCP ingress"
+							},
+							{
+								"id": "b",
+								"text": "HTTP ingress"
+							},
+							{
+								"id": "c",
+								"text": "HTTPS ingress"
+							},
+							{
+								"id": "d",
+								"text": "Internal-only ingress"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"ingressType": "a"
+			},
+			"explanation": {
+				"correct": "Container Apps can publish an endpoint over HTTPS or TCP without any extra Azure infrastructure. Because the partner's client opens a raw socket connection and does not send HTTP or HTTPS requests, the endpoint needs TCP ingress, and that also satisfies the requirement to avoid managing a load balancer or other networking resources.",
+				"perChoice": {
+					"ingressType:b": "HTTP ingress expects HTTP requests, so the partner's raw-socket client could not use the endpoint.",
+					"ingressType:c": "HTTPS ingress also serves HTTP requests, so the partner's raw-socket client would not be able to communicate with the endpoint.",
+					"ingressType:d": "Internal-only ingress keeps the endpoint inside the environment, so a partner on the public internet could not reach it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/overview"
+				}
+			],
+			"subtopics": [
+				"container-apps-ingress",
+				"external-endpoints"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TCTXA9SA690YW2ZF50ZG8F",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Northwind's platform team hosts three container apps in one Container Apps environment called prod-env, and all of them write to a single Log Analytics workspace. The team also owns an Azure Function that reacts to a message in a Service Bus queue and writes every processed order to Cosmos DB, and the facts about that function are listed below. Leadership now requires that the function be hosted in prod-env next to the other apps, that it keep its trigger, binding, and automatic scaling behavior, and that it send its logs to the same Log Analytics workspace the other apps use. Which change should the team make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "function        : orders-to-invoices\nhosting_today   : Consumption plan Function App, its own storage account\ntrigger         : Service Bus queue \"orders\"\nbinding         : Cosmos DB, collection \"invoices\"\ntarget_env      : prod-env\nmust_keep       : trigger behavior, binding behavior, automatic scaling\nmust_share      : prod-env virtual network, prod-env Log Analytics workspace"
+				},
+				"statement": "The platform team should {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "deploy the function app into the prod-env environment, keeping its triggers, bindings, and automatic scaling and placing it alongside the other apps in that environment"
+							},
+							{
+								"id": "b",
+								"text": "deploy the function app into a separate Container Apps environment, keeping its triggers, bindings, and automatic scaling but isolating it from the other apps in that environment"
+							},
+							{
+								"id": "c",
+								"text": "deploy the function app into the prod-env environment but convert it to a plain container app and replace the trigger and binding with custom scale rules"
+							},
+							{
+								"id": "d",
+								"text": "leave the function app on its current Function App plan and send its logs to the environment's log destination"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "A Container Apps environment can host more than plain container apps: Azure Functions and Azure Spring Apps can be added to an existing environment for multi-service integration, and whatever runs in that environment shares the environment's virtual network and writes to the same logging destination. Deploying the function app into prod-env therefore puts it beside the existing apps on the same network and the same Log Analytics workspace, and because a function hosted this way keeps its triggers, bindings, and automatic scaling, the Service Bus trigger and the Cosmos DB binding need no rework.",
+				"perChoice": {
+					"action:b": "A second environment gives the function its own virtual network and its own log destination, so the function would neither sit with the other apps in prod-env nor write to the Log Analytics workspace that prod-env uses.",
+					"action:c": "Converting the function into a plain container app and replacing the trigger and binding with custom scale rules throws away the trigger behavior, the binding behavior, and the automatic scaling that the requirement says must be kept.",
+					"action:d": "Staying on the current Function App plan leaves the function outside prod-env, so it doesn't join the environment's virtual network; the environment's log configuration only routes logs for workloads hosted in that environment, so it can't substitute for hosting the function there."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/environment"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/overview"
+				}
+			],
+			"subtopics": [
+				"functions-in-container-apps",
+				"container-apps-environments"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TCZKWF33XRZMPNGP4HMEDF",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your team runs three containerized APIs in one Azure Container Apps environment, and the order service they depend on runs today on Azure Spring Apps. The platform team wants the APIs to call the order service through the Dapr service invocation API without standing up any extra networking components, and wants to search all of the platform's container output in one place during troubleshooting. Which change should you make, and where do the order service's logs end up?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Detail"
+					],
+					"rows": [
+						[
+							"Order service",
+							"Runs on Azure Spring Apps as a standalone deployment"
+						],
+						[
+							"Containerized APIs",
+							"Three apps that run in one Azure Container Apps environment"
+						],
+						[
+							"Network path today",
+							"The APIs reach the order service through an Application Gateway and a public endpoint"
+						],
+						[
+							"Log destination for the environment",
+							"One Log Analytics workspace that receives the output of the apps in that environment"
+						],
+						[
+							"Required call style",
+							"Dapr service invocation from the APIs to the order service"
+						]
+					]
+				},
+				"statement": "The platform team should {{slot1}}. After that change, the order service's logs go {{slot2}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "add the Azure Spring Apps service to the environment hosting the containerized APIs"
+							},
+							{
+								"id": "b",
+								"text": "add the Azure Spring Apps service to a separate environment and publish its endpoint to the internet"
+							},
+							{
+								"id": "c",
+								"text": "deploy the Spring service as a container image in a new revision of one of the containerized APIs"
+							},
+							{
+								"id": "d",
+								"text": "put the Spring service on its own virtual network and let the APIs reach it through a private endpoint"
+							}
+						]
+					},
+					{
+						"id": "slot2",
+						"options": [
+							{
+								"id": "a",
+								"text": "to the Log Analytics workspace configured for the environment, alongside the other apps' logs"
+							},
+							{
+								"id": "b",
+								"text": "to a Log Analytics workspace that only the order service logs to"
+							},
+							{
+								"id": "c",
+								"text": "to the Application Insights instance that the other apps in the environment log to"
+							},
+							{
+								"id": "d",
+								"text": "to the Azure Activity log for the subscription, alongside the resource writes"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a",
+				"slot2": "a"
+			},
+			"explanation": {
+				"correct": "Bringing the Azure Spring Apps service into the same Azure Container Apps environment as the containerized APIs is the right move. Azure Spring Apps can be added to an existing Container Apps environment for multi-service integration, and every app that runs in one environment shares that environment's virtual network, Dapr configuration and log destination. That is what allows the APIs to reach the order service through the built-in Dapr service invocation API with no extra networking components, and it avoids the public endpoint and Application Gateway path shown in the exhibit. Because all apps in an environment publish to the single Log Analytics workspace set for that environment through the environment's appLogsConfiguration property, the order service's logs arrive in the same workspace as the other apps' logs, giving the team one place to search all container output.",
+				"perChoice": {
+					"slot1:b": "A second environment cannot satisfy the requirement. Built-in Dapr service invocation does not cross environment boundaries out of the box, so the APIs in the first environment could not invoke the order service that way, and publishing an internet-facing endpoint contradicts the team's requirement.",
+					"slot1:c": "A revision redeploys a containerized app with a different image. The order service is an Azure Spring Apps service, which can be added to an existing Container Apps environment for multi-service integration, so it does not have to be rebuilt as a container image.",
+					"slot1:d": "Each Container Apps environment already sits on a virtual network that enforces its secure boundary, and internal-only ingress with DNS-based service discovery is built in, so app-to-app name resolution needs no private endpoint or additional network resources.",
+					"slot2:b": "By default all apps in an environment publish to one common Log Analytics workspace, so the order service does not get a workspace of its own unless the environment's log routing property is changed.",
+					"slot2:c": "Application Insights is where Dapr traces are correlated through the instrumentation key handed to Dapr. The container output itself is published to the Log Analytics workspace set for the environment.",
+					"slot2:d": "The Azure Activity log records control-plane operations on resources. It does not collect the stdout and stderr output written by running containers."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/environment"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/overview"
+				}
+			],
+			"subtopics": [
+				"multi-service-integration",
+				"container-apps-environment",
+				"log-analytics-routing"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TD28WE8JGV9RKXHBSEKNGY",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You administer the Container Apps environments for a company and you are preparing a capacity plan for the next year. Operations wants to hear automatically whenever one of the environments reports a change in its health or its status, and the capacity team has found that the two obvious portal pages show different numbers, so it needs the page that carries the authoritative, up-to-date ceiling on how many container apps and environments a tenant may host. Which pairing should you apply?",
+				"statement": "Set up {{monitor}} so that environment health and status changes raise a notification, and point the capacity team to {{quota}} for the published ceiling.",
+				"slots": [
+					{
+						"id": "monitor",
+						"options": [
+							{
+								"id": "a",
+								"text": "Azure Monitor alerts"
+							},
+							{
+								"id": "b",
+								"text": "Azure Monitor dashboards"
+							},
+							{
+								"id": "c",
+								"text": "Azure Monitor workbooks"
+							},
+							{
+								"id": "d",
+								"text": "Azure Advisor recommendations"
+							}
+						]
+					},
+					{
+						"id": "quota",
+						"options": [
+							{
+								"id": "a",
+								"text": "the Azure subscription service limits page"
+							},
+							{
+								"id": "b",
+								"text": "the Quotas for Azure Container Apps page"
+							},
+							{
+								"id": "c",
+								"text": "the container app Overview page in the Azure portal"
+							},
+							{
+								"id": "d",
+								"text": "the Microsoft.App resource provider registrations page"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"monitor": "a",
+				"quota": "a"
+			},
+			"explanation": {
+				"correct": "Azure Monitor alerts are the Azure mechanism for being told automatically that a Container Apps environment's health or status changed; the portal and the CLI only let a person inspect that status on demand, so neither meets the \"hear automatically\" requirement. For the numbers, the quota values relevant to a given environment appear on the Quotas for Azure Container Apps page, but the authoritative and most up-to-date limits are published on the Azure subscription service limits page (the Container Apps section), so that is the page the capacity team should quote from when stating the ceiling on how many container apps and environments a tenant may host.",
+				"perChoice": {
+					"monitor:b": "Azure Monitor dashboards are a visual view over collected metrics and logs for review on demand; they do not push a notification when an environment's health or status changes.",
+					"monitor:c": "Azure Monitor workbooks are saved, interactive queries and reports for exploring telemetry when someone opens them; they are not a channel that notifies the operations team about changes.",
+					"monitor:d": "Azure Advisor recommendations list suggested improvements to a customer's resources and configuration; they are not tied to a Container Apps environment reporting a change in health or status.",
+					"quota:b": "The Quotas for Azure Container Apps page lists the quota values that are relevant to a particular environment, but the authoritative, up-to-date numbers are published on the Azure subscription service limits page, so a capacity plan quoted from this page can rest on figures that differ from the official ones.",
+					"quota:c": "The container app Overview page summarizes the state of one app, such as its resources and revisions; it does not publish the ceiling on how many container apps and environments a tenant may host.",
+					"quota:d": "The resource provider registration page only shows whether the Microsoft.App provider is registered for the subscription; registration is a prerequisite for creating container apps and is not where the numeric ceiling is published."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/environment"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-apps/overview"
+				}
+			],
+			"subtopics": [
+				"environment-monitoring",
+				"quotas-and-limits"
+			],
+			"reviewed": false
+		}
+	]
+}

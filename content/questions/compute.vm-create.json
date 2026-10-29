@@ -1,0 +1,1712 @@
+{
+	"skill": "compute.vm-create",
+	"questions": [
+		{
+			"id": "q_01M5Q847SMXW0P29FCVHPK9BV1",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have created a Linux virtual machine in the Azure portal from the Ubuntu Server 22.04 LTS - Gen2 image. For the Administrator account you chose the SSH public key authentication type with the option to generate a new key pair, and the portal placed the new public key on the VM. The private key file was saved to the Downloads folder of your macOS workstation, and the VM has a public IP you can reach. You now need to sign in to the VM from that workstation with SSH. Which command should you run first?",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "$ ls -l ~/Downloads/myKey.pem\n-rw-rw-r--  1 alex  staff  1679 Sep 18 14:22 myKey.pem\n\n$ ssh -i ~/Downloads/myKey.pem azureuser@10.111.12.123\nWarning: Permissions 0664 for 'myKey.pem' are too open.\nThis private key will be ignored.\nazureuser@10.111.12.123: Permission denied (publickey)."
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "chmod 644 ~/Downloads/myKey.pem"
+					},
+					{
+						"id": "b",
+						"text": "chown azureuser ~/Downloads/myKey.pem"
+					},
+					{
+						"id": "c",
+						"text": "chmod 400 ~/Downloads/myKey.pem"
+					},
+					{
+						"id": "d",
+						"text": "ssh -i ~/Downloads/myKey.pub azureuser@10.111.12.123"
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "The downloaded private key file was left with group and other read access (0664), so the SSH client refuses to use it and the sign-in fails with \"Permission denied (publickey)\". On macOS and Linux the key file must be restricted to the owner only, which is done with chmod 400 on the .pem file. After that, the same ssh command connects with the generated key pair, since Azure stores the matching public key on the VM and the private key stays on the workstation.",
+				"perChoice": {
+					"a": "chmod 644 still grants read access to the group and to other users, so the client continues to treat the key as too open and keeps ignoring it. The permission bits must allow access for the owner only.",
+					"b": "Changing the file owner does not change the permission bits that the client reported as too open, and azureuser is the guest account name inside the VM rather than a local account on the workstation, so this command fails or changes nothing that matters.",
+					"d": "The .pub file contains only the public half of the key pair; the SSH client needs the private key file to authenticate. Passing the public key file with -i cannot establish the session."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/quick-create-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/overview"
+				}
+			],
+			"subtopics": [
+				"ssh-key-pair",
+				"linux-vm-creation",
+				"vm-connectivity"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q87P84R7QHFD0WPY1G2TVS",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a VM deployment plan for D2s_v5 in East US. The table shows the current subscription checks for two candidate regions. You need to deploy the VM without waiting for another subscription quota review. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Region",
+						"Subscription VM core quota",
+						"Capacity for D2s_v5"
+					],
+					"rows": [
+						[
+							"East US",
+							"Approved for 20 cores",
+							"Unavailable"
+						],
+						[
+							"West Europe",
+							"Approved for 20 cores",
+							"Available"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Deploy the selected size in West Europe."
+					},
+					{
+						"id": "b",
+						"text": "Request a larger quota in East US for the selected size."
+					},
+					{
+						"id": "c",
+						"text": "Deploy the selected size in East US."
+					},
+					{
+						"id": "d",
+						"text": "Deploy the selected size in West Europe after requesting a larger quota there."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Quota approval and regional capacity are checked separately. East US has approved quota but no capacity for D2s_v5, while West Europe has both approved quota and available capacity. Deploying the selected size in West Europe therefore satisfies the requirement without another quota review.",
+				"perChoice": {
+					"b": "Requesting a larger quota in East US does not resolve a capacity shortage. Even after approval, the deployment can fail when the target region or availability zone lacks room for the chosen size.",
+					"c": "East US has approved quota but no capacity for D2s_v5, so deploying the selected size there would still fail.",
+					"d": "West Europe already has enough approved quota and available capacity. Adding a quota request there creates an unnecessary approval step and does not meet the requirement to deploy without another review."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/overview"
+				}
+			],
+			"subtopics": [
+				"vm-quota-capacity",
+				"vm-region-selection"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q8AVQH7BFDJ32KWQS6RDMV",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You run a batch data pipeline on a Linux virtual machine in East US. Every run stages a large intermediate working set in the VM's temporary storage, and the staging step is currently held back by the VM's own IOPS and throughput limits. The staged data does not have to survive a deallocation, so you are replacing the VM with a different size taken from the sizes offered in your region. Which size should you deploy?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Size",
+						"vCPUs",
+						"Memory (GiB)",
+						"Temporary storage (GiB)",
+						"Availability in East US"
+					],
+					"rows": [
+						[
+							"D2s_v5",
+							"2",
+							"8",
+							"16",
+							"Available"
+						],
+						[
+							"E2s_v5",
+							"2",
+							"16",
+							"32",
+							"Available"
+						],
+						[
+							"Dadsv6",
+							"8",
+							"32",
+							"96",
+							"Available"
+						],
+						[
+							"Eadsv6",
+							"16",
+							"64",
+							"192",
+							"Available"
+						],
+						[
+							"FXmdsv2",
+							"2",
+							"16",
+							"64",
+							"Not offered in this region"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Dadsv6 or Eadsv6 — this size family adds dedicated local NVMe that bypasses the VM's IOPS and throughput caps"
+					},
+					{
+						"id": "b",
+						"text": "D2s_v5 or E2s_v5 — this size family adds dedicated local NVMe that bypasses the VM's IOPS and throughput caps"
+					},
+					{
+						"id": "c",
+						"text": "Dadsv6 or Eadsv6 — this size family keeps the staged working set on managed disks so it survives deallocation and deletion"
+					},
+					{
+						"id": "d",
+						"text": "D2s_v5 or E2s_v5 — this size family keeps the staged working set on managed disks so it survives deallocation and deletion"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Dadsv6 and Eadsv6 belong to the family of sizes whose names carry the 'd' marker, and those sizes add dedicated local NVMe (capped at 2,040 GiB) that bypasses the VM's IOPS and throughput caps — exactly the limit the staging step is hitting. Their temporary storage lives on the host, which is acceptable because the working set does not need to survive deallocation. FXmdsv2 would qualify on the same basis, but the exhibit shows it is not offered in East US, so it is not a deployable choice here.",
+				"perChoice": {
+					"b": "D2s_v5 and E2s_v5 are not part of the 'd' family, so they do not gain dedicated local NVMe; their temporary storage stays subject to the VM's IOPS and throughput caps, which is the constraint the pipeline is running into.",
+					"c": "Temporary storage sits on the host rather than in remote Azure Storage, so on any size family the staged files are not kept on managed disks and are lost when the VM is deallocated or deleted. The size choice does not change that, and the requirement states the working set does not need to be persisted.",
+					"d": "D2s_v5 and E2s_v5 neither persist the staged files on managed disks nor add dedicated local NVMe: local temporary data is lost on deallocation or deletion for every size, and these two sizes are also limited by the VM's own IOPS and throughput caps."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/quick-create-portal"
+				}
+			],
+			"subtopics": [
+				"vm-sizing",
+				"local-temporary-storage"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q8EJHYDS3QHJJ36V501G62",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have created a Linux virtual machine in the Azure portal, and the guest operating system on it runs a web application that must not be reachable from the internet. Your administrators still sign in to the VM with SSH from their own workstations. Which change should you make to the inbound port configuration?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Portal field on the Create a virtual machine page",
+						"Your entry"
+					],
+					"rows": [
+						[
+							"Image",
+							"Ubuntu Server 22.04 LTS - Gen2"
+						],
+						[
+							"Resource group",
+							"rg-app-01"
+						],
+						[
+							"Public inbound ports",
+							"Allow selected ports"
+						],
+						[
+							"Ports checked",
+							"SSH (22), HTTP (80)"
+						],
+						[
+							"Public IP address",
+							"Enabled - pip-app-01"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Remove HTTP (80) from the selected ports and keep SSH (22)"
+					},
+					{
+						"id": "b",
+						"text": "Replace the checked ports with RDP (3389) and HTTP (80)"
+					},
+					{
+						"id": "c",
+						"text": "Block the web application with a firewall rule inside the guest OS and leave the checked ports in place"
+					},
+					{
+						"id": "d",
+						"text": "Change Allow selected ports to no inbound ports and let the guest OS handle SSH (22) from the internet on its own"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "With Allow selected ports, the deployment permits every checked port to the VM's public IP through the network security group, so the checked HTTP (80) port left the web application exposed to internet traffic. Removing HTTP (80) from the selected ports while leaving SSH (22) permitted keeps administrator sign-in working and stops the group from permitting web traffic to the VM. Network security groups themselves are free and control the traffic to and from the VM.",
+				"perChoice": {
+					"b": "RDP (3389) is the Windows remote access port, while the sign-in path your team relies on for this Linux VM is SSH (22). Replacing the checked ports therefore breaks administrator access, and HTTP (80) remains permitted to the public IP, so the web application stays exposed.",
+					"c": "A rule inside the guest operating system leaves the platform configuration untouched: the network security group still permits HTTP (80) to the VM's public IP, so the web port remains open from the internet even if the guest itself refuses the requests.",
+					"d": "With no inbound port permitted, the deployment creates no rule that opens SSH (22) from the internet, so traffic is filtered before it reaches the guest operating system and administrators lose the sign-in path they are required to retain."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/quick-create-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/overview"
+				}
+			],
+			"subtopics": [
+				"inbound-port-rules",
+				"network-security-group",
+				"vm-creation-settings"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q8HB9GA105KM4WKNFKD891",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a two-instance web tier running in the East US region. Both instances currently sit in the same Availability Zone, and the tier was created with no infrastructure redundancy required. The business now requires the tier to keep at least 99.99% connectivity to at least one running instance while a single Availability Zone is serviced, and a data residency rule requires every instance to stay in the East US region. Which change should you make to the tier?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Deployment inventory - web-tier-prod\n-------------------------------------\nRegion ............................ East US\nInstance count ................... 2\nAvailability Zone per instance ... Both instances in Availability Zone 1\nAvailability options at creation . No infrastructure redundancy required\nData residency rule .............. All instances must remain in the East US region\nMaintenance window policy ........ One Availability Zone may be serviced at a time\n"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Move one of the two instances into a second Availability Zone in the East US region"
+					},
+					{
+						"id": "b",
+						"text": "Keep both instances in Availability Zone 1 in the East US region and add two more instances to that same Availability Zone"
+					},
+					{
+						"id": "c",
+						"text": "Move one of the two instances into a second region so the tier spans two regions"
+					},
+					{
+						"id": "d",
+						"text": "Replace the two instances with a single instance that uses the Availability Zones of the East US region"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Availability Zones are physically separated zones inside a single Azure region, and connectivity to at least one instance is guaranteed at least 99.99% of the time when two or more instances are deployed across two or more Availability Zones in the same region. Moving the second instance into a second Availability Zone in East US spreads the two existing instances over two zones while every instance stays in the region required by the residency rule, so the tier keeps serving when one zone is serviced.",
+				"perChoice": {
+					"b": "Adding more instances inside Availability Zone 1 leaves every instance in the same zone, so servicing that zone still interrupts the whole tier. The redundancy comes from running instances in more than one Availability Zone of the region, not from raising the instance count in a single zone.",
+					"c": "This breaks the data residency rule, which requires every instance to remain in the East US region, and it also does not satisfy the zone requirement, because the guarantee is defined for instances spread across two or more Availability Zones in the same region rather than for instances split across different regions.",
+					"d": "Collapsing the tier into a single instance removes the redundancy entirely. The connectivity guarantee depends on two or more instances deployed across two or more Availability Zones, so a lone instance would leave the service with nothing running during zone maintenance."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/quick-create-portal"
+				}
+			],
+			"subtopics": [
+				"availability-zones",
+				"vm-availability",
+				"deployment-planning"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q8K9TEMZJ5F8R1PHJ5SQ5F",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Windows virtual machine being created in the Azure portal with the settings shown in the table. You need it to stop automatically every day at 22:00 UTC and to give the owner advance notice before it stops. Which configuration should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Portal field",
+						"Value entered"
+					],
+					"rows": [
+						[
+							"Resource group",
+							"rg-app-prod"
+						],
+						[
+							"Virtual machine name",
+							"app-vm-01"
+						],
+						[
+							"Image",
+							"Windows Server 2022 Datacenter: Azure Edition - x64 Gen 2"
+						],
+						[
+							"Authentication type",
+							"Password"
+						],
+						[
+							"Public inbound ports",
+							"Allow selected ports — RDP (3389), HTTP (80)"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "On the Management tab, select Enable auto-shutdown, choose the shutdown time and time zone, and configure the advance notice."
+					},
+					{
+						"id": "b",
+						"text": "On the Operations section, set Auto-shutdown to On, choose the shutdown time and time zone, and configure the advance notice."
+					},
+					{
+						"id": "c",
+						"text": "On the Instance details tab, set Auto-shutdown to On, choose the shutdown time and time zone, and configure the advance notice."
+					},
+					{
+						"id": "d",
+						"text": "On the Networking tab, set Auto-shutdown to On, choose the shutdown time and time zone, and configure the advance notice."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "In the Windows creation workflow, the auto-shutdown controls are on the Management tab. Enabling auto-shutdown there lets you choose the shutdown time and time zone (UTC by default) and optionally arrange an e-mail warning before shutdown, which meets the nightly schedule and advance-notice requirements.",
+				"perChoice": {
+					"b": "Setting Auto-shutdown to On from the Operations section is the later configuration route described for Linux VMs, not the configuration location for this Windows creation workflow.",
+					"c": "The Instance details tab contains basic VM properties such as the image, availability options, and security type; the auto-shutdown controls are not located there.",
+					"d": "The Networking tab covers network settings and inbound port choices; it does not contain the auto-shutdown controls."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/windows/quick-create-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/quick-create-portal"
+				}
+			],
+			"subtopics": [
+				"vm-auto-shutdown",
+				"portal-vm-creation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q8NCMXQBK234730FF46Z0K",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You are writing a deployment script for a Linux virtual machine in the East US region and want to pin the marketplace image by its exact publisher, offer, and version instead of relying on the friendly image name that the portal fills in for you. You have already run the first listing and it returned the publisher names shown below. Which two commands should you run next, and in which order, to resolve the remaining image values?",
+				"exhibit": {
+					"kind": "code",
+					"language": "powershell",
+					"text": "PS> Get-AzVMImagePublisher -Location eastus\n\nPublisherName : Canonical\nPublisherName : MicrosoftWindowsServer\nPublisherName : RedHat"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Get-AzVMImageOffer -Location eastus -Publisher Canonical, then Get-AzVMImageSku -Location eastus -Publisher Canonical -Offer UbuntuServer"
+					},
+					{
+						"id": "b",
+						"text": "Get-AzVMImageSku -Location eastus -Publisher Canonical -Offer UbuntuServer, then Get-AzVMImageOffer -Location eastus -Publisher Canonical"
+					},
+					{
+						"id": "c",
+						"text": "Get-AzVMImageOffer -Location eastus -Publisher Canonical, then Get-AzVMImageSku -Location eastus -Publisher Canonical"
+					},
+					{
+						"id": "d",
+						"text": "Get-AzVMImageOffer -Location eastus -Publisher Canonical -Offer UbuntuServer, then Get-AzVMImageSku -Location eastus -Publisher Canonical -Offer UbuntuServer"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Each image listing narrows the scope of the previous one. The offer list is queried by location and publisher, so after the publisher listing you run Get-AzVMImageOffer -Location eastus -Publisher Canonical, which returns the offers for that publisher (for example UbuntuServer). The version list is queried by location, publisher, and offer, so the offer value that the first query returned is then passed with the publisher and location to Get-AzVMImageSku, whose result supplies the image version to use in the image reference.",
+				"perChoice": {
+					"b": "The version listing is filtered by publisher and offer, so it cannot be the first query in this sequence: the offer value does not exist yet and has to be returned by the offer listing before it can be supplied to the version query.",
+					"c": "The version query must be filtered by the publisher and by the offer. Leaving out -Offer means it does not return the image versions for the offer the deployment needs.",
+					"d": "The offer listing is filtered by location and publisher only; an offer value is not one of its inputs. The offer value is the output of that first query, so it cannot be passed into it before it is known."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/quick-create-portal"
+				}
+			],
+			"subtopics": [
+				"image-selection",
+				"powershell-image-queries"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q8QKC8TZ7XVKZTC19PDH71",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your team deployed a Linux virtual machine with the portal defaults, and the table lists everything that was set up alongside it in the resource group myResourceGroup. The finance team wants the spend for this deployment to end, and no leftover resource should remain in that resource group after the cleanup. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Resource",
+						"Name",
+						"Configuration"
+					],
+					"rows": [
+						[
+							"Virtual machine",
+							"myVM",
+							"Ubuntu Server 22.04 LTS - Gen2, Standard_D2s_v5, resource group myResourceGroup"
+						],
+						[
+							"Virtual network",
+							"myVM-vnet",
+							"resource group myResourceGroup"
+						],
+						[
+							"Network interface",
+							"myVMMNIC",
+							"resource group myResourceGroup"
+						],
+						[
+							"Public IP address",
+							"myVMPublicIP",
+							"Standard, resource group myResourceGroup"
+						],
+						[
+							"Network security group",
+							"myVMNSG",
+							"resource group myResourceGroup, inbound RDP (3389) and HTTP (80) allowed"
+						],
+						[
+							"OS disk",
+							"myVM-osdisk",
+							"127 GiB managed disk, Premium SSD, resource group myResourceGroup"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Delete the resource group that contains the virtual machine and the supporting resources"
+					},
+					{
+						"id": "b",
+						"text": "Delete only the virtual machine resource, which also removes the supporting resources automatically"
+					},
+					{
+						"id": "c",
+						"text": "Move the virtual machine to a separate resource group so the supporting resources are left behind"
+					},
+					{
+						"id": "d",
+						"text": "Deallocate the virtual machine so the supporting resources stop accruing charges"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Deleting the resource group removes the virtual machine together with the related resources that were created with it — here the virtual network, network interface, public IP address, network security group, and managed OS disk — so nothing is left behind and the associated charges end.",
+				"perChoice": {
+					"b": "Removing just the virtual machine does not automatically remove the resources that were created alongside it. The virtual network, network interface, public IP address, network security group, and OS disk can remain in the subscription and keep generating charges.",
+					"c": "Moving the virtual machine to a different resource group relocates only that resource. The supporting resources stay in myResourceGroup, so they remain active and continue to bill the subscription.",
+					"d": "Deallocating the virtual machine releases its compute allocation, but it removes nothing. The supporting resources listed above remain in place and can still incur charges."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/windows/quick-create-portal"
+				}
+			],
+			"subtopics": [
+				"vm-resource-lifecycle",
+				"billing-and-cleanup"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q90XZ1FB8HNQTVPGJ60WHP",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are building a single Linux virtual machine for a development sandbox, and the team has recorded four outcomes that the portal configuration must satisfy. Drag each portal setting or value into the slot for the outcome it delivers.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Operating system image",
+							"Ubuntu Server 22.04 LTS - Gen2"
+						],
+						[
+							"Region",
+							"East US"
+						],
+						[
+							"VM class",
+							"D2s_v5"
+						],
+						[
+							"Authentication type",
+							"SSH public key"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "SSH public key source: Use a key stored in Azure"
+					},
+					{
+						"id": "i2",
+						"text": "SSH public key source: Generate new key pair"
+					},
+					{
+						"id": "i3",
+						"text": "Download private key and create resource"
+					},
+					{
+						"id": "i4",
+						"text": "Security type: Standard"
+					},
+					{
+						"id": "i5",
+						"text": "Security type: Trusted launch"
+					},
+					{
+						"id": "i6",
+						"text": "Managed disks with a chosen size and Standard HDD or Premium SSD tier"
+					},
+					{
+						"id": "i7",
+						"text": "Availability options: No infrastructure redundancy required"
+					},
+					{
+						"id": "i8",
+						"text": "Availability options: Zone-redundant"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "The sign-in credential's secret half must remain only on the administrator's own computer, and the rollout must not hand out a credential file."
+					},
+					{
+						"id": "s2",
+						"label": "Every instance must come up with secure boot and a virtual TPM already turned on, with nothing extra for the deployer to configure."
+					},
+					{
+						"id": "s3",
+						"label": "The volume that holds the guest operating system must not depend on a separately provisioned storage account, and whoever rolls this out picks how much room it gets and how fast it performs."
+					},
+					{
+						"id": "s4",
+						"label": "A development sandbox that runs a single instance is fine, so the rollout does not need to keep working when one of the region's physically separate locations is lost."
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i5",
+				"s3": "i6",
+				"s4": "i7"
+			},
+			"explanation": {
+				"correct": "Each outcome matches one portal value. For s1, choosing 'Use a key stored in Azure' as the SSH public key source means you already hold the private key on your computer and nothing is downloaded during the deployment. For s2, the 'Trusted launch' security type brings a new Generation 2 instance up with secure boot and a virtual TPM enabled automatically. For s3, managed disks take care of the storage account in the background while the deployer sets the disk size and the Standard HDD or Premium SSD performance tier. For s4, 'No infrastructure redundancy required' fits a sandbox that runs one instance and does not have to survive the loss of one of the region's physically separate locations.",
+				"perChoice": {
+					"i1": "Slot s1. The Linux quickstart tip says that on the next deployment you can pick this source, you already have the private key on your computer, and you will not need to download anything.",
+					"i2": "Fits no slot. This source makes the portal mint a brand new pair, and the matching secret file is delivered while the deployment runs, which contradicts the requirement in s1.",
+					"i3": "Fits no slot. This is the choice in the key-generation dialog that hands the secret file over at deployment time, so it works against the requirement in s1.",
+					"i4": "Fits no slot. Standard leaves secure boot and the virtual TPM switched off, so it does not deliver the outcome stated in s2.",
+					"i5": "Slot s2. Trusted Launch is the security type that starts a new Generation 2 instance with secure boot and a virtual TPM enabled by default.",
+					"i6": "Slot s3. Managed disks let Azure create and manage the storage account in the background while you specify the disk size and the Standard or Premium performance tier.",
+					"i7": "Slot s4. With this choice the deployment runs a single instance without relying on the region's physically separate locations, which is all the sandbox needs.",
+					"i8": "Fits no slot. This option spreads the workload across the region's physically separate locations, which is more protection than the sandbox described in s4 asks for."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/quick-create-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/overview"
+				}
+			],
+			"subtopics": [
+				"vm-creation-settings",
+				"ssh-key-authentication",
+				"availability-options"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q97CS12GN4SJFK3DGAWS5Q",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have deployed an Azure VM through the portal and now need to map its supporting resources to the requirements they satisfy. Which resource should you drag into each slot?",
+				"items": [
+					{
+						"id": "i1",
+						"text": "Managed OS disk"
+					},
+					{
+						"id": "i2",
+						"text": "Local disk"
+					},
+					{
+						"id": "i3",
+						"text": "Network interface (NIC)"
+					},
+					{
+						"id": "i4",
+						"text": "Network security group (NSG)"
+					},
+					{
+						"id": "i5",
+						"text": "Public IP address"
+					},
+					{
+						"id": "i6",
+						"text": "Virtual network"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "The guest system and its files must persist across ordinary restarts, and its storage must be billed separately from compute."
+					},
+					{
+						"id": "s2",
+						"label": "The host-side scratch area may be discarded when the instance is deallocated, and it must not add a storage charge."
+					},
+					{
+						"id": "s3",
+						"label": "The VM must join the corporate network privately, and this attachment must not add a charge of its own."
+					},
+					{
+						"id": "s4",
+						"label": "A rule set must decide which incoming connections are permitted, for example keeping port 22 open while blocking port 80."
+					},
+					{
+						"id": "s5",
+						"label": "Clients outside the corporate network must be able to reach the VM over the internet."
+					},
+					{
+						"id": "s6",
+						"label": "Other Azure resources must reach the VM privately without sending their traffic over the internet."
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5",
+				"s6": "i6"
+			},
+			"explanation": {
+				"correct": "The six requirements describe the distinct roles of the resources created with or alongside an Azure VM: persistent guest-system storage, host-local temporary storage, the charged-free network attachment, the charged-free traffic filter, internet-routable addressing, and the private network shared by Azure resources.",
+				"perChoice": {
+					"i1": "A managed OS disk holds the guest operating system and its files, uses managed storage, and is billed at the disk rate separately from compute.",
+					"i2": "Local disk is host-based temporary storage. It is free, is recreated when the VM starts, and its contents are lost when the VM is deallocated or deleted.",
+					"i3": "The NIC connects the VM to its virtual network and carries the VM's private IP. NICs have no separate charge.",
+					"i4": "An NSG filters traffic to and from the VM, such as allowing port 22 while blocking port 80. NSGs are free.",
+					"i5": "A public IP provides internet-routable access when one has been assigned to the VM; without it, the VM is reached through private connectivity.",
+					"i6": "The virtual network provides private connectivity between the VM and other Azure resources without carrying that traffic over the internet."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/quick-create-portal"
+				}
+			],
+			"subtopics": [
+				"vm-supporting-resources",
+				"vm-networking",
+				"vm-storage"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q9E9M9W8EEV6B88G64WG62",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are planning a redesign of an application platform and the design review recorded six outcomes that the selected services and configuration choices must deliver. The table shows how the platform works today. Drag each choice into the slot for the outcome it delivers.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Area of the current platform",
+						"State today"
+					],
+					"rows": [
+						[
+							"Compute layout",
+							"One instance per environment, provisioned individually; nothing adjusts itself when traffic changes"
+						],
+						[
+							"Resilience inside East US",
+							"A single loss of one physically separate location takes the whole environment offline"
+						],
+						[
+							"Group operations",
+							"Configuration and updates are applied to instances one by one"
+						],
+						[
+							"Business content",
+							"Application files are kept on the instance itself and are lost whenever it is replaced"
+						],
+						[
+							"Continuity",
+							"No copy of the workload runs in a second region and no failover drill is possible"
+						],
+						[
+							"Guest hardening",
+							"New Generation 2 instances start today without the hardware-rooted protections the security policy requires"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "item1",
+						"text": "Virtual Machine Scale Sets"
+					},
+					{
+						"id": "item2",
+						"text": "Availability Zones"
+					},
+					{
+						"id": "item3",
+						"text": "Azure Site Recovery"
+					},
+					{
+						"id": "item4",
+						"text": "Managed Premium SSD data disk"
+					},
+					{
+						"id": "item5",
+						"text": "Local temporary storage"
+					},
+					{
+						"id": "item6",
+						"text": "Register for Trusted Launch as default"
+					}
+				],
+				"slots": [
+					{
+						"id": "slot1",
+						"label": "The number of running instances should adjust automatically with demand, and configuration and updates should be handled centrally across the whole group"
+					},
+					{
+						"id": "slot2",
+						"label": "At least 99.99% connectivity to at least one instance should be maintained while a single physically separate location inside the same region is serviced"
+					},
+					{
+						"id": "slot3",
+						"label": "The workload should be replicated to a region you nominate, and a failover can be rehearsed beforehand without interrupting the live application"
+					},
+					{
+						"id": "slot4",
+						"label": "Content that must outlive an instance should sit on a separate volume from that instance, so it can be carried over to a replacement host"
+					},
+					{
+						"id": "slot5",
+						"label": "A working area for caches and buffers should cost nothing extra, and nothing placed in it has to remain once the instance is deallocated"
+					},
+					{
+						"id": "slot6",
+						"label": "Every newly created Generation 2 instance should boot with secure boot enabled and with a hardware-backed security module in place, whichever client tool was used to create it"
+					}
+				]
+			},
+			"key": {
+				"slot1": "item1",
+				"slot2": "item2",
+				"slot3": "item3",
+				"slot4": "item4",
+				"slot5": "item5",
+				"slot6": "item6"
+			},
+			"explanation": {
+				"correct": "Each choice maps to exactly one recorded outcome. A scale set supplies a load-balanced group whose instance count grows and shrinks with demand while configuration and updates are handled centrally for the group. Placing two or more instances in separate physical locations within one region (Availability Zones) is what keeps at least 99.99% connectivity to at least one instance while a single such location is down. Azure Site Recovery copies the workload to a region of your choosing, supports an automated failover plan, and lets you rehearse that failover before it is needed. A managed data disk holds business content separately from the instance so it can be detached from a failed machine and attached to its replacement. Local temporary storage is not charged for and suits caches and buffers that need not survive a deallocation. Registering for Trusted Launch as default makes every newly created Generation 2 instance boot with secure boot and vTPM already enabled, whichever client tool was used to create it.",
+				"perChoice": {
+					"item1": "Slot 1. A scale set manages a load-balanced group whose instance count can rise and fall automatically with demand or a schedule, and it lets administrators configure and update many instances centrally, which is what the first recorded outcome asks for.",
+					"item2": "Slot 2. Spreading two or more instances over two or more physically separate zones inside one region is what guarantees at least 99.99% connectivity to at least one instance while a single zone is serviced.",
+					"item3": "Slot 3. This service copies machines to a region of your choosing, is not limited to paired regions, supports an automated failover plan, and lets you test the failover beforehand without disturbing production or the ongoing replication.",
+					"item4": "Slot 4. A separate managed data disk keeps business content apart from the instance, so when an instance fails the disk can be detached and attached to a replacement machine.",
+					"item5": "Slot 5. This space sits on the machine host rather than in remote storage, is not charged for, suits caches and buffers, and everything written to it disappears when the machine is deallocated or deleted.",
+					"item6": "Slot 6. Once you register for this default behavior, every newly created Generation 2 machine starts with secure boot and vTPM turned on no matter which client tool was used to create it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/quick-create-portal"
+				}
+			],
+			"subtopics": [
+				"vm-scale-and-availability",
+				"vm-disaster-recovery",
+				"vm-storage-and-trusted-launch"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q9N9Z0HDM5617E2FWGA9K5",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a mix of Azure virtual machines in one subscription: some your team is standing up this week and others that have been running for years. You need the configuration choices below to satisfy the five goals that the design review recorded. Which choice should you drag into each slot?",
+				"items": [
+					{
+						"id": "data-disk",
+						"text": "A separate managed data disk"
+					},
+					{
+						"id": "local-ephemeral",
+						"text": "Local ephemeral storage"
+					},
+					{
+						"id": "managed-disks",
+						"text": "Managed disks on newly created virtual machines"
+					},
+					{
+						"id": "convert-unmanaged",
+						"text": "Converting the virtual machines that use unmanaged disks"
+					},
+					{
+						"id": "nsg",
+						"text": "A network security group with inbound port rules"
+					},
+					{
+						"id": "keep-unmanaged",
+						"text": "Unmanaged disks in the resource group's storage account"
+					},
+					{
+						"id": "premium-os-disk",
+						"text": "A Premium SSD managed disk tier for the OS disk"
+					}
+				],
+				"slots": [
+					{
+						"id": "resilient-records",
+						"label": "Business records must survive the loss of the current machine and remain usable on its replacement."
+					},
+					{
+						"id": "disposable-scratch",
+						"label": "Working files that are thrown away after each run do not need to persist between restarts."
+					},
+					{
+						"id": "no-storage-account",
+						"label": "Recently built virtual machines should not require anyone to provision or scale a storage account for their volumes."
+					},
+					{
+						"id": "modernize-legacy",
+						"label": "Older deployments that keep their volumes in a shared account must move to the current disk model."
+					},
+					{
+						"id": "traffic-filtering-free",
+						"label": "Traffic filtering for the virtual machine must be possible without adding a separate charge."
+					}
+				]
+			},
+			"key": {
+				"resilient-records": "data-disk",
+				"disposable-scratch": "local-ephemeral",
+				"no-storage-account": "managed-disks",
+				"modernize-legacy": "convert-unmanaged",
+				"traffic-filtering-free": "nsg"
+			},
+			"explanation": {
+				"correct": "Each recorded goal is met by one configuration: business records that must outlive the machine and stay usable on its replacement need their own managed data disk, because such a disk can be detached and attached to another instance; a working set that is discarded after every run belongs on local ephemeral storage, which is free and disappears when the machine is deallocated or deleted; machines being built now should use managed disks, which remove the storage-account setup and scaling work that would otherwise be needed; long-running deployments still keeping their volumes in a shared storage account need conversion from unmanaged disks to managed disks; and traffic filtering is delivered by a network security group, which controls traffic to and from the VM at no extra charge.",
+				"perChoice": {
+					"data-disk": "Fits the goal about records surviving the loss of the machine and remaining usable on its replacement: persistent content kept on a dedicated managed data disk can be detached from the failed instance and attached to the replacement.",
+					"local-ephemeral": "Fits the goal about working files that are thrown away after each run: local ephemeral storage suits caches, buffers and temp files, is free, and disappears when the VM is deallocated or deleted.",
+					"managed-disks": "Fits the goal about recently built machines not requiring anyone to provision or scale a storage account: managed disks remove storage-account setup and scaling work for new deployments.",
+					"convert-unmanaged": "Fits the goal about older deployments keeping their volumes in a shared account: virtual machines still running on unmanaged disks are converted to managed disks.",
+					"nsg": "Fits the goal about filtering traffic without adding a charge: a network security group controls traffic to and from the VM and is free.",
+					"keep-unmanaged": "Fits no goal: leaving volumes in a resource group's storage account keeps the unmanaged arrangement the review wants retired, and machines being built now are expected to use managed disks instead.",
+					"premium-os-disk": "Fits no goal: picking a Premium SSD tier for the boot volume is a storage-performance decision, and none of the recorded goals asks for a tier choice."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/quick-create-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/windows/quick-create-portal"
+				}
+			],
+			"subtopics": [
+				"managed-disks",
+				"vm-storage-design",
+				"network-security-groups"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q9QTAJ0Z2EJ9F9HF8X79KC",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have created two virtual machines in the Azure portal, and the team now has to reach them from their own laptops. The table lists how each VM was configured. Drag each action into the slot where it belongs.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Virtual machine",
+						"Image",
+						"Administrator account setup",
+						"Public inbound ports"
+					],
+					"rows": [
+						[
+							"myVM-WIN",
+							"Windows Server 2022 Datacenter: Azure Edition - x64 Gen 2",
+							"Username with a password",
+							"RDP (3389), HTTP (80)"
+						],
+						[
+							"myVM-LNX",
+							"Ubuntu Server 22.04 LTS - Gen2",
+							"Authentication type SSH public key, source Generate new key pair",
+							"SSH (22), HTTP (80)"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Select Connect, then Connect again, run Check access for port 3389, and open the RDP file; answer Yes to the certificate warning"
+					},
+					{
+						"id": "i2",
+						"text": "Open the RDP file taken from the portal in a Remote Desktop client such as Remote Desktop Client"
+					},
+					{
+						"id": "i3",
+						"text": "In the key pair dialog, choose Download private key and create resource"
+					},
+					{
+						"id": "i4",
+						"text": "In the key pair dialog, choose Use a key stored in Azure"
+					},
+					{
+						"id": "i5",
+						"text": "Create a replacement key pair or reset the administrator password"
+					},
+					{
+						"id": "i6",
+						"text": "Enable auto-shutdown on the Management tab and pick a shutdown time"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "myVM-WIN: sign in to the guest from a Windows workstation"
+					},
+					{
+						"id": "s2",
+						"label": "myVM-WIN: sign in to the guest from a Mac workstation"
+					},
+					{
+						"id": "s3",
+						"label": "myVM-LNX: get the credential file that the first sign-in needs"
+					},
+					{
+						"id": "s4",
+						"label": "myVM-LNX: regain entry after that credential file is gone"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i5"
+			},
+			"explanation": {
+				"correct": "The portal's own connect flow (Connect, Connect again, Check access on port 3389, then open the downloaded RDP file and accept the certificate warning) is how a Windows workstation reaches myVM-WIN, while a Mac reaches the same guest by opening the RDP file in a Remote Desktop client such as Remote Desktop Client. On myVM-LNX the SSH public key source was Generate new key pair, so the step that saves the credential file the first sign-in needs is the Download private key and create resource choice in the key pair dialog. If that file is later lost, another key pair or a password reset is the remaining way back in. Use a key stored in Azure applies to later VMs whose private key already stays on the computer, and the Management tab auto-shutdown setting controls when the machine stops rather than granting access.",
+				"perChoice": {
+					"i1": "Belongs to the slot for reaching myVM-WIN from a Windows workstation: the second Connect runs Check access against port 3389, the RDP file is then downloaded, and the certificate warning is expected because the VM certificate is not yet trusted.",
+					"i2": "Belongs to the slot for reaching myVM-WIN from a Mac workstation: on macOS you point an RDP client such as Remote Desktop Client at the RDP file obtained from the portal instead of using the portal's own connection flow.",
+					"i3": "Belongs to the slot for obtaining the credential file for myVM-LNX: because the source was Generate new key pair, the dialog offers Download private key and create resource, and that choice is what puts the private key on the local machine for the first sign-in.",
+					"i4": "Fits no slot: Use a key stored in Azure is for later VMs whose private key already remains on your computer, so nothing is downloaded again; myVM-LNX was created with Generate new key pair, and this choice neither saves a file nor restores access.",
+					"i5": "Belongs to the slot for regaining entry to myVM-LNX after the credential file is gone: a new key pair or a password reset is the other access path when the downloaded private key is lost.",
+					"i6": "Fits no slot: the Management tab auto-shutdown setting controls when the VM stops so that runtime cost is limited; it gives no one access to the guest and applies to Windows creation only."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/windows/quick-create-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/quick-create-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/overview"
+				}
+			],
+			"subtopics": [
+				"vm-connect",
+				"vm-create",
+				"ssh-key-pair"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R4AHZJH3BZYTA1DG7F9WPX",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are creating two virtual machines for a new platform team in the Azure portal, and the operations team has recorded the outcome each machine must deliver. The creation form is still open for both machines. Drag each portal value or action into the slot for the outcome it delivers.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Machine",
+						"Marketplace image",
+						"Purpose"
+					],
+					"rows": [
+						[
+							"CRM machine",
+							"Windows Server 2022 Datacenter: Azure Edition - x64 Gen 2",
+							"Hosts the internal customer relationship application"
+						],
+						[
+							"Build machine",
+							"Ubuntu Server 22.04 LTS - Gen2",
+							"Runs the nightly compile and test pipeline and serves a build status page"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Administrator account: username plus a password of at least 12 characters meeting the complexity requirements"
+					},
+					{
+						"id": "b",
+						"text": "Administrator account: Authentication type SSH public key"
+					},
+					{
+						"id": "c",
+						"text": "Public inbound ports: Allow selected ports, RDP (3389) and HTTP (80)"
+					},
+					{
+						"id": "d",
+						"text": "Public inbound ports: Allow selected ports, SSH (22) and HTTP (80)"
+					},
+					{
+						"id": "e",
+						"text": "Management tab: Enable auto-shutdown with a shutdown time and time zone"
+					},
+					{
+						"id": "f",
+						"text": "Operations section: turn auto-shutdown On, choose the time and time zone, then Save"
+					},
+					{
+						"id": "g",
+						"text": "Security type: Trusted launch"
+					},
+					{
+						"id": "h",
+						"text": "Availability options: No infrastructure redundancy required"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Sign-in to the Windows machine requires a secret entered during creation, and creation must be refused when that secret is too short or too simple"
+					},
+					{
+						"id": "s2",
+						"label": "Sign-in to the Linux machine must accept the team's automation credentials without anyone entering a secret during creation"
+					},
+					{
+						"id": "s3",
+						"label": "The Linux machine's web service and remote shell must both be reachable from outside the corporate network"
+					},
+					{
+						"id": "s4",
+						"label": "The Windows machine must stop itself every evening with a schedule picked while the machine is being created"
+					},
+					{
+						"id": "s5",
+						"label": "The Linux machine must stop itself every evening with a schedule that can be applied to it after it already exists"
+					},
+					{
+						"id": "s6",
+						"label": "The portal setting applied to both Generation 2 machines must result in secure boot and a virtual TPM without extra hardening steps"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "d",
+				"s4": "e",
+				"s5": "f",
+				"s6": "g"
+			},
+			"explanation": {
+				"correct": "Each recorded outcome is delivered by one portal value. The Windows guest takes a typed sign-in secret, so the username plus password of at least 12 characters that meets the complexity rules (a) is what satisfies the refusal of weak credentials, and creation is rejected when that password is under 12 characters or fails complexity. The Linux guest instead signs in with a key-based credential, so the SSH public key authentication type (b) satisfies the Linux sign-in requirement without a secret being typed during creation. The Linux machine's web service and remote shell need public reachability, which comes from the SSH (22) and HTTP (80) selection (d). The Windows machine's nightly power-off is picked during the creation itself, so the auto-shutdown settings on the Management tab (e) fit. The Linux machine's schedule can only be applied to a machine that already exists, so the Operations section steps (f) fit. Finally, the Generation 2 images get secure boot and a virtual TPM automatically with Trusted launch as the security type (g). The Windows port selection (c) and the availability option (h) answer requirements the team never recorded.",
+				"perChoice": {
+					"a": "Belongs in the slot about the Windows sign-in secret: the Windows creation form asks for a username plus a password of at least 12 characters that satisfies the complexity rules, and a password that is too short or fails those rules is rejected at creation.",
+					"b": "Belongs in the slot about Linux sign-in: the Linux creation form offers SSH public key as the authentication type, so the team's automation can sign in with a key pair instead of a secret typed during creation.",
+					"c": "Fits no slot: this is the inbound port rule set for a Windows machine that must expose the remote desktop protocol and web traffic, while the recorded internet exposure outcome belongs to the Linux machine and needs a remote shell rather than a desktop session.",
+					"d": "Belongs in the slot about the Linux machine's exposure: opening SSH (22) and HTTP (80) to the public IP makes the remote shell and the build status page reachable from outside the corporate network.",
+					"e": "Belongs in the slot about the Windows machine's schedule picked at creation time: on the Windows creation form the auto-shutdown section sits on the Management tab, where the shutdown time and time zone are chosen.",
+					"f": "Belongs in the slot about the Linux machine's schedule applied afterwards: for Linux the same feature is switched on later from the VM's Operations section, where the time and time zone are picked and saved.",
+					"g": "Belongs in the slot about the Generation 2 protections: Trusted launch is the security type that switches on secure boot and a virtual TPM for the new Generation 2 virtual machines.",
+					"h": "Fits no slot: this availability option keeps a single instance with no zone redundancy, and none of the recorded outcomes concerns where instances are placed."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/windows/quick-create-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/quick-create-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/overview"
+				}
+			],
+			"subtopics": [
+				"vm-creation-settings",
+				"windows-vs-linux-creation",
+				"admin-credentials"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R4G1M1WA8PZ46E1MF14J8S",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Windows virtual machine being created in the Azure portal with an Administrator account that uses password authentication. The password you entered is 11 characters long and otherwise follows the character rules. You need to know whether creation can proceed. Which result should you expect after you select Create?",
+				"statement": "After you select Create, {{creationResult}}",
+				"slots": [
+					{
+						"id": "creationResult",
+						"options": [
+							{
+								"id": "a",
+								"text": "The deployment is rejected."
+							},
+							{
+								"id": "b",
+								"text": "The VM is created without an Administrator password."
+							},
+							{
+								"id": "c",
+								"text": "The VM is created and the portal generates a replacement password."
+							},
+							{
+								"id": "d",
+								"text": "The VM is created with the 11-character password."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"creationResult": "a"
+			},
+			"explanation": {
+				"correct": "For a Windows VM created in the portal, the Administrator password must contain at least 12 characters and satisfy the defined complexity requirements. An 11-character password is rejected when you select Create.",
+				"perChoice": {
+					"creationResult:b": "The portal does not continue without the required Administrator credential; it validates the supplied password before creating the VM.",
+					"creationResult:c": "The portal does not generate a replacement password for a Windows Administrator account during this workflow.",
+					"creationResult:d": "The portal does not accept an Administrator password below the 12-character minimum, even if it otherwise satisfies the character rules."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/windows/quick-create-portal"
+				}
+			],
+			"subtopics": [
+				"windows-vm-authentication"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R4J9S6EGK577S2RP0ERXMQ",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an Azure environment where the security standard requires that every new virtual machine comes up with hardware-rooted protections already switched on, and the standard must hold whether a machine is created in the portal, with the CLI, or with PowerShell. Engineers must not have to change extra values on each creation form. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Detail"
+					],
+					"rows": [
+						[
+							"Operating system image for new machines",
+							"Ubuntu Server 22.04 LTS - Gen2"
+						],
+						[
+							"Clients used to create machines",
+							"Azure portal, Azure CLI, Azure PowerShell"
+						],
+						[
+							"Creation volume",
+							"About 40 machines per month across the team"
+						],
+						[
+							"Today's approach",
+							"Engineers choose extra values on each creation form"
+						]
+					]
+				},
+				"statement": "To meet the security standard, you should {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Register the subscription for Trusted Launch"
+							},
+							{
+								"id": "b",
+								"text": "Select the Trusted Launch security type on each machine in the portal"
+							},
+							{
+								"id": "c",
+								"text": "Assign an Azure Policy that requires a Premium SSD managed disk"
+							},
+							{
+								"id": "d",
+								"text": "Enroll the subscription in Azure Hybrid Benefit"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "Trusted Launch as default (TLaD) is generally available for new Generation 2 virtual machines. Once you register for TLaD in the environment, any new Generation 2 VM created through any client tool comes up with secure boot and vTPM enabled automatically, so nothing extra has to be chosen on each creation form and the protection applies to portal, CLI, and PowerShell creations alike. It is a one-time, subscription-level setting, which is what the requirement asks for.",
+				"perChoice": {
+					"action:b": "Choosing the Trusted Launch security type by hand on each creation only affects machines built in the portal, and it still makes every engineer change extra values on the creation form, so it does not meet the requirement that the protection be automatic for CLI and PowerShell creations as well.",
+					"action:c": "An Azure Policy that requires a Premium SSD managed disk governs which storage performance tier a machine may use. It has no effect on the hardware-rooted protections (secure boot and vTPM) that the security standard requires.",
+					"action:d": "Azure Hybrid Benefit reduces the operating system license cost for qualifying virtual machines; it does not enable hardware-rooted protections and has no bearing on the boot configuration of a new machine."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/quick-create-portal"
+				}
+			],
+			"subtopics": [
+				"trusted-launch",
+				"generation-2-vms",
+				"vm-creation-security"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R4QTEJDW665YW6XKAFANF6",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Linux virtual machine that is stopped and restarted several times during each working day. You need to explain the resulting charges to the finance team. Which statement should you use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Configuration item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Guest operating system",
+							"Ubuntu Server 22.04 LTS - Gen2"
+						],
+						[
+							"VM size",
+							"Standard_D4s_v5"
+						],
+						[
+							"OS disk",
+							"Premium SSD, 127 GiB"
+						],
+						[
+							"Usage pattern",
+							"Runs for 25 minutes, then stopped for 35 minutes, repeating throughout the day"
+						]
+					]
+				},
+				"statement": "Regarding the charges for this deployment, {{billing}}.",
+				"slots": [
+					{
+						"id": "billing",
+						"options": [
+							{
+								"id": "a",
+								"text": "compute is billed hourly by size and OS, and a partial hour is charged only for the minutes used, while storage is billed separately"
+							},
+							{
+								"id": "b",
+								"text": "compute is billed hourly by size and OS, and a partial hour is charged as a full hour, while storage is billed separately"
+							},
+							{
+								"id": "c",
+								"text": "compute is billed hourly by size and OS, and a partial hour is charged only for the minutes used, while storage is included in the compute charge"
+							},
+							{
+								"id": "d",
+								"text": "compute is billed monthly by size and OS, and a partial hour is charged only for the minutes used, while storage is billed separately"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"billing": "a"
+			},
+			"explanation": {
+				"correct": "Azure charges for virtual machine compute based on the size of the machine and its operating system, and when the machine runs for less than a full hour, only the minutes used are charged. Disk storage is billed on its own rather than being folded into the compute charge. The correct option therefore describes the charges correctly.",
+				"perChoice": {
+					"billing:b": "A partial hour is not charged as a full hour; only the minutes the virtual machine was used are billed, so this option overstates the compute cost.",
+					"billing:c": "Storage is not included in the compute charge; storage bills separately, so this option misstates how the disk charges are applied.",
+					"billing:d": "Compute is billed hourly rather than monthly, so this option gives the wrong billing frequency for the virtual machine."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/overview"
+				}
+			],
+			"subtopics": [
+				"compute-billing",
+				"vm-costs"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R520GKNFKM4AAQP2F49PDV",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are creating a new Linux virtual machine for a customer-orders application. The order history must stay available after the current machine is replaced, and the replacement machine is deployed with its own operating system disk. The operations team wants to move the order history to that new machine without relying on the old instance booting successfully. You need to choose the storage that holds these records. Which option should you configure?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Plan element",
+						"Recorded value"
+					],
+					"rows": [
+						[
+							"Operating system",
+							"Ubuntu Server 22.04 LTS - Gen2"
+						],
+						[
+							"Deployment type",
+							"New virtual machine, with no older disks to migrate"
+						],
+						[
+							"Storage objective",
+							"Order records stay with the application on whichever machine is serving it"
+						],
+						[
+							"Transfer constraint",
+							"The previous instance is not expected to boot after the move"
+						]
+					]
+				},
+				"statement": "You should configure {{storageChoice}} for the order records.",
+				"slots": [
+					{
+						"id": "storageChoice",
+						"options": [
+							{
+								"id": "a",
+								"text": "Managed data disk"
+							},
+							{
+								"id": "b",
+								"text": "Unmanaged data disk"
+							},
+							{
+								"id": "c",
+								"text": "Local temporary storage"
+							},
+							{
+								"id": "d",
+								"text": "OS disk only"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"storageChoice": "a"
+			},
+			"explanation": {
+				"correct": "For new deployments the recommended storage is managed OS and data disks, and persistent data should sit on a separate data disk so it can be detached and attached to a replacement VM if the original fails. A managed data disk meets both requirements: the order history stays available after the machine is replaced and can be moved to the new machine without the old instance booting.",
+				"perChoice": {
+					"storageChoice:b": "Unmanaged disks are the legacy choice that depends on a storage account and its blobs. For a brand-new virtual machine the recommended path is managed OS and data disks, and existing unmanaged-disk VMs are the ones that should be converted.",
+					"storageChoice:c": "Local temporary storage sits on the host rather than in remote Azure Storage. Its contents are discarded when the virtual machine is deallocated or deleted, so order records kept there would not survive the move to a replacement machine.",
+					"storageChoice:d": "Persistent data should be kept on a separate data disk that can be detached and attached to a replacement VM. Here the replacement machine is deployed with its own operating system disk, so the order records must be carried in a separate disk."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/quick-create-portal"
+				}
+			],
+			"subtopics": [
+				"managed-disks",
+				"persistent-data",
+				"vm-storage"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R54WCV2F58NWNNDN7C0Q5A",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You run your company's order-processing application on two virtual machines in the East US region, and the business wants those machines to keep serving if the entire region goes down. The table lists the requirements the business approved. You need to pick the service that meets them and the operation the operations team runs for the rehearsal. Which service should you configure, and which operation should the team run?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Requirement",
+						"What the business approved"
+					],
+					"rows": [
+						[
+							"Continuity target",
+							"The workload must be brought up in a region the company selects; the selected region is not the designated paired region for East US"
+						],
+						[
+							"Rehearsal",
+							"The operations team must be able to rehearse the move on a schedule while the live workload keeps serving traffic"
+						],
+						[
+							"Workload state",
+							"The workload must carry its live state into the selected region rather than start from an older copy"
+						]
+					]
+				},
+				"statement": "Configure {{s1}} for the two virtual machines and run {{s2}} to rehearse the move without interrupting live traffic.",
+				"slots": [
+					{
+						"id": "s1",
+						"options": [
+							{
+								"id": "a",
+								"text": "Azure Site Recovery"
+							},
+							{
+								"id": "b",
+								"text": "Availability Zones"
+							},
+							{
+								"id": "c",
+								"text": "Virtual Machine Scale Sets"
+							},
+							{
+								"id": "d",
+								"text": "Azure Backup"
+							}
+						]
+					},
+					{
+						"id": "s2",
+						"options": [
+							{
+								"id": "a",
+								"text": "test failover"
+							},
+							{
+								"id": "b",
+								"text": "production failover"
+							},
+							{
+								"id": "c",
+								"text": "backup restore"
+							},
+							{
+								"id": "d",
+								"text": "scale-out operation"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "a"
+			},
+			"explanation": {
+				"correct": "Azure Site Recovery is the service that replicates virtual machines into a region of your choosing without being restricted to paired regions, and it supports a recovery plan that can automate the whole failover for an application spread across several machines. It is also the only one of these choices that lets a team rehearse the failover in advance without touching the running application or the ongoing replication, which is what the rehearsal requirement calls for. Running a test failover is the operation that exercises this without interrupting the live workload.",
+				"perChoice": {
+					"s1:b": "Availability Zones are physically separate locations inside a single region. They keep a workload available while one zone is down, but they never copy the virtual machines into a region the company selects, so they cannot meet the continuity target.",
+					"s1:c": "A scale set grows and shrinks a group of identical, load-balanced instances to follow demand and centralizes their configuration and updates. It does not copy the running workload into another region, so it does not meet the continuity target.",
+					"s1:d": "Azure Backup keeps scheduled copies of files and data in its own vault and restores them on demand. It does not stand up a replicated copy of the virtual machines in a selected region carrying their live state, so it does not meet the continuity target.",
+					"s2:b": "A production failover is the real switch of the serving workload over to the other region. Using it for a rehearsal would move the live workload and interrupt it, which the rehearsal requirement rules out.",
+					"s2:c": "A backup restore brings back a point-in-time copy of files; it does not stand up the replicated workload in the selected region, so it is not the operation that rehearses the move.",
+					"s2:d": "A scale-out operation changes how many instances of the application serve traffic in the current setup; it does not exercise bringing the workload up in the selected region."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/overview"
+				}
+			],
+			"subtopics": [
+				"azure-site-recovery",
+				"region-failover",
+				"vm-disaster-recovery"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R58BM4VZ1B3JFHSKJ8ZD09",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your platform team runs a Linux virtual machine that was created earlier today in the Azure portal from an Ubuntu Server 22.04 LTS image. The team now plans to roll out three more machines with the same sign-in behavior, and the platform owner has approved the requirements shown below.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Requirement: Sign-in on the three new machines\nDetail: Each new machine must accept the same key pair as the first machine, and no additional private key file may land on the engineer's laptop\n\nRequirement: Nightly shutdown of the first machine\nDetail: The machine must power itself off at 21:00 UTC every night, and the setting must be turned on for the machine after it has already been created"
+				},
+				"statement": "For the three additional machines you select {{keySource}} as the SSH public key source, and for the existing machine you switch on the nightly shutdown from the VM's {{shutdownSection}}.",
+				"slots": [
+					{
+						"id": "keySource",
+						"options": [
+							{
+								"id": "a",
+								"text": "Use a key stored in Azure"
+							},
+							{
+								"id": "b",
+								"text": "Generate new key pair"
+							},
+							{
+								"id": "c",
+								"text": "Download a new key pair from Azure"
+							}
+						]
+					},
+					{
+						"id": "shutdownSection",
+						"options": [
+							{
+								"id": "a",
+								"text": "Management"
+							},
+							{
+								"id": "b",
+								"text": "Operations"
+							},
+							{
+								"id": "c",
+								"text": "Networking"
+							},
+							{
+								"id": "d",
+								"text": "Disks"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"keySource": "a",
+				"shutdownSection": "b"
+			},
+			"explanation": {
+				"correct": "For the three follow-on Linux machines, 'Use a key stored in Azure' is the SSH public key source that satisfies the requirement: Azure already holds the public key for the team, the private key stays on the engineer's computer, and nothing is downloaded again, so the new machines accept the same key pair and no extra private key file lands on the laptop. Generating or downloading a new key pair would produce different credentials and add another file. For the nightly shutdown, the Linux creation flow has no auto-shutdown control, so you switch it on later from the VM's Operations section, select On, choose the shutdown time and time zone (UTC by default), and save. The Management tab is the Windows creation-time location and is not available for an existing Linux VM.",
+				"perChoice": {
+					"keySource:b": "This creates a brand-new key pair for every machine and downloads a new private key file (myKey.pem) to the engineer's laptop, so the new machines would not accept the existing key pair and an additional file would be added.",
+					"keySource:c": "Pulling a new key pair from Azure again produces new credentials and another private key file on the engineer's laptop, which the requirement rules out; nothing needs to be downloaded when the existing pair is reused.",
+					"shutdownSection:a": "The Management tab belongs to the Windows creation form, where the auto-shutdown setting is chosen while the machine is being created; it is not where the nightly shutdown of an already-created Linux VM is switched on.",
+					"shutdownSection:c": "The Networking section of a VM covers its virtual network, subnets, network interface, and inbound port rules, not the scheduled daily shutdown.",
+					"shutdownSection:d": "The Disks section manages the managed OS and data disks attached to the VM, not the scheduled daily shutdown."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/quick-create-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/windows/quick-create-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/overview"
+				}
+			],
+			"subtopics": [
+				"ssh-authentication",
+				"auto-shutdown",
+				"vm-creation"
+			],
+			"reviewed": false
+		}
+	]
+}

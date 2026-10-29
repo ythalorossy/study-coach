@@ -1,0 +1,1915 @@
+{
+	"skill": "compute.vm-disks",
+	"questions": [
+		{
+			"id": "q_01M5R5HS1VAPAFG4G1AX1W9FPM",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You are adding storage to an existing Windows virtual machine that hosts a tier-1 OLTP database. The new volume has to sustain at least 150,000 read/write operations per second and 3,000 MB/s of throughput, has to be adjustable in capacity and performance while it remains attached to the running VM, and has to use locally redundant storage because the database is pinned to a single datacenter. Which storage disk type should you create for the database?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Requirement",
+						"Target value"
+					],
+					"rows": [
+						[
+							"Sustained IOPS",
+							"150,000"
+						],
+						[
+							"Sustained throughput",
+							"3,000 MB/s"
+						],
+						[
+							"Redundancy",
+							"LRS only, no zone redundancy available in the region"
+						],
+						[
+							"Tuning while attached",
+							"Capacity and performance changes allowed with the VM still running"
+						],
+						[
+							"Tuning operation budget",
+							"4 changes per 24-hour window"
+						],
+						[
+							"Intended role",
+							"Data disk, the VM already boots from a separate volume"
+						],
+						[
+							"VM's own IOPS ceiling",
+							"400,000"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Standard SSD disk (E-series)"
+					},
+					{
+						"id": "b",
+						"text": "Premium SSD v2 disk"
+					},
+					{
+						"id": "c",
+						"text": "Premium SSD disk (P-series)"
+					},
+					{
+						"id": "d",
+						"text": "Ultra Disk"
+					}
+				]
+			},
+			"key": {
+				"optionId": "d"
+			},
+			"explanation": {
+				"correct": "The required 150,000 IOPS and 3,000 MB/s sit above the ceiling of every other managed disk type, and only Ultra Disk can be provisioned that high: it supports up to 400,000 IOPS and 10,000 MB/s. It also matches the remaining conditions: capacity, throughput, and IOPS can be changed while the disk is attached and the VM is running (four resizes per 24-hour window, up to an hour to apply), it is offered with LRS redundancy, and it is a data-disk-only type, which is exactly the role required here. The 150,000 IOPS target is also below the VM's own 400,000 IOPS ceiling, so the disk can actually deliver it.",
+				"perChoice": {
+					"a": "Standard SSD (E-series) tops out at 6,000 IOPS and 750 MB/s and is aimed at web servers, lightly used applications, and dev/test scenarios, so it cannot reach the required 150,000 IOPS or 3,000 MB/s.",
+					"b": "Premium SSD v2 reaches at most 80,000 IOPS and 2,000 MB/s, below the 150,000 IOPS and 3,000 MB/s this database requires. It also has no host caching and can only be used as a data disk.",
+					"c": "Premium SSD (P-series) delivers a maximum of 20,000 IOPS and 900 MB/s; even with unlimited on-demand bursting from P30 upward it reaches only 30,000 IOPS and 1,000 MB/s, still far below the target."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/managed-disks-overview"
+				}
+			],
+			"subtopics": [
+				"managed-disk-types",
+				"disk-type-comparison",
+				"disk-performance-limits"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R5KER5Z2AW264ZKCW5GHCM",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Windows VM whose data disk is 4,096 GiB and was partitioned with MBR; the guest reports only 2,048 GiB of usable space on it. You have just attached a new blank 3,072 GiB data disk that has not been initialized in the guest. You need both volumes to expose their full capacity and to use one consistent partition style across the VM. What should you do?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Disk",
+						"Size (GiB)",
+						"Partition style in guest",
+						"Usable space reported",
+						"Status"
+					],
+					"rows": [
+						[
+							"Disk 0 (system volume)",
+							"127",
+							"MBR",
+							"119 GiB",
+							"In use, drive C:"
+						],
+						[
+							"Disk 1 (data)",
+							"4,096",
+							"MBR",
+							"2,048 GiB",
+							"In use, drive D:"
+						],
+						[
+							"Disk 2 (data, newly attached)",
+							"3,072",
+							"Not initialized",
+							"None",
+							"Offline"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Convert Disk 1 to GPT and initialize Disk 2 with GPT"
+					},
+					{
+						"id": "b",
+						"text": "Leave Disk 1 on MBR and initialize Disk 2 with MBR"
+					},
+					{
+						"id": "c",
+						"text": "Convert Disk 1 to GPT and initialize Disk 2 with MBR"
+					},
+					{
+						"id": "d",
+						"text": "Leave Disk 1 on MBR and initialize Disk 2 with GPT"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Both volumes sit at or above the 2 TiB mark, where GPT partitioning is required. Disk 1 is 4,096 GiB and is still partitioned with MBR, and an MBR layout can address only about 2 TiB of usable space, which explains why the guest reports only 2,048 GiB on a 4 TiB disk; converting it to GPT brings the missing capacity back into use. The newly attached 3,072 GiB disk is also larger than 2 TiB, so it must be initialized with GPT as well, keeping one partition style across the VM.",
+				"perChoice": {
+					"b": "Leaving Disk 1 on MBR keeps its usable space capped at roughly 2 TiB, which is the exact symptom you are seeing, and MBR is not permitted on the 3,072 GiB disk because disks of 2 TiB or larger must use GPT.",
+					"c": "Converting Disk 1 to GPT is correct, but MBR cannot be used for the new 3,072 GiB disk, since disks of 2 TiB or larger require GPT partitioning.",
+					"d": "Initializing the new disk with GPT is correct, but keeping Disk 1 on MBR leaves about half of that 4 TiB volume unreachable, so the reported shortfall on drive D: would remain."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/managed-disks-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/windows/attach-managed-disk-portal"
+				}
+			],
+			"subtopics": [
+				"disk-partitioning",
+				"attach-managed-disk"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R5PQ7S3RA2T0EXKVMGCS0V",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You run a transaction-heavy application on a Linux virtual machine. Its data disk was created with the configuration shown below and has not been changed since it was provisioned. The application team now needs the disk to sustain 60,000 read/write operations per second and at least 1,500 MB/s of throughput, and you want the least expensive configuration that reaches those numbers because the cost of a managed disk follows its provisioned size. What size should you set the data disk to?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Disk property",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Disk SKU",
+							"Premium SSD v2"
+						],
+						[
+							"Disk role",
+							"Data disk"
+						],
+						[
+							"Provisioned size",
+							"6 GiB"
+						],
+						[
+							"Provisioned IOPS",
+							"3,000"
+						],
+						[
+							"Provisioned throughput",
+							"125 MB/s"
+						],
+						[
+							"Host caching",
+							"Not supported for this SKU"
+						],
+						[
+							"Tuning operations used in the last 24 hours",
+							"1 (disk creation)"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "96 GiB"
+					},
+					{
+						"id": "b",
+						"text": "114 GiB"
+					},
+					{
+						"id": "c",
+						"text": "120 GiB"
+					},
+					{
+						"id": "d",
+						"text": "154 GiB"
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "Every Premium SSD v2 disk carries a free baseline of 3,000 IOPS, and past 6 GiB the IOPS ceiling rises by 500 for every additional GiB (a 160 GiB disk reaches the 80,000 IOPS maximum). That works out to an IOPS ceiling of 500 x size in GiB for any disk larger than 6 GiB, so the smallest disk that can be set to 60,000 IOPS is 60,000 / 500 = 120 GiB. At 120 GiB the disk can be provisioned with 60,000 IOPS and, because throughput grows 0.25 MB/s for each IOPS set above the baseline, up to the 2,000 MB/s maximum - comfortably above the 1,500 MB/s required, so the IOPS target is the binding constraint. The 6 GiB disk in the exhibit could never go above the 3,000 IOPS baseline no matter what was requested, and the tuning budget allows the change (four tuning operations per 24-hour window, one already used for the creation). Because the disk is billed on its provisioned size, 120 GiB is also the cheapest configuration that meets the requirement.",
+				"perChoice": {
+					"a": "At 96 GiB the IOPS ceiling is 500 x 96 = 48,000, which is 12,000 short of the 60,000 the application team asked for, so this disk cannot be provisioned to the target performance.",
+					"b": "At 114 GiB the IOPS ceiling is 500 x 114 = 57,000. This size comes from taking the 57,000 IOPS needed on top of the baseline, dividing by 500 per GiB, and then forgetting to add the first 6 GiB, so the disk still delivers 3,000 IOPS less than required.",
+					"d": "At 154 GiB the disk can be set to 77,000 IOPS, so it would run the workload fine, but it is bigger than the workload needs. Since managed disks are billed on the provisioned size, this configuration costs more than the 120 GiB disk that already satisfies the 60,000 IOPS target, so it is not the least expensive option."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/managed-disks-overview"
+				}
+			],
+			"subtopics": [
+				"premium-ssd-v2",
+				"disk-sizing",
+				"disk-performance"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R5TN6VRQMWS5H9EZMR9D8Y",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a two-node Linux database cluster running on Azure virtual machines in a region where availability zones are supported. The data disk on each node and the targets the business signed off for the replacement tier are listed below. You need the data tier to keep serving traffic if one availability zone is lost, and you need each replacement disk to hit the agreed IOPS and throughput targets at the agreed provisioned size. Which managed disk configuration should you create for the data disks?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Current data disk (each node)",
+						"Agreed target for the replacement disk"
+					],
+					"rows": [
+						[
+							"Managed disk type",
+							"Standard SSD",
+							"Any type that meets the targets below"
+						],
+						[
+							"Provisioned size",
+							"512 GiB",
+							"256 GiB"
+						],
+						[
+							"IOPS",
+							"6,000 (highest this type delivers)",
+							"60,000"
+						],
+						[
+							"Throughput",
+							"750 MB/s (highest this type delivers)",
+							"2,000 MB/s"
+						],
+						[
+							"Redundancy",
+							"LRS",
+							"The volume must stay available if one availability zone is lost"
+						],
+						[
+							"Disk role",
+							"Data disk",
+							"Data disk, attached alongside the Premium SSD OS disk"
+						],
+						[
+							"VM placement",
+							"Node 1 pinned to zone 1, node 2 pinned to zone 2",
+							"Unchanged"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Premium SSD v2 with ZRS redundancy"
+					},
+					{
+						"id": "b",
+						"text": "Premium SSD v2 with LRS redundancy"
+					},
+					{
+						"id": "c",
+						"text": "Ultra Disk with ZRS redundancy"
+					},
+					{
+						"id": "d",
+						"text": "Ultra Disk with LRS redundancy"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Premium SSD v2 meets both requirements: it supports up to 80,000 IOPS and 2,000 MB/s, so 60,000 IOPS and 2,000 MB/s at 256 GiB are within its limits (a 256 GiB disk can be set well above 60,000 IOPS), and it supports zone-redundant storage, whose replicas span availability zones, so the volume survives the loss of one zone. It is a data-disk-only type, which matches the role required here, and the nodes are already pinned to zones, as Premium SSD v2 disks require in most zone-enabled regions.",
+				"perChoice": {
+					"b": "Premium SSD v2 reaches the performance targets, but locally redundant storage keeps all three replicas inside one datacenter. If an availability zone is lost, the data volume goes offline with it, so this configuration does not satisfy the availability requirement.",
+					"c": "Ultra Disk can far exceed the IOPS and throughput targets, but it is offered only with locally redundant storage — zone-redundant storage is not available for that type — so this combination cannot be created.",
+					"d": "This is the only redundancy option available for Ultra Disk, but locally redundant storage replicates within a single datacenter, so the volume would not remain available if one availability zone were lost. Ultra Disk is also a data-disk-only type and adds a per-vCPU reservation charge on capable VMs."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/managed-disks-overview"
+				}
+			],
+			"subtopics": [
+				"managed-disk-types",
+				"redundancy-options",
+				"performance-targets"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R5XXPHN4XA7D6BZ8EDZCYY",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You are rolling out 40 identical application servers. Every instance must start from the same operating system and carry the same two application data volumes that the build machine holds today, and no instance may inherit the local sign-in accounts or the unique machine identity of the build machine. Which artifact should you produce from the build machine and use for the rollout?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Build machine attribute          | Observed value\n---------------------------------+--------------------------------------------------\nPower state                      | Running, with an interactive session signed in\nDisks attached                   | 1 OS disk (127 GiB) and 2 data disks (512 GiB each)\nLocal sign-in configuration      | Local administrator password set; SSH keys present\nPlanned instances                | 40 VMs, each expected to contain one OS disk and both application data volumes\nInstance identity                | Each instance must have its own identity and no inherited local accounts"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Deallocate the build machine, generalize it with Sysprep, then capture the managed image and create all 40 VMs from it."
+					},
+					{
+						"id": "b",
+						"text": "Capture the managed image from the build machine while it is still running and still signed in, with its local administrator password and SSH keys in place, then create all 40 VMs from it."
+					},
+					{
+						"id": "c",
+						"text": "Take a snapshot of the build machine's OS disk, use it as the boot source for all 40 VMs, and attach two new empty data disks to each instance."
+					},
+					{
+						"id": "d",
+						"text": "Take a snapshot of every disk on the build machine and attach the snapshots to all 40 VMs as their boot and data volumes."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The artifact that can bootstrap many identical VMs and carry the whole set of application volumes is a managed image, and the only supported source for one is a generalized (Sysprep), deallocated VM. Generalizing is what removes the machine identity and the embedded local accounts so each instance gets its own, and the image contains every managed disk attached to the source — the OS disk plus both data disks — so a single artifact boots all 40 servers with the same application volumes. A snapshot cannot serve this purpose: it is a read-only, point-in-time copy of one disk, so it neither packages the two data volumes nor strips the identity and accounts.",
+				"perChoice": {
+					"b": "Capturing while the source is still running and signed in, with the local administrator password and SSH keys still present, does not produce a deallocated and generalized VM, so every instance created from that artifact would inherit the build machine's identity and sign-in accounts — the exact outcome the rollout forbids.",
+					"c": "A snapshot holds a copy of one managed disk only, so the instances would boot from the captured OS disk but start with two brand-new empty data disks rather than the application volumes already on the build machine. It also does not remove the build machine's identity or local accounts, so all 40 instances would share them.",
+					"d": "Each snapshot is an independent, read-only, point-in-time copy of a single disk, and snapshots taken one by one do not coordinate across disks. Used this way they neither strip the machine identity and accounts nor provide the reusable, all-disks template needed to launch 40 servers with working boot and data volumes."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/managed-disks-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types"
+				}
+			],
+			"subtopics": [
+				"managed-image",
+				"snapshots",
+				"generalized-vm"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R619MQMY39MJKVG8VDWW4Y",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Windows build agent in Azure that keeps its npm package cache on the VM's local scratch volume so the shared file server is not saturated. The build team needs that cache to still be there after the scheduled maintenance work and after a redeploy of the VM. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Observed value"
+					],
+					"rows": [
+						[
+							"VM name",
+							"build-agent-03"
+						],
+						[
+							"Operating system",
+							"Windows Server 2022"
+						],
+						[
+							"VM size",
+							"Standard_D8s_v5"
+						],
+						[
+							"Local scratch volume",
+							"D:"
+						],
+						[
+							"Content on D:",
+							"npm package cache, intermediate build output"
+						],
+						[
+							"Other storage visible in the guest",
+							"None"
+						],
+						[
+							"2026-10-18, after scheduled maintenance",
+							"Cache directory empty on next build"
+						],
+						[
+							"2026-10-21, after redeploying the VM",
+							"Cache directory empty on next build"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Move the cache to a managed disk attached to the VM so the cache survives a maintenance event or a redeploy."
+					},
+					{
+						"id": "b",
+						"text": "Enable encryption at host on the VM so the cache on the local temporary disk is encrypted at rest after a maintenance event or a redeploy."
+					},
+					{
+						"id": "c",
+						"text": "Set Azure Disk Encryption to cover the whole volume on the VM so the cache on the local temporary disk is restored after a maintenance event or a redeploy."
+					},
+					{
+						"id": "d",
+						"text": "Take a scheduled managed disk snapshot of the local temporary disk on the VM so the cache data can be restored after a maintenance event or a redeploy."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The scratch (temporary) disk is local ephemeral storage: its contents can be lost during a maintenance event, when the VM is redeployed, and when the VM is stopped; only a successful standard restart keeps them. That matches the exhibit, where the cache on D: is empty after both the maintenance event and the redeploy. A managed disk is provisioned as its own resource and is not re-created together with the VM instance, so relocating the cache to a managed disk that is attached to the VM is what makes the cache still present after a maintenance event or a redeploy.",
+				"perChoice": {
+					"b": "Encryption at host protects the VM's disk contents at rest; it says nothing about whether the files are still present. The local scratch volume is re-provisioned during a maintenance event and on a redeploy, so the cache would still be gone afterwards. Moreover, on a version 5 series VM such as Standard_D8s_v5 the temporary disk is already encrypted automatically, so this setting would not change anything for this workload.",
+					"c": "Covering the whole volume with Azure Disk Encryption (VolumeType set to All on Windows, or EncryptFormatAll on Linux) encrypts the local scratch volume at rest, but the files are still wiped when that volume is re-created during maintenance or a redeploy. Encryption addresses confidentiality, not retention.",
+					"d": "A snapshot is a point-in-time copy of a managed disk resource, and the local scratch volume is not a managed disk, so there is no disk resource to snapshot for it. Even for a managed disk, a scheduled snapshot stores a copy rather than restoring the cache automatically after an event, so it does not meet the requirement."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/managed-disks-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types"
+				}
+			],
+			"subtopics": [
+				"temporary-disk",
+				"managed-disks",
+				"disk-encryption"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R6583PMJBNV33XBM99ZMKC",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You run a line-of-business application on a Windows virtual machine. During normal hours the workload needs only a few hundred read/write operations per second, but the nightly batch job has to sustain 12,000 read/write operations per second for roughly two hours without being throttled. The application data sits on the managed disk listed below, and the virtual machine must stay up while you address this. What should you do with that disk?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Managed disk SKU",
+							"Premium SSD (P tier)"
+						],
+						[
+							"Size tier",
+							"P10 (128 GiB)"
+						],
+						[
+							"Host caching",
+							"ReadWrite"
+						],
+						[
+							"On-demand bursting",
+							"Off"
+						],
+						[
+							"Disk state",
+							"Attached to a running Windows VM and in use as a data disk"
+						],
+						[
+							"Normal workload",
+							"About 400 read/write operations per second, continuous"
+						],
+						[
+							"Batch window",
+							"12,000 read/write operations per second for about two hours"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Change the data disk's size tier to P30 and enable on-demand bursting."
+					},
+					{
+						"id": "b",
+						"text": "Change the data disk's size tier to P20 and enable on-demand bursting."
+					},
+					{
+						"id": "c",
+						"text": "Keep the data disk's size tier at P10 and enable on-demand bursting."
+					},
+					{
+						"id": "d",
+						"text": "Attach a second data disk with size tier P20 and enable on-demand bursting on the VM, and run the batch job from it."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The batch window requires 12,000 read/write operations per second held for about two hours. In the P1 through P20 range, a Premium SSD can burst only to 3,500 IOPS and 170 MB/s, and only for a maximum of 30 minutes, so no tier below P30 can carry that window. From P30 upward, a Premium SSD can reach 30,000 IOPS and 1,000 MB/s with unlimited duration once on-demand bursting is enabled, which covers a two-hour batch run. The disk is already attached to the running VM, so moving it to the P30 tier and switching on-demand bursting on is what has to change.",
+				"perChoice": {
+					"b": "P20 sits inside the P1-P20 range, where bursting tops out at 3,500 IOPS and 170 MB/s for at most 30 minutes. That is far below the 12,000 IOPS the batch window needs, and the window lasts longer than the allowed burst duration.",
+					"c": "P10 is also within the P1-P20 range, so turning on on-demand bursting still only lifts it to 3,500 IOPS for at most 30 minutes. The provisioned and burst limits of that tier cannot cover the batch window.",
+					"d": "A separate disk on the P20 tier carries exactly the same 3,500 IOPS and 30-minute burst ceiling as the current disk, so hosting the batch job on it still cannot deliver 12,000 IOPS for two hours, and it adds cost rather than solving the problem."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/managed-disks-overview"
+				}
+			],
+			"subtopics": [
+				"premium-ssd-bursting",
+				"disk-size-tiers",
+				"on-demand-bursting"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R688A1G03Q7QS0SGMNTSXT",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have four Windows virtual machines that run SQL Server instances, and all four instances must use one shared volume that holds the database files. The volume is a 1 TiB Premium SSD with LRS redundancy that today sits connected only to the first virtual machine, so the other three instances find no database files at all. What should you do to provision this shared volume correctly?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Virtual machine",
+						"Instance role",
+						"Operating system",
+						"Shared volume connected"
+					],
+					"rows": [
+						[
+							"sql01",
+							"Active instance",
+							"Windows Server 2019",
+							"Yes - 1 TiB Premium SSD (LRS)"
+						],
+						[
+							"sql02",
+							"Passive instance",
+							"Windows Server 2019",
+							"No"
+						],
+						[
+							"sql03",
+							"Passive instance",
+							"Windows Server 2019",
+							"No"
+						],
+						[
+							"sql04",
+							"Passive instance",
+							"Windows Server 2019",
+							"No"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Attach one managed disk to all four virtual machines and bring them under WSFC (or Pacemaker) so the nodes coordinate access and lock writes"
+					},
+					{
+						"id": "b",
+						"text": "Attach one managed disk to all four virtual machines and install a shared-filesystem agent on each machine to coordinate access and lock writes, with no host-level clustering software"
+					},
+					{
+						"id": "c",
+						"text": "Create four separate managed disks, attach one to each virtual machine, and place the virtual machines in an availability set"
+					},
+					{
+						"id": "d",
+						"text": "Create four separate managed disks using ZRS, attach one to each virtual machine, and place the virtual machines in separate availability zones"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A single managed disk can be attached to several virtual machines at the same time for cluster applications, but that pattern requires a cluster manager such as WSFC or Pacemaker so the nodes can talk to each other and serialize writes. The existing 1 TiB Premium SSD already holds the data, so the fix is to attach that same disk to sql02, sql03 and sql04 as well and place the four machines under WSFC (or Pacemaker). Creating one disk per machine would produce four independent volumes instead of the single shared volume the application requires.",
+				"perChoice": {
+					"b": "A shared-filesystem agent cannot replace the host-level component that this multi-attach pattern depends on: when one managed disk is mounted by several VMs for a cluster application, node communication and write locking must be handled by a cluster manager such as WSFC or Pacemaker. Without it, concurrent writes from the four instances are not coordinated and the data can be corrupted.",
+					"c": "Four separate disks give every virtual machine its own private copy of the files, so the instances never see one shared volume and cannot fail over onto the same data. An availability set only spreads the member VM disks across storage scale units so that a single unit failure does not break the set; it does not create a shared volume across machines.",
+					"d": "ZRS replicates the content of one disk across availability zones for durability, but attaching one disk per virtual machine still yields four independent volumes rather than one shared volume, and the four instances would each work on different data. Zone redundancy is a property of a single disk, not a way of sharing one volume between VMs."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/managed-disks-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types"
+				}
+			],
+			"subtopics": [
+				"managed-disks",
+				"multi-attach",
+				"high-availability"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R6CR23QG9HCPTBXNDY7WZB",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have collected the facts below about the storage of a Windows virtual machine and the related Azure objects. You need to label each observation with the matching Azure concept so the operations runbook is unambiguous. Which item should you place in each slot?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Observation",
+						"What was observed"
+					],
+					"rows": [
+						[
+							"Observation 1",
+							"One per virtual machine; holds the boot volume chosen at creation; maximum allowed size 4,095 GiB"
+						],
+						[
+							"Observation 2",
+							"Holds application files; attached today and initialized and formatted inside the guest before use"
+						],
+						[
+							"Observation 3",
+							"D: on this Windows VM; its contents disappear when the VM is stopped"
+						],
+						[
+							"Observation 4",
+							"Read-only; later changes to the source volume do not appear in it"
+						],
+						[
+							"Observation 5",
+							"Not attached to any virtual machine; filled from a 20 TiB VHD file"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "os",
+						"text": "OS disk"
+					},
+					{
+						"id": "data",
+						"text": "Data disk"
+					},
+					{
+						"id": "temp",
+						"text": "Temporary disk"
+					},
+					{
+						"id": "snap",
+						"text": "Snapshot"
+					},
+					{
+						"id": "up",
+						"text": "Direct upload"
+					}
+				],
+				"slots": [
+					{
+						"id": "obs1",
+						"label": "Observation 1"
+					},
+					{
+						"id": "obs2",
+						"label": "Observation 2"
+					},
+					{
+						"id": "obs3",
+						"label": "Observation 3"
+					},
+					{
+						"id": "obs4",
+						"label": "Observation 4"
+					},
+					{
+						"id": "obs5",
+						"label": "Observation 5"
+					}
+				]
+			},
+			"key": {
+				"obs1": "os",
+				"obs2": "data",
+				"obs3": "temp",
+				"obs4": "snap",
+				"obs5": "up"
+			},
+			"explanation": {
+				"correct": "Each observation maps to a distinct Azure disk concept: the single boot volume per VM (with its 4,095 GiB ceiling) is the OS disk; the newly attached volume holding application files is the Data disk, which must be initialized and formatted in the guest; the D: drive whose contents vanish on shutdown is the Temporary disk (local scratch space); the read-only copy that ignores later writes to its source is a Snapshot, taken at one point in time; and the unattached volume populated from a 20 TiB VHD file is the result of Direct upload, which places a VHD of up to 32 TiB into a managed disk without attaching it to a VM.",
+				"perChoice": {
+					"data": "Observation 2: a Data disk holds application content, and a newly attached blank one is initialized and formatted in the guest (for example with diskmgmt.msc) before use.",
+					"os": "Observation 1: a virtual machine has exactly one OS disk, which carries the boot volume and the system chosen at creation, and that disk is capped at 4,095 GiB.",
+					"snap": "Observation 4: a Snapshot is an independent, read-only copy of one managed disk taken at a single point in time, so later changes to the source volume do not appear in it.",
+					"temp": "Observation 3: the Temporary disk is local scratch space, mapped to drive D on Windows; its contents are lost during maintenance, on redeploy, and when the VM is stopped.",
+					"up": "Observation 5: Direct upload puts a VHD of up to 32 TiB into a managed disk without attaching it to any VM, which is why the volume has no VM attached and no unattached-disk charges apply."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/managed-disks-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/windows/attach-managed-disk-portal"
+				}
+			],
+			"subtopics": [
+				"disk-roles",
+				"managed-disk-snapshot",
+				"direct-upload"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R6GQFWE5CC3B7BDW633FV0",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have five storage targets for an Azure virtual machine estate, listed in the table. You need one managed storage option for each target, and each option must meet the workload facts and the operating constraints in its own row. Which option should you place in each slot?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Target",
+						"Workload facts and operating constraints"
+					],
+					"rows": [
+						[
+							"Cluster database volumes",
+							"SAP HANA workload; the highest IOPS and throughput ceilings available must be supported; capacity and performance must be changeable while the volume stays attached to a running VM; a compliance rule permits only single-datacenter redundancy"
+						],
+						[
+							"Analytics service volumes",
+							"Any starting size in 1 GiB increments; IOPS and throughput must be tuned independently of each other; 3,000 IOPS and 125 MB/s of performance are expected at no additional charge; host caching is prohibited"
+						],
+						[
+							"Production database boot volumes",
+							"A fixed size tier is required; host caching is required; a one-year capacity reservation is planned; performance must be guaranteed 99.9% of the time at single-digit millisecond latency"
+						],
+						[
+							"Dev/test web server boot volumes",
+							"Must run on every VM size and in every Azure region; predictable, consistent performance at a moderate price; capacity from 4 GiB up to 32,767 GiB"
+						],
+						[
+							"Backup archive volumes",
+							"Written once each night and read rarely during restores; reads of up to 20 ms are tolerated; never used as a boot volume; the lowest storage price is preferred"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Ultra Disks"
+					},
+					{
+						"id": "b",
+						"text": "Premium SSD v2"
+					},
+					{
+						"id": "c",
+						"text": "Premium SSD"
+					},
+					{
+						"id": "d",
+						"text": "Standard SSD"
+					},
+					{
+						"id": "e",
+						"text": "Standard HDD"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Cluster database volumes"
+					},
+					{
+						"id": "s2",
+						"label": "Analytics service volumes"
+					},
+					{
+						"id": "s3",
+						"label": "Production database boot volumes"
+					},
+					{
+						"id": "s4",
+						"label": "Dev/test web server boot volumes"
+					},
+					{
+						"id": "s5",
+						"label": "Backup archive volumes"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d",
+				"s5": "e"
+			},
+			"explanation": {
+				"correct": "Slot 1 takes Ultra Disks: SAP HANA is the workload these are aimed at, they reach the highest IOPS and throughput ceilings, capacity and performance can be changed on the attached volume while the VM keeps running, and they support only single-datacenter redundancy, which satisfies the compliance rule. Slot 2 takes Premium SSD v2: it can be provisioned at any size in 1 GiB increments, IOPS and throughput are tuned independently, it includes 3,000 IOPS and 125 MB/s of baseline performance at no extra charge, and it provides no host caching. Slot 3 takes Premium SSD: it has fixed P size tiers, supports host caching and the OS-disk role, offers one-year reservations on P30–P80, and guarantees 99.9% performance at single-digit millisecond latency. Slot 4 takes Standard SSD: it is the tier aimed at web servers and dev/test, can act as an OS disk, is available on all Azure VMs and in every region, covers 4 GiB to 32,767 GiB, and costs less than the higher-performance tiers while staying consistent. Slot 5 takes Standard HDD: it suits backup and infrequently accessed work, keeps reads under 20 ms, is never used as an OS disk, and is the cheapest choice for data written once and read rarely.",
+				"perChoice": {
+					"a": "Ultra Disks belongs in Slot 1 (Cluster database volumes). They are the option aimed at SAP HANA and top-tier databases, reach the highest IOPS and throughput ceilings, allow capacity and performance to be changed while the volume is attached to a running VM, and offer only single-datacenter redundancy, which matches the compliance constraint.",
+					"b": "Premium SSD v2 belongs in Slot 2 (Analytics service volumes). It starts at any size in 1 GiB increments, lets IOPS and throughput be tuned separately, includes 3,000 IOPS and 125 MB/s of baseline performance at no extra charge, and provides no host caching.",
+					"c": "Premium SSD belongs in Slot 3 (Production database boot volumes). It offers fixed P size tiers with bundled performance, supports host caching and the OS-disk role, allows one-year reservations on P30–P80, and guarantees 99.9% performance at single-digit millisecond latency.",
+					"d": "Standard SSD belongs in Slot 4 (Dev/test web server boot volumes). It is the tier aimed at web servers and dev/test, can be used as an OS disk, is available on all Azure VMs and in every region, spans 4 GiB to 32,767 GiB, and costs less than the higher-performance tiers while remaining consistent.",
+					"e": "Standard HDD belongs in Slot 5 (Backup archive volumes). It suits backup and infrequently accessed work, keeps reads under 20 ms, is never used as an OS disk, and is the lowest-cost option for data written once and read rarely."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/managed-disks-overview"
+				}
+			],
+			"subtopics": [
+				"managed-disk-types",
+				"disk-workload-fit",
+				"disk-performance-tiers"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R6X7DCGRC7ZQ09NYCXPJCN",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have the monthly storage bill for a virtual machine estate and you need to explain each charge to the customer. The statements below describe how one of the storage objects in the inventory is charged. Which statement should you place in each slot?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Storage object",
+						"Inventory details"
+					],
+					"rows": [
+						[
+							"The reporting database volume",
+							"Standard SSD, provisioned at 200 GiB"
+						],
+						[
+							"The nightly snapshot of the backup volume",
+							"Snapshot of a 64 GiB disk that currently holds 10 GiB"
+						],
+						[
+							"The archive volume on the backup server",
+							"Standard HDD holding seldom-read files"
+						],
+						[
+							"The order-processing database volume",
+							"Premium SSD on the application server"
+						],
+						[
+							"The web front-end volume",
+							"Standard SSD on the web tier, where the workload issues a very large number of small operations"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Charged as E15, the next offered tier, prorated hourly"
+					},
+					{
+						"id": "b",
+						"text": "Charged for the content the copy actually stores"
+					},
+					{
+						"id": "c",
+						"text": "Charged per 16 KiB block read or written"
+					},
+					{
+						"id": "d",
+						"text": "Charged per read or write of up to 256 KiB"
+					},
+					{
+						"id": "e",
+						"text": "Billable transactions per hour are capped"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "The reporting database volume"
+					},
+					{
+						"id": "s2",
+						"label": "The nightly snapshot of the backup volume"
+					},
+					{
+						"id": "s3",
+						"label": "The archive volume on the backup server"
+					},
+					{
+						"id": "s4",
+						"label": "The order-processing database volume"
+					},
+					{
+						"id": "s5",
+						"label": "The web front-end volume"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d",
+				"s5": "e"
+			},
+			"explanation": {
+				"correct": "Each charge statement belongs to the storage object whose billing rules it reflects. The provisioned size of a managed disk is rounded up to the next offered tier and prorated hourly, so the 200 GiB Standard SSD behind the reporting database is billed as E15, the 256 GiB tier. A snapshot is billed only for the data it actually holds, so the nightly copy of a 64 GiB disk that holds 10 GiB is billed for 10 GiB. Transaction accounting differs by tier: on a Standard HDD every 16 KiB read or write counts as one billable transaction, which suits the seldom-read archive files, while on a Premium SSD each read or write of up to 256 KiB counts as a single billable operation, which is what the order-processing database produces. Both Standard tiers cap billable transactions per hour, so the web front-end Standard SSD, whose workload issues a very large number of small operations, is billed under that hourly ceiling.",
+				"perChoice": {
+					"a": "The reporting database volume. The provisioned size of a managed disk is rounded up to the next offered size and prorated hourly, so a 200 GiB Standard SSD is billed as E15, the 256 GiB tier. This statement does not fit the other objects: the snapshot is billed on stored content, and the remaining disks have no provisioned size listed that would need rounding.",
+					"b": "The nightly snapshot of the backup volume. Snapshots are billed only for the data they actually contain, so a copy of a 64 GiB disk that holds 10 GiB is charged for 10 GiB rather than for the size of the source disk.",
+					"c": "The archive volume on the backup server. On a Standard HDD every 16 KiB of I/O counts as one billable transaction, which is why seldom-read archive content is billed this way. Premium SSD and Standard SSD count larger blocks per operation, so this statement cannot describe the order-processing or web front-end volumes.",
+					"d": "The order-processing database volume. On a Premium SSD each read or write of up to 256 KiB counts as a single billable operation. This rule also covers Standard SSD, but the reporting database volume is the Standard SSD whose charge is driven by the rounded-up provisioned tier, and the web front-end volume is the Standard SSD that hits the hourly ceiling.",
+					"e": "The web front-end volume. Both Standard tiers cap billable transactions per hour, so a Standard SSD whose workload issues a very large number of small operations is billed under that ceiling rather than for every counted transaction. The archive Standard HDD is the object billed per 16 KiB transaction."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/managed-disks-overview"
+				}
+			],
+			"subtopics": [
+				"disk-billing",
+				"managed-disk-types"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R7268PPEZD2J7FTY5KKC4X",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a fleet of Azure virtual machines and a list of storage problems that the operations team reported for the disks attached to them. You need to close every problem with one change to the disk, the virtual machine, or the surrounding configuration. Which change should you make in each case? Drag the change into the slot for its case.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Case 1\n  A new 512 GiB managed disk was attached to a running Windows virtual machine. In Disk Management the disk is listed with 0 bytes and no volume, and the guest shows no new drive for it.\n\nCase 2\n  A new Ultra Disk was created for a database virtual machine. The deployment pipeline refuses to boot the virtual machine from this disk, and the disk is rejected when the team publishes a virtual machine that uses it to the Azure Compute Gallery.\n\nCase 3\n  A virtual machine running Oracle Database 12.1 cannot mount a newly attached Ultra Disk. The database start-up log reports that the physical sector size of the disk is not supported.\n\nCase 4\n  A Premium SSD v2 data disk was created earlier today and the team has already adjusted its performance three times since it was created. The portal rejects a further performance change with an error, and the application is waiting for the higher performance.\n\nCase 5\n  A Premium SSD v2 data disk was created in a region that supports availability zones. Attaching it to a virtual machine that was created without a zone fails with an error, and the deployment of that virtual machine has to be retried."
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Initialize the new disk in the guest, create a new simple volume, and format it so it comes online with a drive letter"
+					},
+					{
+						"id": "b",
+						"text": "Boot from a Premium SSD or Standard SSD and keep this disk for data only, outside the Azure Compute Gallery"
+					},
+					{
+						"id": "c",
+						"text": "Provision the disk with 512E sector size instead of the 4k default"
+					},
+					{
+						"id": "d",
+						"text": "Wait for the daily tuning allowance to reset, then submit the performance change"
+					},
+					{
+						"id": "e",
+						"text": "Create the virtual machine in the zone where the disk was provisioned"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Case 1"
+					},
+					{
+						"id": "s2",
+						"label": "Case 2"
+					},
+					{
+						"id": "s3",
+						"label": "Case 3"
+					},
+					{
+						"id": "s4",
+						"label": "Case 4"
+					},
+					{
+						"id": "s5",
+						"label": "Case 5"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d",
+				"s5": "e"
+			},
+			"explanation": {
+				"correct": "Case 1 is a disk that is attached but not yet prepared inside the guest: it must be initialized, a new simple volume added and the volume formatted so the guest brings it online with a drive letter. Case 2 uses an Ultra Disk, which can never serve as the OS disk and cannot be part of an Azure Compute Gallery image, so the boot volume has to be a Premium SSD or Standard SSD while the Ultra Disk stays a plain data disk outside gallery images. Case 3 is a sector-size mismatch: Ultra Disks default to a 4k physical sector size, and Oracle Database before release 12.2 needs 512E, so the disk has to be provisioned with 512E. Case 4 has already used up the tuning operations allowed in a 24-hour window (for Premium SSD v2 creating the disk counts as one of the four), so the requested performance change has to wait until the window resets. Case 5 is a placement problem: in most zone-enabled regions a Premium SSD v2 disk attaches only to a zonal virtual machine, so the virtual machine must be created in the zone the disk lives in.",
+				"perChoice": {
+					"a": "Case 1 — the disk is attached but still raw in the guest; initialize it, add a new simple volume, format it, and confirm it ends up online and healthy with a drive letter.",
+					"b": "Case 2 — Ultra Disks are data disks only, can never hold the OS, and are not supported in the Azure Compute Gallery, so the boot volume must be a Premium SSD or Standard SSD and the Ultra Disk must stay out of gallery images.",
+					"c": "Case 3 — Ultra Disks and Premium SSD v2 default to a 4k physical sector size, and Oracle Database before release 12.2 requires 512E, so the disk has to be provisioned with 512E (Premium SSD and Standard SSD support 512E only).",
+					"d": "Case 4 — Premium SSD v2 allows four tuning operations per 24 hours and creating the disk counts as one of them, so creation plus three adjustments exhausts the allowance and the change must wait for the window to reset.",
+					"e": "Case 5 — in most zone-enabled regions a Premium SSD v2 disk can only be attached to a zonal virtual machine, so the zone has to be chosen when the virtual machine is created."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/managed-disks-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/windows/attach-managed-disk-portal"
+				}
+			],
+			"subtopics": [
+				"managed-disk-types",
+				"disk-attach-and-initialize",
+				"disk-performance-limits"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R79XC4QC8N4T88C02H67VM",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a Windows virtual machine that runs a batch application, and the application team needs extra working space. You have to add storage to the virtual machine and then hand the application a drive it can write to. Put each action into the stage of the work where it belongs.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Guest operating system",
+							"Windows Server 2022"
+						],
+						[
+							"Disk to add",
+							"512 GiB Premium SSD, named appdata01"
+						],
+						[
+							"Drive letter the application expects",
+							"F:"
+						],
+						[
+							"Guest disks today",
+							"osdisk holds the operating system, datadisk holds application data"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "On the virtual machine's Disks pane, select Create and attach a new disk, choose the SKU and size, give it a name, and save."
+					},
+					{
+						"id": "i2",
+						"text": "In the guest, launch diskmgmt.msc, acknowledge the extra disk that appears with no volume on it, and compare its number and size with the disk you added."
+					},
+					{
+						"id": "i3",
+						"text": "Right-click that disk, choose New simple volume, and finish the wizard."
+					},
+					{
+						"id": "i4",
+						"text": "Select Format disk, then check that the disk shows Online and Healthy with a drive letter."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Provision the storage in Azure and link it to the running instance"
+					},
+					{
+						"id": "s2",
+						"label": "Make sure the operating system has detected the storage and that nothing is stored on it yet"
+					},
+					{
+						"id": "s3",
+						"label": "Carve out the partition and put a file system in place"
+					},
+					{
+						"id": "s4",
+						"label": "Make the storage usable so the application can write to it"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "The work runs in four stages. First the disk has to exist in Azure and be connected to the virtual machine: on the VM's Disks pane you choose Create and attach a new disk, pick the SKU (Premium SSD) and size (512 GiB), name it (appdata01) and save. Only then does the guest see the hardware: in Disk Management (diskmgmt.msc) the new disk appears with no volume on it, and you acknowledge it and compare its number and size with the disk you added, so the next steps never point at datadisk, which already holds application data. Next you right-click that disk, choose New simple volume and finish the wizard, which carves out the partition and puts a file system in place. Finally you select Format disk and confirm the disk shows Online and Healthy with a drive letter, which is the drive (F:) the application can write to.",
+				"perChoice": {
+					"i1": "Belongs in the first stage. A disk only reaches the guest after it has been created and connected to the virtual machine, which is done from the virtual machine's Disks pane by choosing Create and attach a new disk, setting the SKU and size, giving it a name and saving.",
+					"i2": "Belongs in the second stage. Disk Management (diskmgmt.msc) is where the newly arrived disk shows up as uninitialized with no volume on it, and comparing its number and size with the disk you added protects datadisk, which still holds the application's data, from being initialized by mistake.",
+					"i3": "Belongs in the third stage. New simple volume and the wizard create the partition and give the disk a file system; this is the step that turns the blank disk into usable space, so it comes after the disk has been identified in the guest and before it is formatted.",
+					"i4": "Belongs in the final stage. Format disk completes the new disk, and only once it reports Online and Healthy with a drive letter can the application be pointed at that drive."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/windows/attach-managed-disk-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/managed-disks-overview"
+				}
+			],
+			"subtopics": [
+				"attach-managed-disk",
+				"initialize-disk-in-guest",
+				"windows-disk-management"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R7J1GYMBR02QFJRBB0M0MS",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are preparing the disks for four virtual machine workloads, and each workload has a different operational requirement. Every requirement below is met by exactly one of the capabilities among the draggable items. Drag the capability that satisfies the requirement into its slot.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Workload",
+						"Environment"
+					],
+					"rows": [
+						[
+							"File server migration",
+							"The server ran on-premises; the image of the disk must be brought over."
+						],
+						[
+							"Records archive",
+							"Two hundred disks hold the archive, and the compliance team decides who may move data out."
+						],
+						[
+							"Quarterly audit evidence",
+							"The reporting disk changes every day, but the auditors need a copy that cannot be changed from the end of each quarter."
+						],
+						[
+							"Intranet web tier",
+							"Six virtual machines serve employees, and the business needs them to keep serving traffic if one component behind them fails."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Direct upload of a VHD up to 32 TiB, straight into a managed disk with no virtual machine attached"
+					},
+					{
+						"id": "i2",
+						"text": "Restriction of disk import and export with a custom RBAC role, Microsoft Entra ID, Private Links, Azure Policy, or the NetworkAccessPolicy parameter"
+					},
+					{
+						"id": "i3",
+						"text": "An availability set, which spreads the disks of its member virtual machines across the scale units (stamps)"
+					},
+					{
+						"id": "i4",
+						"text": "A snapshot, which produces an independent read-only version of a disk as of the moment of capture"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "File server migration: place the on-premises disk image in the cloud and avoid paying for a disk that remains unused by any virtual machine"
+					},
+					{
+						"id": "s2",
+						"label": "Records archive: keep the archive disks from being moved out of the subscription by identities that should not have that right"
+					},
+					{
+						"id": "s3",
+						"label": "Quarterly audit evidence: keep a copy of the reporting disk the way it stood at the quarter end, so later activity on the live disk cannot alter it"
+					},
+					{
+						"id": "s4",
+						"label": "Intranet web tier: make sure the disks of the group of virtual machines keep working if a single part of the storage below them fails"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i4",
+				"s4": "i3"
+			},
+			"explanation": {
+				"correct": "The file server migration is met by direct upload: a VHD of up to 32 TiB can be placed in a managed disk with no virtual machine attached, which moves the image into the cloud without paying for an unattached disk. The records archive is met by restricting disk import and export, using a custom Azure RBAC role, Microsoft Entra ID, Private Links, Azure Policy, or the NetworkAccessPolicy parameter on the disk resource, so only approved identities can move data out of the subscription. The quarterly audit evidence is met by taking a snapshot: it produces an independent, read-only version of the disk as of one moment, so later activity on the live disk cannot alter the evidence that was kept. The intranet web tier is met by an availability set, which spreads the disks of its member virtual machines across storage scale units (stamps), so the failure of one stamp does not take down the whole group of instances.",
+				"perChoice": {
+					"i1": "Fits the file server migration slot. Direct upload puts a VHD of up to 32 TiB into a managed disk without attaching it to a virtual machine, which is exactly how the image is brought into the cloud without incurring the cost of an unattached disk. It has no bearing on the archive's export rules, the audit copy, or the resilience of the web tier.",
+					"i2": "Fits the records archive slot. A custom Azure RBAC role, Microsoft Entra ID, Private Links, Azure Policy, or the NetworkAccessPolicy parameter on the disk resource are the documented ways to protect managed disks from being imported or exported, which matches the compliance requirement that only approved identities may move data out. It does not load an on-premises image, capture a point-in-time copy, or spread disks across stamps.",
+					"i3": "Fits the intranet web tier slot. Managed disks integrated with an availability set are automatically placed in different storage scale units (stamps), so if one stamp fails only the instances whose disks sit on it are affected and the rest of the group keeps serving traffic. It does not move data across the subscription boundary, capture a point-in-time copy, or bring an on-premises image into the cloud.",
+					"i4": "Fits the quarterly audit evidence slot. A managed disk snapshot is a read-only, crash-consistent full copy taken at a point in time that exists independently of the source disk, so later changes to the reporting disk cannot alter the captured copy. It does not load an on-premises image, restrict who may move disks out of the subscription, or spread disks across stamps."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/managed-disks-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types"
+				}
+			],
+			"subtopics": [
+				"managed-disks",
+				"disk-snapshots",
+				"disk-availability"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RRR78RHN11W96QDKGZNE1V",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are rolling out a new Linux virtual machine that will run a production database. Its data disk is a Premium SSD v2 disk that stays attached to the running virtual machine while you adjust it, and the actions you took today are listed in the table. You need to know what happens to the request scheduled for 15:00, and you need to pick the managed disk type for the boot volume of the same virtual machine. The boot volume has to be a type the platform supports for operating system disks, and it must not be a type that the platform is retiring. Which statement should you place in each slot?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Time",
+						"Action on the Premium SSD v2 data disk"
+					],
+					"rows": [
+						[
+							"07:00",
+							"Disk created with 200 GiB, 3,000 IOPS, 125 MB/s"
+						],
+						[
+							"09:00",
+							"IOPS raised from 3,000 to 8,000"
+						],
+						[
+							"11:00",
+							"Throughput raised from 125 MB/s to 2,000 MB/s"
+						],
+						[
+							"13:00",
+							"IOPS raised from 8,000 to 12,000"
+						],
+						[
+							"15:00",
+							"Request to raise the throughput to 2,500 MB/s"
+						]
+					]
+				},
+				"statement": "The request submitted at 15:00 is {{slot1}}, and the boot volume should be {{slot2}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "Rejected — the per-day tuning limit for the disk is reached"
+							},
+							{
+								"id": "b",
+								"text": "Accepted — the per-day tuning limit for the disk is not reached yet"
+							},
+							{
+								"id": "c",
+								"text": "Accepted — the per-day tuning limit does not apply to this disk type"
+							},
+							{
+								"id": "d",
+								"text": "Rejected — this disk type does not support tuning after creation"
+							}
+						]
+					},
+					{
+						"id": "slot2",
+						"options": [
+							{
+								"id": "a",
+								"text": "a Premium SSD or Standard SSD disk"
+							},
+							{
+								"id": "b",
+								"text": "a Premium SSD v2 disk"
+							},
+							{
+								"id": "c",
+								"text": "an Ultra Disk"
+							},
+							{
+								"id": "d",
+								"text": "a Standard HDD disk"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a",
+				"slot2": "a"
+			},
+			"explanation": {
+				"correct": "Premium SSD v2 performance can be adjusted four times in a 24-hour period, and creating the disk counts as one of those four, so a newly created Premium SSD v2 can only be adjusted three times during its first day. Here the 07:00 creation plus the 09:00, 11:00 and 13:00 adjustments use all four operations, so the 15:00 request is rejected even though 2,500 MB/s is within the throughput that the current 12,000 IOPS setting permits. For the boot volume, only Premium SSD and Standard SSD are managed disk types the platform supports for operating system disks that are not being retired: Ultra Disk and Premium SSD v2 are data-disk-only types, and using a Standard HDD as an OS disk is retired on September 8, 2028.",
+				"perChoice": {
+					"slot1:b": "This counts only the three adjustments made at 09:00, 11:00 and 13:00. Creating the disk consumes one of the four allowed operations, so the limit is already reached when the 15:00 request arrives.",
+					"slot1:c": "The limit does apply to this disk type: Premium SSD v2 disks, like Ultra Disks, can be adjusted only four times in a 24-hour period, with the creation counting as one of them.",
+					"slot1:d": "Premium SSD v2 disks are built for granular tuning after creation — capacity, IOPS and throughput can be changed at any time while the disk stays attached to the running virtual machine, with each change taking up to an hour to take effect.",
+					"slot2:b": "Premium SSD v2 is a data disk type only and cannot be used as an OS disk, so it must be paired with a Premium SSD or Standard SSD boot volume.",
+					"slot2:c": "Ultra Disk is a data disk type only and cannot be used as an OS disk, and it also cannot be used with Azure Compute Gallery.",
+					"slot2:d": "Standard HDD is aimed at latency-tolerant sequential workloads and is not suitable for an OS disk; the ability to use a Standard HDD as an OS disk is retired on September 8, 2028."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/managed-disks-overview"
+				}
+			],
+			"subtopics": [
+				"premium-ssd-v2-tuning",
+				"os-disk-type-support"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RS61A2BBJ97YMH76725YP3",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Windows virtual machine in Azure that runs a line-of-business application. Its 256 GiB disk volume currently stores 40 GiB of business records, and the compliance team needs an archived copy of that volume as it stands today. The archived copy must remain readable after the live volume is replaced with a 1 TiB volume next quarter, and finance needs to know how the archive will appear on the monthly bill. You need to produce the archive and explain its billing. Which option should you choose for the archived copy, and which statement describes its monthly bill?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Virtual machine",
+							"Windows Server 2022, running continuously"
+						],
+						[
+							"Volume role",
+							"Application workload volume attached to the virtual machine"
+						],
+						[
+							"Provisioned size",
+							"256 GiB"
+						],
+						[
+							"Used capacity",
+							"40 GiB"
+						],
+						[
+							"Planned change",
+							"Volume replaced with a 1 TiB volume next quarter"
+						],
+						[
+							"Archive requirement",
+							"Copy of the volume as it stands today, still readable after the replacement"
+						]
+					]
+				},
+				"statement": "You should {{artifact}}, and {{charge}}.",
+				"slots": [
+					{
+						"id": "artifact",
+						"options": [
+							{
+								"id": "a",
+								"text": "Create a snapshot of the disk volume"
+							},
+							{
+								"id": "b",
+								"text": "Create a managed image of the generalized virtual machine"
+							},
+							{
+								"id": "c",
+								"text": "Create a managed disk and copy the contents of the volume with a file-copy tool"
+							},
+							{
+								"id": "d",
+								"text": "Create a second managed disk and attach it to the virtual machine"
+							}
+						]
+					},
+					{
+						"id": "charge",
+						"options": [
+							{
+								"id": "a",
+								"text": "is charged only for the data that it holds"
+							},
+							{
+								"id": "b",
+								"text": "is charged for the full provisioned size that was set on it"
+							},
+							{
+								"id": "c",
+								"text": "is charged for every read and write transaction that runs against it"
+							},
+							{
+								"id": "d",
+								"text": "is charged for each hour that the source virtual machine runs with it attached"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"artifact": "a",
+				"charge": "a"
+			},
+			"explanation": {
+				"correct": "Taking a snapshot of a managed disk yields an independent, read-only copy of that disk as of one moment in time; it is kept as a standard managed disk by default and it survives changes to the source, so it satisfies the compliance requirement for an archived copy of the volume that stays readable after the live volume is replaced. A managed image instead packages every disk of a deallocated, generalized VM and exists to launch many similar VMs, so it is the wrong artifact for archiving a single volume. Snapshots bill only for the data they contain, so this archive of a 256 GiB volume that stores 40 GiB is billed for 40 GiB; provisioned size is how managed disks themselves are billed.",
+				"perChoice": {
+					"artifact:b": "A managed image is built from a deallocated, generalized (Sysprep) VM and packages every disk that VM had, so it acts as a template for launching many similar VMs instead of as an archived copy of one volume at a single point in time.",
+					"artifact:c": "Copying files with a file-copy tool captures only what the application and file system expose and depends on the source volume remaining available, so it does not produce a consistent point-in-time copy of the managed disk.",
+					"artifact:d": "A newly created managed disk starts out empty, so attaching a second volume to the virtual machine does not duplicate the contents of the existing volume and does not preserve a copy of it.",
+					"charge:b": "Billed-for-provisioned-size is how managed disks are charged (a 200 GiB Standard SSD bills as E15, 256 GiB). A snapshot is instead billed for the data it contains, so the archive is billed for 40 GiB rather than for the full 256 GiB.",
+					"charge:c": "Per-transaction accounting applies to I/O on Premium SSD and Standard SSD, where each operation up to 256 KiB is counted. That rule does not describe the billing of a snapshot of a managed disk.",
+					"charge:d": "The archive is a separate managed disk object; its bill does not depend on the source virtual machine's running hours or on whether the source disk stays attached."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/managed-disks-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types"
+				}
+			],
+			"subtopics": [
+				"managed-disks",
+				"disk-snapshots",
+				"billing"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RSTE5EA5QAR4BEKEACKA1E",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Linux virtual machine that hosts a customer-facing web application, and the operations team also plans a long-term archive of the application files. The current disk layout and the archive requirements are shown below. You need to pick the managed disk type for the archive copies and to tell finance how the live application disk will be charged each month. Which options should you use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Object",
+						"Current configuration",
+						"Workload notes"
+					],
+					"rows": [
+						[
+							"Live application data disk",
+							"Standard SSD, 200 GiB provisioned, 120 GiB in use",
+							"Attached to the running VM and written and read continuously by the application"
+						],
+						[
+							"Archive copy volume",
+							"Not created yet",
+							"Weekly copies retained for two years, read only occasionally, and cost is the main concern"
+						]
+					]
+				},
+				"statement": "Create the archive copy volume as a {{disktype}} disk, and expect the monthly invoice to show the live application disk as {{billing}}.",
+				"slots": [
+					{
+						"id": "disktype",
+						"options": [
+							{
+								"id": "a",
+								"text": "Standard HDD"
+							},
+							{
+								"id": "b",
+								"text": "Standard SSD"
+							},
+							{
+								"id": "c",
+								"text": "Premium SSD"
+							},
+							{
+								"id": "d",
+								"text": "Premium SSD v2"
+							}
+						]
+					},
+					{
+						"id": "billing",
+						"options": [
+							{
+								"id": "a",
+								"text": "A 256 GiB E15 disk billed hourly"
+							},
+							{
+								"id": "b",
+								"text": "A 200 GiB disk billed hourly"
+							},
+							{
+								"id": "c",
+								"text": "A 120 GiB disk billed for the data stored"
+							},
+							{
+								"id": "d",
+								"text": "A disk billed for 2,000 base IOPS each hour"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"disktype": "a",
+				"billing": "a"
+			},
+			"explanation": {
+				"correct": "The archive holds weekly copies that are read only occasionally and kept for two years, so the cheapest acceptable managed disk type for infrequent, latency-tolerant storage is Standard HDD; the SSD and Premium families cost more and target web servers, general-purpose production, or fixed-size low-latency workloads. The live application disk is a Standard SSD with 200 GiB provisioned, and managed disk charges follow the provisioned size rounded up to the next offered size, so it is billed as the 256 GiB size (E15) on an hourly prorated basis, regardless of how much of that capacity the application currently uses.",
+				"perChoice": {
+					"disktype:b": "Standard SSD gives lower latency and more consistent performance for web servers and lightly used applications, but it costs more than the cheapest option and adds no benefit for copies that are read rarely.",
+					"disktype:c": "Premium SSD targets fixed-size, low-latency production workloads and carries a higher price than the archive requires.",
+					"disktype:d": "Premium SSD v2 is a tunable premium option with a free performance baseline, which is unnecessary for a rarely read, long-retained archive.",
+					"billing:b": "Charges for a managed disk are based on the provisioned size rounded up to the next offered size, so a 200 GiB request is not billed as exactly 200 GiB.",
+					"billing:c": "Billing only for the data actually stored applies to snapshots, not to a live managed disk that is provisioned at a fixed capacity.",
+					"billing:d": "Standard SSD charges are driven by the provisioned size and by billable transactions, not by a fixed base IOPS allowance."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/managed-disks-overview"
+				}
+			],
+			"subtopics": [
+				"disk-billing",
+				"disk-type-selection"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RSZTGXXHGMWACTT2JAJZTX",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your payment application runs on Linux virtual machines in a region where availability zones are supported. None of the nodes sits in a zone, and the application team has certified Premium SSD v2 as the only disk tier permitted for the database volumes, so the tier on these volumes stays fixed. A fresh Premium SSD v2 data disk per node is ready, and the operations team reports that attaching it to the current nodes is refused. The capacity plan for next year also has to record the highest performance that can be configured on the certified tier.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Detail"
+					],
+					"rows": [
+						[
+							"Region",
+							"Region A - availability zones supported"
+						],
+						[
+							"Node zone assignment",
+							"None"
+						],
+						[
+							"Certified disk tier for the database volumes",
+							"Premium SSD v2"
+						],
+						[
+							"Role of the new volume",
+							"Data disk"
+						],
+						[
+							"Tier change allowed",
+							"No"
+						],
+						[
+							"New volumes waiting",
+							"One per node"
+						]
+					]
+				},
+				"statement": "The storage team should {{slot1}}. The certified tier can be configured up to {{slot2}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "Reprovision the virtual machine with a zone chosen at provisioning time, then attach the Premium SSD v2 disk to it"
+							},
+							{
+								"id": "b",
+								"text": "Provision a replacement Premium SSD v2 disk, then attach it to the current virtual machine, which has no zone"
+							},
+							{
+								"id": "c",
+								"text": "Enable host caching on the Premium SSD v2 disk, then attach it to the current virtual machine, which has no zone"
+							},
+							{
+								"id": "d",
+								"text": "Attach the Premium SSD v2 disk to the current virtual machine, which has no zone, and move the disk into a zone later"
+							}
+						]
+					},
+					{
+						"id": "slot2",
+						"options": [
+							{
+								"id": "a",
+								"text": "80,000 IOPS and 2,000 MB/s"
+							},
+							{
+								"id": "b",
+								"text": "20,000 IOPS and 900 MB/s"
+							},
+							{
+								"id": "c",
+								"text": "400,000 IOPS and 10,000 MB/s"
+							},
+							{
+								"id": "d",
+								"text": "6,000 IOPS and 750 MB/s"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a",
+				"slot2": "a"
+			},
+			"explanation": {
+				"correct": "In most regions that support availability zones, a Premium SSD v2 disk can only be attached to a zonal virtual machine, and the zone has to be picked when that virtual machine is created; only a subset of zone-enabled regions allows nonzonal disks on nonzonal VMs, with extra limitations, which is why the attachment to the current nodes is refused. Because the certified tier may not change, the remedy belongs on the virtual machine side: provision it again with a zone chosen up front and then attach the Premium SSD v2 disk to it. On the performance side, this tier reaches 80,000 IOPS and 2,000 MB/s per disk, on top of a baseline of 3,000 IOPS and 125 MB/s that every disk includes at no extra charge.",
+				"perChoice": {
+					"slot1:b": "A freshly created disk of the same tier meets the same rule: in most zone-enabled regions this tier attaches only to zonal virtual machines. Replacing the disk leaves the nodes without a zone, so the attachment would still be refused.",
+					"slot1:c": "This tier offers no host caching at all, and caching settings have no bearing on which virtual machines can take the disk. The refusal comes from the zone assignment of the virtual machine, not from any caching setting.",
+					"slot1:d": "There is no later step that moves a disk into a zone, and the zone of a virtual machine is fixed when it is created. In most zone-enabled regions this tier attaches only to zonal virtual machines, so the current nodes cannot take the disk.",
+					"slot2:b": "20,000 IOPS and 900 MB/s are the ceilings of the Premium SSD (P-series) tier, not of Premium SSD v2.",
+					"slot2:c": "400,000 IOPS and 10,000 MB/s are the ceilings of Ultra Disks, a different tier that the certification rules exclude here.",
+					"slot2:d": "6,000 IOPS and 750 MB/s are the ceilings of Standard SSD, a lower tier than the one certified for these volumes."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/managed-disks-overview"
+				}
+			],
+			"subtopics": [
+				"premium-ssd-v2",
+				"availability-zones",
+				"disk-performance-limits"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RT80Q23ECD5VK8J8Z26HSM",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your team is moving an on-premises order-processing database into Azure in two phases, and the exhibit lists what the migration team has gathered. The 30 TiB data file has to exist in the target subscription as a managed disk before any virtual machine is created there, and the database virtual machines have to be created in phase one so that the Ultra Disks planned for phase two can be attached to them straight away instead of rebuilding the nodes later. Finance wants to know what the phase-one virtual machines will cost. Which option should you place in each slot?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Migration plan  (target subscription: contoso-prod)\n\nSource file   : VHD, 30 TiB, captured from the on-premises hypervisor\nWorkload      : transactional order-processing database, 30 TiB of data in total\nVM quota      : request to create virtual machines in the target subscription is still being processed\nPhase one     : create the database virtual machines (Standard_E32-8s_v3) so that Ultra Disks\n                can be attached to them later without another change\nPhase two     : attach Ultra Disks to those virtual machines for the transactional workload"
+				},
+				"statement": "Bring the source file into Azure as a managed disk with {{s1}}, and tell finance that {{s2}}",
+				"slots": [
+					{
+						"id": "s1",
+						"options": [
+							{
+								"id": "a",
+								"text": "Direct upload"
+							},
+							{
+								"id": "b",
+								"text": "Managed image capture"
+							},
+							{
+								"id": "c",
+								"text": "Disk snapshot"
+							},
+							{
+								"id": "d",
+								"text": "Azure Elastic SAN volume"
+							}
+						]
+					},
+					{
+						"id": "s2",
+						"options": [
+							{
+								"id": "a",
+								"text": "Ultra Disk support adds a per-vCPU reservation fee to the virtual machine even when no Ultra Disk is attached."
+							},
+							{
+								"id": "b",
+								"text": "No charge is applied to the virtual machine until an Ultra Disk is attached to it."
+							},
+							{
+								"id": "c",
+								"text": "Every managed disk created in the subscription is charged a per-disk fee, even when it is attached to a virtual machine."
+							},
+							{
+								"id": "d",
+								"text": "A one-year commitment discount applies to the Premium SSD sizes P30 through P80 that will hold the data files."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "a"
+			},
+			"explanation": {
+				"correct": "Direct upload is the documented way to place a VHD into a managed disk without attaching it to a virtual machine, and it covers VHDs of up to 32 TiB, so the 30 TiB file qualifies while the virtual machine quota request in the target subscription is still pending. A managed image or a snapshot would not leave the file as a managed disk there, and an Elastic SAN volume is a consolidated storage back end rather than an import path. Separately, switching on the Ultra Disk capability on a virtual machine adds a per-vCPU reservation fee even when no Ultra Disk is attached (on the Standard_E32-8s_v3 size the fee is charged across 32 cores), so the phase-one virtual machines already carry that charge until an Ultra Disk is actually attached.",
+				"perChoice": {
+					"s1:b": "A managed image is a reusable template built from a deallocated, generalized virtual machine, and it packages every disk that machine had; it does not leave the file as a managed disk in the target subscription, and the generalizing step needs a virtual machine that the pending quota request still prevents.",
+					"s1:c": "A snapshot is a point-in-time copy of an existing managed disk, and the source file here is not yet a managed disk, so there is nothing for it to copy.",
+					"s1:d": "Azure Elastic SAN consolidates storage for many large-scale, I/O-intensive workloads and top-tier databases behind one block storage back end; it is not a mechanism that turns an external VHD file into a managed disk.",
+					"s2:b": "The per-vCPU reservation fee is charged from the moment the Ultra Disk capability is switched on, so a virtual machine that is ready for Ultra Disks but has none attached yet already carries the charge.",
+					"s2:c": "Managed disks are not billed a per-disk fee simply for existing in a subscription; the Ultra Disk cost is tied to the vCPUs of the virtual machine, so this does not describe the phase-one cost.",
+					"s2:d": "Disk reservations do give a one-year commitment discount on Premium SSD sizes P30 through P80, but that describes the price of reserved Premium SSD capacity, not what a virtual machine costs once Ultra Disk capability is switched on."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/managed-disks-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types"
+				}
+			],
+			"subtopics": [
+				"direct-upload",
+				"ultra-disk",
+				"disk-cost"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RTJ7785MDBK6J0WNZHA4RB",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your team runs a columnar analytics platform on 12 Linux virtual machines in a single Azure region, and the plan is to serve the columnar store from Ultra Disks next quarter. The facts the platform team collected are in the table below. The infrastructure review has two open items: finance wants to know what switching the fleet over to Ultra Disk support will cost the subscription, and the platform team wants to know whether the planned data footprint is allowed as it stands. Which option should you place in each slot?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Fact",
+						"Detail"
+					],
+					"rows": [
+						[
+							"Fleet",
+							"12 Linux virtual machines of the size Standard_E32-8s_v3"
+						],
+						[
+							"Planned data",
+							"One Ultra Disk of 20 TiB per virtual machine, all created in one subscription and in one region"
+						],
+						[
+							"Current storage",
+							"The Premium SSD P30 data disks already attached to the fleet stay in place for the first quarter"
+						]
+					]
+				},
+				"statement": "Switching the fleet over to Ultra Disk support brings {{feeBasis}}, while the planned data footprint {{capacityVerdict}}.",
+				"slots": [
+					{
+						"id": "feeBasis",
+						"options": [
+							{
+								"id": "a",
+								"text": "a per-vCPU reservation fee for every virtual machine in the fleet"
+							},
+							{
+								"id": "b",
+								"text": "a per-gigabyte fee for every virtual machine in the fleet, based on the provisioned capacity of its Ultra Disks"
+							},
+							{
+								"id": "c",
+								"text": "a per-IOPS fee for every virtual machine in the fleet, based on the provisioned performance of its Ultra Disks"
+							},
+							{
+								"id": "d",
+								"text": "a per-disk fee for every virtual machine in the fleet, based on the number of Ultra Disks attached to it"
+							}
+						]
+					},
+					{
+						"id": "capacityVerdict",
+						"options": [
+							{
+								"id": "a",
+								"text": "exceeds the default allowance of 100 TiB per subscription per region, so a quota increase is required"
+							},
+							{
+								"id": "b",
+								"text": "stays within the default allowance of 100 TiB per subscription per region, and no request is needed"
+							},
+							{
+								"id": "c",
+								"text": "is bound by the cap of 50,000 disks per subscription per region instead of a capacity allowance"
+							},
+							{
+								"id": "d",
+								"text": "is bound by the cap of 1,000 virtual machines per scale set in a region, not by a capacity allowance"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"capacityVerdict": "a",
+				"feeBasis": "a"
+			},
+			"explanation": {
+				"correct": "Two separate Ultra Disk facts decide this. First, turning on Ultra Disk support for a virtual machine adds a per-vCPU reservation fee to the subscription, and that fee is charged even on machines that carry no Ultra Disk, so the switch costs a reservation fee for every virtual machine in the fleet rather than a per-gigabyte, per-IOPS or per-disk amount. Second, the planned footprint is 12 virtual machines multiplied by one 20 TiB Ultra Disk each, which is 240 TiB created in a single subscription and a single region. The default Ultra Disk capacity allowance is 100 TiB per subscription per region, so the plan goes past it and a quota increase has to be requested before those disks can be created.",
+				"perChoice": {
+					"capacityVerdict:b": "The plan totals 12 disks of 20 TiB each, which is 240 TiB in one subscription and one region, and that is well above the 100 TiB default allowance, so it does not stay within the allowance and a request is needed.",
+					"capacityVerdict:c": "The 50,000 disks per type per subscription per region figure is a count limit, and this estate is nowhere near it with 12 disks. The limit that actually bites here is Ultra Disk capacity of 100 TiB per subscription per region, and the 240 TiB plan goes past that figure.",
+					"capacityVerdict:d": "The 1,000 virtual machine limit applies to a virtual machine scale set. This is a fleet of individual virtual machines, and the binding restriction is the Ultra Disk capacity allowance of 100 TiB per subscription per region, which the 240 TiB plan exceeds.",
+					"feeBasis:b": "The cost of switching on Ultra Disk support is not calculated per gigabyte. A managed disk's own price follows its provisioned size, but the capability charge is a reservation fee based on the number of virtual CPUs of each machine, so a per-gigabyte model does not describe it.",
+					"feeBasis:c": "There is no per-IOPS charge for enabling the capability. Ultra Disk performance is provisioned per disk through its own IOPS and throughput settings, and those settings are not billed as a capability fee on the virtual machine.",
+					"feeBasis:d": "The charge is not levied per attached Ultra Disk. Enabling the capability produces a per-vCPU reservation fee on the virtual machine even when no Ultra Disk is attached to it, so a per-disk model does not match."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/managed-disks-overview"
+				}
+			],
+			"subtopics": [
+				"ultra-disks",
+				"disk-limits",
+				"disk-cost"
+			],
+			"reviewed": false
+		}
+	]
+}

@@ -1,0 +1,1454 @@
+{
+	"skill": "access.interpret-assignments",
+	"questions": [
+		{
+			"id": "q_01M5G9F58GM8S84TEFJEBK6GTE",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Tomorrow you are adding a second storage account to rg-contoso-prod, and the backup team has to be able to work with its blobs straight away without anyone creating an extra record. The table lists the assignments currently shown on stcontosoprod01. Which of them will already cover the new storage account?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Principal",
+						"Role",
+						"Assignment source"
+					],
+					"rows": [
+						[
+							"Group Contoso-Backup",
+							"Storage Blob Data Reader",
+							"(Inherited)"
+						],
+						[
+							"Group Contoso-Deployers",
+							"Storage Blob Data Contributor",
+							"This resource"
+						],
+						[
+							"User Priya Raman",
+							"Key Vault Secrets User",
+							"This resource"
+						],
+						[
+							"Service principal contoso-sync-sp",
+							"Storage Blob Data Owner",
+							"This resource"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Only the assignment marked (Inherited), because it was recorded at the parent level"
+					},
+					{
+						"id": "b",
+						"text": "Only the three assignments marked This resource, because they were recorded against stcontosoprod01"
+					},
+					{
+						"id": "c",
+						"text": "All four assignments, because each one is inherited by every resource in the same resource group"
+					},
+					{
+						"id": "d",
+						"text": "None of the assignments, because access only reaches resources that already exist when the record is created"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "An assignment shown as (Inherited) was created higher in the hierarchy — here at rg-contoso-prod — and permissions granted at a parent level flow down to everything inside that level, including resources added later. The three entries marked This resource were recorded against stcontosoprod01 itself, so they apply to that one storage account only and do not spread sideways to a different storage account in the same resource group.",
+				"perChoice": {
+					"b": "A record marked This resource is bound to the individual resource named in the assignment. Granting a job function role at a resource group level is what makes the access cover every resource in that group; a record attached to one storage account never reaches a sibling resource.",
+					"c": "Inheritance works downwards, not sideways. A record attached to a single resource does not grant the same access to the other resources sitting next to it in the resource group; only records made at the resource group level (the (Inherited) row here) do that.",
+					"d": "Access does propagate to resources created later: an assignment made at the resource group level applies to all resources of that resource group, so the next storage account added to rg-contoso-prod is covered automatically."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-list-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-steps"
+				}
+			],
+			"subtopics": [
+				"scope-inheritance",
+				"role-assignments"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5G9FCJ1H5M1XG081E90F6PX",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You open Access control (IAM) on rg-contoso-prod, select Check access, pick Dana Whitfield, and the pane returns two Azure role assignments and one Deny assignment that came from Azure Blueprints. Dana insists that a group she belongs to gives her access to a storage account inside that resource group, yet it does not appear. What should you do?",
+				"options": [
+					{
+						"id": "a",
+						"text": "Open the storage account itself: the pane lists the scope you selected plus the grants it inherits from higher scopes, but not grants made on resources below that scope"
+					},
+					{
+						"id": "b",
+						"text": "Open the group in Microsoft Entra ID: the pane lists the scope you selected plus the grants it inherits from higher scopes, but it does not resolve group grants onto individual members"
+					},
+					{
+						"id": "c",
+						"text": "Leave the Deny assignment in place: the pane lists the scope you selected plus the grants it inherits from higher scopes, and the Deny assignment is what is hiding the missing grant"
+					},
+					{
+						"id": "d",
+						"text": "Ask an Owner of the storage account to repeat the check: the pane lists the scope you selected plus the grants it inherits from higher scopes, and grants on resources below are shown only to Owners"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The Check access pane shows the access a principal holds at the scope you selected plus everything inherited into that scope from a higher level; assignments that were created on resources below the selected scope are not listed there. Dana's group membership on the storage account is recorded on the storage account itself, so repeat the same check on that resource.",
+				"perChoice": {
+					"b": "Group grants work the opposite way: a role assigned to a group is held by every member of that group, and those assignments do appear against the individual user in Check access. Looking at the group instead of Dana will not reveal anything extra about her effective access.",
+					"c": "The pane lists Deny assignments alongside Azure role assignments rather than using them to conceal Azure role assignments, so the Blueprints deny assignment is not what is filtering Dana's group grant out of the results.",
+					"d": "The pane only shows records at the selected scope, records inherited from above it, and records the signed-in account is allowed to read. Holding Owner on the subscription would not surface assignments created on a child resource, because assignments below the selected scope are never listed there."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-list-portal"
+				}
+			],
+			"subtopics": [
+				"check-access",
+				"scope-inheritance"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5G9FZER9V15WY36VSHX4H9F",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You export the role assignments for sub-contoso-prod to CSV as part of a migration inventory. RoleName, Scope and ObjectId are populated on every row, but DisplayName and ObjectType come through blank across the whole file. You need to attribute each grant to a named person before the inventory goes to the auditors. What should you change?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "\"RoleName\",\"Scope\",\"DisplayName\",\"SignInName\",\"ObjectType\",\"ObjectId\",\"PrincipalType\"\n\"Owner\",\"/subscriptions/8f2b1d90-3c4e-4f1a-9b7d-11a0c6e5d412\",\"\",\"\",\"\",\"7c91ab04-5d22-4a6e-b0f3-2e9c15d8a771\",\"User\"\n\"Contributor\",\"/subscriptions/8f2b1d90-3c4e-4f1a-9b7d-11a0c6e5d412\",\"\",\"\",\"\",\"a4e0c317-88b5-4d92-b6a1-0f5d7c3e9b20\",\"Group\"\n\"Storage Blob Data Owner\",\"/subscriptions/8f2b1d90-3c4e-4f1a-9b7d-11a0c6e5d412\",\"\",\"\",\"\",\"b18f6d54-2a70-4c39-8e15-6d0a9f4c77e3\",\"User\"\n\"Key Vault Secrets User\",\"/subscriptions/8f2b1d90-3c4e-4f1a-9b7d-11a0c6e5d412/resourceGroups/rg-contoso-prod\",\"\",\"\",\"\",\"e93a7c68-40bd-4f27-9a58-7c1e2b6d0534\",\"User\""
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Give the account you export from permission to read directory data, for example the Directory Readers role, and export again"
+					},
+					{
+						"id": "b",
+						"text": "Export in JSON rather than CSV, because the CSV writer leaves the identity columns out while the JSON writer keeps them"
+					},
+					{
+						"id": "c",
+						"text": "Start the download from the managed identity or group entry instead of the subscription, because the identity columns are filled in only when you begin from a principal"
+					},
+					{
+						"id": "d",
+						"text": "Tick the Children checkbox so that role assignments below the scope you exported are included, because the missing identity data comes from records at child levels"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "When the identity running the download is not entitled to read the directory, the DisplayName, SignInName and ObjectType columns of the exported file are left blank. Granting that identity directory read permission, for example with the Directory Readers role, and downloading again fills those columns, while ObjectId stays populated because it comes from the assignment itself rather than from the directory.",
+				"perChoice": {
+					"b": "The file format is not the deciding factor. Both CSV and JSON are produced by the same download pane and resolve the identity columns in the same way, so switching format leaves the blank columns exactly as they are.",
+					"c": "The downloadable file is produced from a scope in the portal, and starting from a managed identity or group entry only changes the list you browse on screen — it does not populate identity columns that were left empty for lack of permission.",
+					"d": "The Inherited, At current scope and Children check boxes only decide which levels are included in the file. Records at child levels are present in an export and carry the same blank identity columns, so widening the selection does not resolve the missing names."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-list-portal"
+				}
+			],
+			"subtopics": [
+				"download-role-assignments",
+				"directory-read-permission"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5G9G89MC8F08X9VW3DKATFH",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You are about to create one more assignment at a resource group inside sub-contoso-prod, and the portal warns that you are close to the maximum for that subscription. Based on the counter shown below, which rows count toward that per-subscription maximum, and what total do they add up to?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Counter row on the Access control (IAM) pane",
+						"Count"
+					],
+					"rows": [
+						[
+							"Assignments at subscription scope in sub-contoso-prod",
+							"3,180"
+						],
+						[
+							"Assignments at resource group scope in sub-contoso-prod",
+							"1,190"
+						],
+						[
+							"Assignments at resource scope in sub-contoso-prod",
+							"612"
+						],
+						[
+							"Eligible assignments",
+							"40"
+						],
+						[
+							"Assignments scheduled to start in the future",
+							"15"
+						],
+						[
+							"Assignments on management group mg-contoso",
+							"498"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "The subscription-scope, resource-group-scope and resource-scope rows — 4,982 in total"
+					},
+					{
+						"id": "b",
+						"text": "The subscription-scope, resource-group-scope and resource-scope rows plus the eligible row — 5,022 in total"
+					},
+					{
+						"id": "c",
+						"text": "The subscription-scope, resource-group-scope and resource-scope rows plus the future-scheduled row — 4,997 in total"
+					},
+					{
+						"id": "d",
+						"text": "The subscription-scope, resource-group-scope and resource-scope rows plus the eligible, future-scheduled and management group rows — 5,535 in total"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A subscription can hold up to 5,000 assignments, and that count covers assignments made at the subscription, resource group and resource levels, which here total 3,180 + 1,190 + 612 = 4,982. Assignments that are only eligible and assignments scheduled to start in the future are excluded from the count, and assignments on the management group belong to a separate, lower cap for management groups.",
+				"perChoice": {
+					"b": "Eligible assignments do not count toward the per-subscription total, so adding the 40 eligible records overstates the figure at 5,022 and would wrongly suggest the cap has already been passed.",
+					"c": "Assignments scheduled to start in the future are also excluded from the per-subscription total, so including the 15 of them gives 4,997, which is not the counted figure.",
+					"d": "The management group row belongs to the separate management group cap of 500 assignments, and the eligible and future-scheduled rows are excluded, so none of those three rows should be folded into the per-subscription figure."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-list-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-steps"
+				}
+			],
+			"subtopics": [
+				"rbac-limits",
+				"role-assignment-counts"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5G9GJCC4DV5G7BCZ0GDFMZS",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Contoso's policy for contract staff says the grant has to be usable continuously for the whole engagement window, has to begin on the first day of that window, and has to lapse at the end of it without anyone renewing it; the contractor is not expected to request or switch anything on before starting work. Which row of the table satisfies that policy?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Principal",
+						"Role",
+						"State",
+						"Start time",
+						"End time"
+					],
+					"rows": [
+						[
+							"Group Analytics-ext (contract staff)",
+							"Storage Blob Data Reader",
+							"Eligible time-bound",
+							"1 March",
+							"14 March"
+						],
+						[
+							"Release pipeline identity",
+							"Contributor",
+							"Active time-bound",
+							"1 March",
+							"14 March"
+						],
+						[
+							"Support engineers",
+							"Key Vault Secrets User",
+							"Active permanent",
+							"—",
+							"—"
+						],
+						[
+							"Finance analysts",
+							"Storage Blob Data Reader",
+							"Eligible permanent",
+							"—",
+							"—"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "The March 1-14 row in state Active time-bound"
+					},
+					{
+						"id": "b",
+						"text": "The March 1-14 row in state Eligible time-bound"
+					},
+					{
+						"id": "c",
+						"text": "The undated row in state Active permanent"
+					},
+					{
+						"id": "d",
+						"text": "The undated row in state Eligible permanent"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A state of Active time-bound means the principal can use the role without performing any actions, but only between the start and end dates. That matches a policy where access is simply there for the whole window and disappears when the window closes, so the March 1-14 assignment in that state is the one that complies.",
+				"perChoice": {
+					"b": "In an Eligible time-bound assignment the principal still has to activate the role before using it, and the window only limits when that activation is possible. The contractor would have to take a step before the access is usable, which the policy rules out.",
+					"c": "An Active permanent assignment has no start or end date at all, so it would stay in force after the engagement window closes instead of lapsing, and it could not be tied to the window at all.",
+					"d": "Eligible permanent combines the activation requirement with no expiry, so it fails the policy on both counts: the contractor has to turn the role on, and the access would never end on its own."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-list-portal"
+				}
+			],
+			"subtopics": [
+				"assignment-state",
+				"time-bound-assignments"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5G9M3PJ9K9NVN8JQRJCQAQ4",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a storage account stcontosoprod01 that produces monthly compliance extracts for blob containers. You need the reporting team to download the contents of those containers, while company policy says the team must not create containers, upload data, or change settings on the account. Which built-in role should you assign at the storage account scope?",
+				"options": [
+					{
+						"id": "a",
+						"text": "Storage Blob Data Reader"
+					},
+					{
+						"id": "b",
+						"text": "Storage Blob Data Contributor"
+					},
+					{
+						"id": "c",
+						"text": "Storage Blob Data Owner"
+					},
+					{
+						"id": "d",
+						"text": "Storage Account Contributor"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Storage Blob Data Reader is the least-privilege built-in role for getting at the contents of blobs without write access, which matches the stated requirement. Starting with the most restrictive role that fits keeps the blast radius small, and you can widen the assignment later if the team genuinely needs more.",
+				"perChoice": {
+					"b": "Storage Blob Data Contributor also lets the team create and write blob data and containers, so it exceeds a download-only requirement.",
+					"c": "Storage Blob Data Owner carries full control over blob data, including managing ownership and access on containers and blobs, which is more than the reporting team needs.",
+					"d": "Storage Account Contributor manages the storage account itself — account settings, keys, and other data services in the account — rather than only the blob data, so it grants far broader access than the requirement calls for."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-steps"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/rbac-and-directory-admin-roles"
+				}
+			],
+			"subtopics": [
+				"least-privilege-role-selection",
+				"built-in-roles"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5G9M8A5PKQ0J9SBPH57XKF8",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Contoso audits the grants made at sub-contoso-prod every quarter and wants the count of assignments the portal surfaces as privileged administrator grants for that scope. Based on the assignments below, what count should the Privileged card show?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Role",
+						"Assigned to",
+						"Scope"
+					],
+					"rows": [
+						[
+							"Owner",
+							"Dana Whitfield",
+							"/subscriptions/sub-contoso-prod"
+						],
+						[
+							"Contributor",
+							"app-contoso-sync",
+							"/subscriptions/sub-contoso-prod"
+						],
+						[
+							"Reader",
+							"grp-contoso-audit",
+							"/subscriptions/sub-contoso-prod"
+						],
+						[
+							"Storage Blob Data Contributor",
+							"svc-reporting",
+							"/subscriptions/sub-contoso-prod"
+						],
+						[
+							"Role Based Access Control Administrator",
+							"svc-governance",
+							"/subscriptions/sub-contoso-prod"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "1"
+					},
+					{
+						"id": "b",
+						"text": "2"
+					},
+					{
+						"id": "c",
+						"text": "3"
+					},
+					{
+						"id": "d",
+						"text": "4"
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "The privileged administrator set at this scope is Owner, Contributor, Reservations Administrator, Role Based Access Control Administrator and User Access Administrator, since these grant the ability to manage Azure resources or to assign roles. Of the rows listed, Owner (Dana Whitfield), Contributor (app-contoso-sync) and Role Based Access Control Administrator (svc-governance) are in that set, so the count is 3.",
+				"perChoice": {
+					"a": "One would miss the Contributor and Role Based Access Control Administrator grants, both of which belong to the privileged administrator set.",
+					"b": "Two leaves out the Role Based Access Control Administrator grant for svc-governance, which is a privileged administrator role.",
+					"d": "Four wrongly includes Reader and Storage Blob Data Contributor. Reader only lets a principal view Azure resources, and Storage Blob Data Contributor is a job function role limited to blob data, so neither is a privileged administrator role."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-steps"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-list-portal"
+				}
+			],
+			"subtopics": [
+				"privileged-administrator-roles",
+				"role-assignment-state-at-scope"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5G9MDH2V1WN58R3JNH6N389",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You are preparing a compliance export for rg-contoso-data and the file must contain only the grants that were made at rg-contoso-data itself or at the scopes inside it, with nothing that arrives from the scopes above. Which check boxes should you select in the Download role assignments pane?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Assigned to",
+						"Role",
+						"Scope as shown on the tab"
+					],
+					"rows": [
+						[
+							"Dana Whitfield",
+							"Reader",
+							"/subscriptions/sub-contoso-prod (Inherited)"
+						],
+						[
+							"app-contoso-sync",
+							"Storage Blob Data Contributor",
+							"/subscriptions/sub-contoso-prod/resourceGroups/rg-contoso-data"
+						],
+						[
+							"svc-reporting",
+							"Storage Blob Data Reader",
+							"/subscriptions/sub-contoso-prod/resourceGroups/rg-contoso-data/providers/Microsoft.Storage/storageAccounts/stcontosodata01"
+						],
+						[
+							"grp-contoso-audit",
+							"Reader",
+							"/providers/Microsoft.Management/managementGroups/mg-contoso (Inherited)"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "At current scope and Children"
+					},
+					{
+						"id": "b",
+						"text": "Inherited and Children"
+					},
+					{
+						"id": "c",
+						"text": "Inherited and At current scope"
+					},
+					{
+						"id": "d",
+						"text": "Children only"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "At current scope includes the assignments written directly on rg-contoso-data, and Children includes the assignments at the levels below it — here the grant for app-contoso-sync on the resource group and the grant for svc-reporting on the storage account. Leaving Inherited off keeps the Reader rows that come from the subscription and the management group out of the file.",
+				"perChoice": {
+					"b": "This pulls in the inherited Reader grants for Dana Whitfield and grp-contoso-audit from above, which the requirement rules out, and it leaves out the assignment made directly on rg-contoso-data.",
+					"c": "This combines the grants that arrive from above with the ones on rg-contoso-data but omits everything inside the resource group, so the storage-account-level grant for svc-reporting would be missing from the file.",
+					"d": "Children on its own captures only the levels below the resource group, so the assignment made directly at rg-contoso-data would not be exported."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-list-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-steps"
+				}
+			],
+			"subtopics": [
+				"downloading-role-assignments",
+				"scope-inheritance"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5G9P93A2S7DE4GNN0YS9GAF",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Before the next access review, Contoso's platform team has to map each built-in grant in the automation catalogue to the capability it actually delivers. Drag each role to the requirement it satisfies.",
+				"items": [
+					{
+						"id": "owner",
+						"text": "Owner"
+					},
+					{
+						"id": "contributor",
+						"text": "Contributor"
+					},
+					{
+						"id": "reader",
+						"text": "Reader"
+					},
+					{
+						"id": "rbacadmin",
+						"text": "Role Based Access Control Administrator"
+					},
+					{
+						"id": "resadmin",
+						"text": "Reservations Administrator"
+					}
+				],
+				"slots": [
+					{
+						"id": "s_full_plus_grant",
+						"label": "Must manage every resource type in the scope and also grant permissions on Azure resources to other people"
+					},
+					{
+						"id": "s_full_no_grant",
+						"label": "Must manage every resource type in the scope but must never be able to create permission grants"
+					},
+					{
+						"id": "s_read_only",
+						"label": "Must only view resource configuration and metadata, with no changes permitted"
+					},
+					{
+						"id": "s_self_grant",
+						"label": "Must manage who holds permissions on Azure resources and be able to grant themselves the broadest subscription-wide grant"
+					},
+					{
+						"id": "s_capacity",
+						"label": "Must manage everything booked as a capacity commitment across the tenant and hand out permissions for them"
+					}
+				]
+			},
+			"key": {
+				"s_capacity": "resadmin",
+				"s_full_no_grant": "contributor",
+				"s_full_plus_grant": "owner",
+				"s_read_only": "reader",
+				"s_self_grant": "rbacadmin"
+			},
+			"explanation": {
+				"correct": "The built-in roles fall into two documented groups. Owner grants full access to manage all resources and lets the holder assign roles in Azure RBAC, so it satisfies the requirement that combines complete management with handing permissions to others. Contributor grants full access to manage all resources but cannot assign roles in Azure RBAC, which matches the second requirement. Reader only views Azure resources, so it matches the view-only requirement. Role Based Access Control Administrator manages user access to Azure resources and can assign the Owner role to themselves or others, which matches the requirement about self-granting the broadest grant. Reservations Administrator manages all the reservations in a tenant and can assign roles in Azure RBAC for reservations, which matches the last requirement.",
+				"perChoice": {
+					"contributor": "Contributor grants full access to manage all resources but can't assign roles in Azure RBAC, so it belongs to the requirement that rules out creating permission grants.",
+					"owner": "Owner grants full access to manage all resources and lets the holder assign roles in Azure RBAC, which is exactly the combination asked for in the first requirement.",
+					"rbacadmin": "Role Based Access Control Administrator manages user access to Azure resources and can assign themselves or others the Owner role, so it satisfies the self-grant requirement.",
+					"reader": "Reader only lets the holder view Azure resources, so it belongs to the requirement that allows no changes.",
+					"resadmin": "Reservations Administrator manages all the reservations in a tenant and assigns roles for reservations only, so it satisfies the requirement about capacity commitments."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-steps"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/rbac-and-directory-admin-roles"
+				}
+			],
+			"subtopics": [
+				"azure-roles",
+				"privileged-administrator-roles",
+				"role-definitions"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5G9PM0E473GQYFVCSKFBC2E",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Contoso created exactly one grant for each principal in the table below. Management wants each one described in plain terms for the quarterly review. Drag each level to the reach that a grant made there produces.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Principal",
+						"Role",
+						"Where the grant was made"
+					],
+					"rows": [
+						[
+							"Priya Raman",
+							"Reader",
+							"mg-contoso"
+						],
+						[
+							"Backup-Team",
+							"Billing Reader",
+							"sub-contoso-prod"
+						],
+						[
+							"App-Reporting",
+							"Contributor",
+							"rg-contoso-data"
+						],
+						[
+							"svc-audit-export",
+							"Storage Blob Data Reader",
+							"stcontosoprod01"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "sc_mgmt",
+						"text": "Management group scope"
+					},
+					{
+						"id": "sc_sub",
+						"text": "Subscription scope"
+					},
+					{
+						"id": "sc_rg",
+						"text": "Resource group scope"
+					},
+					{
+						"id": "sc_res",
+						"text": "Resource scope"
+					}
+				],
+				"slots": [
+					{
+						"id": "re_all_billing",
+						"label": "Covers every billing container placed beneath it, along with the containers and resources inside them"
+					},
+					{
+						"id": "re_one_billing",
+						"label": "Covers all the containers and resources inside one billing container"
+					},
+					{
+						"id": "re_one_container",
+						"label": "Covers resources of every type inside one container, but not the containers beside it"
+					},
+					{
+						"id": "re_one_object",
+						"label": "Covers one named resource and nothing else sitting beside it"
+					}
+				]
+			},
+			"key": {
+				"re_all_billing": "sc_mgmt",
+				"re_one_billing": "sc_sub",
+				"re_one_container": "sc_rg",
+				"re_one_object": "sc_res"
+			},
+			"explanation": {
+				"correct": "Scope is the set of resources a grant applies to, and the four levels sit in a parent-child hierarchy where lower levels inherit permissions from higher ones. A grant made at the topmost level flows down to every billing container organized under it and to everything inside those containers, so that slot takes the Reader grant made at mg-contoso, the management group. A grant made at one billing container flows down to all the containers and resources inside it, which matches the Billing Reader grant at sub-contoso-prod. A grant made at a container flows down to every resource of every type inside that container but not to the containers beside it, which matches the Contributor grant at rg-contoso-data. A grant made on one named resource stays on that resource, which matches the Storage Blob Data Reader grant on stcontosoprod01.",
+				"perChoice": {
+					"sc_mgmt": "mg-contoso is the management group, so a Reader grant made there is inherited by every subscription beneath it and by all of their resource groups and resources; it belongs to the slot describing the widest reach.",
+					"sc_res": "stcontosoprod01 is a single storage account, so a Storage Blob Data Reader grant made on it applies to that one resource and to nothing beside it.",
+					"sc_rg": "rg-contoso-data is one resource group, so a Contributor grant made there lets the application manage resources of all types inside that group without reaching sibling groups.",
+					"sc_sub": "sub-contoso-prod is one subscription, so a Billing Reader grant made there lets the group members read billing data for every resource group and resource within it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-steps"
+				}
+			],
+			"subtopics": [
+				"scope-levels",
+				"role-inheritance",
+				"least-privilege"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5G9Q4P85EGM5XWHFTFWCZ9W",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Contoso's auditor screenshots of the Role assignments tab include the state column for every row. The review notes have to spell out what each value means for the business. Drag each state value to the description that fits it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Principal",
+						"Role",
+						"Assignment scope",
+						"State shown",
+						"Start",
+						"End"
+					],
+					"rows": [
+						[
+							"Marcus Feld",
+							"Key Vault Reader",
+							"sub-contoso-prod",
+							"Eligible time-bound",
+							"2026-10-01",
+							"2026-12-31"
+						],
+						[
+							"Priya Raman",
+							"Reader",
+							"mg-contoso",
+							"Active permanent",
+							"n/a",
+							"n/a"
+						],
+						[
+							"svc-build",
+							"Virtual Machine Contributor",
+							"rg-contoso-app",
+							"Active time-bound",
+							"2026-10-01",
+							"2027-09-30"
+						],
+						[
+							"Ingrid Sandoval",
+							"Reader",
+							"rg-contoso-hr",
+							"Eligible permanent",
+							"n/a",
+							"n/a"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "st_ap",
+						"text": "Active permanent"
+					},
+					{
+						"id": "st_at",
+						"text": "Active time-bound"
+					},
+					{
+						"id": "st_ep",
+						"text": "Eligible permanent"
+					},
+					{
+						"id": "st_et",
+						"text": "Eligible time-bound"
+					}
+				],
+				"slots": [
+					{
+						"id": "d_no_action",
+						"label": "The holder can use the grant straight away, whenever they choose, and it never lapses"
+					},
+					{
+						"id": "d_action_w_dates",
+						"label": "The holder can use the grant straight away, but only from the start date to the end date"
+					},
+					{
+						"id": "d_switch_on",
+						"label": "The grant is waiting to be used and the holder must switch it on first, with no end date"
+					},
+					{
+						"id": "d_switch_on_dates",
+						"label": "The grant is waiting to be used, the holder must switch it on, and it expires at the end date"
+					}
+				]
+			},
+			"key": {
+				"d_action_w_dates": "st_at",
+				"d_no_action": "st_ap",
+				"d_switch_on": "st_ep",
+				"d_switch_on_dates": "st_et"
+			},
+			"explanation": {
+				"correct": "The State column distinguishes four combinations of two things: whether the holder must do anything before using the grant, and whether the grant carries an end date. Values that read Active need no extra step, because the holder can use the role without performing any actions; of those, the one with no dates is the permanent variant that Priya Raman's Reader grant on mg-contoso shows. Values that read Eligible are standing by and only take effect once the holder activates the role; of those, the one with no dates is Ingrid Sandoval's Reader grant on rg-contoso-hr. The remaining two values pair each of those behaviours with a start and end date: Marcus Feld's Key Vault Reader grant on sub-contoso-prod needs activation and expires on 2026-12-31, while svc-build can act straight away but only inside its start and end dates.",
+				"perChoice": {
+					"st_ap": "Active permanent is a grant a holder can always use without performing any actions, with no start or end restriction, so it matches the first description.",
+					"st_at": "Active time-bound is a grant a holder can use without performing any actions, but only inside the start and end dates, which is why svc-build's Contributor grant on rg-contoso-app works immediately and then stops on 2027-09-30.",
+					"st_ep": "Eligible permanent is a grant a holder is always eligible to activate, so the holder must switch it on before use and it carries no end date; that is Ingrid Sandoval's row.",
+					"st_et": "Eligible time-bound is a grant a holder is eligible to activate only within the start and end dates, so it both needs switching on and expires on 2026-12-31; that is Marcus Feld's row."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-list-portal"
+				}
+			],
+			"subtopics": [
+				"role-assignment-state",
+				"time-bound-assignments",
+				"eligible-assignments"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5G9RBZWAKSB18W5G7VRQ5NE",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Contoso's onboarding checklist needs each entry in the table classified before a role can be granted to it. Drag each type to the entry that describes it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Candidate that needs permissions",
+						"What it is"
+					],
+					"rows": [
+						[
+							"Who it is",
+							"One person, Priya Raman, who signs in with her own username and password"
+						],
+						[
+							"What it is",
+							"A named collection Contoso created so that one grant reaches everybody inside it"
+						],
+						[
+							"Who it is",
+							"App-Payments, which signs in with its own credentials to reach one Azure resource"
+						],
+						[
+							"What it is",
+							"Something Azure creates and rotates for a cloud application so that no secret has to be stored"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "pr_user",
+						"text": "User"
+					},
+					{
+						"id": "pr_group",
+						"text": "Group"
+					},
+					{
+						"id": "pr_sp",
+						"text": "Service principal"
+					},
+					{
+						"id": "pr_mi",
+						"text": "Managed identity"
+					}
+				],
+				"slots": [
+					{
+						"id": "c_person",
+						"label": "Priya Raman, who signs in with her own username and password"
+					},
+					{
+						"id": "c_collection",
+						"label": "A named collection Contoso created so that one grant reaches everybody inside it"
+					},
+					{
+						"id": "c_app_signin",
+						"label": "App-Payments, which signs in with its own credentials to reach one Azure resource and that no person ever types"
+					},
+					{
+						"id": "c_azure_made",
+						"label": "Something Azure creates and rotates for a cloud application so that no secret has to be stored"
+					}
+				]
+			},
+			"key": {
+				"c_app_signin": "pr_sp",
+				"c_azure_made": "pr_mi",
+				"c_collection": "pr_group",
+				"c_person": "pr_user"
+			},
+			"explanation": {
+				"correct": "Step 1 of assigning an Azure role lists the four kinds of security principal that can be assigned a role. A User is an individual with a profile in Microsoft Entra ID, which matches Priya Raman signing in with her own credentials. A Group is a set of users created in Microsoft Entra ID, and assigning a role to it gives that role to every member, which matches the named collection. A Service principal is a security identity used by applications or services to reach specific Azure resources, equivalent to a user identity for an application, which matches App-Payments. A Managed identity is an identity that Azure automatically manages and that is typically used when building cloud applications to handle credentials for authenticating to Azure, which matches the entry Azure creates and rotates.",
+				"perChoice": {
+					"pr_group": "The entry about a named collection whose members all receive one grant is a Group, because assigning a role to a group gives the role to every user inside that group.",
+					"pr_mi": "The entry Azure creates and rotates for a cloud application, so no secret has to be stored, is a Managed identity.",
+					"pr_sp": "App-Payments is an application reaching a specific resource with its own credentials and no human typing them, which is a Service principal, a user-like identity for an application.",
+					"pr_user": "Priya Raman is a single person with a profile in the directory who signs in with her own username and password, which is a User."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-steps"
+				}
+			],
+			"subtopics": [
+				"security-principals",
+				"assignees",
+				"service-principals"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5G9RQDEQ57K1KC2WWFJFCBT",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Contoso's governance review compares the three ways permissions have been handed out over the years and decides which one every new grant will use. Drag each model to the thing it governs.",
+				"items": [
+					{
+						"id": "mod_azure",
+						"text": "Azure role"
+					},
+					{
+						"id": "mod_entra",
+						"text": "Microsoft Entra role"
+					},
+					{
+						"id": "mod_classic",
+						"text": "Classic subscription administrator role"
+					}
+				],
+				"slots": [
+					{
+						"id": "gov_resources",
+						"label": "Grants access to compute, storage, and other cloud resources, and can be granted at management group, billing container, container, or single-resource level"
+					},
+					{
+						"id": "gov_directory",
+						"label": "Grants access to directory objects such as people, groups, and domains, at tenant level, administrative unit, or on a single object"
+					},
+					{
+						"id": "gov_retired",
+						"label": "Retired as of May 2026, so permissions of that kind are now granted with a role-based access control grant at the billing container level"
+					}
+				]
+			},
+			"key": {
+				"gov_directory": "mod_entra",
+				"gov_resources": "mod_azure",
+				"gov_retired": "mod_classic"
+			},
+			"explanation": {
+				"correct": "The three models govern different things. Azure roles are the fine-grained authorization system built on Azure Resource Manager: they grant access to Azure resources such as compute and storage, they support custom roles, and their scope can be set at several levels, including the management group, subscription, resource group, and an individual resource, so they fit the first description. Microsoft Entra roles manage Microsoft Entra resources in a directory, for example creating or editing users, assigning administrative roles to others, resetting passwords, managing licenses, and managing domains, and their scope is the tenant, an administrative unit, or an individual object, so they fit the second description. Classic subscription administrator roles covered Account Administrator, Service Administrator, and Co-Administrator; they are fully retired as of May 2026 and you must assign roles in Azure RBAC to manage access, so they fit the third description.",
+				"perChoice": {
+					"mod_azure": "Azure roles grant access to Azure resources through Azure RBAC and can be assigned at multiple levels of scope, which is what the first description covers.",
+					"mod_classic": "Classic subscription administrator roles are the retired model: as of May 2026 they are fully retired and access must be granted with Azure RBAC roles at the subscription scope, which is what the third description covers.",
+					"mod_entra": "Microsoft Entra roles manage directory resources such as users, groups, and domains, and their scope is the tenant, an administrative unit, or an individual object, which is what the second description covers."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/rbac-and-directory-admin-roles"
+				}
+			],
+			"subtopics": [
+				"azure-roles-vs-entra-roles",
+				"classic-subscription-administrators",
+				"authorization-models"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GA2HT7A85R0M4W0M16S14S",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Contoso's governance team is producing a one-page reference that matches each Azure built-in role currently assigned at the root management group to the capability it primarily grants. Drag each role to the description of what it does.",
+				"items": [
+					{
+						"id": "owner",
+						"text": "Owner"
+					},
+					{
+						"id": "contributor",
+						"text": "Contributor"
+					},
+					{
+						"id": "uaa",
+						"text": "User Access Administrator"
+					},
+					{
+						"id": "vmc",
+						"text": "Virtual Machine Contributor"
+					},
+					{
+						"id": "sbdc",
+						"text": "Storage Blob Data Contributor"
+					}
+				],
+				"slots": [
+					{
+						"id": "slot-owner",
+						"label": "Gives full ability to handle every Azure resource and lets the principal assign roles in Azure RBAC"
+					},
+					{
+						"id": "slot-contributor",
+						"label": "Gives full ability to handle every Azure resource but does not let the principal assign roles in Azure RBAC"
+					},
+					{
+						"id": "slot-uaa",
+						"label": "Manages who is permitted to use Azure resources and lets the principal grant roles in Azure RBAC"
+					},
+					{
+						"id": "slot-vmc",
+						"label": "Allows the principal to create and manage Azure compute workloads for a single service only"
+					},
+					{
+						"id": "slot-sbdc",
+						"label": "Lets the principal read, write, and delete Azure account contents at the individual entry and grouping level"
+					}
+				]
+			},
+			"key": {
+				"slot-owner": "owner",
+				"slot-contributor": "contributor",
+				"slot-uaa": "uaa",
+				"slot-vmc": "vmc",
+				"slot-sbdc": "sbdc"
+			},
+			"explanation": {
+				"correct": "Per the Azure RBAC documentation, Owner grants full access to manage all resources and to assign roles; Contributor grants the same management access but cannot assign roles; User Access Administrator manages user access to Azure resources and can assign roles in Azure RBAC; Virtual Machine Contributor is a job-function role for creating and managing virtual machines; Storage Blob Data Contributor is a job-function role that allows reading, writing, and deleting blobs and containers in storage accounts.",
+				"perChoice": {
+					"owner": "Owner fits the slot that describes handling every Azure resource and assigning RBAC roles.",
+					"contributor": "Contributor fits the slot that describes handling every Azure resource but not assigning RBAC roles.",
+					"uaa": "User Access Administrator fits the slot that describes managing who may use Azure resources and granting RBAC roles.",
+					"vmc": "Virtual Machine Contributor fits the slot that describes creating and managing compute workloads for a single service only.",
+					"sbdc": "Storage Blob Data Contributor fits the slot that describes reading, writing, and deleting Azure account contents at the entry and grouping level."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/rbac-and-directory-admin-roles"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-steps"
+				}
+			],
+			"subtopics": [
+				"built-in-roles",
+				"role-permissions"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GA61Y2K90RPPB8B2NET6T8",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are signed in to the portal as a Global Administrator, and a recent clean-up removed every grant you held on subscription sub-contoso-prod. You enable the Access management for Azure resources switch so that you can once again hand out permissions across the tenant. Which role does the platform give you for that?",
+				"statement": "That switch grants the {{grant}} role on all subscriptions in the tenant.",
+				"slots": [
+					{
+						"id": "grant",
+						"options": [
+							{
+								"id": "a",
+								"text": "User Access Administrator"
+							},
+							{
+								"id": "b",
+								"text": "User Administrator"
+							},
+							{
+								"id": "c",
+								"text": "Role Based Access Control Administrator"
+							},
+							{
+								"id": "d",
+								"text": "Global Administrator"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"grant": "a"
+			},
+			"explanation": {
+				"correct": "The documentation states that when a Global Administrator elevates access with the Access management for Azure resources switch, that administrator receives the User Access Administrator role on all subscriptions in the tenant. Being an Azure role that manages user access to Azure resources and lets the holder assign roles, it restores the ability to hand out permissions across the tenant without waiting for someone else to create each assignment.",
+				"perChoice": {
+					"grant:b": "User Administrator is a directory role covering things like creating and managing users and groups, changing passwords and managing licenses. It doesn't govern who can reach Azure resources, so it wouldn't restore the missing ability.",
+					"grant:c": "The switch doesn't hand out this role. Role Based Access Control Administrator does manage user access to Azure resources and can assign roles, but elevation produces the role described in the answer, not this one.",
+					"grant:d": "This is the directory-wide role the administrator already holds. It covers Microsoft Entra ID and Microsoft 365 administration, and by default it doesn't extend to Azure resources, which is exactly why elevation was needed in the first place."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/rbac-and-directory-admin-roles"
+				}
+			],
+			"subtopics": [
+				"elevated-access",
+				"user-access-administrator"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GA65R1GBQT3DR4C4YS8XQX",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Contoso's quarterly access review is built on the privileged administrator totals that the Role assignments tab surfaces for a scope. Which of the roles below is left out of the Privileged card for that scope?",
+				"statement": "The privileged administrator total at a scope excludes assignments of {{excluded}}.",
+				"slots": [
+					{
+						"id": "excluded",
+						"options": [
+							{
+								"id": "a",
+								"text": "Role Based Access Control Administrator"
+							},
+							{
+								"id": "b",
+								"text": "User Access Administrator"
+							},
+							{
+								"id": "c",
+								"text": "Reservations Administrator"
+							},
+							{
+								"id": "d",
+								"text": "Reader"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"excluded": "d"
+			},
+			"explanation": {
+				"correct": "The roles treated as privileged administrator roles are Owner, Contributor, Reservations Administrator, Role Based Access Control Administrator and User Access Administrator — they either manage all resources or manage who has access. The remaining option only lets a holder view Azure resources, so assignments of it aren't privileged administrator assignments and don't appear in the Privileged card total at that scope.",
+				"perChoice": {
+					"excluded:a": "This role manages user access to Azure resources and can assign roles, including Owner, so it is listed among the privileged administrator roles and is counted on the Privileged card.",
+					"excluded:b": "This role also manages user access to Azure resources and can assign roles including Owner, so it counts as a privileged administrator role at the scope.",
+					"excluded:c": "This role manages all the reservations in a tenant and can assign roles for reservations, and it is listed among the privileged administrator roles, so it is counted."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-steps"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-list-portal"
+				}
+			],
+			"subtopics": [
+				"privileged-administrator-roles",
+				"role-assignments-tab"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GA6G3W2N08AGKSF5YGT152",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your automation runs Azure CLI to hand out a role, but it passes a display name instead of the object identifier, and the request returns \"Insufficient privileges to complete the operation.\" What explains the failure?",
+				"statement": "The request fails because {{cause}}.",
+				"slots": [
+					{
+						"id": "cause",
+						"options": [
+							{
+								"id": "a",
+								"text": "the caller can't read Microsoft Entra ID, the lookup used to resolve the assignee"
+							},
+							{
+								"id": "b",
+								"text": "the caller can't read the subscription's resource groups, the lookup used to resolve the scope"
+							},
+							{
+								"id": "c",
+								"text": "the caller can't read the role definition, the lookup used to resolve the requested permissions"
+							},
+							{
+								"id": "d",
+								"text": "the caller can't read the policy assignments, the lookup used to resolve effective access"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"cause": "a"
+			},
+			"explanation": {
+				"correct": "Passing a display name makes Azure look the named account up in the directory. A caller such as a service principal has no permission to read Microsoft Entra ID by default, so that lookup fails and the command reports insufficient privileges. Granting the caller permission to read data in the directory fixes it, and with Azure CLI the same command can instead use the assignee object ID to skip the directory lookup altogether.",
+				"perChoice": {
+					"cause:b": "The scope isn't resolved by a directory lookup, and failing to read resource groups doesn't produce this message. The failing step is the directory lookup for the account named on the command line.",
+					"cause:c": "The role definition isn't resolved from a directory lookup triggered by a display name. Naming the account sends the request to the directory first, and that is where it breaks.",
+					"cause:d": "Policy assignments aren't consulted to resolve a named account, and they have nothing to do with this message. Only the directory lookup is involved, and supplying the object ID bypasses it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-steps"
+				}
+			],
+			"subtopics": [
+				"service-principal-assignments",
+				"directory-lookup"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GA6VA0Q8X4FESAX3MHC20R",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "On the Manage privileged role assignments page for subscription sub-contoso-prod, one of the privileged grants at that scope has to stay where it is but stop reaching every resource group and resource below it. Which action should you take?",
+				"statement": "You should {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "put a condition on it"
+							},
+							{
+								"id": "b",
+								"text": "move it to a narrower scope"
+							},
+							{
+								"id": "c",
+								"text": "make it expire on a set date"
+							},
+							{
+								"id": "d",
+								"text": "swap it for a custom role definition"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "The documentation describes two things you can do with a privileged assignment on that page: put a condition on it so the grant is constrained, or remove the assignment. Since the grant has to remain in place and simply stop covering everything beneath the scope, limiting the existing grant is the action to take.",
+				"perChoice": {
+					"action:b": "Relocating a grant isn't one of the actions this page offers for a privileged assignment, and moving a subscription-level grant downward would change where it applies rather than trimming what it covers underneath.",
+					"action:c": "Ending the grant on a date would stop it altogether, including for the resources that still need it, so it doesn't meet the requirement to keep the grant in place.",
+					"action:d": "Replacing the role definition isn't offered on this page either. The two documented actions for an existing privileged assignment are to limit it with a condition or to remove it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-list-portal"
+				}
+			],
+			"subtopics": [
+				"privileged-role-assignments",
+				"conditions"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GA6Z7ZPWS66FA66VXFZYY6",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "A colleague opens the Azure role assignments pane for a group in your tenant and sees an empty list, while you see three grants at the subscription. Before you investigate anything else, which permission should you check on the colleague's account?",
+				"statement": "Listing the grants shown on that pane requires {{permission}}.",
+				"slots": [
+					{
+						"id": "permission",
+						"options": [
+							{
+								"id": "a",
+								"text": "Microsoft.Authorization/roleAssignments/read, such as Reader"
+							},
+							{
+								"id": "b",
+								"text": "Microsoft.Authorization/roleAssignments/write, such as Owner"
+							},
+							{
+								"id": "c",
+								"text": "Microsoft.Authorization/roleAssignments/delete, such as Role Based Access Control Administrator"
+							},
+							{
+								"id": "d",
+								"text": "Microsoft.Authorization/roleDefinitions/read, such as Reader"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"permission": "a"
+			},
+			"explanation": {
+				"correct": "The pane shows only the assignments the signed-in account is allowed to read, and the documented prerequisite for listing role assignments is Microsoft.Authorization/roleAssignments/read — a permission the Reader role carries. The write and delete permissions govern changing and removing assignments, and roleDefinitions/read concerns the role definitions rather than the assignments made from them.",
+				"perChoice": {
+					"permission:b": "The write permission lets a holder change assignments, but creating grants is not the prerequisite for seeing the list. Note that the pane also only surfaces assignments the account can read, so this permission alone doesn't explain a missing list.",
+					"permission:c": "The delete permission covers removing an assignment, which is a different action from viewing one, so it wouldn't populate the pane for the colleague.",
+					"permission:d": "roleDefinitions/read covers reading the role definitions themselves, not the assignments at a scope, so it isn't the documented prerequisite for this list."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-list-portal"
+				}
+			],
+			"subtopics": [
+				"listing-role-assignments",
+				"read-permission"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5GAHFXK47QWC7WZXQ4XG7QS",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are auditing access for a security principal named 'data-team'. You need to view every grant held by it across every scope in one place, instead of opening each subscription and each resource container separately. From the portal's main menu, which navigation path leads directly to that consolidated list?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Where the grant was made",
+						"What was granted"
+					],
+					"rows": [
+						[
+							"Subscription sub-prod",
+							"Storage Blob Data Reader"
+						],
+						[
+							"Resource container rg-data (inside sub-prod)",
+							"Reader"
+						],
+						[
+							"Root management container mg-root",
+							"Reader"
+						]
+					]
+				},
+				"statement": "You should open Microsoft Entra ID, select {{slot1}}, pick 'data-team', and then choose {{slot2}} to display its grants across every scope.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "Groups"
+							},
+							{
+								"id": "b",
+								"text": "Users"
+							},
+							{
+								"id": "c",
+								"text": "Roles and administrators"
+							},
+							{
+								"id": "d",
+								"text": "Applications"
+							}
+						]
+					},
+					{
+						"id": "slot2",
+						"options": [
+							{
+								"id": "a",
+								"text": "Azure role assignments"
+							},
+							{
+								"id": "b",
+								"text": "Properties"
+							},
+							{
+								"id": "c",
+								"text": "Members"
+							},
+							{
+								"id": "d",
+								"text": "Owners"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a",
+				"slot2": "a"
+			},
+			"explanation": {
+				"correct": "From the portal menu, opening Microsoft Entra ID, then Groups, selecting the principal, and clicking the Azure role assignments tab produces a list of every Azure RBAC grant that principal holds at every scope (management group, subscription, resource group, or resource). That single view avoids opening the Access control (IAM) pane at each subscription and each resource container separately.",
+				"perChoice": {
+					"slot1:b": "Users lists individual Microsoft Entra user accounts, not security groups, so the principal 'data-team' would not be located there.",
+					"slot1:c": "Roles and administrators inside Microsoft Entra ID lists Microsoft Entra directory roles, not Azure RBAC role assignments held by the principal.",
+					"slot1:d": "Applications lists registered app objects in Microsoft Entra ID, not the security groups whose grants need auditing.",
+					"slot2:b": "Properties on a group's page shows the directory settings of the group itself (name, type, description) and does not enumerate Azure RBAC grants.",
+					"slot2:c": "Members shows the user accounts that belong to the group; it does not list which Azure scopes have granted the group access.",
+					"slot2:d": "Owners shows who manages the group object itself, not the Azure resources the group has been granted access to."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-list-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/rbac-and-directory-admin-roles"
+				}
+			],
+			"subtopics": [
+				"list-role-assignments",
+				"entra-id-portal-navigation"
+			],
+			"reviewed": false
+		}
+	]
+}

@@ -1,0 +1,1639 @@
+{
+	"skill": "compute.vm-availability",
+	"questions": [
+		{
+			"id": "q_01M5R5M201FT3K3GE8B0ARZ91M",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an availability set with the configuration shown below. You need to add a sixth virtual machine without changing the set's domain configuration. Which placement should you expect for the new virtual machine?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Current member count",
+							"5"
+						],
+						[
+							"Update domains",
+							"5"
+						],
+						[
+							"Fault domains",
+							"3"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "The same update domain as the first virtual machine"
+					},
+					{
+						"id": "b",
+						"text": "The same update domain as the second virtual machine"
+					},
+					{
+						"id": "c",
+						"text": "The same update domain as the third virtual machine"
+					},
+					{
+						"id": "d",
+						"text": "A new update domain beyond the configured five"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "With five update domains, Azure cycles through the existing update-domain assignments as additional virtual machines are added. The sixth member therefore occupies the update domain assigned to the first member; the seventh would occupy the update domain assigned to the second member.",
+				"perChoice": {
+					"b": "The second virtual machine's update domain is reused by the seventh member in a five-domain cycle, not by the sixth.",
+					"c": "The third virtual machine's update domain is reused later in the five-domain cycle, not by the sixth member.",
+					"d": "The update-domain count is fixed when the availability set is created. Because this set has five update domains, an additional member reuses one of them instead of creating another domain."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability-set-overview"
+				}
+			],
+			"subtopics": [
+				"availability-sets",
+				"update-domains"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R5Q95SSM8JEW5ATH1KX5J4",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an application tier made up of three virtual machines running in the West Europe region. Every machine is deployed as a regional resource with no zone selected, so when a datacenter in that region had an outage, the whole tier went offline. Corporate data residency rules keep this workload inside the current region. You need the tier to stay available if a single availability zone is lost. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"region\": \"West Europe\",\n  \"zonesInRegion\": 3,\n  \"instances\": [\n    { \"name\": \"vm-app-01\", \"zone\": null, \"availabilitySet\": null },\n    { \"name\": \"vm-app-02\", \"zone\": null, \"availabilitySet\": null },\n    { \"name\": \"vm-app-03\", \"zone\": null, \"availabilitySet\": null }\n  ],\n  \"traffic\": \"Standard tier, fronted by an Azure Load Balancer\"\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add the instances to an availability set so the deployment is placed in separate fault domains and update domains."
+					},
+					{
+						"id": "b",
+						"text": "Add instances with explicit zone placement so the deployment spans more than one availability zone."
+					},
+					{
+						"id": "c",
+						"text": "Add a load balancer health probe with automatic failover so the deployment moves traffic to healthy instances."
+					},
+					{
+						"id": "d",
+						"text": "Add a secondary region and replicate the instances with Azure Site Recovery so the deployment can fail over when a zone is unavailable."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "Availability zones are physically separate areas inside a region with independent power, network, and cooling. Because these three machines are deployed as regional resources with no zone selected, Azure may place them in any zone and a zone failure can interrupt all of them at once; a regional deployment can even have no zone placement at all. A deployment becomes zone-resilient when separate instances of a zonal resource occupy at least two zones, so the instances have to be placed on purpose in more than one availability zone, which is what the correct option does. West Europe supports three availability zones, so the instances can be split across them while staying inside the region required by the data residency rules. Availability sets would only give fault-domain and update-domain separation (the correct option, a load balancer health probe cannot help when every instance in the zone is down (the correct option, and Azure Site Recovery is a regional disaster recovery mechanism rather than in-region zone separation (the correct option.",
+				"perChoice": {
+					"a": "Availability sets arrange fault domains and update domains. That protects the tier against physical hardware, power, and network faults inside a datacenter, but the VMs of a set still sit in the zone they were deployed into, so a zone failure can take the whole tier down. It also does not answer the stated requirement, which is surviving the loss of an availability zone.",
+					"c": "A health probe with automatic failover only redirects traffic between instances that are still healthy. Since all three instances are affected together by a zone failure, there is no healthy instance left to receive the traffic, so this change would not keep the tier available during a zone outage.",
+					"d": "Azure Site Recovery replicates Azure VMs to a secondary location and supports failover and failback, which addresses a regional disaster rather than the loss of a single zone in the current region. It is also excluded here because data residency rules require the workload to stay in the current region."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/reliability/availability-zones-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability-set-overview"
+				}
+			],
+			"subtopics": [
+				"availability-zones",
+				"zone-resilience",
+				"availability-sets"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R5T8K9185ASWBFFY4EM50X",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an availability set with the virtual machine assignments shown below. You need to identify the pair that could lose service together because of a failure of shared power or networking equipment. Which pair should you select?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Virtual machine",
+						"Fault domain",
+						"Update domain"
+					],
+					"rows": [
+						[
+							"api-01",
+							"0",
+							"0"
+						],
+						[
+							"api-02",
+							"1",
+							"1"
+						],
+						[
+							"api-03",
+							"0",
+							"2"
+						],
+						[
+							"api-04",
+							"2",
+							"3"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "api-01 and api-03"
+					},
+					{
+						"id": "b",
+						"text": "api-01 and api-02"
+					},
+					{
+						"id": "c",
+						"text": "api-02 and api-04"
+					},
+					{
+						"id": "d",
+						"text": "api-03 and api-04"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "api-01 and api-03 are both assigned to fault domain 0. VMs in the same fault domain share power and network infrastructure, so a failure of that shared equipment can affect both VMs together.",
+				"perChoice": {
+					"b": "api-01 is in fault domain 0, while api-02 is in fault domain 1. They are therefore separated from shared power and network failures.",
+					"c": "api-02 is in fault domain 1, while api-04 is in fault domain 2. They do not share the fault domain associated with shared power and network equipment.",
+					"d": "api-03 is in fault domain 0, while api-04 is in fault domain 2. They are in different fault domains and therefore do not share that fault domain's underlying infrastructure."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability-set-overview"
+				}
+			],
+			"subtopics": [
+				"availability-sets",
+				"fault-domains"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R5XHXT19CF523SK3KA4HCJ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an order API service built from three Linux virtual machines in the West Europe region, where this workload can be placed in three availability zones. The current configuration of the three machines is shown below. You need the service to keep serving customer requests if the zone that hosts it becomes unavailable. Which arrangement should you apply?",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "$ az vm list --resource-group rg-orders --output table\nName          ResourceGroupName  Location     VmSize          ProvisioningState  AvailabilitySetId\n------------  -----------------  -----------  --------------  -----------------  ------------------\nvm-order-01   rg-orders          westeurope   Standard_D4s_v5  Succeeded           /subscriptions/…/as-orders\nvm-order-02   rg-orders          westeurope   Standard_D4s_v5  Succeeded           /subscriptions/…/as-orders\nvm-order-03   rg-orders          westeurope   Standard_D4s_v5  Succeeded           /subscriptions/…/as-orders\n\n$ az vm show --resource-group rg-orders --name vm-order-01 --query \"{zone:zones[0], faultDomain:platformFaultDomain, updateDomain:platformUpdateDomain}\"\n{\n  \"zone\": \"1\",\n  \"faultDomain\": 0,\n  \"updateDomain\": 0\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Move the three instances into an availability set with three fault domains inside one zone in the region."
+					},
+					{
+						"id": "b",
+						"text": "Keep all three instances in one zone in the region and add a fourth instance there."
+					},
+					{
+						"id": "c",
+						"text": "Spread the instances across more than one zone in the region so that separate copies run in different zones."
+					},
+					{
+						"id": "d",
+						"text": "Reduce the service to a single instance in the region and let Azure move it to another zone automatically."
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "All three virtual machines currently sit in Zone 1 of West Europe, so losing that zone removes every member of the service at once. West Europe offers three availability zones for this workload, so placing separate instances in more than one zone makes the deployment zone-resilient: when one zone fails, the instances in the remaining zones continue to serve requests. The machines already belong to an availability set, which separates them across fault domains for rack, power and network faults inside a datacenter, but it does not move them out of the zone they were placed in and therefore cannot carry the service through a zone outage.",
+				"perChoice": {
+					"a": "An availability set assigns members separate fault and update domains so that hardware, power and network faults do not take down everything at once, but every member stays in the zone where the set was placed. The machines would keep sharing the fate of Zone 1, so the service would still go offline if that zone were lost.",
+					"b": "Adding a fourth machine in the same zone only adds another copy inside the same failure domain. Extra copies concentrated in one zone disappear together with that zone; zone resilience requires separate instances in at least two zones.",
+					"d": "Azure does not automatically relocate a virtual machine to another zone when a zone fails, and a single instance removes the copy protection entirely. The workload has to be deliberately placed in more than one zone to survive the loss of one."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/reliability/availability-zones-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability-set-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability"
+				}
+			],
+			"subtopics": [
+				"availability-zones",
+				"zone-resilience",
+				"availability-sets"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R62XGENCYTDTMTGK2DMN7D",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You are creating a new availability set for a stateless web tier. Two conditions apply: a maintenance restart must never take down more than one of the tier's virtual machines at a time, and the members must be distributed over the greatest number of fault domains the platform supports. The configuration that creates the set, and the size of the tier, are shown below. The deployment has to succeed on the first attempt, because the team will not rebuild the set later. Which values should you use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Configuration item",
+						"Value in the deployment script"
+					],
+					"rows": [
+						[
+							"Availability set name",
+							"as-web-tier"
+						],
+						[
+							"Fault domains requested",
+							"5"
+						],
+						[
+							"Update domains requested",
+							"5"
+						],
+						[
+							"Virtual machines that will be attached to the set",
+							"12"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Create the availability set with 3 fault domains and 12 update domains"
+					},
+					{
+						"id": "b",
+						"text": "Create the availability set with 5 fault domains and 12 update domains"
+					},
+					{
+						"id": "c",
+						"text": "Create the availability set with 3 fault domains and 5 update domains"
+					},
+					{
+						"id": "d",
+						"text": "Create the availability set with 2 fault domains and 20 update domains"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "An availability set accepts no more than three fault domains and no more than twenty update domains, and both counts are locked in when the set is created, so the script has to carry valid values from the start. The tier contains twelve virtual machines, and update domains are the groupings of machines that Azure may restart together, so a count of twelve gives every machine a domain of its own and a maintenance restart affects a single machine only. Three fault domains is the highest number the platform allows, which meets the second condition, and twelve update domains stays well under the twenty-domain ceiling. The values requested in the script are therefore rejected: five fault domains is above the ceiling, and five update domains would force the sixth machine onward to share a domain with earlier members.",
+				"perChoice": {
+					"b": "Five fault domains is above the limit of three fault domains per availability set, so the set cannot be created with that layout and the deployment fails before any machine is attached. The update domain count of twelve is acceptable, but the fault domain value still has to be brought within the ceiling.",
+					"c": "Three fault domains is acceptable, but twelve machines spread over only five update domains means the groups of machines that restart together are larger than one: the sixth machine shares the domain of the first, the seventh the second, and so on. A maintenance restart would then interrupt more than one machine at a time, which the first condition forbids.",
+					"d": "Twenty update domains is within the maximum of twenty, but only two fault domains leaves the members less separated from each other's shared power and network hardware than the platform allows, and the requirement calls for the greatest number of fault domains the platform supports, which is three. It also spreads twelve machines over twenty update domains, leaving eight groups with no member at all."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability-set-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability"
+				}
+			],
+			"subtopics": [
+				"availability-sets",
+				"fault-domains",
+				"update-domains"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R688W3ZQPHDA7F6SW8SB4V",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your company has taken over a business that runs on its own Azure subscription. Both teams host the same web tier in the same region, and each team placed its instances in the zone that its own tooling labels as 1. Because the logical numbering is handed out to every subscription separately, the two zone 1 labels do not necessarily point at the same physical datacenter. The response below is what the first subscription returns for that region. You need one operation that shows how the zone numbering of the two subscriptions lines up, before the teams design a combined failover. Which approach should you take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"value\": [\n    {\n      \"id\": \"/subscriptions/3f1c0d9e-8a44-4c21-9b77-6d0a51e2c811/locations/westeurope\",\n      \"name\": \"westeurope\",\n      \"displayName\": \"West Europe\",\n      \"availabilityZoneMappings\": [\n        { \"logicalZone\": \"1\", \"physicalZone\": \"westeurope-zone1\" },\n        { \"logicalZone\": \"2\", \"physicalZone\": \"westeurope-zone2\" },\n        { \"logicalZone\": \"3\", \"physicalZone\": \"westeurope-zone3\" }\n      ]\n    }\n  ]\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Use the Check Zone Peers API for both subscriptions, and enable the Microsoft.Resources/AvailabilityZonePeering feature on each subscription before calling it."
+					},
+					{
+						"id": "b",
+						"text": "Use the Check Zone Peers API for both subscriptions, and call it without enabling the Microsoft.Resources/AvailabilityZonePeering feature, because that operation works on any subscription."
+					},
+					{
+						"id": "c",
+						"text": "Use the List Locations API for both subscriptions, and enable the Microsoft.Resources/AvailabilityZonePeering feature on each subscription before calling it."
+					},
+					{
+						"id": "d",
+						"text": "Use the List Locations API for one subscription only, and enable the Microsoft.Resources/AvailabilityZonePeering feature on each subscription before calling it."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The Check Zone Peers API is the operation built for this job: it returns the zone mappings for multiple subscriptions so you can see how the logical numbering of each subscription lines up with the physical datacenters. Microsoft requires the Microsoft.Resources/AvailabilityZonePeering feature to be enabled on the subscriptions before this operation can be used, so the feature must be registered first. That is exactly what the correct option describes.",
+				"perChoice": {
+					"b": "The cross-subscription comparison operation is not available on any subscription by default: the Microsoft.Resources/AvailabilityZonePeering feature must be enabled on the subscriptions involved before the call succeeds. Skipping the registration makes the operation fail.",
+					"c": "The List Locations API returns the zone mappings of a single Azure subscription per call. Calling it for both subscriptions gives you two separate per-subscription payloads that you would have to line up yourself, instead of one operation that compares the mappings across subscriptions.",
+					"d": "Two problems. First, the List Locations API reports the mappings of only the subscription you call it for, so it never shows how the second subscription is numbered. Second, you cannot assume the logical numbers line up: each subscription is assigned its own mapping when it is created, so logical zone 1 in one subscription can point at a different physical datacenter than logical zone 1 in another."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/reliability/availability-zones-overview"
+				}
+			],
+			"subtopics": [
+				"availability-zones",
+				"cross-subscription-zone-mapping",
+				"logical-physical-zones"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R6CW161R5DEA37D354DDBW",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a storefront application that stores customer session state in a cache product. The details of the cache are shown below. You need the application to keep serving customers when the zone that hosts the cache becomes unavailable. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Service",
+							"Third-party cache product for customer session state"
+						],
+						[
+							"Instance count",
+							"1"
+						],
+						[
+							"Availability zone",
+							"Zone 1"
+						],
+						[
+							"Region",
+							"West Europe, with 3 availability zones available"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add an availability set around the existing cache instance so the platform spreads its hardware across fault domains."
+					},
+					{
+						"id": "b",
+						"text": "Deploy a second cache instance in another zone of the same region."
+					},
+					{
+						"id": "c",
+						"text": "Move the cache to a region that offers availability zones and keep it as a zonal instance."
+					},
+					{
+						"id": "d",
+						"text": "Keep the cache instance in place but front it with a load balancer that has a zone-redundant configuration."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "The cache is a single instance pinned to one zone, so losing that zone takes the cache offline. A deployment becomes zone-resilient either by using a zone-redundant service or by running separate instances of a zonal resource in at least 2 zones. Adding a second cache instance in another zone of the same region meets that condition, and West Europe offers 3 zones so the new instance has a home. In practice the two instances sit behind the load balancer with health checking so traffic moves to whichever instance is healthy.",
+				"perChoice": {
+					"a": "An availability set spreads its members over fault domains and update domains and limits hardware, power, and network failures, but it does not carry a deployment across availability zones; some shared-infrastructure failures still cross its fault domains. It therefore cannot keep the cache serving when the zone hosting it is lost.",
+					"c": "Relocating the workload leaves the underlying exposure in place: one instance pinned to a single zone is lost whenever that zone is lost, in the new region as well. Zone resilience requires either a zone-redundant service or separate instances spread over at least 2 zones.",
+					"d": "A load balancer only distributes connections among healthy backends. With a single instance in one zone, the failure of that zone leaves no backend at all, so the front end stays reachable while the cache itself is gone."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/reliability/availability-zones-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability-set-overview"
+				}
+			],
+			"subtopics": [
+				"availability-zones",
+				"zone-resilience"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R6FWE24A97F2HTG8WV8MDJ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an availability set that currently contains web-01. Your deployment runbook is shown below. You need to keep the two members from being assigned to the same shared power and networking equipment. Which deployment sequence should you use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Step",
+						"Action",
+						"Resulting state"
+					],
+					"rows": [
+						[
+							"1",
+							"Create web-01 in web-set",
+							"Running"
+						],
+						[
+							"2",
+							"Stop and deallocate web-01",
+							"Stopped and deallocated"
+						],
+						[
+							"3",
+							"Create web-02 in web-set",
+							"Running"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Leave web-01 running until web-02 is created, then check the Fault Domain column for separate placements."
+					},
+					{
+						"id": "b",
+						"text": "Deallocate web-01 before web-02 is created, then check the Update Domain column for separate placements."
+					},
+					{
+						"id": "c",
+						"text": "Stop web-01 before web-02 is created, then check the Update Domain column for separate placements."
+					},
+					{
+						"id": "d",
+						"text": "Leave web-01 running until web-02 is created, then check the Update Domain column for separate placements."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The shown sequence can cause web-02's OS disk to be created in the same fault domain as web-01. To avoid this, do not stop or deallocate a VM between deployments, and use the Fault Domain column to confirm the placement.",
+				"perChoice": {
+					"b": "Deallocating web-01 before deploying web-02 is one of the sequences that can cause the two members to share a fault domain. The Update Domain column shows maintenance restart grouping, not whether members share power and networking equipment.",
+					"c": "Stopping web-01 before deploying web-02 can also cause the new member's OS disk to share the first member's fault domain. Update Domain values do not verify separation from shared physical equipment.",
+					"d": "Keeping web-01 running until web-02 is created is appropriate, but the Update Domain column is not the property to check for shared physical infrastructure. The Fault Domain column provides that confirmation."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability-set-overview"
+				}
+			],
+			"subtopics": [
+				"availability-set-deployment",
+				"fault-domain-placement"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R6KCQFW6D6A4B3T4M4SEFM",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have audited how the compute components of a business application are placed in the East US region, which offers three availability zones. The audit output is shown below. You need to record for each component whether it would keep serving traffic if one availability zone in that region went offline, so that the architecture board can see which parts of the application would be affected. Which resilience category does each component belong to?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Component",
+						"Placement found in the audit"
+					],
+					"rows": [
+						[
+							"API tier",
+							"Two virtual machines; the first has its zone set to 1 and the second has its zone set to 2"
+						],
+						[
+							"Web tier",
+							"Three virtual machines; every machine has its zone set to 2"
+						],
+						[
+							"Reporting job",
+							"A virtual machine with its zone left unset"
+						],
+						[
+							"Batch processor",
+							"Three virtual machines that are members of an availability set in the region"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "api-tier",
+						"text": "API tier"
+					},
+					{
+						"id": "web-tier",
+						"text": "Web tier"
+					},
+					{
+						"id": "reporting-job",
+						"text": "Reporting job"
+					},
+					{
+						"id": "batch-processor",
+						"text": "Batch processor"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Protected against the loss of a single zone"
+					},
+					{
+						"id": "s2",
+						"label": "Confined to one zone; an outage of that zone stops it"
+					},
+					{
+						"id": "s3",
+						"label": "Deployed with no zone; Azure may put it in any zone"
+					},
+					{
+						"id": "s4",
+						"label": "Separated by fault domains only; zone isolation is not provided"
+					}
+				]
+			},
+			"key": {
+				"s1": "api-tier",
+				"s2": "web-tier",
+				"s3": "reporting-job",
+				"s4": "batch-processor"
+			},
+			"explanation": {
+				"correct": "The API tier runs separate instances in zone 1 and zone 2, and separate instances of a zonal resource in more than one zone make the deployment zone-resilient, so it sits with the components that are protected against the loss of a single zone. The web tier's three machines all have their zone set to 2, so the tier is confined to that one zone and does not survive an outage of zone 2. The reporting job is created without a zone, which makes it a nonzonal or regional deployment that Azure may place in any zone of the region, so a zone outage can take it down. The batch processor's machines are members of an availability set, which spreads them across fault domains for hardware, power and network separation inside the region, but such a grouping does not isolate the workload from zone-level outages.",
+				"perChoice": {
+					"api-tier": "Belongs with the category protected against the loss of a single zone: the two machines sit in different availability zones (1 and 2), and separate instances of a zonal resource in at least two zones make the deployment zone-resilient, so the tier keeps serving if one of those zones goes offline.",
+					"web-tier": "Belongs with the category confined to one zone: all three machines have their zone set to 2, so the tier is a zonal deployment. It is isolated from faults in other zones, but it does not automatically survive an outage of zone 2 and you are responsible for any failover.",
+					"reporting-job": "Belongs with the category deployed with no zone: a virtual machine created with no zone selected is a nonzonal or regional deployment, and Azure might place it in any zone in the region, so an outage of the zone it lands in could take it down.",
+					"batch-processor": "Belongs with the category separated by fault domains only: the members of an availability set are distributed over fault domains, which limits physical-hardware, power and network faults inside the region, but the set gives no zone isolation, so a zone-level outage still affects the whole group."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/reliability/availability-zones-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability-set-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability"
+				}
+			],
+			"subtopics": [
+				"availability-zones",
+				"availability-sets",
+				"zone-resilience"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R6PBFK1MWRW3XXDB7YV3TD",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have four deployment requests shown below. You need to assign the most suitable configuration to each request. Which configuration should you use for each request?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Request",
+						"Environment",
+						"Required outcome"
+					],
+					"rows": [
+						[
+							"A",
+							"West Europe; three availability zones",
+							"All members must stay pinned to the same availability zone to minimize network delay."
+						],
+						[
+							"B",
+							"A region without availability zones",
+							"Members must be isolated from shared power and network failures."
+						],
+						[
+							"C",
+							"Japan East; three availability zones",
+							"Loss of a facility must not stop the whole tier."
+						],
+						[
+							"D",
+							"Canada Central",
+							"The service must remain available after a disruption that affects the entire region."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Place every instance in a selected availability zone"
+					},
+					{
+						"id": "i2",
+						"text": "Group the instances in an availability set"
+					},
+					{
+						"id": "i3",
+						"text": "Distribute the instances across several availability zones"
+					},
+					{
+						"id": "i4",
+						"text": "Replicate to a secondary location with Azure Site Recovery"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Request A"
+					},
+					{
+						"id": "s2",
+						"label": "Request B"
+					},
+					{
+						"id": "s3",
+						"label": "Request C"
+					},
+					{
+						"id": "s4",
+						"label": "Request D"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Request A calls for deliberately pinning the instances to one selected availability zone because the members need the shortest network distance; this placement does not by itself keep the service running if that zone is lost. Request B needs an availability set because the region has no availability zones, while fault domains and update domains separate members from correlated power and network failures. Request C needs instances distributed across several availability zones so that members outside the failed facility remain available. Request D needs Azure Site Recovery because using multiple zones cannot cover a complete regional disruption; Site Recovery replicates the VMs to a secondary location and supports failover.",
+				"perChoice": {
+					"i1": "Request A. Keeping the instances in one selected zone meets the tight network-distance requirement, although that zone's outage would still affect them.",
+					"i2": "Request B. An availability set distributes members across fault domains and update domains, providing infrastructure-failure separation where availability zones are unavailable.",
+					"i3": "Request C. Instances placed in different availability zones can continue serving when one zone or its facility fails.",
+					"i4": "Request D. Azure Site Recovery replicates Azure VMs to a secondary location and supports failover when a disruption affects the entire primary region."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/reliability/availability-zones-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability-set-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability"
+				}
+			],
+			"subtopics": [
+				"availability-zones",
+				"availability-sets",
+				"cross-region-failover"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R6X3NNW98PJEZJV14P95CG",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have four workloads with the requirements recorded for each of them, shown below. You need to match every workload to the configuration that satisfies its requirement, so the operations team does not promise more protection than the platform delivers. Which configuration should you assign to each workload?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Workload",
+						"Recorded requirement"
+					],
+					"rows": [
+						[
+							"Web tier",
+							"Its members must not sit behind the same power source and network switch, they must be spread over as many separate shared-hardware groups as the platform allows in this region, and a planned restart must never take down more than one member at a time."
+						],
+						[
+							"API tier",
+							"All of its members run in the same physically separate area inside the region, so losing that area stops the whole tier. The tier must remain available if that area is lost."
+						],
+						[
+							"Finance platform",
+							"All of its compute and data live in one region today, and the business has agreed that losing that whole region must not stop the service."
+						],
+						[
+							"Reporting fleet",
+							"The team wants a single place to configure many identical instances, push changes to them, and let capacity grow and shrink automatically as demand changes."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "An availability set with three fault domains and twenty update domains"
+					},
+					{
+						"id": "b",
+						"text": "Two virtual machines placed in two different availability zones"
+					},
+					{
+						"id": "c",
+						"text": "Azure Site Recovery replication to a secondary location"
+					},
+					{
+						"id": "d",
+						"text": "A virtual machine scale set in flexible orchestration mode"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Web tier"
+					},
+					{
+						"id": "s2",
+						"label": "API tier"
+					},
+					{
+						"id": "s3",
+						"label": "Finance platform"
+					},
+					{
+						"id": "s4",
+						"label": "Reporting fleet"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d"
+			},
+			"explanation": {
+				"correct": "The web tier needs separation from shared power and network hardware plus staggered restarts, which is what an availability set with three fault domains and twenty update domains provides (three fault domains is the maximum and twenty update domains is the maximum; both counts are fixed when the set is created, and members are spread over the fault domains so no two share a power source and network switch, while maintenance restarts one update domain at a time). The API tier must survive the loss of the area of the region that hosts it, which requires separate instances in at least two availability zones, because a deployment is zone-resilient when zonal instances occupy two or more zones. The finance platform must survive the loss of a whole region, which availability zones cannot provide, so its virtual machines have to be replicated to a secondary location, and Azure Site Recovery does exactly that and supports failover and failback. The reporting fleet needs centralized configuration, change rollout, and automatic scaling of many identical instances, which a virtual machine scale set in flexible orchestration mode provides and which is the recommended option for high availability with the widest feature range.",
+				"perChoice": {
+					"a": "Web tier. An availability set reduces correlated failures by spreading members over separate groups of shared infrastructure: a fault domain groups virtual machines that share a power source and network switch, and members are distributed over up to three fault domains. Its update domains group the machines and hardware that can restart together, and maintenance restarts only one domain at a time, so a planned restart never interrupts more than one member at once. The set permits at most three fault domains and twenty update domains, and both counts are fixed at creation, which is why this option shows the maximum values.",
+					"b": "API tier. Spreading separate instances over at least two availability zones is what makes a deployment survive the loss of one zone; a deployment is zone-resilient when separate instances of a zonal resource occupy two or more zones. Zones are physically separate areas with independent power, network, and cooling, and they offer the strongest reliability of the available options, so moving the members out of the single area they share today satisfies the requirement.",
+					"c": "Finance platform. Availability zones do not protect against a full regional outage, so a workload that must keep serving after its whole region is lost needs a copy in another region. Azure Site Recovery replicates virtual machines to a secondary location and then supports failover and failback, which is what the business requirement calls for.",
+					"d": "Reporting fleet. A virtual machine scale set in flexible orchestration mode is the recommended choice for high availability with the widest feature range: it centralizes management, configuration, change rollout, and automatic scaling, which matches the requirement for one place to configure many identical instances and let capacity grow and shrink automatically. A scale set carries no separate resource charge; you pay for each instance created."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability-set-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/reliability/availability-zones-overview"
+				}
+			],
+			"subtopics": [
+				"availability-sets",
+				"availability-zones",
+				"high-availability-design"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R71NS7BS69ZWVB9WSHQMTY",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a web service hosted by an availability set. You need to document how planned maintenance behaves so the operations team can update its runbook. Which statement should you use for each operational question?",
+				"items": [
+					{
+						"id": "i1",
+						"text": "A single update domain is processed at any moment"
+					},
+					{
+						"id": "i2",
+						"text": "The active update domain has 30 minutes to recover"
+					},
+					{
+						"id": "i3",
+						"text": "Update domains are always visited in ascending numerical sequence"
+					},
+					{
+						"id": "i4",
+						"text": "The next update domain is not required to follow an ascending sequence"
+					},
+					{
+						"id": "i5",
+						"text": "All members of the active update domain restart together"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Concurrency limit for a maintenance cycle"
+					},
+					{
+						"id": "s2",
+						"label": "Time allowed for the current update domain before another cycle starts"
+					},
+					{
+						"id": "s3",
+						"label": "Selection pattern used by Azure for the remaining update domains"
+					},
+					{
+						"id": "s4",
+						"label": "Effect on virtual machines assigned to the same update domain"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i4",
+				"s4": "i5"
+			},
+			"explanation": {
+				"correct": "Azure performs maintenance for only one update domain at a time. The domain undergoing maintenance has 30 minutes to recover before another restart begins. Azure may choose the remaining domains in an order that is not sequential, and virtual machines assigned to the same update domain can restart together. The statement that the domains are always visited in ascending numerical sequence does not match Azure's behavior.",
+				"perChoice": {
+					"i1": "Use this for the concurrency question: only one update domain is maintained at a time.",
+					"i2": "Use this for the recovery-time question: a domain that has been restarted has 30 minutes to recover before another restart begins.",
+					"i3": "This statement does not fit any operational question because Azure does not guarantee that update domains are visited in ascending numerical order.",
+					"i4": "Use this for the selection-order question: the next update domain does not have to follow an ascending sequence.",
+					"i5": "Use this for the grouping question: virtual machines assigned to the same update domain can restart together."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability-set-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability"
+				}
+			],
+			"subtopics": [
+				"availability-sets",
+				"update-domains",
+				"maintenance-planning"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R7BMMMQKWCRY5BCX9VVV5D",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are assembling the review notes that accompany every high availability deployment request in your company. Each note is one question an engineer must be able to answer about the platform, and the facts your team collected fill in those notes so that the design and the customer commitments stay accurate. The request under review and the collected facts are shown below. You need to file each fact under the question it answers.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Deployment request under review\n--------------------------------\nTarget region ....... East US 2\nCompute instances .. Windows virtual machines with managed disks\nGrouping per tier .. One availability set\nTier size .......... Up to five virtual machines per tier"
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Most regions in the published zone table list three zones, but East US 2 lists four."
+					},
+					{
+						"id": "i2",
+						"text": "Members spread over at least two zones keep serving when one zone is lost, while members confined to a single zone do not."
+					},
+					{
+						"id": "i3",
+						"text": "In a region that uses managed disks, the platform separates the virtual machines over either two or three fault domains."
+					},
+					{
+						"id": "i4",
+						"text": "A group created for high availability holds no more than twenty update domains, and that total is fixed once the group exists."
+					},
+					{
+						"id": "i5",
+						"text": "Two virtual machines in one group meet the 99.95% availability commitment, and the group adds no extra cost."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "How many zones are offered in the region named in the request"
+					},
+					{
+						"id": "s2",
+						"label": "What happens to the tier if one zone of the region goes offline"
+					},
+					{
+						"id": "s3",
+						"label": "How many groups can the virtual machines be placed in so each one has its own power and networking gear in a region"
+					},
+					{
+						"id": "s4",
+						"label": "How many groups the service restarts one by one during maintenance, and whether the count can be changed later"
+					},
+					{
+						"id": "s5",
+						"label": "How many machines the written service level requires of the team, and whether using the group changes what the team pays"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "Each fact answers exactly one review question. The zone table fact (i1) belongs to the count of zones offered in the requested region, which is four in East US 2 while most regions offer three. The zone-spreading fact (i2) belongs to the question about losing one zone, because instances placed in at least two zones keep serving that failure while instances confined to a single zone do not. The managed-disk fact (i3) belongs to the count of groups that give each machine its own power and networking gear, because fault domains are exactly those groups and a region offers either two or three of them when managed disks are used. The update-domain fact (i4) belongs to the maintenance question, since an availability set allows at most twenty update domains and that count cannot be changed after the set is created. The service-level and cost fact (i5) belongs to the last question, because two virtual machines in an availability set meet the 99.95% SLA and the set itself is not charged for.",
+				"perChoice": {
+					"i1": "Fits the slot about how many zones the requested region offers: the published zone table shows four zones for East US 2 while most regions list three, so the request's target region is the exception.",
+					"i2": "Fits the slot about what happens when one zone of the region goes offline: instances spread over at least two zones keep serving that outage, whereas instances confined to a single zone do not, because a zonal deployment in one zone provides no automatic zone-outage resiliency.",
+					"i3": "Fits the slot about how many groups the virtual machines can be placed in: fault domains are the groups of machines that share a power source and network switch, and with managed disks each region provides either two or three of them, so the answer depends on the region.",
+					"i4": "Fits the slot about the groups restarted one by one during maintenance: update domains are the groups of machines and hardware that can be restarted together, only one domain is restarted at a time, an availability set allows at most twenty of them, and that setting cannot be changed after the set is created, so the count can never be raised later.",
+					"i5": "Fits the slot about the written service level and what the group costs: two or more virtual machines in an availability set meet the 99.95% SLA, and using an availability set adds no extra charge because you pay only for the VM instances."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability-set-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/reliability/availability-zones-overview"
+				}
+			],
+			"subtopics": [
+				"availability-set-limits",
+				"availability-zones",
+				"fault-and-update-domains"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R7EG9GTBXJB0Z7S2P9QC62",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have four proposed deployments for a stateless virtual-machine tier shown below. You need to determine which requests Azure can implement as written and which include a configuration that prevents deployment. Which request should you place in each group?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Request",
+						"Set type",
+						"Fault domains",
+						"Update domains",
+						"Member disks"
+					],
+					"rows": [
+						[
+							"Request alpha",
+							"Managed availability set",
+							"2",
+							"20",
+							"Two VMs with managed disks"
+						],
+						[
+							"Request beta",
+							"Managed availability set",
+							"4",
+							"20",
+							"Two VMs with managed disks"
+						],
+						[
+							"Request gamma",
+							"Managed availability set",
+							"3",
+							"21",
+							"Two VMs with managed disks"
+						],
+						[
+							"Request delta",
+							"Managed availability set",
+							"3",
+							"20",
+							"One VM with an unmanaged disk"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "alpha",
+						"text": "Request alpha"
+					},
+					{
+						"id": "beta",
+						"text": "Request beta"
+					},
+					{
+						"id": "gamma",
+						"text": "Request gamma"
+					},
+					{
+						"id": "delta",
+						"text": "Request delta"
+					}
+				],
+				"slots": [
+					{
+						"id": "proceed",
+						"label": "No configuration change needed"
+					},
+					{
+						"id": "revise",
+						"label": "Configuration change required"
+					}
+				]
+			},
+			"key": {
+				"proceed": "alpha",
+				"revise": "beta"
+			},
+			"explanation": {
+				"correct": "Request alpha can be implemented as written: it stays within the permitted domain counts and uses managed disks for the members of a managed availability set. Requests beta and gamma exceed the fault-domain and update-domain limits, respectively. Request delta uses a disk type that a managed availability set does not accept.",
+				"perChoice": {
+					"alpha": "Place this request in the “No configuration change needed” group. It requests two fault domains and 20 update domains, which are within the supported limits, and both member VMs use managed disks.",
+					"beta": "Place this request in the “Configuration change required” group. An availability set permits at most three fault domains, so a request for four cannot be deployed as written.",
+					"gamma": "Place this request in the “Configuration change required” group. An availability set permits at most 20 update domains, so a request for 21 cannot be deployed as written.",
+					"delta": "Place this request in the “Configuration change required” group. A managed availability set accepts only VMs that use managed disks, so the unmanaged-disk member is incompatible with the requested set."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability-set-overview"
+				}
+			],
+			"subtopics": [
+				"availability-set-limits",
+				"managed-availability-sets"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R7JWJKQSW46976KWQHDJKV",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are re-architecting a stateless web tier that today runs as 12 Linux virtual machines in an availability set. After the change, the tier has to grow and shrink automatically with demand, has to let some instances start with their own command line instead of the shared one, and has to keep serving requests when one of the region's availability zones is lost. The design notes collected for the project are shown below. Which configuration should you create?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Target region",
+							"West Europe"
+						],
+						[
+							"Availability zones offered by the region",
+							"Three"
+						],
+						[
+							"Instances that need their own startup command",
+							"Three of 12"
+						],
+						[
+							"Capacity changes today",
+							"Requested by an engineer"
+						],
+						[
+							"Configuration and update rollout today",
+							"Performed on each virtual machine"
+						]
+					]
+				},
+				"statement": "The team should create a Virtual Machine Scale Set using {{orchestrationMode}} and {{zonePlacement}}.",
+				"slots": [
+					{
+						"id": "orchestrationMode",
+						"options": [
+							{
+								"id": "a",
+								"text": "flexible orchestration mode"
+							},
+							{
+								"id": "b",
+								"text": "uniform orchestration mode"
+							}
+						]
+					},
+					{
+						"id": "zonePlacement",
+						"options": [
+							{
+								"id": "a",
+								"text": "instances spread across all three availability zones of the region"
+							},
+							{
+								"id": "b",
+								"text": "instances spread across only one of the availability zones in the region"
+							},
+							{
+								"id": "c",
+								"text": "instances spread across three separate regions instead of one"
+							},
+							{
+								"id": "d",
+								"text": "no zone placement, so the platform chooses where the instances run"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"orchestrationMode": "a",
+				"zonePlacement": "a"
+			},
+			"explanation": {
+				"correct": "Microsoft recommends virtual machine scale sets with flexible orchestration mode for high availability, because they centralize management, updates, configuration and automatic scaling and offer the widest feature range; flexible orchestration mode is also the mode that lets individual instances differ, which the three instances needing their own startup command require. For zone placement, a deployment only keeps serving after a zone is lost when its instances occupy at least two zones, so spreading the instances across the three availability zones offered by West Europe satisfies the requirement, while a single zone or letting the platform pick a zone does not. A scale set adds no separate resource charge; you pay for each virtual machine instance it creates.",
+				"perChoice": {
+					"orchestrationMode:b": "Uniform orchestration mode creates every instance from a single image definition and applies the same configuration to all of them, so it cannot satisfy the requirement that three instances start with their own command line. Flexible orchestration mode is the configuration recommended for high availability, since it centralizes management, updates, configuration and automatic scaling and provides the widest feature range.",
+					"zonePlacement:b": "With every instance in a single zone, the loss of that zone takes the whole tier offline. Instances have to occupy at least two zones for the deployment to survive the loss of one zone.",
+					"zonePlacement:c": "The requirement is to survive the loss of one datacenter inside the region where the tier runs. Spreading the tier across several regions is a different design that adds cross-region cost and complexity, and it does not by itself provide the zone-level separation this project asks for within West Europe.",
+					"zonePlacement:d": "A regional deployment with no user-selected zone can be placed in any zone by the platform, so a zone outage can interrupt the entire tier. To keep serving after a zone loss, the instances must be placed in more than one zone."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability-set-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/reliability/availability-zones-overview"
+				}
+			],
+			"subtopics": [
+				"availability-zones",
+				"virtual-machine-scale-sets",
+				"high-availability"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R7MTTKWYJ0W8WPCG2HA96J",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are designing the compute tier for an order-matching engine that runs on Linux virtual machines inside a single region. The engine keeps its working data on each machine, and the team measured how much delay the trading protocol can absorb between members of the tier. The business contract also commits the trading tier to a fixed availability level, and the finance team wants the tier built with the smallest configuration that satisfies that contract. The facts the team collected are shown below. You need to choose how the tier's virtual machines are grouped and how many members that grouping should hold. Which values should you use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Collected fact",
+						"Value"
+					],
+					"rows": [
+						[
+							"Contractual availability commitment for the trading tier",
+							"99.95%"
+						],
+						[
+							"Maximum delay the trading protocol tolerates between tier members",
+							"Below 1 millisecond"
+						],
+						[
+							"Round-trip delay measured between separate zones in the same region",
+							"About 2 milliseconds"
+						],
+						[
+							"Azure charge for traffic between zones inside one region",
+							"None"
+						],
+						[
+							"Zone-based placement offered for virtual machines in this region",
+							"Yes"
+						]
+					]
+				},
+				"statement": "Deploy the trading tier as {{grouping}} that contains {{members}}.",
+				"slots": [
+					{
+						"id": "grouping",
+						"options": [
+							{
+								"id": "a",
+								"text": "Availability set"
+							},
+							{
+								"id": "b",
+								"text": "Multiple availability zones"
+							},
+							{
+								"id": "c",
+								"text": "Single availability zone"
+							},
+							{
+								"id": "d",
+								"text": "Regional deployment with no zone selected"
+							}
+						]
+					},
+					{
+						"id": "members",
+						"options": [
+							{
+								"id": "a",
+								"text": "One virtual machine"
+							},
+							{
+								"id": "b",
+								"text": "Two virtual machines"
+							},
+							{
+								"id": "c",
+								"text": "Three virtual machines"
+							},
+							{
+								"id": "d",
+								"text": "Four virtual machines"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"grouping": "a",
+				"members": "b"
+			},
+			"explanation": {
+				"correct": "The measured cross-zone round-trip delay of about 2 milliseconds is far above the sub-millisecond limit the trading protocol tolerates, so the tier must keep its members physically close rather than spread across separate zones. An availability set is the grouping that separates members across fault domains and update domains while leaving them in close proximity, and it adds no extra charge for the grouping itself. The contractual commitment of 99.95% requires at least two virtual machines in that grouping, so the smallest configuration that satisfies the contract is an availability set with two virtual machines.",
+				"perChoice": {
+					"grouping:b": "Placing members in multiple availability zones provides stronger protection against a zone outage, but the members end up in different datacenters roughly 2 milliseconds apart in round-trip terms, which exceeds the delay the trading protocol can absorb. The absence of an Azure transfer charge inside the region does not remove that latency penalty, so this choice breaks the protocol requirement.",
+					"grouping:c": "A zonal deployment puts every member inside one zone, so losing that zone takes the whole tier offline, and members inside a single zone are not separated from each other across shared power and network equipment the way a grouping does.",
+					"grouping:d": "With no zone chosen, Azure may place the machines anywhere in the region, so a single zone outage can interrupt the tier, and the members receive no separation from shared infrastructure faults or from maintenance restarts.",
+					"members:a": "A grouping with only one virtual machine gives it no companion, so it does not qualify for the 99.95% availability commitment and a hardware, power, or network failure would stop the tier on its own.",
+					"members:c": "The 99.95% commitment is already satisfied with fewer members, so adding a third machine exceeds the smallest configuration the contract requires and increases running cost without being needed.",
+					"members:d": "Like the other larger option, this exceeds the smallest configuration that meets the 99.95% commitment; the extra members add cost that the contract does not require and do not change the protection level the contract asks for."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability-set-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/reliability/availability-zones-overview"
+				}
+			],
+			"subtopics": [
+				"availability-sets",
+				"fault-domains",
+				"availability-zones"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RRNF9PRXY4DQSMQQJ8BY3M",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a three-machine web tier in the North Europe region. Two of the machines are already members of a managed availability set, and the third machine was rebuilt last month from an older deployment pipeline, so its operating system disk is still a page blob in a storage account container instead of a disk resource. The tier has to remain one single set, so that the platform keeps the machines on separate shared power and network equipment and restarts only one of them at a time during maintenance, and the domain configuration of the existing set must not be rebuilt. You need to bring the third machine into the existing set. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Machine   Set membership                   Operating system disk                 Attached data disks\n--------  -------------------------------  -----------------------------------  --------------------\nweb-01    webset-northeurope (managed)     Managed disk, Premium_LRS             1 managed disk\nweb-02    webset-northeurope (managed)     Managed disk, Premium_LRS             1 managed disk\nweb-03    None                             Page blob in a storage account         1 managed disk\n"
+				},
+				"statement": "To bring the third machine into the existing set, you should {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Convert the third machine's OS disk into a managed disk and add the machine to the existing managed availability set"
+							},
+							{
+								"id": "b",
+								"text": "Add the third machine to the existing managed availability set with its OS disk unchanged and let the platform place the disk"
+							},
+							{
+								"id": "c",
+								"text": "Move the third machine and its current OS disk into a separate unmanaged availability set and keep the other two machines where they are"
+							},
+							{
+								"id": "d",
+								"text": "Attach the page blob as a data disk to a new virtual machine with a managed OS disk and add that new machine to the existing managed availability set"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "A managed availability set accepts only virtual machines whose disks are managed, so the page blob that still holds web-03's operating system content has to become a managed disk before the machine can join webset-northeurope. Once the disk is managed, web-03 joins the existing set, whose fault domain and update domain counts were fixed when it was created, so no new set has to be built and the members stay separated onto different shared power and network equipment with one maintenance restart at a time. The managed disks attached to each member follow that member's fault domain placement, so the converted disk is placed with web-03 rather than with another member.",
+				"perChoice": {
+					"action:b": "The deployment cannot succeed this way. A managed availability set accepts only virtual machines with managed disks, so web-03 with its page blob operating system disk is refused, and the platform will not relocate or place that disk for you. The disk has to be managed before the machine is added.",
+					"action:c": "This splits the tier into two separate groups, so the platform can no longer spread the three machines across the fault domains and update domains of one set. The new set would contain web-03 alone and give it no separation from the rest of the tier, and the two existing machines would keep the current set's protection only among themselves.",
+					"action:d": "The blob stays an unmanaged disk on the new machine, and the managed availability set accepts only virtual machines with managed disks, so attaching it as a data disk does not make the membership valid. It also leaves the original third member outside the tier instead of bringing it in."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability-set-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability"
+				}
+			],
+			"subtopics": [
+				"availability-sets",
+				"managed-disks",
+				"fault-domains"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RSE1Z876YMZ73N5EWN08ZA",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a service with instances in two availability zones of the same Azure region. Its nodes exchange session data over private IP addresses, and the finance team must determine which network transfer charge to budget. Which statement should you use?",
+				"statement": "Data transferred between availability zones within the same region incurs {{charge}}.",
+				"slots": [
+					{
+						"id": "charge",
+						"options": [
+							{
+								"id": "a",
+								"text": "no Azure transfer fee"
+							},
+							{
+								"id": "b",
+								"text": "an Azure transfer fee for private IP traffic"
+							},
+							{
+								"id": "c",
+								"text": "an Azure transfer fee for public IP traffic"
+							},
+							{
+								"id": "d",
+								"text": "an Azure transfer fee for traffic leaving the region"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"charge": "a"
+			},
+			"explanation": {
+				"correct": "Azure does not charge a transfer fee for moving data between availability zones within one region, regardless of whether the traffic uses private or public IP addresses.",
+				"perChoice": {
+					"charge:b": "There is no Azure transfer fee for private IP traffic between zones in the same region.",
+					"charge:c": "There is no Azure transfer fee for public IP traffic between zones in the same region.",
+					"charge:d": "The scenario concerns traffic within one region, and inter-zone transfers in that region carry no Azure transfer fee."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/reliability/availability-zones-overview"
+				}
+			],
+			"subtopics": [
+				"availability-zone-data-transfer",
+				"regional-network-costs"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RSJGRW1BJAFNXBWTT7NA8A",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a customer-facing checkout API that runs on Linux virtual machines in the East US 2 region, and the deployment record is shown below. The service contract requires the API to keep answering requests if any single zone of that region is lost. The on-call team also wants the runbook to record how the platform sequences its own service updates in that region, because the current runbook has no entry for it. You need to fill in the two runbook entries. Which values should you use?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Deployment record - Checkout API\nRegion:                East US 2\nCompute tier:          6 Linux virtual machines\nContract requirement:  The API must keep answering requests if any single zone of that region is lost\nTeam's assumption:     The region offers the same number of zones as most supported regions\nMissing runbook lines: How many zones the region offers, and how the platform sequences service updates there"
+				},
+				"statement": "Runbook entry: \"East US 2 provides {{zoneCount}} availability zones for this workload. {{updateRule}}\"",
+				"slots": [
+					{
+						"id": "zoneCount",
+						"options": [
+							{
+								"id": "two",
+								"text": "two"
+							},
+							{
+								"id": "three",
+								"text": "three"
+							},
+							{
+								"id": "four",
+								"text": "four"
+							},
+							{
+								"id": "five",
+								"text": "five"
+							}
+						]
+					},
+					{
+						"id": "updateRule",
+						"options": [
+							{
+								"id": "sequencedMultiZone",
+								"text": "The platform aims to roll out its service updates within a single zone at a time in each region, and a tier whose instances already cover several zones is the one that gains from that ordering."
+							},
+							{
+								"id": "simultaneousMultiZone",
+								"text": "The platform aims to roll out its service updates to every zone of a region at the same time, and a tier whose instances already cover several zones is the one that gains from that ordering."
+							},
+							{
+								"id": "sequencedNoBenefit",
+								"text": "The platform aims to roll out its service updates within a single zone at a time in each region, and a tier whose instances already cover several zones is affected in the same way as any other tier."
+							},
+							{
+								"id": "sequencedSingleZone",
+								"text": "The platform aims to roll out its service updates within a single zone at a time in each region, and a tier whose instances all sit in a single zone is the one that gains from that ordering."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"updateRule": "sequencedMultiZone",
+				"zoneCount": "four"
+			},
+			"explanation": {
+				"correct": "The regional zone table is the authority for how many zones a region provides, and it lists four for East US 2 — one of the exceptions to the common pattern of three zones per supported region described in the general virtual machine availability guidance, which is what the team assumed. For the second entry, the platform works through the zones of a region one zone at a time when it deploys service updates, and a workload only takes advantage of that ordering when it already runs across several zones, because the untouched zones keep serving traffic while an update is in progress. Option 'sequencedMultiZone' states both points correctly, so the runbook entry reads: 'East US 2 provides four availability zones for this workload. The platform aims to roll out its service updates within a single zone at a time in each region, and a tier whose instances already cover several zones is the one that gains from that ordering.'",
+				"perChoice": {
+					"zoneCount:two": "East US 2 does not offer two availability zones. The regional zone table lists four zones for this region, so a two-zone runbook entry would understate the placement options and could lead the team to believe the third and fourth placements are impossible.",
+					"zoneCount:three": "Three is the number quoted by the general virtual machine availability guidance and by most regions in the table, so it is the value the team's assumption points at. For East US 2 specifically, the detailed zone table lists four, which is why this runbook entry must not copy the common pattern.",
+					"zoneCount:five": "No supported region in the zone table offers five availability zones. The largest entry in that table is four, and it belongs to East US 2, so this value does not correspond to the region at all.",
+					"updateRule:simultaneousMultiZone": "The platform does not push its service updates into every zone of a region at the same time. It works through the zones of a region one zone at a time precisely so that a workload keeps running in the zones that have not been updated yet, so the first half of this option describes an update pattern that does not happen.",
+					"updateRule:sequencedNoBenefit": "A tier whose instances already cover several zones is exactly the tier that benefits from the zone-by-zone rollout: the zones not yet updated keep serving traffic. Treating such a tier as affected in the same way as any other tier removes the reason for spreading the tier across zones in the first place.",
+					"updateRule:sequencedSingleZone": "A tier whose instances all sit in one zone cannot gain from updates that are sequenced zone by zone, because all of its instances live in the single zone being updated and are therefore updated together. Only a workload that already runs across several zones takes advantage of that ordering."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/reliability/availability-zones-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability"
+				}
+			],
+			"subtopics": [
+				"availability-zones",
+				"region-zone-count",
+				"service-update-sequencing"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RST07S9JK4HEP5YNDKKKR6",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You run a customer-facing invoice service in the West Europe region. It is built from three Linux virtual machines that are all members of one managed availability set, and the deployment record is shown below. The customer contract states that the service must stay reachable while the whole region is unavailable, but the operations team believes that grouping the machines this way already covers that case. You need to record what the grouping really gives you and what the platform team should add. Which statements should you use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Service",
+							"invoice-api"
+						],
+						[
+							"Region",
+							"West Europe"
+						],
+						[
+							"Availability zones in the region",
+							"3"
+						],
+						[
+							"Grouping",
+							"one managed availability set (3 fault domains, 5 update domains)"
+						],
+						[
+							"Placement",
+							"all three members run in availability zone 1"
+						],
+						[
+							"Members",
+							"three Linux virtual machines"
+						],
+						[
+							"Availability commitment",
+							"the service must stay reachable during an outage of the whole region"
+						]
+					]
+				},
+				"statement": "For the commitment shown in the exhibit, the current grouping covers {{coverage}}, and the component to add is {{component}}.",
+				"slots": [
+					{
+						"id": "coverage",
+						"options": [
+							{
+								"id": "a",
+								"text": "hardware, power or network faults within the region"
+							},
+							{
+								"id": "b",
+								"text": "the loss of the whole region"
+							},
+							{
+								"id": "c",
+								"text": "operating system or application faults on the individual machines"
+							},
+							{
+								"id": "d",
+								"text": "a fault in one of the availability zones of the region"
+							}
+						]
+					},
+					{
+						"id": "component",
+						"options": [
+							{
+								"id": "a",
+								"text": "Azure Site Recovery, which replicates the machines to a secondary region and supports failover"
+							},
+							{
+								"id": "b",
+								"text": "Azure Backup, which copies the disks of the machines to a vault in another region and restores them on demand"
+							},
+							{
+								"id": "c",
+								"text": "Azure Load Balancer, which spreads requests across the machines of the region and keeps serving while one machine restarts"
+							},
+							{
+								"id": "d",
+								"text": "Azure Traffic Manager, which routes users to the closest healthy endpoint in any region"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"coverage": "a",
+				"component": "a"
+			},
+			"explanation": {
+				"correct": "An availability set is a logical grouping in which the platform assigns each member a fault domain and an update domain, so the set limits the impact of physical hardware failures, network outages and power interruptions inside the region; that is what the current grouping provides. It does not protect the application from operating-system or application-specific failures, and because all three members sit in availability zone 1 it does not protect them from a fault in that zone either. Neither availability sets nor availability zones protect against a full-region outage, so the contract requirement can only be met by adding Azure Site Recovery, which replicates the virtual machines to a secondary location and then supports failover to that location and failback.",
+				"perChoice": {
+					"coverage:b": "Fault domains and update domains only rearrange the members inside the region; nothing about the grouping carries the tier through the loss of the whole region.",
+					"coverage:c": "Members of an availability set can still fail together because of an operating-system or application-specific fault; the grouping only separates shared infrastructure such as power, cooling and networking.",
+					"coverage:d": "All three members run in availability zone 1, so a fault in that zone takes the entire tier down; protection against a zone fault comes from placing members in several zones, not from the set itself.",
+					"component:b": "Azure Backup keeps copies of data for restore and is part of a recovery plan, but it does not replicate a running service tier or move traffic when the primary region is lost.",
+					"component:c": "A load balancer distributes traffic among the members that are inside the region; it cannot help when the region itself is unavailable.",
+					"component:d": "Traffic Manager routes users to healthy endpoints, but this service has no second deployment to route to, and it does not replicate the virtual machines to another location."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability-set-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/reliability/availability-zones-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability"
+				}
+			],
+			"subtopics": [
+				"availability-sets",
+				"availability-zones",
+				"regional-outage-recovery"
+			],
+			"reviewed": false
+		}
+	]
+}

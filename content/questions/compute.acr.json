@@ -1,0 +1,1614 @@
+{
+	"skill": "compute.acr",
+	"questions": [
+		{
+			"id": "q_01M5RRS3WW8NK6RVDR6FEHZ05R",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your company ships containerized software to independent software vendors. Each vendor runs its own CI agents outside Azure and holds no Azure identity, and those agents must be able to fetch the images they are licensed to run straight from the registry over the public internet. You do not want to hand a shared registry credential to the vendors, while your own internal services keep authenticating with Microsoft Entra ID. The registry currently has the configuration shown below. Which registry setting should you change?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Registry property",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Registry name",
+							"contosopartner"
+						],
+						[
+							"Pricing plan",
+							"Standard"
+						],
+						[
+							"Location",
+							"West Europe"
+						],
+						[
+							"Admin user",
+							"Disabled"
+						],
+						[
+							"Microsoft Entra ID authentication",
+							"Enabled"
+						],
+						[
+							"Role assignment permissions mode",
+							"RBAC Registry + ABAC Repository Permissions"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Admin user"
+					},
+					{
+						"id": "b",
+						"text": "Anonymous pull access"
+					},
+					{
+						"id": "c",
+						"text": "Content trust"
+					},
+					{
+						"id": "d",
+						"text": "Private endpoints"
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "Enabling anonymous pull access lets clients retrieve images from the registry without authenticating at all, which is exactly what the vendor CI agents need: they hold no Azure identity and the requirement rules out distributing a shared credential. The registry already runs on the Standard plan, where anonymous pull access is supported, so no plan change is needed; it is unavailable only on Basic. Internal services can keep using Microsoft Entra ID authentication alongside it.",
+				"perChoice": {
+					"a": "The admin user is a single registry-wide account with shared passwords, so every vendor agent would have to authenticate with it — this adds credential distribution, the opposite of the stated requirement, and it is currently disabled. It also doesn't remove the need for sign-in.",
+					"c": "Content trust is a Premium-only capability used to sign image tags so that only trusted content runs on a deployment host. It does not let unauthenticated clients retrieve images, and it cannot be turned on without moving the registry to the Premium plan.",
+					"d": "Private link with private endpoints is a Premium-only capability that publishes the registry over a private network instead of the public internet. Vendor agents running outside your virtual network would still not be able to reach the registry, so this setting works against the stated requirement."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-skus"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-intro"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-get-started-portal"
+				}
+			],
+			"subtopics": [
+				"anonymous-pull-access",
+				"acr-authentication",
+				"acr-sku-features"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RRTTP38455A96J3X6H8SHS",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an Azure Container Registry that mirrors its content into two extra regions and shares images with a partner project through a separate registry connection. Both arrangements are now obsolete: the partner contract ended and the multi-region mirroring was only needed for a migration that has finished. You need to move the registry to a cheaper pricing plan that still lets your public catalogue serve images to anonymous visitors, and the switch must not interrupt the services that pull from it. The registry's current configuration is shown below.\n\nWhich sequence of actions should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Pricing plan",
+							"Premium"
+						],
+						[
+							"Geo-replication targets",
+							"West Europe, West US 2"
+						],
+						[
+							"Connected registries",
+							"1 (partner-images-sync)"
+						],
+						[
+							"Storage used",
+							"320 GiB"
+						],
+						[
+							"Webhooks",
+							"8"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Delete the geo-replication targets and the connected registry, then change the pricing plan to Standard"
+					},
+					{
+						"id": "b",
+						"text": "Change the pricing plan to Standard first, then delete the geo-replication targets and the connected registry"
+					},
+					{
+						"id": "c",
+						"text": "Change the pricing plan to Standard first; the geo-replication targets and the connected registry are removed automatically"
+					},
+					{
+						"id": "d",
+						"text": "Change the pricing plan to Basic first, then delete the geo-replication targets and the connected registry"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Geo-replication and connected registries are Premium-only capabilities, and moving down from Premium requires deleting those configurations first, before the plan is changed. The correct option performs that cleanup and then switches to Standard. Standard is the right target: it supports anonymous pull access (Basic does not), its storage ceiling of 40 TiB easily holds the 320 GiB in use, and 8 webhooks fit within the 10 allowed on Standard (Basic allows only 2). Because the target plan can hold the data, the move between SKUs can be done with no downtime, so running services are not interrupted.",
+				"perChoice": {
+					"b": "The order is reversed. The requirement is that geo-replications and connected registries are removed before the registry leaves Premium; changing the plan while they still exist does not satisfy that condition, so the move down does not go through as intended.",
+					"c": "Nothing strips those configurations away for you. Deleting geo-replications and connected registries is an explicit prerequisite for moving down from Premium, not an automatic side effect of the plan change.",
+					"d": "Basic is not a valid target for this registry. Anonymous pull access is not supported on Basic, and Basic allows only 2 webhooks while 8 are configured. Basic is intended for learning, development, and test workloads."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-skus"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-intro"
+				}
+			],
+			"subtopics": [
+				"sku-resize",
+				"geo-replication",
+				"connected-registries"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RS0GVWF7SJZ2587JWRFX6F",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a container registry on the Standard pricing plan in West Europe. Two CI agents and the Kubernetes cluster's image puller sign in with the registry's built-in administrator account to pull and push images, and an internal catalogue serves the same images to partners without signing in. During yesterday's release window, `docker pull` and `docker push` began failing with `429 Too Many Requests`, and the measurements collected during the failures are shown below. You need the release pipeline to finish reliably without running into the registry's limits, and the pricing plan cannot change this quarter. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Registry: fabrikam-registry   Plan: Standard   Region: West Europe\nAzure Monitor - Logs - Transactions (ContainerRegistryRepositoryEvents)\nWindow: 09:12-09:22 UTC (peak of the release)\n\nCaller            ApiName         ResponseType   Requests/min\nadmin (password)  DataplaneRead   Throttled          5,090\nadmin (password2) MetadataRead    Throttled          2,030\nadmin (password)  DataplaneWrite  Throttled          1,010\nanonymous         DataplaneRead   Success            1,860\n\nAll callers       DataplaneRead   (total)            6,950\nAll callers       MetadataRead    (total)            2,030\nAll callers       DataplaneWrite  (total)            1,010"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Sign in each CI agent and the cluster puller with separate Microsoft Entra ID service principals, and grant each principal only the registry permissions needed for that workload"
+					},
+					{
+						"id": "b",
+						"text": "Sign in each CI agent and the cluster puller with the shared administrator account, and raise the number of parallel pull and push operations"
+					},
+					{
+						"id": "c",
+						"text": "Sign in each CI agent and the cluster puller with one new Microsoft Entra ID service principal that has the built-in administrator role and registry permissions at the registry scope, and keep the administrator account for setup only"
+					},
+					{
+						"id": "d",
+						"text": "Sign in each CI agent and the cluster puller with separate Microsoft Entra ID service principals, and raise the number of parallel pull and push operations at the same time"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The registry-wide allowances on the Standard plan (10,000 requests/min for DataplaneRead, 4,000 for MetadataRead, 2,000 for DataplaneWrite) are all higher than the totals in the exhibit, so the registry as a whole is not the constraint. The failing traffic comes from one identity: the built-in administrator account's password and password2 share a single identity bucket, and on Standard a single identity is capped at 5,000 requests/min for reads (MetadataRead calls also consume that read capacity) and 1,000 for writes. The measurements put that identity at roughly 7,120 read-equivalent requests/min and 1,010 writes/min, so it is over its allowance while the registry-wide totals stay under the caps. Moving each CI agent and the cluster puller onto its own Microsoft Entra ID service principal puts each one in its own per-identity bucket, and RBAC lets you assign each principal only the permissions it needs; total traffic still fits inside the plan's registry-wide caps, so the release can complete without changing the plan.",
+				"perChoice": {
+					"b": "All components keep authenticating with the built-in administrator account, so every request stays in the one identity bucket the measurements show is already past its per-identity read and write allowances. Raising the number of parallel pull and push operations only pushes more requests into that same exhausted bucket and makes the failures more likely.",
+					"c": "A single new service principal is still a single identity, so all pipeline traffic is metered against one per-identity bucket instead of being spread across several; the registry-wide totals shown are not the constraint, so nothing improves. The built-in administrator role at the registry scope also grants far more access than the pipeline requires.",
+					"d": "Separate service principals do spread the traffic across per-identity buckets, but raising the number of parallel pull and push operations pushes the combined request rate at the registry-wide allowances and at the continuously refilling token bucket, which can keep requests throttled for up to a minute. Working around throttling means lowering concurrency and staggering deployments, not increasing concurrency."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-skus"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-intro"
+				}
+			],
+			"subtopics": [
+				"acr-rate-limits",
+				"acr-authentication"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RS49DG9DD7M8MP8NH1WHBF",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a container registry that stores the images for a shared internal API service. You recently replaced an old Kubernetes cluster with a new one, and the image pull secret in the new cluster still points at `contosoapi.azurecr.io`, while the registry itself reports a different address. Every pod that starts fails with `manifest unknown`, although the image tags are visible in the portal under the registry's repositories. You need the new cluster to pull the images that are already stored in this registry. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Registry setting",
+						"Current state"
+					],
+					"rows": [
+						[
+							"Registry name",
+							"contosoapi"
+						],
+						[
+							"Location",
+							"West Europe"
+						],
+						[
+							"Pricing plan",
+							"Premium"
+						],
+						[
+							"Domain Name Label scope",
+							"Tenant Reuse"
+						],
+						[
+							"Login server",
+							"contosoapi-9c1d4f7a.azurecr.io"
+						],
+						[
+							"Admin user",
+							"Disabled"
+						],
+						[
+							"Anonymous pull access",
+							"Disabled"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Update the image reference in the pull secret to the login server of the registry"
+					},
+					{
+						"id": "b",
+						"text": "Change the Domain Name Label scope of the registry to Unsecure and update the image reference in the pull secret to the plain login server address"
+					},
+					{
+						"id": "c",
+						"text": "Enable the admin account of the registry, re-push the image to the plain login server address, and rewrite the pull secret"
+					},
+					{
+						"id": "d",
+						"text": "Enable anonymous pull access on the registry so that the cluster pulls the image reference in the pull secret without credentials"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The registry's Domain Name Label scope is not Unsecure, so it publishes under a protected address (contosoapi-9c1d4f7a.azurecr.io) that carries a unique suffix instead of the plain contosoapi.azurecr.io name. The portal's Login server is that protected address, and every downstream reference — Dockerfiles, Kubernetes YAML, Helm charts and Docker commands — must use that fully qualified name exactly. The pull secret still names the plain address, which does not host the repository, so the pull fails with 'manifest unknown' even though the tags exist. Pointing the image reference at the registry's login server makes the cluster pull the images already stored in the registry.",
+				"perChoice": {
+					"b": "The Domain Name Label scope is chosen when the registry is created and is permanent, so an existing registry cannot be switched to the Unsecure scope; that scope only leaves the plain name.azurecr.io address unprotected when it was selected at creation time. For this registry the fix is to reference its actual login server, not to alter the scope.",
+					"c": "Enabling the admin account changes how a client authenticates, not which address hosts the repository, and re-pushing under the plain login server address would fail for the same reason as the current pull, because the plain name does not point to this registry. The observed error is an address mismatch, not an authentication failure.",
+					"d": "Anonymous pull access only removes the need for credentials; it does not change the address the pull secret uses, so the pods would still fail with 'manifest unknown'. It is supported on Standard and Premium (not Basic) and would only be relevant once the image reference points at the correct host."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-get-started-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-skus"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-intro"
+				}
+			],
+			"subtopics": [
+				"container-registry-hostname",
+				"container-registry-operations"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RSCGBT389B4P0QZBMKP9SB",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your team delivers a web application as a container image stored in an Azure Container Registry. Every build of that application starts from a shared image that your platform group keeps in the same registry, and the platform group publishes a new version of that shared image whenever a security patch is released. Today the application image is only produced when a developer remembers to run the build, so the application has been running on an old shared image for several weeks. The task that performs the build is described below. You need the application image to be rebuilt and pushed to the registry automatically within a few minutes of each new version of the shared image being published, with no manual step from a developer. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Task name",
+							"rebuild-apps"
+						],
+						[
+							"Task type",
+							"Single-step task that runs only when someone invokes it"
+						],
+						[
+							"How the build runs today",
+							"On demand: a developer runs the task from their own machine and uploads the ./src directory"
+						],
+						[
+							"Image produced",
+							"contosoapp.azurecr.io/apps/web:v1"
+						],
+						[
+							"Image the build starts from",
+							"contosoapp.azurecr.io/python:3.12"
+						],
+						[
+							"Where the build executes",
+							"In Azure, with no build agent installed on developer machines"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add a base-image update trigger so the task rebuilds and pushes the application image automatically"
+					},
+					{
+						"id": "b",
+						"text": "Add a source-code commit trigger so the task rebuilds and pushes the application image automatically"
+					},
+					{
+						"id": "c",
+						"text": "Add a pull-request trigger so the task rebuilds and pushes the application image automatically"
+					},
+					{
+						"id": "d",
+						"text": "Add a timer trigger so the task rebuilds and pushes the application image automatically"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The shared image shown in the exhibit (contosoapp.azurecr.io/python:3.12) is the image the application image is built from, and it lives in the same registry. Azure Container Registry tasks can be configured to rebuild dependent application images automatically when their base images are updated, so adding a base-image update trigger turns today's on-demand build into a reaction to the dependency you actually care about: each newly published version of the shared image immediately produces a rebuilt and pushed application image, with nobody running a command.",
+				"perChoice": {
+					"b": "A source-code commit trigger automates image builds when your team commits code to a Git repository, and setting one up requires a personal access token for that repository. The task's context here is a local directory uploaded by a developer, and the shared image is republished on its own schedule, so a commit trigger would not rebuild the application image when the shared image changes.",
+					"c": "A pull-request trigger reacts to pull request activity in the configured Git repository rather than to the shared image. It would also need a personal access token for that repository, and nothing in the scenario ties new pull requests to the publication of a new shared image, so the application image would still be built from an out-of-date shared image.",
+					"d": "A timer trigger runs the task on a fixed schedule whether or not the shared image changed. It therefore cannot guarantee a rebuild within minutes of each newly published version of the shared image, and it also spends build time producing identical images when nothing has changed."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-intro"
+				}
+			],
+			"subtopics": [
+				"acr-tasks",
+				"build-triggers",
+				"automated-image-builds"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RSEM4RGXSA4A7NHT8S8H93",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You manage an Azure Container Registry that stores the release images for twelve internal services. Two things have recently started to go wrong: the nightly deployment across the Kubernetes clusters fails with HTTP 429 responses, and the image catalogue is close to filling the plan's storage. In addition, the network team has two more Azure subnets that must be allowed to pull images. You need to send an Azure Support request that obtains every increase the service permits. Which combination of increases should you request?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Registry measurement",
+						"Value reported"
+					],
+					"rows": [
+						[
+							"Pricing plan",
+							"Premium"
+						],
+						[
+							"Storage in use",
+							"95 TiB"
+						],
+						[
+							"Storage limit for this plan",
+							"100 TiB"
+						],
+						[
+							"Virtual network rules configured",
+							"100"
+						],
+						[
+							"Public IP network rules configured",
+							"150"
+						],
+						[
+							"Highest DataplaneRead request rate seen during the nightly deployment",
+							"20,000 requests per minute, responses returned HTTP 429"
+						],
+						[
+							"Highest DataplaneWrite request rate seen during the nightly deployment",
+							"4,000 requests per minute, responses returned HTTP 429"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Request increases to the storage limit, the data-plane request rate limits, and the number of virtual network rules."
+					},
+					{
+						"id": "b",
+						"text": "Request increases to the storage limit and the data-plane request rate limits, but not to the number of virtual network rules."
+					},
+					{
+						"id": "c",
+						"text": "Request increases to the storage limit and the number of virtual network rules, but not to the data-plane request rate limits."
+					},
+					{
+						"id": "d",
+						"text": "Request no limit increases, because all of these limits are fixed once the pricing plan is chosen."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "Azure Support can raise a registry's storage limit, and it can also raise push/pull performance limits, which cover throttling, bandwidth and the data-plane request rates — so the request should ask for more storage headroom and a higher data-plane request rate ceiling. The count of virtual network rules is one of the limits that is fixed and cannot be raised through a support request, so the two additional subnets have to be served by other means rather than by asking for a larger rule count.",
+				"perChoice": {
+					"a": "The number of virtual network rules is a fixed limit that a support request cannot change, so asking for all three increases together means the request cannot be fulfilled as written. The adjustable items are the storage limit and the push/pull performance limits that cover throttling and the data-plane request rates.",
+					"c": "Push/pull performance limits, including throttling, bandwidth and the data-plane request rates, are exactly the kind of limit Azure Support can raise, so that part of the request should have been included. The item that cannot be changed is the virtual network rule count, not the request rates.",
+					"d": "Storage limits and push/pull performance limits such as throttling, bandwidth and data-plane request rates are both adjustable by Azure Support, so declining to ask for any increase would leave achievable capacity unused."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-skus"
+				}
+			],
+			"subtopics": [
+				"acr-sku-limits",
+				"acr-throttling",
+				"acr-support-limit-increases"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RSJP8SFR2CDJX0TVJDVPQA",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an Azure Container Registry that stores the container images for twelve internal services. Every service's build pipeline is triggered by a webhook that fires when a new image is pushed to that service's own repository, and the pipeline definitions may not be rewritten to poll the registry instead. The registry's current configuration is shown below. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Registry name",
+							"contosoimages"
+						],
+						[
+							"Pricing plan",
+							"Basic"
+						],
+						[
+							"Services whose pipeline must be triggered",
+							"12"
+						],
+						[
+							"Webhooks configured today",
+							"2"
+						],
+						[
+							"Webhook scope",
+							"One per repository, on image pushed"
+						],
+						[
+							"Location",
+							"West Europe"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Change the registry's pricing plan to Premium so that it can hold the webhooks the pipelines use"
+					},
+					{
+						"id": "b",
+						"text": "Change the registry's pricing plan to Standard so that it can hold the webhooks the pipelines use"
+					},
+					{
+						"id": "c",
+						"text": "Keep the registry's pricing plan as it is and ask Azure Support to increase the number of webhooks it can hold"
+					},
+					{
+						"id": "d",
+						"text": "Keep the registry's pricing plan as it is and let each pipeline poll the registry instead of using a webhook"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The Premium pricing plan allows 500 webhooks, so the twelve repository-scoped webhooks the twelve pipelines need all fit on one registry. Moving up a plan can be done without downtime by editing the pricing plan under Settings > Properties, or with `az acr update --name contosoimages --sku Premium` / `Update-AzContainerRegistry -Name contosoimages -Sku Premium`. Basic allows only 2 webhooks and Standard allows 10, so neither current nor intermediate plan can carry the twelve triggers.",
+				"perChoice": {
+					"b": "The Standard pricing plan permits 10 webhooks, which is still fewer than the twelve repository-scoped webhooks the pipelines need, so two services would be left without a trigger.",
+					"c": "Azure Support can raise storage limits, private endpoint counts, and push/pull performance limits such as throttling, bandwidth, and data-plane request rates. The number of webhooks a registry carries is set by its pricing plan and is not among the increases the service grants, so a support request would not add the missing webhooks.",
+					"d": "The Basic pricing plan permits only 2 webhooks, and the pipelines are deliberately triggered by webhooks rather than by polling the registry, so neither part of this option satisfies the requirement."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-skus"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-get-started-portal"
+				}
+			],
+			"subtopics": [
+				"acr-webhooks",
+				"acr-skus"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RSS6BG2Q05YN8YJPAXV5X7",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You operate an Azure Container Registry that holds release images for four product teams. The platform team wants the engineers who own the payments service to push only to the payments repository, and only when the image tag follows the approved release naming pattern; the runtime services that pull images from this registry must keep the rights they hold today. You need the registry itself to enforce that tag restriction, without removing the Microsoft Entra ID assignments that already exist. The registry's current configuration and assignments are shown below.\n\nWhich change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Registry name",
+							"contosoartifacts"
+						],
+						[
+							"Location",
+							"West Europe"
+						],
+						[
+							"Pricing plan",
+							"Premium"
+						],
+						[
+							"Role assignment permissions mode",
+							"RBAC (role-based) only"
+						],
+						[
+							"Assignment - group eng-payments",
+							"Scope: repository:contosoartifacts/payments; permits pushing images"
+						],
+						[
+							"Assignment - service principal svc-aks-prod",
+							"Scope: registry:contosoartifacts; permits pulling images"
+						],
+						[
+							"Admin account",
+							"Disabled"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Keep the RBAC role assignment permissions mode as it is and widen the engineers' assignment to registry scope."
+					},
+					{
+						"id": "b",
+						"text": "Set the role assignment permissions mode to RBAC Registry + ABAC Repository Permissions, applying a condition to repository-level access while the existing assignments stay in force."
+					},
+					{
+						"id": "c",
+						"text": "Keep the RBAC role assignment permissions mode as it is and add the tag pattern as a condition on the existing repository-scoped role assignment, leaving the assignments as they are."
+					},
+					{
+						"id": "d",
+						"text": "Keep the RBAC role assignment permissions mode as it is and enforce the approved tag pattern inside the release pipeline that builds and pushes the images."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "The permissions mode named RBAC Registry + ABAC Repository Permissions is the one that retains the standard Microsoft Entra ID RBAC role assignments while optionally applying Microsoft Entra attribute-based conditions for fine-grained, repository-level access control. Switching the registry to that mode is the only way to express the tag restriction on the payments repository without discarding the registry-scoped pull assignment that the runtime services rely on, so it satisfies both halves of the requirement.",
+				"perChoice": {
+					"a": "Widening the engineers' assignment to registry scope grants them push rights on every repository in the registry, which is broader than what the platform team asked for, and leaving the mode purely role-based means nothing ties those rights to the tag naming pattern. The requirement is a narrower, tag-conditioned grant, not a broader one.",
+					"c": "Repository-level attribute-based conditions are provided by the combined permissions mode. With the role-based mode left in place, attaching a condition to the repository-scoped assignment does not turn it into a conditional grant, so the engineers would keep unrestricted push rights on that repository and the tag restriction would not be enforced.",
+					"d": "The release pipeline is not part of the registry's access model. An engineer who holds push rights can still push an image with any tag directly to the registry, so the tag restriction is not enforced by the registry itself and the requirement is not met."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-get-started-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-intro"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-skus"
+				}
+			],
+			"subtopics": [
+				"role-assignment-permissions-mode",
+				"abac-repository-access",
+				"container-registry-security"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RT0JGA480EBSMR4DZH8S4Q",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You look after a registry that stores release images for several product lines. The platform team has logged four requests that the registry cannot satisfy in its current state, and six registry capabilities are on the table. Match each request to the capability that satisfies it; two of the listed capabilities are not needed by any of the four requests.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Registry property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Pricing plan",
+							"Premium"
+						],
+						[
+							"Location",
+							"West Europe"
+						],
+						[
+							"Login server",
+							"contosocatalog.azurecr.io"
+						],
+						[
+							"Repositories",
+							"48"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Geo-replication"
+					},
+					{
+						"id": "b",
+						"text": "Private link with private endpoints"
+					},
+					{
+						"id": "c",
+						"text": "Microsoft Defender for Cloud"
+					},
+					{
+						"id": "d",
+						"text": "Microsoft Entra ID authentication"
+					},
+					{
+						"id": "e",
+						"text": "IP access rule configuration"
+					},
+					{
+						"id": "f",
+						"text": "Anonymous pull access"
+					}
+				],
+				"slots": [
+					{
+						"id": "req1",
+						"label": "Clients in Frankfurt, Dublin and Stockholm must fetch the same images through one address."
+					},
+					{
+						"id": "req2",
+						"label": "Clients must connect to an address inside the corporate network, and the registry's public address must not carry image traffic."
+					},
+					{
+						"id": "req3",
+						"label": "Every image that is pushed must be checked for vulnerabilities as it arrives."
+					},
+					{
+						"id": "req4",
+						"label": "Every build agent must sign in with an identity issued by the organization's own directory, so the single registry operator secret that all teams share today can be retired."
+					}
+				]
+			},
+			"key": {
+				"req1": "a",
+				"req2": "b",
+				"req3": "c",
+				"req4": "d"
+			},
+			"explanation": {
+				"correct": "Each request maps to the single capability that provides it. Spreading one registry across regions so that clients in several countries fetch the same images through one address is Geo-replication. Giving clients an address inside the corporate network, with the public address no longer carrying image traffic, requires Private link with private endpoints, which the registry's current Premium plan already allows. Checking every pushed image for vulnerabilities as it arrives is done by Microsoft Defender for Cloud, which can scan images whenever they are pushed. Signing in with identities issued by the organization's own directory instead of one shared registry secret is Microsoft Entra ID authentication, a capability included in every tier. IP access rule configuration and Anonymous pull access do not satisfy any of the four requests.",
+				"perChoice": {
+					"a": "Correct for the first request: Geo-replication spreads one registry across regions, so clients in Frankfurt, Dublin and Stockholm can all fetch the same images through a single address.",
+					"b": "Correct for the second request: Private link with private endpoints provides clients with addresses inside your own network for the registry's data plane and is available on the Premium plan the registry already uses.",
+					"c": "Correct for the third request: Microsoft Defender for Cloud can scan images whenever they are pushed, which matches a check of every pushed image as it arrives.",
+					"d": "Correct for the fourth request: Microsoft Entra ID authentication lets clients present an identity issued by the organization's directory instead of a shared registry secret, and every tier includes it.",
+					"e": "Fits no request: IP access rule configuration only filters which public IP addresses may reach the registry. It neither gives clients an address inside the corporate network nor relates to the other three requests.",
+					"f": "Fits no request: Anonymous pull access controls whether visitors who have not signed in may fetch images, and none of the four requests concerns unsigned visitors."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-intro"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-skus"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-get-started-portal"
+				}
+			],
+			"subtopics": [
+				"acr-premium-features",
+				"acr-security"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RT46Q4SY6VZH725Y12R9A6",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have three container registries to deploy, each with the requirements shown below. You need every registry to run on the pricing plan that satisfies its requirements at the lowest cost. Which pricing plan should you assign to each registry?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Registry",
+						"Purpose and requirements"
+					],
+					"rows": [
+						[
+							"A",
+							"Course labs for students. Only a handful of test images are pushed and pulled, and each registry is deleted when the course ends."
+						],
+						[
+							"B",
+							"A partner catalogue of sample applications. People who do not sign in must be able to retrieve the published images, and the platform also relies on artifact cache rules to avoid repeated downloads."
+						],
+						[
+							"C",
+							"Release images for services running in two Azure regions. The registry must be reachable only from the company network over Azure private link, and the same images must keep serving clients in the second region."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Basic"
+					},
+					{
+						"id": "b",
+						"text": "Standard"
+					},
+					{
+						"id": "c",
+						"text": "Premium"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Registry A"
+					},
+					{
+						"id": "s2",
+						"label": "Registry B"
+					},
+					{
+						"id": "s3",
+						"label": "Registry C"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c"
+			},
+			"explanation": {
+				"correct": "Registry A only has to push and pull a few test images for learning and development, so the cheapest tier, which is aimed at learning and test workloads, is enough. Registry B needs unauthenticated pulls and artifact cache rules: neither is offered on Basic, and Standard supports both, so Standard is the least expensive plan that meets its requirements. Registry C needs Azure private link with private endpoints and the same images served from a second region; private endpoints and geo-replication are available only on the top tier, so that tier is the only choice for Registry C.",
+				"perChoice": {
+					"a": "Registry A. Basic is the lowest-cost tier and is intended for learning, development, and test workloads, which covers the short-lived student labs with only a few test images. It also offers no anonymous pull access, no private endpoints, and no geo-replication, so it cannot satisfy Registry B or Registry C.",
+					"b": "Registry B. Anonymous pull access and artifact cache rules are unavailable on Basic but are supported on Standard, so Standard is the cheapest plan that provides both of the capabilities Registry B relies on.",
+					"c": "Registry C. Private link with private endpoints and geo-replication are capabilities of the top tier only, and Registry C depends on both, so only Premium satisfies it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-skus"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-intro"
+				}
+			],
+			"subtopics": [
+				"registry-pricing-plans",
+				"sku-feature-availability"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RT8PRH7KE9KZDWQVGYZMBW",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have an Azure Container Registry that stores the release images for your Kubernetes platform, and a quarterly change window is approaching in which the registry must also serve a locked-down network segment. The registry's current configuration is shown below. During the window, a release engineer works from a workstation that has the Azure CLI and the Docker client installed; the freshly built application image is already on that workstation, already named with the registry's address and the release label v2.\n\nFour jobs have to be completed during the window. The list of commands below contains several commands that are not part of this work. Match each job to the command that performs it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Registry name",
+							"contosoapp"
+						],
+						[
+							"Resource group",
+							"rg-apps"
+						],
+						[
+							"Location",
+							"East US"
+						],
+						[
+							"Pricing plan",
+							"Standard"
+						],
+						[
+							"Domain Name Label scope",
+							"Subscription Reuse"
+						],
+						[
+							"Login server",
+							"contosoapp-9f3a.azurecr.io"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "az acr login --name contosoapp"
+					},
+					{
+						"id": "b",
+						"text": "docker push contosoapp-9f3a.azurecr.io/paymentsapi:v2"
+					},
+					{
+						"id": "c",
+						"text": "az acr show-usage --name contosoapp"
+					},
+					{
+						"id": "d",
+						"text": "az acr update --name contosoapp --sku Premium"
+					},
+					{
+						"id": "e",
+						"text": "docker rmi contosoapp-9f3a.azurecr.io/paymentsapi:v2"
+					},
+					{
+						"id": "f",
+						"text": "az acr login --name contosoapp-9f3a.azurecr.io"
+					},
+					{
+						"id": "g",
+						"text": "docker tag paymentsapi:build contosoapp-9f3a.azurecr.io/paymentsapi:v2"
+					},
+					{
+						"id": "h",
+						"text": "docker push contosoapp.azurecr.io/paymentsapi:v2"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Authorize the workstation's client so that it can talk to the registry before any images are transferred"
+					},
+					{
+						"id": "s2",
+						"label": "Make the freshly built image available in the registry so the cluster can retrieve it"
+					},
+					{
+						"id": "s3",
+						"label": "Check how much of the plan's included storage and allowances are currently consumed"
+					},
+					{
+						"id": "s4",
+						"label": "Move the registry onto the pricing plan that adds private endpoints and network rules for the restricted segment"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d"
+			},
+			"explanation": {
+				"correct": "Each job maps onto exactly one of the listed commands. Signing in to the registry is done with the registry resource name only, so `az acr login --name contosoapp` is the right form; the login server is never passed to that command. Transferring the locally built image into the registry requires the registry's login server exactly as shown for this registry, and because the Domain Name Label scope is a protected one the address carries the DNS hash, so `docker push contosoapp-9f3a.azurecr.io/paymentsapi:v2` puts the image where the cluster can retrieve it. Current consumption of storage and other plan allowances is reported by `az acr show-usage --name contosoapp`. Finally, private link with private endpoints and the network rules are only part of the Premium pricing plan, and `az acr update --name contosoapp --sku Premium` is the documented way to move a registry onto that plan, which is allowed from Standard without downtime.",
+				"perChoice": {
+					"a": "Fits the first slot: this is the documented sign-in command, it takes only the registry resource name rather than the login server, and it reports Login Succeeded.",
+					"b": "Fits the second slot: it transfers the image that is already built and named locally into the registry, using the login server listed for this registry, which includes the DNS hash.",
+					"c": "Fits the third slot: this command reports the registry's current consumption, such as storage used, webhooks and other resources, together with the limits for the registry's plan.",
+					"d": "Fits the fourth slot: private link with private endpoints and the public IP and virtual network rules exist only on the Premium plan, and this command changes the registry's plan without interrupting operations.",
+					"e": "Fits no slot: this command removes the image only from the local Docker environment and leaves the copy in the repository in the registry untouched, so none of the four jobs is performed by it.",
+					"f": "Fits no slot: the sign-in command expects only the registry resource name; the documentation explicitly warns against passing the fully qualified login server, including the hashed form used by DNL-enabled registries, so this command cannot replace the correct one.",
+					"g": "Fits no slot: this command only gives a local image a new name. Nothing is transferred into the registry, so the image is still not available to the cluster and this job remains undone.",
+					"h": "Fits no slot: the registry was created with a protected Domain Name Label scope, so its DNS name includes the unique hash and the registry resolves as registryname-hash.azurecr.io. The name without the hash does not address this registry, so the transfer fails."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-get-started-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-skus"
+				}
+			],
+			"subtopics": [
+				"registry-cli-workflow",
+				"domain-name-label",
+				"sku-network-controls"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5RTE4GW2QS540ZMPX01JEB9",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You manage the container registry described below, which stores release images for several internal services. During the release window your support channel collected the observations listed here. You need to route each observation to the owner who can act on it, together with the underlying reason for it; two of the observations are not explained by any of the reasons.\n\nMatch each observation to the reason that best explains it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Registry name",
+							"contosoapp"
+						],
+						[
+							"Pricing plan",
+							"Premium"
+						],
+						[
+							"Location",
+							"West Europe"
+						],
+						[
+							"Geo-replication",
+							"East US, Sweden Central"
+						],
+						[
+							"Admin account",
+							"Enabled"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "x1",
+						"text": "Pushing and pulling during the release window returned 429 Too Many Requests with a Retry-After header; the errors stopped once the release paused."
+					},
+					{
+						"id": "x2",
+						"text": "The storage total shown for the registry has stayed at 480 GiB for two days, while the team pushed an estimated 1.4 TiB of images in total."
+					},
+					{
+						"id": "x3",
+						"text": "Two scheduled jobs authenticate with the registry's built-in administrator account, the first with the primary password and the second with the other password; each is throttled at the same level."
+					},
+					{
+						"id": "x4",
+						"text": "A client that only enumerates image metadata and tags is rejected with 429, while the registry's overall traffic stays far below its published capacity."
+					},
+					{
+						"id": "x5",
+						"text": "Webhook creation fails with a message that the pricing plan does not permit that many."
+					},
+					{
+						"id": "x6",
+						"text": "A push of a very large image is refused with a message about the maximum size permitted for a single layer."
+					}
+				],
+				"slots": [
+					{
+						"id": "c1",
+						"label": "Rate limit exhausted for that caller"
+					},
+					{
+						"id": "c2",
+						"label": "Consumption reflects just the home region"
+					},
+					{
+						"id": "c3",
+						"label": "Both credentials share one identity allowance"
+					},
+					{
+						"id": "c4",
+						"label": "Listing calls also consume the read allowance"
+					}
+				]
+			},
+			"key": {
+				"c1": "x1",
+				"c2": "x2",
+				"c3": "x3",
+				"c4": "x4"
+			},
+			"explanation": {
+				"correct": "Each of the four observations maps to a documented behavior of the service. x1: exceeding a request rate limit returns HTTP 429 with a Retry-After header; limits are enforced with a token bucket that refills continuously, tolerates short bursts, and can keep rejecting requests for up to a minute after a burst empties it, which matches errors that clear when the release pauses (c1). x2: in a geo-replicated registry, storage usage is reported for the home region only, so the figure must be multiplied by the number of replicas - 480 GiB x 3 regions = 1,440 GiB, about 1.4 TiB (c2). x3: the admin account has two passwords, password and password2, but both share the same identity for throttling, so all admin-credential requests are throttled together as a single identity (c3). x4: MetadataRead requests, such as listing repositories, tags and manifests, also count against the DataplaneRead limit, so a client that only enumerates metadata can be throttled while overall traffic stays well below the allowance (c4). The webhook quota and the maximum single layer and manifest sizes are separate plan limits and explain none of the four observations (x5, x6).",
+				"perChoice": {
+					"x1": "Belongs with 'Rate limit exhausted for that caller'. A 429 response carrying a Retry-After header during a burst of pushes and pulls is the service throttling requests against its request rate limits; the token bucket refills continuously, tolerates short bursts, and can throttle for up to a full minute after a burst, so the errors stop when the release pauses.",
+					"x2": "Belongs with 'Consumption reflects just the home region'. For a geo-replicated registry, storage usage is reported for the home region only and is multiplied by the number of replicas (the home replica plus East US and Sweden Central), so 480 GiB x 3 = 1,440 GiB, which matches the roughly 1.4 TiB pushed.",
+					"x3": "Belongs with 'Both credentials share one identity allowance'. The admin account offers two passwords, password and password2, but for throttling both share the same identity, so all requests authenticated with admin credentials consume one per-identity bucket and both jobs are throttled at the same level.",
+					"x4": "Belongs with 'Listing calls also consume the read allowance'. MetadataRead requests (for example GetListRepositories, GetListTags, GetListManifests) count against the MetadataRead limit and also against the DataplaneRead limit, so metadata-only traffic can hit a limit and be rejected even though total traffic stays far below the published capacity.",
+					"x5": "Fits no slot. Webhooks are limited by pricing plan (2 on Basic, 10 on Standard, 500 on Premium), so a refused webhook creation is a plan quota issue and does not explain any of the four observations.",
+					"x6": "Fits no slot. The maximum image layer size is 195 GiB and the maximum manifest size is 4 MiB in every plan, so a push refused for size is a payload size issue and does not explain any of the four observations."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-skus"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-intro"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-get-started-portal"
+				}
+			],
+			"subtopics": [
+				"acr-rate-limits",
+				"acr-usage-reporting",
+				"acr-skus"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SV95QSW4RH7SRK5JGZ8NYV",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are reviewing the traffic that reached one of your container registries during yesterday's rollout, when some clients started receiving HTTP 429 responses. The service sorts every request it receives into an operation category, and each category has its own request-rate allowance. Match each client activity below to the category that its requests are counted under, using each category once. Two of the listed options do not describe a category that requests are counted under.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Registry property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Registry name",
+							"contosoprod"
+						],
+						[
+							"Pricing plan",
+							"Standard"
+						],
+						[
+							"Location",
+							"West Europe"
+						],
+						[
+							"Admin user account",
+							"Enabled"
+						],
+						[
+							"Anonymous pull access",
+							"Enabled"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "DataplaneRead"
+					},
+					{
+						"id": "i2",
+						"text": "MetadataRead"
+					},
+					{
+						"id": "i3",
+						"text": "ListReferrers"
+					},
+					{
+						"id": "i4",
+						"text": "DataplaneWrite"
+					},
+					{
+						"id": "i5",
+						"text": "DataplaneDelete"
+					},
+					{
+						"id": "i6",
+						"text": "OAuth"
+					},
+					{
+						"id": "i7",
+						"text": "Webhook delivery to a subscriber endpoint"
+					},
+					{
+						"id": "i8",
+						"text": "Consumption figures shown on the Overview page"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Kubernetes node downloading image layers"
+					},
+					{
+						"id": "s2",
+						"label": "Catalogue job retrieving repository tags and properties"
+					},
+					{
+						"id": "s3",
+						"label": "Scanning tool querying signature and SBOM artifacts"
+					},
+					{
+						"id": "s4",
+						"label": "Build pipeline pushing a manifest, layers and a label"
+					},
+					{
+						"id": "s5",
+						"label": "Cleanup job removing an image, its manifest and its label"
+					},
+					{
+						"id": "s6",
+						"label": "Client exchanging credentials for a refresh token at sign-in"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5",
+				"s6": "i6"
+			},
+			"explanation": {
+				"correct": "The registry counts incoming requests in six operation categories, each with its own request-rate allowance, and the request that arrives determines the category. Content reads such as pulling manifests and downloading layers are DataplaneRead; calls that read registry or repository metadata (for example GetListTags and GetRepositoryProperties) are MetadataRead; asking for the referrer artifacts of a manifest, such as signatures and SBOMs, is ListReferrers; pushing manifests and layers and pushing tags is DataplaneWrite; deleting images, manifests and tags is DataplaneDelete; and the authentication and authorization exchanges with the login server (for example swapping an Entra ID token or an admin token for a registry refresh token, then for a scoped access token) are OAuth. Note that MetadataRead and ListReferrers requests are subsets of DataplaneRead and therefore consume capacity from both allowances, so a client that only retrieves tags still draws on the content-read allowance as well. Webhook notifications and the consumption figures reported for the registry are not request categories and are not throttled under these allowances.",
+				"perChoice": {
+					"i1": "Slot s1 (Kubernetes node downloading image layers): getting and pulling image manifests and layers, resolving layer blob locations and checking whether a digest or tag exists are all read requests counted under DataplaneRead, which has both a per-registry and a per-identity allowance.",
+					"i2": "Slot s2 (Catalogue job retrieving repository tags and properties): requests that read metadata about the registry and its contents, such as GetListTags, GetListRepositories, GetListManifests, GetManifestProperties and GetRepositoryProperties, are counted under MetadataRead; these requests also consume DataplaneRead capacity.",
+					"i3": "Slot s3 (Scanning tool querying signature and SBOM artifacts): asking for the referrer artifacts of a manifest, such as signatures and SBOMs, is a ListReferrers request (it appears as GetListReferrers in the Transactions metric) and it also counts toward the DataplaneRead limit.",
+					"i4": "Slot s4 (Build pipeline pushing a manifest, layers and a label): pushing image manifests and layers and pushing tags are counted under DataplaneWrite, which is the category for PUT, PATCH and POST data-plane operations.",
+					"i5": "Slot s5 (Cleanup job removing an image, its manifest and its label): deleting images, manifests and tags is counted under DataplaneDelete, the category applied to DELETE requests.",
+					"i6": "Slot s6 (Client exchanging credentials for a refresh token at sign-in): authentication requests made while logging in to the registry login server, such as exchanging a Microsoft Entra ID token or an admin token for a registry refresh token, and the authorization exchanges made before push or pull, are counted under OAuth, which is throttled per registry only, without a per-identity allowance.",
+					"i7": "Fits no slot: a webhook notification sent to a subscriber endpoint is an outbound message the registry raises after a push, not a request it receives and counts in an operation category.",
+					"i8": "Fits no slot: the consumption figures reported for a registry come from management-plane usage reporting (the Overview page, az acr show-usage, Get-AzContainerRegistryUsage or the Registries - List Usages API), not from a counted request category."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-skus"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-intro"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-get-started-portal"
+				}
+			],
+			"subtopics": [
+				"acr-rate-limits",
+				"acr-api-operations"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SVFW0QRWE8F8G7P1EQV6H6",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a platform team that is about to create five Azure Container Registry instances for different purposes, and the team wants a deliberate rule for the suffix that Azure appends to the registry name. You need to pick that rule for each of the five creation situations below, and the pick is permanent once the registry exists. Which Domain Name Label scope should you choose for each situation?",
+				"items": [
+					{
+						"id": "u1",
+						"text": "Unsecure"
+					},
+					{
+						"id": "u2",
+						"text": "Tenant Reuse"
+					},
+					{
+						"id": "u3",
+						"text": "Subscription Reuse"
+					},
+					{
+						"id": "u4",
+						"text": "Resource Group Reuse"
+					},
+					{
+						"id": "u5",
+						"text": "No Reuse"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "A disposable lab registry that should keep its plain azurecr.io address"
+					},
+					{
+						"id": "s2",
+						"label": "Registries created under the same Microsoft Entra organization should share one suffix"
+					},
+					{
+						"id": "s3",
+						"label": "Registries created under the same billing account should share one suffix"
+					},
+					{
+						"id": "s4",
+						"label": "Registries created inside the same logical folder of deployment infrastructure should share one suffix"
+					},
+					{
+						"id": "s5",
+						"label": "Each newly created registry should receive a suffix that has never been used before"
+					}
+				]
+			},
+			"key": {
+				"s1": "u1",
+				"s2": "u2",
+				"s3": "u3",
+				"s4": "u4",
+				"s5": "u5"
+			},
+			"explanation": {
+				"correct": "Each Domain Name Label scope fixes how the suffix is derived when a registry is created, and the scope cannot be changed afterwards. The plain-address choice keeps the registry reachable as name.azurecr.io with no takeover protection. The three sharing choices each reuse one hash within their own boundary: across the Entra tenant, across the subscription, and across the resource group. The last choice produces a fresh hash at every creation, so each registry gets a suffix of its own. Because Dockerfiles, Kubernetes manifests, and Helm charts must reference the resulting hashed address, each creation situation has to be matched to the scope that defines its sharing boundary.",
+				"perChoice": {
+					"u1": "Fits the disposable lab registry. This choice leaves the address as name.azurecr.io without adding a unique hash, which also means the address carries no subdomain takeover protection.",
+					"u2": "Fits the situation where every registry sits under the same Microsoft Entra organization. With this scope the same suffix is reused by all registries created in that tenant.",
+					"u3": "Fits the situation where every registry sits under the same billing account. With this scope the same suffix is reused by all registries created in that subscription.",
+					"u4": "Fits the situation where every registry sits inside the same logical folder of deployment infrastructure. With this scope the same suffix is reused by all registries created in that resource group.",
+					"u5": "Fits the situation where each creation needs its own address suffix. A new hash is produced at every creation, so no suffix is ever shared between registries."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-get-started-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-intro"
+				}
+			],
+			"subtopics": [
+				"domain-name-label",
+				"registry-naming"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SVNCC50XX88TYVN6HEWZ7D",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a container registry on the Premium pricing plan. It was created in East US, and its content is also served from West Europe and Southeast Asia. Since last Thursday's release, some image pulls from the West Europe cluster have been rejected with HTTP 429 responses, and the finance team has asked for the registry's storage total ahead of the next budget review. You have access to the registry's metrics and logs in Azure Monitor. Which Azure Monitor filter should you apply to find the requests that were rejected, and what storage total should you report to the finance team?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "PROPERTY                                 VALUE\nPricing plan                            Premium\nRegion where the registry was created    East US\nAdditional replication regions           West Europe, Southeast Asia\nMaximum storage for the pricing plan    100 TiB\nStorage reported by the registry        2.4 TiB"
+				},
+				"statement": "Apply {{filter}} to isolate the rejected requests, and report {{total}} to the finance team as the registry's storage total.",
+				"slots": [
+					{
+						"id": "filter",
+						"options": [
+							{
+								"id": "a",
+								"text": "Transactions filtered on ResponseType = Throttled, split by ApiName and Region"
+							},
+							{
+								"id": "b",
+								"text": "DataTransfer filtered on ResponseType = Throttled, split by ApiName and Region"
+							},
+							{
+								"id": "c",
+								"text": "StorageUsed split by ApiName and Region"
+							},
+							{
+								"id": "d",
+								"text": "Transactions split by ApiName and Region with no filter applied"
+							}
+						]
+					},
+					{
+						"id": "total",
+						"options": [
+							{
+								"id": "a",
+								"text": "7.2 TiB"
+							},
+							{
+								"id": "b",
+								"text": "2.4 TiB"
+							},
+							{
+								"id": "c",
+								"text": "9.6 TiB"
+							},
+							{
+								"id": "d",
+								"text": "4.8 TiB"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"filter": "a",
+				"total": "a"
+			},
+			"explanation": {
+				"correct": "Two separate facts drive the answer. First, to find the rejected requests, the registry's request records carry a response type, so filtering Transactions on ResponseType = Throttled and splitting by ApiName and Region shows exactly which operations and which regions were turned away; DataTransfer measures bytes moved rather than rejections, the StorageUsed metric tracks storage, and unfiltered Transactions mixes successful calls into the result. Second, for a registry that replicates to more than one region, the storage figure the registry reports covers only the region where it was created, so the whole registry holds 2.4 TiB times three regions = 7.2 TiB.",
+				"perChoice": {
+					"filter:b": "DataTransfer records how much data was transferred for each operation; it holds no rejected-call detail, so filtering it cannot reveal which requests the registry turned away.",
+					"filter:c": "The StorageUsed metric reports how much storage the registry holds; it carries no response type and no per-operation breakdown, so it cannot isolate rejected requests.",
+					"filter:d": "Without a filter, Transactions returns every call, including the successful pulls and pushes, so it does not isolate the requests that were rejected.",
+					"total:b": "This is only the figure for the region where the registry was created; it leaves out the images held in the two additional replication regions.",
+					"total:c": "This multiplies the reported figure by four, which would count one region more than the three the registry actually serves.",
+					"total:d": "This multiplies the reported figure by two, which covers only the two additional replication regions and omits the region where the registry was created."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-skus"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-intro"
+				}
+			],
+			"subtopics": [
+				"rate-limit-diagnostics",
+				"registry-usage-reporting"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V2PABDB216450JKHA6CC7B",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You own an Azure Container Registry that stores the delivery images for your organisation. The pipeline that produces those images is described below; today it runs on an external build server where an engineer starts each step in turn, so a full run takes more than an hour and nothing happens when nobody is watching. You want the registry to carry out the whole sequence on its own inside Azure, as one job, with the steps that do not depend on each other performed at the same time so that a run finishes far sooner. Which ACR Tasks feature should the platform team use?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Step | Work carried out\n1    | Compile the shared image from the common sources\n2    | Run the integration test suite inside the compiled image (needs step 1)\n3    | Compile a patched variant of the shared image\n4    | Push the compiled and patched images into the registry (needs steps 1 and 3)"
+				},
+				"statement": "The platform team should use {{feature}}.",
+				"slots": [
+					{
+						"id": "feature",
+						"options": [
+							{
+								"id": "a",
+								"text": "A multi-step task"
+							},
+							{
+								"id": "b",
+								"text": "A single-step task"
+							},
+							{
+								"id": "c",
+								"text": "A base-image trigger"
+							},
+							{
+								"id": "d",
+								"text": "A source-code commit trigger"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"feature": "a"
+			},
+			"explanation": {
+				"correct": "The requirement is that the registry itself runs the whole sequence — compile, test, patched variant, push — as one job in Azure, with the parts that do not depend on each other performed at the same time. Azure Container Registry tasks cover exactly this: tasks build images in Azure on demand, and a multi-step task builds, tests and patches images in parallel in the cloud, so the independent steps of the sequence run simultaneously and the whole run happens inside the registry service rather than on an external server.",
+				"perChoice": {
+					"feature:b": "A single-step task performs one operation per run, so it cannot carry out the compile, test, patched-variant and push steps as one job, and it offers no mechanism for running independent steps at the same time.",
+					"feature:c": "A base-image trigger only determines when a task is invoked, for example when a referenced base image receives a new version. It says nothing about how several steps of a pipeline are composed and executed within one task run, so it does not meet the requirement.",
+					"feature:d": "A source-code commit trigger likewise decides when a task starts based on commits made to the source repository. It does not provide a way to run the several steps of the pipeline together in one task, so it does not meet the requirement."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-intro"
+				}
+			],
+			"subtopics": [
+				"acr-tasks",
+				"multi-step-tasks"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V318GETKKPJ62690FMWE02",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your data-science team builds a training tool together with its model weights into a container image and pushes it to the Azure Container Registry that already holds the platform's other images. Every push attempt is refused, and the message returned by the registry points at the 240 GiB layer inside that image as the reason. The registry's current state is shown below. You need the analytics image stored in this same registry alongside the others, and the platform team does not want to run a second registry for it. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Property              | Value\n----------------------|-----------------\nPricing plan          | Standard\nRegion                | West Europe\nStorage consumed      | 35 TiB\nRepositories          | 46\nWebhooks configured   | 5\nAnonymous pull access | Enabled"
+				},
+				"statement": "You should {{fix}}.",
+				"slots": [
+					{
+						"id": "fix",
+						"options": [
+							{
+								"id": "a",
+								"text": "repackage the image so that each layer stays under the per-layer ceiling the registry applies"
+							},
+							{
+								"id": "b",
+								"text": "move the registry to the Premium pricing plan, which permits larger layers"
+							},
+							{
+								"id": "c",
+								"text": "ask Azure Support to raise the registry's storage ceiling so the image can be pushed as it is"
+							},
+							{
+								"id": "d",
+								"text": "enable zone redundancy on the registry so the large layer is kept across availability zones"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"fix": "a"
+			},
+			"explanation": {
+				"correct": "The registry applies the same maximum image layer size of 195 GiB (and a maximum manifest size of 4 MiB) on Basic, Standard and Premium, so the refusal is caused by the 240 GiB layer in the image and not by anything a different plan would change. Repackaging the image so that no layer goes over that per-layer ceiling is the change that lets the push succeed; changing the pricing plan or asking for more storage leaves the layer ceiling exactly where it is.",
+				"perChoice": {
+					"fix:b": "Moving to Premium leaves the per-layer ceiling unchanged at 195 GiB, because every pricing plan enforces the same maximum image layer size and manifest size. Premium mainly adds included storage, higher throughput, geo-replication and private link, none of which widens the layer limit.",
+					"fix:c": "Azure Support can raise a registry's storage limit, its private endpoint count and its push/pull performance limits, but the per-layer and per-manifest size ceilings are not among the limits that can be increased, and this push is failing because of layer size rather than because storage ran out.",
+					"fix:d": "Zone redundancy concerns how the registry's storage is replicated across availability zones in the region; it does not change how large an individual layer may be, and that ceiling is identical on every pricing plan."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-skus"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-intro"
+				}
+			],
+			"subtopics": [
+				"registry-limits",
+				"image-layers",
+				"troubleshooting"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V3V22PT2EQAS9EKTAFQ649",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You sell containerized software to appliance manufacturers whose build farms run in their own data centers and have no identity in your directory. Compliance rules forbid registering the manufacturers' systems in your directory, so every build farm must be given a credential that the registry issues itself, restricted to pulling images from that manufacturer's own repository. Each farm must hold its own credential so that revoking one manufacturer's access does not disturb the others, and all of the manufacturers' images have to remain in this single registry. The registry and the credentials already issued are described below.\n\nYou need the registry to support every build farm with its own individual credential. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Registry name: contosoparts.azurecr.io\nLocation: West Europe\nPricing plan: Standard\nNon-Microsoft Entra tokens issued: 470\nScope maps in use: 470\nManufacturer build farms that must sign in: 600\nRepositories each credential may pull from: 1\nIdentities available to the manufacturers in the directory: None"
+				},
+				"statement": "The registry should run on the {{plan}} pricing plan so that every build farm can be given its own scoped credential.",
+				"slots": [
+					{
+						"id": "plan",
+						"options": [
+							{
+								"id": "a",
+								"text": "Run the registry on the Premium pricing plan"
+							},
+							{
+								"id": "b",
+								"text": "Run the registry on the Standard pricing plan and request a higher token limit from Azure Support"
+							},
+							{
+								"id": "c",
+								"text": "Run the registry on the Standard pricing plan and let all build farms share a single scoped credential"
+							},
+							{
+								"id": "d",
+								"text": "Run the registry on the Standard pricing plan and give each build farm the registry's administrator credentials"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"plan": "a"
+			},
+			"explanation": {
+				"correct": "Each build farm needs its own credential issued by the registry itself, with permissions limited to one manufacturer repository, which is what a non-Microsoft Entra token bound to a scope map provides. The Standard plan allows only 500 such tokens, so the 600 individually revocable credentials the manufacturers need do not fit, and the number of tokens is one of the registry limits that Azure Support cannot raise. The Premium plan allows 50,000 non-Microsoft Entra tokens, so running the registry on Premium is the only way to issue one token per build farm. Repository-scoped permissions with non-Microsoft Entra tokens and scope maps remain supported there, and a Premium scope map can cover up to 500 repositories with up to 500 actions, so restricting each credential to a single manufacturer repository is fully achievable.",
+				"perChoice": {
+					"plan:b": "The maximum number of non-Microsoft Entra tokens is a fixed limit: only storage limits, private endpoint counts, and push/pull performance limits can be increased through an Azure Support request, while token and scope map counts cannot. The Standard plan also caps tokens at 500, which is fewer than the 600 separate credentials the build farms need, so neither half of this option satisfies the requirement.",
+					"plan:c": "A single shared credential cannot be revoked for one manufacturer without affecting every other one, and it cannot limit each manufacturer to its own repository, so it breaks the stated requirement of individually revocable, per-partner credentials. It also does not give each build farm a credential of its own, which is the control the partners are being asked to accept.",
+					"plan:d": "The built-in administrator account grants broad access to the whole registry and cannot be restricted to a single manufacturer's repository, so it fails the per-partner restriction. It would also mean every build farm shares one credential, which is exactly what must be avoided, and all of that traffic would count against a single identity for throttling."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-skus"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-intro"
+				}
+			],
+			"subtopics": [
+				"acr-pricing-plans",
+				"acr-tokens-and-scope-maps",
+				"acr-authentication"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V4290ZZVNP6F3FWVRZ6PNH",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are standing up a shared container registry for four product teams with an infrastructure pipeline. The creation step fails and nothing is deployed; the output below is everything the pipeline recorded. The team standard requires the registry name to carry the environment and the year, and the same name will be referenced from every Dockerfile and Helm chart once the registry exists. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "$ az acr create --name fabrikam-2026-prod --resource-group rg-platform --sku Standard --location westeurope\nERROR: The registry name is invalid."
+				},
+				"statement": "The team should {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Create the registry with a name made up of letters and digits only"
+							},
+							{
+								"id": "b",
+								"text": "Create the registry with a name made up of letters, digits, and dashes"
+							},
+							{
+								"id": "c",
+								"text": "Create the registry with a name made up of letters and digits that is three characters long"
+							},
+							{
+								"id": "d",
+								"text": "Create the registry with the same name in a different resource group"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "A registry name must be unique across Azure, must be 5 to 50 characters long, and may be built only from letters and digits, so dashes are not permitted (they are the delimiter used in the hashed DNS name of protected registries). The submitted name fabrikam-2026-prod is rejected because of the dashes it carries; its length is already within the permitted range and it is not too long. Removing the dashes keeps the environment and the year in the name, produces a name the service accepts, and that name then forms the registry's fully qualified DNS address used in Dockerfiles and Helm charts.",
+				"perChoice": {
+					"action:b": "Dashes are excluded from a registry name because they are used as the delimiter in the hashed DNS name of protected registries, so a name that keeps them is refused again.",
+					"action:c": "A name shorter than five characters is refused as well, and the submitted name was already inside the permitted 5-50 character range, so trimming it to three characters does not address the validation failure.",
+					"action:d": "The name is validated in the same way regardless of where the registry is placed, so deploying the identical name in another resource group leaves the dashes in place and the creation fails exactly as before."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-get-started-portal"
+				}
+			],
+			"subtopics": [
+				"registry-naming",
+				"create-registry"
+			],
+			"reviewed": false
+		}
+	]
+}

@@ -1,0 +1,1664 @@
+{
+	"skill": "compute.arm-modify",
+	"questions": [
+		{
+			"id": "q_01M5Q843AMXM56QTPTX25H0W2V",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You maintain an ARM template that creates a storage account, and your team deploys the saved file azuredeploy.json with New-AzResourceGroupDeployment against a resource group that already exists. You need to revise the template so that only the storage SKUs your company licenses can be requested, and so that the deployment still completes when the caller does not pass a SKU value at all. Which entry should you place in the template's parameters section for that SKU?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"$schema\": \"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#\",\n  \"contentVersion\": \"1.0.0.0\",\n  \"parameters\": {\n    \"storageAccountName\": {\n      \"type\": \"string\",\n      \"metadata\": {\n        \"description\": \"Name of the storage account\"\n      }\n    },\n    \"skuName\": {\n      \"type\": \"string\"\n    },\n    \"location\": {\n      \"type\": \"string\",\n      \"defaultValue\": \"[resourceGroup().location]\"\n    }\n  },\n  \"resources\": [\n    {\n      \"type\": \"Microsoft.Storage/storageAccounts\",\n      \"apiVersion\": \"2023-01-01\",\n      \"name\": \"[parameters('storageAccountName')]\",\n      \"location\": \"[resourceGroup().location]\",\n      \"sku\": {\n        \"name\": \"[parameters('skuName')]\"\n      },\n      \"kind\": \"StorageV2\"\n    }\n  ]\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "\"skuName\": { \"type\": \"string\", \"defaultValue\": \"Standard_LRS\", \"allowedValues\": [ \"Standard_LRS\", \"Standard_GRS\", \"Premium_LRS\" ] }"
+					},
+					{
+						"id": "b",
+						"text": "\"skuName\": { \"type\": \"string\", \"allowedValues\": [ \"Standard_LRS\", \"Standard_GRS\", \"Premium_LRS\" ] }"
+					},
+					{
+						"id": "c",
+						"text": "\"skuName\": { \"type\": \"string\", \"defaultValue\": \"Standard_LRS\" }"
+					},
+					{
+						"id": "d",
+						"text": "\"skuName\": { \"type\": \"int\", \"defaultValue\": 1, \"minValue\": 1, \"maxValue\": 3 }"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The keyed entry combines the two constraints the requirement needs on one string parameter. The allowedValues array holds the permitted values, and a deployment is rejected during validation when the supplied value is not among them; the defaultValue is applied only when the caller supplies no value at all. The two properties can be declared together on the same parameter, so editing the existing skuName entry this way restricts the SKU to the licensed set while still letting a caller omit it.",
+				"perChoice": {
+					"b": "The permitted-value list is present, but the parameter has no fallback, so a deployment that omits the SKU fails instead of completing with a sensible value.",
+					"c": "The fallback is present, but with no list of permitted values any string is accepted, so an unapproved or mistyped SKU passes validation and is carried through to the storage account resource.",
+					"d": "minValue and maxValue constrain numeric parameters, while the storage account SKU is a name string, and this entry also drops the list of licensed tiers so an arbitrary name would still be accepted."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/parameters"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-tutorial-create-first-template"
+				}
+			],
+			"subtopics": [
+				"arm-template-parameters",
+				"parameter-validation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q85RS2W2CDVKG3PZHFJB68",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You maintain an ARM template for a virtual machine scale set that the platform team deploys with New-AzResourceGroupDeployment. The template takes a single object parameter that carries the instance count, the administrator login name and the image publisher. Your change advisory board wants any request that carries a setting outside that approved list to be stopped before anything is deployed, while the three approved settings must still have to be supplied on every deployment. Which change should you make to the saved template?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"$schema\": \"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#\",\n  \"contentVersion\": \"1.0.0.0\",\n  \"languageVersion\": \"2.0\",\n  \"parameters\": {\n    \"scaleSetSettings\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"instanceCount\": { \"type\": \"int\" },\n        \"adminLogin\": { \"type\": \"string\" },\n        \"imagePublisher\": { \"type\": \"string\" }\n      }\n    }\n  },\n  \"resources\": [\n    {\n      \"type\": \"Microsoft.Compute/virtualMachineScaleSets\",\n      \"apiVersion\": \"2024-07-01\",\n      \"name\": \"vmss-prod\",\n      \"location\": \"[resourceGroup().location]\",\n      \"properties\": {\n        \"sku\": { \"name\": \"Standard_D2s_v5\" }\n      }\n    }\n  ]\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set \"additionalProperties\": false on the object parameter and leave the existing \"properties\" map unchanged"
+					},
+					{
+						"id": "b",
+						"text": "Set \"additionalProperties\": true on the object parameter and leave the existing \"properties\" map unchanged"
+					},
+					{
+						"id": "c",
+						"text": "Set \"additionalProperties\" to a string type definition on the object parameter and leave the existing \"properties\" map unchanged"
+					},
+					{
+						"id": "d",
+						"text": "Set \"items\": false on the object parameter and leave the existing \"properties\" map unchanged"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The template already declares languageVersion 2.0, which enables the aggregate type validation constraints on parameters, and the object's \"properties\" map already makes instanceCount, adminLogin and imagePublisher mandatory, because every listed property is required unless its type definition sets \"nullable\": true. What is missing is a restriction on extra keys: when no additionalProperties constraint is given, the default is true, so an object parameter silently accepts undeclared keys. Adding \"additionalProperties\": false means no properties beyond those defined in the \"properties\" map may be supplied, so a request carrying a setting outside the approved list fails during validation, while the three listed settings remain required.",
+				"perChoice": {
+					"b": "Setting the constraint to true is what already happens by default: any property that is not listed in the \"properties\" map is accepted with any value, so a request carrying an unapproved setting would still go through.",
+					"c": "A type definition describes the schema that applies to the extra properties, so it only constrains the values those extra settings may take. Keys outside the approved list are still accepted, so the request would not be stopped.",
+					"d": "\"items\" is an array constraint used to validate elements of an array parameter; it does not apply to an object parameter and would not restrict the keys of the object."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/parameters"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-tutorial-create-first-template"
+				}
+			],
+			"subtopics": [
+				"arm-template-parameters",
+				"object-parameter-validation",
+				"language-version-2-0"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q89GKMB8R34F5FE3JA9J26",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You maintain an ARM template that creates a storage account in a resource group that already exists, and the platform team deploys the saved file with New-AzResourceGroupDeployment. After a recent edit, every run stops during validation with an error about a language expression, before a single resource is created. You need the deployment to complete again, and you still need the team to read the storage account's blob endpoint back from the deployment once the run succeeds. Which change should you make to the saved template?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"$schema\": \"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#\",\n  \"contentVersion\": \"2.1.0.0\",\n  \"parameters\": {\n    \"storageAccountName\": {\n      \"type\": \"string\",\n      \"defaultValue\": \"contosostore\"\n    },\n    \"storageBlobEndpoint\": {\n      \"type\": \"string\",\n      \"defaultValue\": \"[reference(resourceId('Microsoft.Storage/storageAccounts','contosostore')).primaryEndpoints.blob]\"\n    }\n  },\n  \"resources\": [\n    {\n      \"type\": \"Microsoft.Storage/storageAccounts\",\n      \"apiVersion\": \"2023-01-01\",\n      \"name\": \"[parameters('storageAccountName')]\",\n      \"location\": \"[resourceGroup().location]\",\n      \"sku\": { \"name\": \"Standard_LRS\" },\n      \"kind\": \"StorageV2\",\n      \"properties\": {}\n    }\n  ]\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Store the reference() expression in the outputs section of the template instead of in a parameter defaultValue."
+					},
+					{
+						"id": "b",
+						"text": "Keep the reference() expression in the parameters section of the template and change that parameter to the secureObject type."
+					},
+					{
+						"id": "c",
+						"text": "Keep the reference() expression in the parameters section of the template and replace it with a fixed defaultValue that someone types in by hand."
+					},
+					{
+						"id": "d",
+						"text": "Replace the parameter with a variable in the variables section of the template so that the reference() expression is evaluated after the deployment starts."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Resource Manager resolves parameter values before it starts the deployment operations, and reference() needs the runtime state of a resource, so it cannot be used in the parameters section; that is exactly why the run now fails during validation before anything is created. The place to define a value taken from a deployed resource, such as a storage account's primaryEndpoints.blob, and to return it to whoever ran the deployment is the outputs section of the template, so the reference() expression belongs there and the parameter that carries it should be removed.",
+				"perChoice": {
+					"b": "Marking the parameter as secureObject only controls whether the value is kept out of deployment history and logs. It does not change the point at which the parameter is resolved, so a reference() expression declared in the parameters section still fails before the deployment starts.",
+					"c": "Typing a fixed defaultValue by hand would let the validation pass, but the value would be hard-coded and could drift from the real storage account, and it still would not be returned to the team in the deployment results, so it does not satisfy the requirement.",
+					"d": "A variable's value can be reused inside the template, but its content is not returned to the caller in the deployment results, so the team still could not read the blob endpoint back from the deployment even though the template would run."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/parameters"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-functions"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-tutorial-create-first-template"
+				}
+			],
+			"subtopics": [
+				"arm-template-parameters",
+				"template-functions-reference",
+				"deployment-outputs"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q8EY95B75JANVNAM2EAVC6",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You maintain an ARM template that the platform team deploys with New-AzResourceGroupDeployment against a resource group that already exists. A change request adds one more setting that the operator must choose at deployment time, and a test run of that change stopped during validation before any resource was created. You need the deployment to succeed again with the new setting supplied by the caller on every run. Which change should you make to the saved template?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Template element",
+						"Current state of azuredeploy.json"
+					],
+					"rows": [
+						[
+							"$schema",
+							"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#"
+						],
+						[
+							"languageVersion",
+							"2.0"
+						],
+						[
+							"contentVersion",
+							"1.0.0.0"
+						],
+						[
+							"parameters",
+							"256 declarations, all of them of type \"string\" - for example vmSize, adminUsername, diskSizeGB"
+						],
+						[
+							"variables",
+							"none declared"
+						],
+						[
+							"outputs",
+							"none declared"
+						],
+						[
+							"resources",
+							"One Microsoft.Compute/virtualMachines entry whose properties take their settings from parameters('...')"
+						],
+						[
+							"Deployment command",
+							"New-AzResourceGroupDeployment -Name vmdeploy -ResourceGroupName myResourceGroup -TemplateFile $templateFile"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Combine the related inputs into one object parameter and read the entries with parameters('name').memberName"
+					},
+					{
+						"id": "b",
+						"text": "Declare the new setting as one more string parameter, giving the template 257 parameters"
+					},
+					{
+						"id": "c",
+						"text": "Move the inputs into the variables section and read them with variables('name')"
+					},
+					{
+						"id": "d",
+						"text": "Declare the new setting in the outputs section and read it back after the deployment finishes"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A single template may declare at most 256 parameters, and the saved file already contains 256 declarations, so one extra declaration pushes it past that limit and the run fails during validation before any resource is created. Grouping the related settings into one parameter of type object keeps the declaration count under the limit while still letting the caller supply the values: the deployment passes a single object and the template reads each entry with parameters('name').memberName. Because the file uses languageVersion 2.0, the object's properties can also be listed, and every listed property is required unless its type definition sets \"nullable\": true, so the new setting has to be supplied by the caller on every run. Setting additionalProperties to false on that object rejects keys that are not part of the approved list.",
+				"perChoice": {
+					"b": "The template already declares 256 parameters, the maximum one template may contain, so adding one more string declaration takes it over the limit and the deployment fails during validation. The limit counts declarations, not the number of settings the virtual machine can receive, so the new setting has to arrive through a declaration that replaces existing ones rather than through an extra one.",
+					"c": "Variables are values defined inside the template and are resolved before the deployment operations start; they are never supplied by the caller. Moving the settings into the variables section would mean the operator could no longer choose the new setting at deployment time, and those declarations would have to fit under the separate limit that applies to the variables section.",
+					"d": "Outputs are the values the deployment returns once it finishes, and they are shown next to the inputs in the deployment summary in the portal; they are not inputs. Declaring the new setting there would not let the caller supply it, and the number of parameters would stay at the limit, so the validation failure would remain."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/parameters"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-functions"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-tutorial-create-first-template"
+				}
+			],
+			"subtopics": [
+				"arm-template-parameters",
+				"object-parameters",
+				"template-limits"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q8GY0T2H9SANP6YHQN1A90",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You maintain an ARM template for a virtual machine scale set that the platform team deploys with New-AzResourceGroupDeployment against a resource group that already exists. The saved file azuredeploy.json currently accepts the scale set capacity as free-form text, so a run can ask for a count of 99 or send a value such as many. Your change request requires the deployment to turn down any count below 2 or above 10 before it touches a resource, while counts inside that range keep deploying as before. Which change should you make to the saved template?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"$schema\": \"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#\",\n  \"contentVersion\": \"1.0.0.0\",\n  \"parameters\": {\n    \"capacity\": {\n      \"type\": \"string\",\n      \"metadata\": {\n        \"description\": \"How many instances to run in the scale set\"\n      }\n    },\n    \"location\": {\n      \"type\": \"string\",\n      \"defaultValue\": \"[resourceGroup().location]\"\n    }\n  },\n  \"resources\": [\n    {\n      \"type\": \"Microsoft.Compute/virtualMachineScaleSets\",\n      \"apiVersion\": \"2023-03-01\",\n      \"name\": \"[concat('ssc-', parameters('location'))]\",\n      \"location\": \"[parameters('location')]\",\n      \"sku\": {\n        \"name\": \"Standard_D2s_v5\",\n        \"capacity\": \"[parameters('capacity')]\"\n      }\n    }\n  ]\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Change the parameter's type to int and add minValue: 2 plus maxValue: 10"
+					},
+					{
+						"id": "b",
+						"text": "Keep the parameter's type as string and add minLength: 2 plus maxLength: 10"
+					},
+					{
+						"id": "c",
+						"text": "Change the parameter's type to int and add minLength: 2 plus maxLength: 10"
+					},
+					{
+						"id": "d",
+						"text": "Keep the parameter's type as string and add minValue: 2 plus maxValue: 10"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "To enforce an inclusive numeric range, the count must be declared as an integer parameter, because minValue and maxValue are the constraints that apply to int parameters in ARM templates. Changing the capacity parameter's type to int and adding minValue: 2 and maxValue: 10 makes any request below 2 or above 10 fail during validation, before any resource in the group is created, while counts from 2 through 10 continue to deploy exactly as before.",
+				"perChoice": {
+					"b": "minLength and maxLength are the constraints for string and array parameters, where they measure character count or item count; they are not numeric range checks. With the parameter left as string, a request of 99 has only two characters, so it would satisfy a length of 2 and still be accepted.",
+					"c": "The length constraints apply to string and array parameters, so once the type is int, minLength and maxLength do nothing for the value. That change leaves the 2 to 10 range unenforced and any integer, such as 99, would still be accepted.",
+					"d": "The numeric range constraints are only enforced on integer parameters. Leaving the type as string means minValue and maxValue do not check the supplied value, so a request of 99 or many would still pass validation and reach the deployment."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/parameters"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-tutorial-create-first-template"
+				}
+			],
+			"subtopics": [
+				"arm-template-parameters",
+				"parameter-validation-constraints"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q8P1KCVVN0DVQBW6EZKN3G",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an ARM template saved as azuredeploy.json. Its configuration is currently declared as many parameters, as shown below. The operations team must still be able to supply every setting on each deployment run, and the deployment is currently rejected before it creates anything. Which change should you make to the saved template?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Configuration area",
+						"Parameter declarations",
+						"Example setting names"
+					],
+					"rows": [
+						[
+							"Networking",
+							"118",
+							"vnetName, addressPrefix, subnetCount"
+						],
+						[
+							"Subnets",
+							"96",
+							"subnetName, subnetPrefix, delegationId"
+						],
+						[
+							"Monitoring",
+							"50",
+							"workspaceName, retentionDays, alertEmail"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Replace the separate parameters with one object parameter that carries the settings, and read each setting from that parameter in the resources section."
+					},
+					{
+						"id": "b",
+						"text": "Change the type of each parameter from string to int and keep the same number of parameter declarations."
+					},
+					{
+						"id": "c",
+						"text": "Move the settings into the variables section and reference variables() instead of parameters()."
+					},
+					{
+						"id": "d",
+						"text": "Delete the separate parameter definitions and write each setting value directly into the resources section."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A template may declare at most 256 parameters, and the counts in the exhibit add up to 118 + 96 + 50 = 264, which is why the deployment is rejected before any resource is created. Consolidating the related settings into one object parameter lowers the number of declarations below the ceiling, keeps every setting reachable from the resources section through that parameter's properties (for example parameters('networkSettings').name), and still lets the operations team supply the values on each run.",
+				"perChoice": {
+					"b": "Changing a parameter's data type does not change how many parameters the template declares, so the count remains above the ceiling and the deployment is still rejected; it also stops non-numeric settings such as names from being supplied at all.",
+					"c": "Values placed in variables are fixed inside the template and cannot be supplied by the caller when a deployment runs, so the operations team would lose the ability to choose these settings for each run. Organizing related values into an object parameter is the documented way to cut the parameter count while keeping deployment-time input.",
+					"d": "Writing the values straight into the resources section removes the deployment-time inputs altogether, so the operations team can no longer supply the settings on each run, which the scenario requires."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/parameters"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-functions"
+				}
+			],
+			"subtopics": [
+				"arm-parameters",
+				"object-parameters"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q8SG9DK9M7HE97JGX7FEWR",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an ARM template saved as azuredeploy.json that asks the operator for a network rule configuration on every deployment. You need each run to carry exactly two entries in a fixed order — the protocol name as text first, then the port as a whole number — and you need any run with the wrong number of entries or a value of the wrong kind to be turned down during validation, before anything is deployed. Which change should you make to the saved template?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"languageVersion\": \"2.0\",\n  \"parameters\": {\n    \"ruleSettings\": {\n      \"type\": \"array\",\n      \"metadata\": {\n        \"description\": \"Network rule details used by the deployment.\"\n      }\n    }\n  },\n  \"variables\": {\n    \"protocol\": \"[parameters('ruleSettings')[0]]\",\n    \"port\": \"[parameters('ruleSettings')[1]]\"\n  },\n  \"outputs\": {\n    \"appliedProtocol\": {\n      \"type\": \"string\",\n      \"value\": \"[variables('protocol')]\"\n    },\n    \"appliedPort\": {\n      \"type\": \"int\",\n      \"value\": \"[variables('port')]\"\n    }\n  }\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "In the ruleSettings parameter definition, add \"prefixItems\" with a schema for a text entry followed by a schema for a whole-number entry, and set \"items\" to false."
+					},
+					{
+						"id": "b",
+						"text": "In the ruleSettings parameter definition, add \"prefixItems\" with a schema for a text entry followed by a schema for a whole-number entry, and leave \"items\" unset."
+					},
+					{
+						"id": "c",
+						"text": "In the ruleSettings parameter definition, add a single \"items\" schema that allows a text entry or a whole-number entry."
+					},
+					{
+						"id": "d",
+						"text": "Change the ruleSettings parameter definition to \"type\": \"object\" with a \"properties\" block for the protocol and the port, and add \"additionalProperties\": false."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "With \"languageVersion\": \"2.0\" in the template, \"prefixItems\" assigns a schema to each fixed position of the array, so the first position can require text and the second a whole number. Adding \"items\": false pins the collection to exactly those two prefix schemas, so a run carrying one entry, a third entry, or a value of the wrong kind is rejected during validation before any resource is touched.",
+				"perChoice": {
+					"b": "Leaving \"items\" unset means it defaults to true, and \"items\" governs elements beyond the last index covered by \"prefixItems\", so a third entry would still pass validation and fail later instead of being turned down before deployment.",
+					"c": "A single \"items\" schema applies to every element and does not distinguish positions, so text and whole numbers can be swapped and the number of entries is not pinned; the bad request would reach the deployment rather than being rejected during validation.",
+					"d": "An object parameter with \"properties\" and \"additionalProperties\": false validates named members of an object, but this template reads the input as a two-entry collection through indexed positions, so changing the shape breaks the deployment instead of rejecting the bad requests."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/parameters"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-tutorial-create-first-template"
+				}
+			],
+			"subtopics": [
+				"arm-template-parameters",
+				"language-version-2-0",
+				"array-parameter-validation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q8W7571FSQQE5AGZ2ZBTNW",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your team maintains an ARM template that provisions a SQL server and its database, and the platform group deploys the saved file with New-AzResourceGroupDeployment against a resource group that already exists. The current parameters section and the resource that consumes them are shown below. A recent audit reported that the administrator password that operators type into the deployment form ends up stored in the deployment record and printed in the deployment log. You need to revise the saved template so that the deployment still runs exactly as before, while that password value is no longer written into the deployment record or the log. Which change should you make to the saved template?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"$schema\": \"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#\",\n  \"contentVersion\": \"1.0.0.0\",\n  \"parameters\": {\n    \"sqlServerName\": { \"type\": \"string\" },\n    \"administratorLogin\": { \"type\": \"string\" },\n    \"administratorPassword\": { \"type\": \"string\" },\n    \"databaseName\": { \"type\": \"string\" },\n    \"skuName\": { \"type\": \"string\" }\n  },\n  \"resources\": [\n    {\n      \"type\": \"Microsoft.Sql/servers\",\n      \"apiVersion\": \"2023-05-01-preview\",\n      \"name\": \"[parameters('sqlServerName')]\",\n      \"properties\": {\n        \"administratorLogin\": \"[parameters('administratorLogin')]\",\n        \"administratorLoginPassword\": \"[parameters('administratorPassword')]\"\n      }\n    }\n  ]\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Declare the administratorPassword parameter with the type secureString."
+					},
+					{
+						"id": "b",
+						"text": "Declare the administratorPassword parameter with the type secureObject."
+					},
+					{
+						"id": "c",
+						"text": "Declare the administratorPassword parameter with the type string, and add a metadata description telling operators to rotate the password after every deployment."
+					},
+					{
+						"id": "d",
+						"text": "Declare the administratorPassword parameter with the type string, and add allowedValues so that only the three passwords used by the test environment can be supplied."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "ARM templates offer two parameter types that mark a value as sensitive: secureString for a standalone secret such as this SQL administrator password, and secureObject when the secret is carried inside an object parameter. When a parameter is declared as secureString, Resource Manager still resolves the operator's value and hands it to the resource exactly as before, but the value is not saved to the deployment history and is not logged. So changing only the type of administratorPassword from string to secureString keeps the deployment working while keeping the password out of the deployment record and the log. Keep in mind the trade-off: because no copy of the value is kept, nobody can read the password back from the deployment afterwards, so the platform team must store it somewhere else (for example in Key Vault) if it is needed later.",
+				"perChoice": {
+					"b": "secureObject is meant for a secret that travels inside an object parameter, where the value is an object with named properties. Here the administrator password is a single standalone value that the resource reads directly through parameters('administratorPassword'), so an object type is the wrong fit: it changes the shape of the value the caller must supply and would no longer match how the resource consumes it. secureString is the type that marks a single sensitive string.",
+					"c": "A metadata description only adds help text that the portal shows as a tip for that parameter in the deployment form; it has no effect on how the value is stored or logged. Leaving the type as string means the password is still written to the deployment history and still printed in the deployment log, so the audit finding stays open.",
+					"d": "allowedValues merely restricts the supplied value to a fixed list and fails validation for anything else. It does not change whether the value is saved in the deployment history or logged, and it would also break the real workflow, because operators would be limited to the three test environment passwords. Keeping the type as string leaves the password readable in the deployment record and the log."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/parameters"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-tutorial-create-first-template"
+				}
+			],
+			"subtopics": [
+				"arm-template-parameters",
+				"secure-parameters"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q8ZFZYEXN2CHXES846AW9T",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have an ARM template saved as azuredeploy.json that the platform team deploys with New-AzResourceGroupDeployment against a resource group that already exists. You need to revise the saved template so that the review board's six requirements below are met on every run, and the parameter names currently declared in the file are listed in the exhibit. Which template change should you place for each requirement?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Parameter in the current file",
+						"What it carries"
+					],
+					"rows": [
+						[
+							"storageSku",
+							"The account tier chosen on each run"
+						],
+						[
+							"adminPassword",
+							"The administrator credential"
+						],
+						[
+							"vNetSettings",
+							"The grouped settings for the virtual network"
+						],
+						[
+							"networkRule",
+							"The network rule configuration as text"
+						],
+						[
+							"deploymentTag",
+							"The label applied to the resources in the group"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "maxLength"
+					},
+					{
+						"id": "i2",
+						"text": "secureObject"
+					},
+					{
+						"id": "i3",
+						"text": "allowedValues"
+					},
+					{
+						"id": "i4",
+						"text": "metadata.description"
+					},
+					{
+						"id": "i5",
+						"text": "defaultValue"
+					},
+					{
+						"id": "i6",
+						"text": "secureString"
+					},
+					{
+						"id": "i7",
+						"text": "maxValue"
+					},
+					{
+						"id": "i8",
+						"text": "minLength"
+					}
+				],
+				"slots": [
+					{
+						"id": "sku_choices",
+						"label": "storageSku — turn down any request that falls outside the approved list of options"
+					},
+					{
+						"id": "sku_fallback",
+						"label": "storageSku — supply a fallback when the operator leaves the field empty"
+					},
+					{
+						"id": "admin_secret",
+						"label": "adminPassword — keep the credential out of the deployment record and the log"
+					},
+					{
+						"id": "grouped_secret",
+						"label": "vNetSettings — keep a credential out of the deployment record when it is carried inside a grouped setting"
+					},
+					{
+						"id": "rule_ceiling",
+						"label": "networkRule — turn down a text value that exceeds the approved character ceiling"
+					},
+					{
+						"id": "tag_hint",
+						"label": "deploymentTag — show a short note on the deployment form so operators know what to type"
+					}
+				]
+			},
+			"key": {
+				"sku_choices": "i3",
+				"sku_fallback": "i5",
+				"admin_secret": "i6",
+				"grouped_secret": "i2",
+				"rule_ceiling": "i1",
+				"tag_hint": "i4"
+			},
+			"explanation": {
+				"correct": "Each review requirement is met by the parameter property that Resource Manager applies when the deployment runs: allowedValues rejects a request whose value is not in the approved list during validation, before any resource is touched; defaultValue supplies the fallback only when the caller supplies nothing; secureString keeps a secret out of the deployment history and the log; secureObject does the same when the secret travels inside an object; maxLength caps the character count of a text value; and metadata.description becomes the tip shown for that parameter on the portal deployment form. minLength sets a lower bound and maxValue limits whole-number parameters, so neither satisfies any of the six requirements.",
+				"perChoice": {
+					"i1": "Slot 'rule_ceiling' — maxLength constrains a text value by character count (and an array by item count), so an input longer than the approved ceiling is turned down.",
+					"i2": "Slot 'grouped_secret' — secureObject is the choice when the secret travels inside an object, so the value is not saved to deployment history or logged.",
+					"i3": "Slot 'sku_choices' — allowedValues holds the permitted values in an array, and a request outside that list fails during validation before any resource is created.",
+					"i4": "Slot 'tag_hint' — metadata.description becomes the tip shown for that parameter in the portal deployment form, so the operator sees extra guidance about what to type.",
+					"i5": "Slot 'sku_fallback' — defaultValue is used only when the caller supplies no value, and it can be combined with allowedValues on the same parameter.",
+					"i6": "Slot 'admin_secret' — secureString marks a secret so its value is not written to deployment history and is not logged.",
+					"i7": "Fits no slot — maxValue constrains integer parameters; the slot about a character ceiling concerns the length of a text value, not a whole number.",
+					"i8": "Fits no slot — minLength sets a lower bound on the character count of a text value (or the item count of an array); none of the six requirements asks for a floor."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/parameters"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-tutorial-create-first-template"
+				}
+			],
+			"subtopics": [
+				"template-parameters",
+				"parameter-validation",
+				"secure-parameters"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q989W3KAHAR40A2H2SRQHB",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have an ARM template saved as azuredeploy.json that the platform team deploys with New-AzResourceGroupDeployment against a resource group that already exists. The file provisions an Azure App Service web app, and the parameters section of the current template is shown below. You need to revise the saved template so that a run which omits the region still succeeds using the location where the resource group sits, a web app name longer than 24 characters is refused during validation before any resource is created, reviewers can confirm from the file itself which revision of the template their deployment used, and the portal form shows a short tip beside the name box explaining what the name is for. Which change should you make for each requirement?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"parameters\": {\n    \"region\": {\n      \"type\": \"string\"\n    },\n    \"webapp\": {\n      \"type\": \"string\"\n    }\n  }\n}"
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Add \"defaultValue\": \"[resourceGroup().location]\" to the region parameter."
+					},
+					{
+						"id": "b",
+						"text": "Add \"maxLength\": 24 to the webapp parameter."
+					},
+					{
+						"id": "c",
+						"text": "Change \"contentVersion\" to \"2.0.0\" in the template."
+					},
+					{
+						"id": "d",
+						"text": "Add \"metadata\": { \"description\": \"Identifier for the published web app.\" } to the webapp parameter."
+					},
+					{
+						"id": "e",
+						"text": "Set \"defaultValue\": \"eastus\" on the region parameter."
+					},
+					{
+						"id": "f",
+						"text": "Change \"$schema\" to the 2026-01-01 deploymentTemplate.json# URL."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Region applied when the operator leaves the field blank"
+					},
+					{
+						"id": "s2",
+						"label": "Longest string the run accepts"
+					},
+					{
+						"id": "s3",
+						"label": "Release marker kept with the saved file"
+					},
+					{
+						"id": "s4",
+						"label": "Guidance text shown beside the input box"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d"
+			},
+			"explanation": {
+				"correct": "Each requirement is met by one template construct: a \"defaultValue\" of \"[resourceGroup().location]\" makes the region parameter follow the resource group's own location when the caller supplies no value; \"maxLength\": 24 rejects a web app name longer than 24 characters during validation, before any resource is created; \"contentVersion\" is the top-level field that records the revision of the template file and helps confirm the intended template was deployed; and \"metadata.description\" supplies the tip shown next to the parameter in the portal deployment form.",
+				"perChoice": {
+					"a": "Belongs with the region applied when the operator leaves the field blank: a default value of \"[resourceGroup().location]\" makes the parameter follow the resource group's location instead of failing when no value is passed.",
+					"b": "Belongs with the longest string the run accepts: maxLength constrains the character count of a string parameter, and a value beyond the limit fails validation before any resource is created.",
+					"c": "Belongs with the release marker kept with the saved file: contentVersion is the top-level field you update to document a significant template change and to confirm the intended template was deployed.",
+					"d": "Belongs with the guidance text shown beside the input box: metadata.description is the text used as a tip for that parameter in the portal deployment form.",
+					"e": "Fits no slot: it pins the deployment to one fixed region, so a run that leaves the field blank would use that region instead of the location where the resource group sits.",
+					"f": "Fits no slot: the schema date identifies the JSON schema the template is validated against rather than the release of the template file, and the documented 2019-04-01 schema already exposes the current template features, so no change is required."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/parameters"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-functions"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-tutorial-create-first-template"
+				}
+			],
+			"subtopics": [
+				"arm-template-parameters",
+				"parameter-validation",
+				"template-versioning"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q9EEBNDQEN33MR4NQKKHGH",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You keep a shared Azure Resource Manager template saved as azuredeploy.json. It creates a storage account, an Azure App Service plan and web app, and a key vault inside a resource group that already exists, and the platform team deploys the saved file with New-AzResourceGroupDeployment against that group. You are now extending the file so the same template can run in many environments, and so later steps in the same run can use what it produced. Five entries still have to be written, and the open work is shown below. Match each open entry to the template function that carries it out.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Entry in azuredeploy.json",
+						"What that entry has to produce"
+					],
+					"rows": [
+						[
+							"variables.planName",
+							"A plan name made by putting a fixed prefix in front of the site name the operator types on the deployment form"
+						],
+						[
+							"variables.nameSuffix",
+							"A short tail that keeps two copies of the template in one group from producing identical names, and that a second run in the same group reproduces the same way"
+						],
+						[
+							"variables.planSku",
+							"The SKU to give the plan, picked at run time from the tier value the operator supplies"
+						],
+						[
+							"outputs.webAppAddress",
+							"The address the web app can be reached at, taken from the web app that the same run creates"
+						],
+						[
+							"web app setting for the administrator password",
+							"The administrator password that the same run stores in the key vault"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "u",
+						"text": "uniqueString()"
+					},
+					{
+						"id": "c",
+						"text": "concat()"
+					},
+					{
+						"id": "i",
+						"text": "if()"
+					},
+					{
+						"id": "r",
+						"text": "reference()"
+					},
+					{
+						"id": "l",
+						"text": "listSecrets()"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "variables.planName"
+					},
+					{
+						"id": "s2",
+						"label": "variables.nameSuffix"
+					},
+					{
+						"id": "s3",
+						"label": "variables.planSku"
+					},
+					{
+						"id": "s4",
+						"label": "outputs.webAppAddress"
+					},
+					{
+						"id": "s5",
+						"label": "web app setting for the administrator password"
+					}
+				]
+			},
+			"key": {
+				"s1": "c",
+				"s2": "u",
+				"s3": "i",
+				"s4": "r",
+				"s5": "l"
+			},
+			"explanation": {
+				"correct": "Each open entry needs the function whose job matches it. concat joins the fixed prefix and the site name the operator typed into one plan name, so it fills variables.planName. uniqueString derives the same short value from the same inputs on every run, which is exactly what variables.nameSuffix needs so repeated runs in one group never produce identical names. if evaluates a condition and returns one of two values, which is how variables.planSku follows the tier the operator supplied. reference returns the runtime state of a resource, so outputs.webAppAddress can report the address of the web app that the same run creates. listSecrets returns the secret values held in a key vault, so the web app setting can be given the administrator password the same run stored there.",
+				"perChoice": {
+					"c": "variables.planName - concat combines the fixed prefix with the site name the operator supplied and returns the combined text, which is the plan name the file needs.",
+					"u": "variables.nameSuffix - uniqueString returns the same value for the same inputs on every run, giving a repeatable short tail that keeps names inside one group from clashing.",
+					"i": "variables.planSku - if tests a condition and returns one of two values, so the SKU can follow the tier value the operator supplied.",
+					"r": "outputs.webAppAddress - reference returns the runtime state of a resource, so the address of the web app created in the same run can be read back and reported.",
+					"l": "web app setting for the administrator password - listSecrets returns the secret values kept in a key vault, which is where the same run puts the administrator password; it can be used in a resource property, unlike a value read with reference."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-functions"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-tutorial-create-first-template"
+				}
+			],
+			"subtopics": [
+				"arm-template-functions",
+				"template-file-editing"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q9JFN32C838CRAD512F59B",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a shared ARM template saved as azuredeploy.json that the platform team deploys with New-AzResourceGroupDeployment against a resource group that already exists. The file creates a Linux virtual machine, its public IP address and a key vault, and the operators pick the settings each time in the portal deployment form. The current file is shown below, and five revisions to it are still outstanding. Which revision belongs with each outstanding requirement?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"$schema\": \"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#\",\n  \"contentVersion\": \"1.0.0.0\",\n  \"parameters\": {\n    \"vmName\": {\n      \"type\": \"string\"\n    },\n    \"vmSize\": {\n      \"type\": \"string\"\n    },\n    \"location\": {\n      \"type\": \"string\"\n    },\n    \"diskSizeGb\": {\n      \"type\": \"int\"\n    },\n    \"adminPassword\": {\n      \"type\": \"string\"\n    }\n  },\n  \"resources\": [\n    {\n      \"type\": \"Microsoft.Network/publicIPAddresses\",\n      \"apiVersion\": \"2023-09-01\",\n      \"name\": \"[concat(parameters('vmName'), '-pip')]\",\n      \"location\": \"[parameters('location')]\",\n      \"sku\": { \"name\": \"Standard\" },\n      \"properties\": { \"publicIPAllocationMethod\": \"Static\" }\n    },\n    {\n      \"type\": \"Microsoft.Compute/virtualMachines\",\n      \"apiVersion\": \"2023-09-01\",\n      \"name\": \"[parameters('vmName')]\",\n      \"location\": \"[parameters('location')]\",\n      \"properties\": {\n        \"hardwareProfile\": {\n          \"vmSize\": \"[parameters('vmSize')]\",\n          \"storageProfile\": {\n            \"osDisk\": {\n              \"diskSizeGB\": \"[parameters('diskSizeGb')]\",\n              \"managedDisk\": { \"storageAccountType\": \"Premium_LRS\" }\n            }\n          }\n        },\n        \"osProfile\": {\n          \"computerName\": \"[parameters('vmName')]\",\n          \"adminUsername\": \"azureuser\",\n          \"adminPassword\": \"[parameters('adminPassword')]\",\n          \"linuxConfiguration\": { \"disablePasswordAuthentication\": false }\n        },\n        \"storageProfile\": {\n          \"imageReference\": {\n            \"publisher\": \"Canonical\",\n            \"offer\": \"0001-com-ubuntu-server-jammy\",\n            \"sku\": \"22_04-lts-gen2\",\n            \"version\": \"latest\"\n          }\n        }\n      }\n    },\n    {\n      \"type\": \"Microsoft.KeyVault/vaults\",\n      \"apiVersion\": \"2023-07-01\",\n      \"name\": \"[concat(parameters('vmName'), '-kv')]\",\n      \"location\": \"[parameters('location')]\",\n      \"properties\": {\n        \"sku\": { \"family\": \"A\", \"name\": \"standard\" },\n        \"tenantId\": \"[subscription().tenantId]\",\n        \"enableRbacAuthorization\": true\n      }\n    }\n  ]\n}"
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "\"vmSize\": {\n  \"type\": \"string\",\n  \"allowedValues\": [ \"Standard_D2s_v5\", \"Standard_D4s_v5\", \"Standard_D8s_v5\" ]\n}"
+					},
+					{
+						"id": "b",
+						"text": "\"diskSizeGb\": {\n  \"type\": \"int\",\n  \"minValue\": 128,\n  \"maxValue\": 1024\n}"
+					},
+					{
+						"id": "c",
+						"text": "\"adminPassword\": {\n  \"type\": \"secureString\"\n}"
+					},
+					{
+						"id": "d",
+						"text": "\"location\": {\n  \"type\": \"string\",\n  \"defaultValue\": \"[resourceGroup().location]\"\n}"
+					},
+					{
+						"id": "e",
+						"text": "\"vmName\": {\n  \"type\": \"string\",\n  \"metadata\": {\n    \"description\": \"Virtual machine name created by this template.\"\n  }\n}"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Only the three sizes the company licenses may be requested, and any other choice must be refused before the run creates anything"
+					},
+					{
+						"id": "s2",
+						"label": "Runs asking for a disk outside the range the platform team permits must be refused during validation, before anything is created, while requests inside that range keep working"
+					},
+					{
+						"id": "s3",
+						"label": "The administrator credential that operators enter on the deployment form must no longer be saved in the deployment record or in the log"
+					},
+					{
+						"id": "s4",
+						"label": "A run that leaves the region blank must still succeed, using the region of the surrounding deployment target"
+					},
+					{
+						"id": "s5",
+						"label": "Reviewers want a short tip shown next to the parameter entry in the portal form, telling them what that entry is for"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d",
+				"s5": "e"
+			},
+			"explanation": {
+				"correct": "Each outstanding requirement is met by one parameter revision in the saved file: the licensed size whitelist is expressed with allowedValues on the vmSize parameter, so a run asking for anything else fails during validation before any resource is touched; the permitted range for the disk is expressed with minValue and maxValue on the int parameter diskSizeGb, which turns down out-of-range requests during validation while requests inside the range deploy as before; the administrator credential is handled by declaring adminPassword as secureString, so its value is not written to deployment history and is not logged; an omitted region is covered by giving the location parameter a defaultValue of [resourceGroup().location], which resolves to the place where the target resource group sits and is applied only when the caller supplies nothing; and the portal tip is added with metadata.description on vmName, which becomes the hint shown beside that parameter in the portal deployment form. Note that the expression used for the default is the only property added alongside the type, since a parameter cannot combine an expression in its default with other parameter properties.",
+				"perChoice": {
+					"a": "This revision belongs with the requirement about the three licensed sizes: allowedValues holds the permitted values in an array, and a run that supplies a value outside it fails during validation, before any resource is touched.",
+					"b": "This revision belongs with the requirement about the disk range: minValue and maxValue are the constraints for int parameters, so requests outside the permitted range are turned down during validation while requests inside it keep deploying.",
+					"c": "This revision belongs with the requirement about the administrator credential: a secureString parameter value is not saved to deployment history and is not logged, which is exactly what the review asked for.",
+					"d": "This revision belongs with the requirement about an omitted region: defaultValue is used only when the caller supplies no value, and [resourceGroup().location] resolves to the place where the target resource group sits, so the run still succeeds. The expression must not be combined with other parameter properties, and this revision keeps the type alongside it only.",
+					"e": "This revision belongs with the requirement about the portal tip: metadata.description becomes the tip shown for that parameter in the portal deployment form, telling reviewers what the entry is for."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/parameters"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-functions"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-tutorial-create-first-template"
+				}
+			],
+			"subtopics": [
+				"arm-template-parameters",
+				"parameter-validation",
+				"deployment-security"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5Q9P1PXKCAQNRQNJDWXB10B",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You keep a shared ARM template saved as azuredeploy.json that deploys a Linux virtual machine scale set and a Key Vault into a resource group that already exists, and the platform team deploys the file with New-AzResourceGroupDeployment against that group. The file has already been updated to opt into the newer template language, but the two object settings and the one list setting it still accepts are not checked at all. The change advisory board has listed six validation behaviors that must hold on every run, and each one has to be delivered by a single constraint placed in the parameters section. Match each requirement below to the constraint that delivers it.",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"$schema\": \"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#\",\n  \"contentVersion\": \"2.0.0.0\",\n  \"languageVersion\": \"2.0.0\",\n  \"parameters\": {\n    \"vmSize\": {\n      \"type\": \"string\"\n    },\n    \"networkConfig\": {\n      \"type\": \"object\"\n    },\n    \"osDisk\": {\n      \"type\": \"object\"\n    },\n    \"dataDisks\": {\n      \"type\": \"array\"\n    }\n  },\n  \"resources\": [\n    {\n      \"type\": \"Microsoft.Compute/virtualMachineScaleSets\",\n      \"apiVersion\": \"2024-07-01\",\n      \"name\": \"vmss-app01\",\n      \"location\": \"[resourceGroup().location]\",\n      \"sku\": {\n        \"name\": \"[parameters('vmSize')]\",\n        \"capacity\": 2\n      }\n    }\n  ]\n}"
+				},
+				"items": [
+					{
+						"id": "additionalProperties",
+						"text": "additionalProperties"
+					},
+					{
+						"id": "discriminator",
+						"text": "discriminator"
+					},
+					{
+						"id": "items",
+						"text": "items"
+					},
+					{
+						"id": "nullable",
+						"text": "nullable"
+					},
+					{
+						"id": "prefixItems",
+						"text": "prefixItems"
+					},
+					{
+						"id": "properties",
+						"text": "properties"
+					},
+					{
+						"id": "allowedValues",
+						"text": "allowedValues"
+					},
+					{
+						"id": "defaultValue",
+						"text": "defaultValue"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Reject any run that carries a setting the template never listed for the object it accepts."
+					},
+					{
+						"id": "s2",
+						"label": "Accept either of two shapes of the same object, picking the shape that applies from the text carried in one of its members."
+					},
+					{
+						"id": "s3",
+						"label": "Require the object to carry every member the template lists, so a run that leaves one of them out is turned down."
+					},
+					{
+						"id": "s4",
+						"label": "Allow one listed member to be left out of the object without the run being turned down."
+					},
+					{
+						"id": "s5",
+						"label": "Give the first two positions of the list their own types, so a number in the first position and text in the second position are both accepted."
+					},
+					{
+						"id": "s6",
+						"label": "Check the type of every element of the list that sits after the positions already given a type."
+					}
+				]
+			},
+			"key": {
+				"s1": "additionalProperties",
+				"s2": "discriminator",
+				"s3": "properties",
+				"s4": "nullable",
+				"s5": "prefixItems",
+				"s6": "items"
+			},
+			"explanation": {
+				"correct": "The file already opts into language version 2.0, so the aggregate type validation constraints can be used in the parameters section. Each board requirement maps to one of them: additionalProperties set to false refuses any member beyond those listed in properties, which satisfies the first requirement; discriminator uses a propertyName plus mapping to choose which schema applies from the text in one member, which satisfies the second; properties maps each known member name to a type definition and every one of those members must be supplied, which satisfies the third; nullable marks a member's type definition so its value may be null or omitted, which satisfies the fourth; prefixItems gives each index of the list its own type definition, which satisfies the fifth; and items validates the elements whose index is greater than the largest index covered by prefixItems, which satisfies the sixth.",
+				"perChoice": {
+					"additionalProperties": "Set to false on the object parameter, it refuses any member beyond those defined in the properties constraint, so a run that carries an unlisted setting is turned down before deployment. That is where it belongs.",
+					"discriminator": "It combines a propertyName with a mapping of texts to schemas so the shape that applies is chosen from the text carried in one member, letting one object parameter accept two different shapes. That is where it belongs.",
+					"items": "Applied to the list parameter, it validates the elements whose index is greater than the largest index covered by prefixItems, which matches the requirement about the elements past the positions already given a type. That is where it belongs.",
+					"nullable": "Applied to a member's own type definition, it means the value may be null or omitted, which is what makes one listed member optional instead of mandatory. That is where it belongs.",
+					"prefixItems": "It is an array of type definitions where each entry is the schema used for the element at the same index, so the first position can require a number while the second requires text. That is where it belongs.",
+					"properties": "It maps each known member name to a type definition, and every one of those members must be supplied unless its own type definition allows it to be left out, which matches the requirement that all listed members be present. That is where it belongs.",
+					"allowedValues": "This constraint restricts a single parameter to a fixed list of permitted values and fails the run during validation when something else is sent. It says nothing about the shape of an object or about positions in a list, so it fits none of the six requirements.",
+					"defaultValue": "This constraint supplies a fallback that is used when the caller sends no value at all. It does not check the contents of a request, so it fits none of the six requirements."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/parameters"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-tutorial-create-first-template"
+				}
+			],
+			"subtopics": [
+				"template-language-version",
+				"parameter-validation-constraints",
+				"object-and-array-constraints"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R48C42BTKABFKKQFWBV9XP",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have an ARM template saved as azuredeploy.json that the platform team deploys with New-AzResourceGroupDeployment against a resource group that already exists. The file creates an Azure App Service plan and a web app, and every setting the operators supply is currently declared with the same basic type, so a run that sends a count or a list of names is turned down during validation and the operator's password ends up written into the deployment record. You need to revise the saved template so that each setting is declared with the type that matches what operators supply, and so the password value is no longer stored in the deployment record or printed in the deployment log. Match each setting to the type that should declare it.",
+				"exhibit": {
+					"kind": "code",
+					"language": "powershell",
+					"text": "$templateFile = \"C:\\templates\\azuredeploy.json\"\nNew-AzResourceGroupDeployment -Name blanktemplate -ResourceGroupName myResourceGroup -TemplateFile $templateFile"
+				},
+				"items": [
+					{
+						"id": "string",
+						"text": "string"
+					},
+					{
+						"id": "int",
+						"text": "int"
+					},
+					{
+						"id": "bool",
+						"text": "bool"
+					},
+					{
+						"id": "array",
+						"text": "array"
+					},
+					{
+						"id": "object",
+						"text": "object"
+					},
+					{
+						"id": "secureString",
+						"text": "secureString"
+					}
+				],
+				"slots": [
+					{
+						"id": "s_password",
+						"label": "The value operators type in the password box on the deployment form"
+					},
+					{
+						"id": "s_count",
+						"label": "The count of worker instances the run should create"
+					},
+					{
+						"id": "s_switch",
+						"label": "The yes-or-no choice about whether diagnostics are switched on for the run"
+					},
+					{
+						"id": "s_regions",
+						"label": "The several region names the run is allowed to use"
+					},
+					{
+						"id": "s_plan",
+						"label": "The plan tier and worker count carried together as one group"
+					},
+					{
+						"id": "s_label",
+						"label": "The plain display name shown beside the resource in the portal"
+					}
+				]
+			},
+			"key": {
+				"s_count": "int",
+				"s_label": "string",
+				"s_password": "secureString",
+				"s_plan": "object",
+				"s_regions": "array",
+				"s_switch": "bool"
+			},
+			"explanation": {
+				"correct": "A parameter needs a name plus one type, and the types a parameter may declare are string, int, bool, object, array and the secure variants. The worker instance count is a whole number, so it belongs to an int parameter. The diagnostics choice is a true-or-false switch, so it belongs to a bool parameter. The several region names form a list of values, so they belong to an array parameter. The plan tier and worker count travel together as one group of named settings, so they belong to a single object parameter rather than separate ones. The display name is ordinary text with nothing secret in it, so it belongs to a string parameter. The administrator password is a secret, so it belongs to a secureString parameter, which keeps the value out of the deployment history and out of the logs, and redeploying the edited file with New-AzResourceGroupDeployment then applies the new declarations.",
+				"perChoice": {
+					"bool": "Belongs with the yes-or-no choice about whether diagnostics are switched on for the run, because that setting carries only a true or false value.",
+					"int": "Belongs with the count of worker instances the run should create, because that setting carries a whole number.",
+					"object": "Belongs with the plan tier and worker count carried together as one group, because related settings that travel together and are read by property name belong in a single object parameter.",
+					"secureString": "Belongs with the value operators type in the password box on the deployment form, because a secret held on its own needs the secure variant so the value is left out of the deployment record and the logs.",
+					"string": "Belongs with the plain display name shown beside the resource in the portal, because that setting is ordinary text with nothing secret in it.",
+					"array": "Belongs with the several region names the run is allowed to use, because that setting carries several values in a list."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/parameters"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-tutorial-create-first-template"
+				}
+			],
+			"subtopics": [
+				"arm-template-parameters",
+				"parameter-data-types",
+				"secret-parameter-values"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R4F11J7P904JBZ8E4B4CDF",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You keep a shared ARM template saved as azuredeploy.json that the platform team deploys with New-AzResourceGroupDeployment against a resource group that already exists and that already holds the plan and the web app created by an earlier run of the same file. A change request asks for the plan to move to the P2v3 tier, and the platform team wants every run of the file to stay visible as its own record in the group's deployment list rather than replacing the run before it. You have saved the revised file and are about to run the deployment again.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "File: azuredeploy.json (excerpt)\n{\n  \"$schema\": \"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#\",\n  \"contentVersion\": \"1.0.0.0\",\n  \"resources\": [\n    {\n      \"type\": \"Microsoft.Web/serverfarms\",\n      \"apiVersion\": \"2022-03-01\",\n      \"name\": \"asp-app\",\n      \"location\": \"West Europe\",\n      \"sku\": { \"name\": \"P1v2\", \"tier\": \"PremiumV2\", \"capacity\": 1 },\n      \"properties\": { \"reserved\": false }\n    },\n    {\n      \"type\": \"Microsoft.Web/sites\",\n      \"apiVersion\": \"2022-09-01\",\n      \"name\": \"app-web\",\n      \"location\": \"West Europe\",\n      \"properties\": {\n        \"serverFarmId\": \"/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-app/providers/Microsoft.Web/serverfarms/asp-app\",\n        \"siteConfig\": { \"appSettings\": [ { \"name\": \"ENVIRONMENT\", \"value\": \"prod\" } ] }\n      }\n    }\n  ]\n}\n\nCommand used for the previous run:\nNew-AzResourceGroupDeployment -Name \"deploy-webapp-v1\" -ResourceGroupName \"rg-app\" -TemplateFile \"azuredeploy.json\""
+				},
+				"statement": "The revision reaches the resource group by {{whereChange}}, the re-run is given {{deploymentName}}, and the outcome of the run is read from {{outcomeField}}.",
+				"slots": [
+					{
+						"id": "whereChange",
+						"options": [
+							{
+								"id": "a",
+								"text": "changing the tier in the plan that the file specifies"
+							},
+							{
+								"id": "b",
+								"text": "adding an output in the file that reports the plan's tier"
+							},
+							{
+								"id": "c",
+								"text": "adding a parameter in the file whose default value specifies the plan's tier"
+							},
+							{
+								"id": "d",
+								"text": "changing the version marker in the file to record the tier change"
+							}
+						]
+					},
+					{
+						"id": "deploymentName",
+						"options": [
+							{
+								"id": "a",
+								"text": "a deployment name that is different from the one used for the previous run"
+							},
+							{
+								"id": "b",
+								"text": "a deployment name that is the same as the one used for the previous run"
+							},
+							{
+								"id": "c",
+								"text": "a deployment name that matches the resource group name"
+							},
+							{
+								"id": "d",
+								"text": "a deployment name that matches the template file name"
+							}
+						]
+					},
+					{
+						"id": "outcomeField",
+						"options": [
+							{
+								"id": "a",
+								"text": "the ProvisioningState shown in the command output"
+							},
+							{
+								"id": "b",
+								"text": "the resource count shown in the command output"
+							},
+							{
+								"id": "c",
+								"text": "the deployment name shown in the command output"
+							},
+							{
+								"id": "d",
+								"text": "the template revision shown in the command output"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"whereChange": "a",
+				"deploymentName": "a",
+				"outcomeField": "a"
+			},
+			"explanation": {
+				"correct": "The plan and the web app are already in the resource group because an earlier run of the same file created them, and the resources section of a template holds the resources you deploy or update, so saving the revised file and running it again re-applies the changed properties to what is already in the group. That is why the tier change belongs in the plan's own definition in the file: an output or a parameter default would carry no configuration into the deployment, and the version marker only labels the revision of the template. Each run is named by the operator so it can be picked out in the deployment history, so the new run must carry a name of its own; reusing the earlier name, or using a value that stays the same on every run such as the resource group name or the file name, means later runs overwrite earlier records instead of appearing side by side. Finally, the command returns the result of the run, and ProvisioningState is the value that tells you whether the deployment succeeded; the verbose switch adds per-resource detail and debug adds deeper troubleshooting information when a run fails.",
+				"perChoice": {
+					"whereChange:b": "An output only publishes a value once the run has finished; it carries no configuration into the deployment, so the plan that is already in the group would keep the tier it has now.",
+					"whereChange:c": "A parameter supplies an input to a run, so while the plan's own definition still carries the old tier, the re-run keeps applying the old tier to the plan already in the group.",
+					"whereChange:d": "The version marker only labels which revision of the template file was used; it does not carry the new tier, so the running plan is left on its current tier.",
+					"deploymentName:b": "Reusing the earlier deployment name replaces that deployment's record instead of adding a second one, so the earlier run is not kept as its own entry in the group's deployment list.",
+					"deploymentName:c": "The resource group name does not change from run to run, so every run of the file would overwrite the record of the run before it instead of appearing on its own.",
+					"deploymentName:d": "The template file name is the same on every run of the file, so each run would overwrite the previous run's record rather than staying readable as its own entry.",
+					"outcomeField:b": "The number of resources says nothing about the result of the run; a deployment that fails can still have listed resources, so this value cannot confirm success.",
+					"outcomeField:c": "The deployment name is only the label the operator gave the run, and it carries no information about whether the deployment succeeded.",
+					"outcomeField:d": "The template revision identifies which version of the file was deployed, not whether that deployment succeeded, so it cannot confirm the outcome."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-tutorial-create-first-template"
+				}
+			],
+			"subtopics": [
+				"arm-template-revision",
+				"template-redeployment",
+				"provisioning-state"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R4HG4RYG48S9EJ9H5BEQSY",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an ARM template saved as azuredeploy.json that your platform team runs with New-AzResourceGroupDeployment against a resource group that already exists. The file takes the location for its workloads from a scope function, and the same saved file is now also run from management group scope, the level that sits above every subscription in the organization. The runs from that upper level fail with an error about the scope of the function, while the runs against the resource group still succeed. You need one saved file that completes successfully from both levels. Which scope function should the saved template use?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"$schema\": \"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#\",\n  \"contentVersion\": \"2.0.0.0\",\n  \"parameters\": {\n    \"workloadLocation\": {\n      \"type\": \"string\",\n      \"defaultValue\": \"[resourceGroup().location]\"\n    }\n  },\n  \"resources\": [],\n  \"outputs\": {\n    \"workloadLocation\": {\n      \"type\": \"string\",\n      \"value\": \"[parameters('workloadLocation')]\"\n    }\n  }\n}"
+				},
+				"statement": "The saved template should take that location from {{scope}} so that the same file completes successfully from both the resource group level and the management group level.",
+				"slots": [
+					{
+						"id": "scope",
+						"options": [
+							{
+								"id": "a",
+								"text": "resourceGroup()"
+							},
+							{
+								"id": "b",
+								"text": "subscription()"
+							},
+							{
+								"id": "c",
+								"text": "tenant()"
+							},
+							{
+								"id": "d",
+								"text": "managementGroup()"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"scope": "c"
+			},
+			"explanation": {
+				"correct": "The same saved file has to complete from two different deployment levels, so the function it uses must be valid in both. Of the four scope functions, tenant() is the one that can be used at any scope, so it resolves in a resource group deployment and in a management group deployment alike. The other three each work only in a limited set of scopes, so each of them breaks one of the two runs you need.",
+				"perChoice": {
+					"scope:a": "resourceGroup() is limited to resource group deployments and raises an error in a subscription or management group deployment, so the run from the upper level would still fail.",
+					"scope:b": "subscription() is usable in resource group or subscription deployments, but it is not usable in a management group deployment, so it does not satisfy the upper-level run either.",
+					"scope:d": "managementGroup() works only in a management group deployment, so the runs against the individual resource group would fail after the change."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-functions"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-tutorial-create-first-template"
+				}
+			],
+			"subtopics": [
+				"arm-template-scope-functions",
+				"arm-template-revision"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R538Y4TESY7J7HHPA8V348",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an ARM template saved as azuredeploy.json that the platform team deploys with New-AzResourceGroupDeployment against a resource group that already exists. In the parameters excerpt below, one parameter gives the key vault a name generated from the target resource group when the operator leaves the box blank, and at the same time restricts the operator to a fixed set of names. Since that parameter was last edited, every run is rejected during validation before a single resource is created. You need the deployment to complete again, a run that leaves the name blank must still receive the generated name, and the operator must still be able to type a name of their own. Which change should you make to the saved template?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "\"parameters\": {\n  \"vaultName\": {\n    \"type\": \"string\",\n    \"defaultValue\": \"[format('keyVault{0}', uniqueString(resourceGroup().id))]\",\n    \"allowedValues\": [\n      \"contoso-kv-prod\",\n      \"contoso-kv-test\",\n      \"contoso-kv-dr\"\n    ]\n  },\n  \"location\": {\n    \"type\": \"string\",\n    \"defaultValue\": \"[resourceGroup().location]\"\n  }\n}"
+				},
+				"statement": "The change to make is to {{change}}.",
+				"slots": [
+					{
+						"id": "change",
+						"options": [
+							{
+								"id": "a",
+								"text": "keep the expression as the fallback value of the parameter and remove the list of permitted values."
+							},
+							{
+								"id": "b",
+								"text": "keep the expression as the fallback value of the parameter and reduce the list of permitted values to a single entry."
+							},
+							{
+								"id": "c",
+								"text": "remove the expression, replace it with a fixed name, and keep the list of permitted values."
+							},
+							{
+								"id": "d",
+								"text": "keep the list of permitted values and move the expression into a variable that the parameter reads."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"change": "a"
+			},
+			"explanation": {
+				"correct": "A parameter may use an expression in its defaultValue, but an expression is not allowed together with other properties on that parameter. In the file shown, vaultName pairs the defaultValue expression [format('keyVault{0}', uniqueString(resourceGroup().id))] with an allowedValues list, so Resource Manager rejects the template during validation before any resource is created; the location parameter shows the working form, where the expression stands alone with only the type. The requirement that a blank name still produces the generated one means the expression has to stay, and every parameter still needs its type declared, so the permitted-values list is the property that must go. With it removed the template validates, an omitted name still yields the generated key vault name, and the operator can still supply a name.",
+				"perChoice": {
+					"change:b": "The failure is not caused by how many names the list holds or by the generated name missing from that list; an expression cannot be combined with any other property on the same parameter, so shortening the list still leaves the template invalid.",
+					"change:c": "Replacing the expression with a fixed name clears the conflict, but the deployment would then fall back to one of the listed names instead of the name generated from the target resource group when the operator leaves the box blank, which the requirement forbids.",
+					"change:d": "A variable cannot be used as a default value for a parameter, so pointing the default at a variable leaves the parameter in error; the expression and the permitted-values list still cannot live on the same parameter."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/parameters"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-tutorial-create-first-template"
+				}
+			],
+			"subtopics": [
+				"arm-template-parameters",
+				"default-value-expressions",
+				"parameter-validation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R59E25AFEG6P3X470X2ZQ0",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You keep a shared ARM template saved as azuredeploy.json that the platform group deploys to a resource group that already exists. A change request asks you to add a Key Vault to that template, and the resource list in the saved file is still empty, so the declaration for the vault has to be written from scratch. Separately, one of the operators works on a workstation whose Azure CLI release is too old for the deployment commands, and the runs launched from that machine fail before anything is created. Which four fields must the new declaration carry, and which Azure CLI release must that workstation be running before the platform group redeploys the saved file?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Saved template file: azuredeploy.json\nResource list inside the saved file: empty\nDeployment command: New-AzResourceGroupDeployment with -TemplateFile pointing at the saved file\nAzure CLI release on the operator workstation: 2.30.0"
+				},
+				"statement": "You write the new declaration in the template's resource list with {{entryFields}}, and you tell the operator to bring that workstation up to Azure CLI {{cliVersion}} before the platform group redeploys the saved file.",
+				"slots": [
+					{
+						"id": "entryFields",
+						"options": [
+							{
+								"id": "a",
+								"text": "type, apiVersion, name, properties"
+							},
+							{
+								"id": "b",
+								"text": "type, apiVersion, location, tags"
+							},
+							{
+								"id": "c",
+								"text": "kind, sku, location, dependsOn"
+							},
+							{
+								"id": "d",
+								"text": "apiVersion, kind, location, plan"
+							}
+						]
+					},
+					{
+						"id": "cliVersion",
+						"options": [
+							{
+								"id": "a",
+								"text": "2.37.0"
+							},
+							{
+								"id": "b",
+								"text": "2.30.0"
+							},
+							{
+								"id": "c",
+								"text": "2.20.0"
+							},
+							{
+								"id": "d",
+								"text": "2.25.0"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"cliVersion": "a",
+				"entryFields": "a"
+			},
+			"explanation": {
+				"correct": "An entry in the template's resources array carries the resource kind, the REST API version to use when creating it, the resource's name and the resource's own settings block, so the Key Vault declaration must be written with type, apiVersion, name and properties. Separately, the command-line deployment steps in the template walkthrough only run on Azure CLI 2.37.0 or later, so the workstation still sitting on 2.30.0 has to be brought up to that release before the platform group redeploys the saved file.",
+				"perChoice": {
+					"cliVersion:b": "2.30.0 is the release already installed on the workstation, but it is older than the release the tutorial's deployment commands require, so the runs fail there.",
+					"cliVersion:c": "2.20.0 is below the required release, so the deployment commands are not supported on it.",
+					"cliVersion:d": "2.25.0 is also below the required release, so the deployment commands are not supported on it.",
+					"entryFields:b": "location and tags are optional per-resource settings rather than the fields every entry in the resources array carries; a declaration built from this list would still leave out the resource's name and its own settings, so the vault would not be described well enough to be created.",
+					"entryFields:c": "kind, sku and dependsOn describe particular resource definitions or the ordering between resources; they are not the set of fields that every entry in the resources array carries.",
+					"entryFields:d": "kind, location and plan apply only to specific resource definitions; an entry in the resources array is built from the resource kind, the API version, the resource's name and the resource's own settings."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-tutorial-create-first-template"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/parameters"
+				}
+			],
+			"subtopics": [
+				"arm-template-resource-entry",
+				"azure-cli-version-requirements",
+				"arm-template-deployment"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R5BQY9XQE5WFC7PADNE5NS",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You keep a shared Azure Resource Manager template saved as azuredeploy.json that the platform group deploys with New-AzResourceGroupDeployment against a resource group that already exists. The file builds the identifier of a nested networking resource by calling a helper that the documentation now marks as retired, and it asks the operator for a connection configuration whose administrator password currently ends up written into the deployment record and the deployment log. You need the same saved file to keep running at the same scope, to keep handing out the same identifier as before, and to keep that password out of the deployment record and the deployment log.",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"contentVersion\": \"2.0.0.0\",\n  \"parameters\": {\n    \"appName\": {\n      \"type\": \"string\"\n    },\n    \"connectionSettings\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"server\": { \"type\": \"string\" },\n        \"adminPassword\": { \"type\": \"string\" }\n      }\n    }\n  },\n  \"variables\": {\n    \"webSubnetId\": \"[providers('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), variables('subnetName'))]\"\n  },\n  \"resources\": [\n    {\n      \"type\": \"Microsoft.Web/sites\",\n      \"apiVersion\": \"2022-03-01\",\n      \"name\": \"[parameters('appName')]\",\n      \"properties\": {\n        \"serverFarmId\": \"[variables('serverFarmIdentifier')]\"\n      }\n    }\n  ]\n}"
+				},
+				"statement": "Which change should you make to the saved file? Call {{helper}} in place of the retired helper, and declare the connection configuration parameter with the type {{paramType}}.",
+				"slots": [
+					{
+						"id": "helper",
+						"options": [
+							{
+								"id": "a",
+								"text": "resourceId"
+							},
+							{
+								"id": "b",
+								"text": "extensionResourceId"
+							},
+							{
+								"id": "c",
+								"text": "subscriptionResourceId"
+							},
+							{
+								"id": "d",
+								"text": "tenantResourceId"
+							}
+						]
+					},
+					{
+						"id": "paramType",
+						"options": [
+							{
+								"id": "a",
+								"text": "secureObject"
+							},
+							{
+								"id": "b",
+								"text": "object"
+							},
+							{
+								"id": "c",
+								"text": "secureString"
+							},
+							{
+								"id": "d",
+								"text": "string"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"helper": "a",
+				"paramType": "a"
+			},
+			"explanation": {
+				"correct": "The retired helper providers() should be swapped for resourceId(), the supported function that builds the identifier of a resource nested inside a resource group deployment; the sibling identifier builders produce values for other scopes or for resources that extend other resources, so they would change what the template hands to the web app. Because the administrator password travels inside one configuration parameter, that parameter has to be declared with the secure object type, which keeps the whole value out of the deployment history and out of the log; a plain object or a plain string is recorded there, and a secure string applies to a single standalone text value rather than to a parameter carrying several named members.",
+				"perChoice": {
+					"helper:b": "That function builds the identifier of a resource that extends another resource, such as a role assignment or a lock, not of a child resource declared in the template, so it would not hand the web app the identifier of the nested networking resource it expects.",
+					"helper:c": "That function builds identifiers for resources deployed at subscription scope. The resources in this template are deployed into a resource group, so the value it produces would not point at the deployed nested networking resource.",
+					"helper:d": "That function builds identifiers for resources deployed at tenant scope, which sits above the level this template is deployed at, so it cannot describe the nested networking resource of this resource group deployment.",
+					"paramType:b": "A plain object parameter is written into the deployment history, so the administrator password it carries would still end up stored in the deployment record and printed in the deployment log.",
+					"paramType:c": "A secure string covers one standalone text value. This parameter carries several named members, so it has to be declared as an object type that is treated as a secret rather than as a text value.",
+					"paramType:d": "A plain string cannot hold the named members of the configuration at all, and a plain string value is recorded in the deployment history and the log."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-functions"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/parameters"
+				}
+			],
+			"subtopics": [
+				"arm-template-functions",
+				"arm-template-parameters",
+				"arm-template-modification"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5R5GN9JQ0SKVDNG9CQE7Q0T",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You keep a shared Azure Resource Manager template saved as azuredeploy.json that the platform team deploys with New-AzResourceGroupDeployment against a resource group that already exists. This release adds operator-supplied settings to the file, including one for the size of the managed disk used by the web app, and the file now declares more of them than the service accepts. You need the portal deployment form to label the new disk setting as two separate words, you need to know the largest number of settings the finished file may declare, and the platform team needs to see what happened to each thing the template creates when a run fails. Which name should the new setting use, how many settings may the file declare, and which switch should the deployment command carry?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item in the saved file or in the platform team's run",
+						"Value"
+					],
+					"rows": [
+						[
+							"Saved file the platform team deploys",
+							"azuredeploy.json"
+						],
+						[
+							"Command the platform team runs",
+							"New-AzResourceGroupDeployment -Name blanktemplate -ResourceGroupName myResourceGroup -TemplateFile $templateFile"
+						],
+						[
+							"Settings declared in the file before this release",
+							"251"
+						],
+						[
+							"Settings the file would declare after this release, before any trimming",
+							"262"
+						],
+						[
+							"Setting added by this release",
+							"the size of the managed disk used by the web app"
+						]
+					]
+				},
+				"statement": "Declare the new setting as {{paramName}}, keep the finished file at or below {{maxSettings}} declared settings, and add {{runSwitch}} to the deployment command so the platform team can see what happened to each thing the template creates.",
+				"slots": [
+					{
+						"id": "paramName",
+						"options": [
+							{
+								"id": "a",
+								"text": "diskSize"
+							},
+							{
+								"id": "b",
+								"text": "diskSizeGb"
+							},
+							{
+								"id": "c",
+								"text": "sizeDisk"
+							},
+							{
+								"id": "d",
+								"text": "diskSizes"
+							}
+						]
+					},
+					{
+						"id": "maxSettings",
+						"options": [
+							{
+								"id": "a",
+								"text": "256"
+							},
+							{
+								"id": "b",
+								"text": "64"
+							},
+							{
+								"id": "c",
+								"text": "128"
+							},
+							{
+								"id": "d",
+								"text": "512"
+							}
+						]
+					},
+					{
+						"id": "runSwitch",
+						"options": [
+							{
+								"id": "a",
+								"text": "verbose"
+							},
+							{
+								"id": "b",
+								"text": "debug"
+							},
+							{
+								"id": "c",
+								"text": "trace"
+							},
+							{
+								"id": "d",
+								"text": "detailed"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"maxSettings": "a",
+				"paramName": "a",
+				"runSwitch": "a"
+			},
+			"explanation": {
+				"correct": "When a template is deployed through the portal, camel-cased parameter names are turned into space-separated names, so naming the new setting diskSize makes the deployment form show it as 'Disk Size'. A template may declare at most 256 parameters, so the 262 settings the finished file would carry have to be brought down to that ceiling, for example by grouping related values into a single object parameter. For the failing run, the verbose switch is the one that produces information about the resources being created, while debug is reserved for getting even more information while debugging.",
+				"perChoice": {
+					"paramName:b": "Adding the unit to the name makes the portal show an extra word, so the form would read 'Disk Size Gb' rather than the two words the operators asked for.",
+					"paramName:c": "Reversing the two words makes the portal show 'Size Disk', so the form would not read 'Disk Size'.",
+					"paramName:d": "Using the plural form makes the portal show 'Disk Sizes', so the form would not read 'Disk Size'.",
+					"maxSettings:b": "64 is not the ceiling on how many settings a template may declare; the documented maximum is 256, and trimming to 64 would discard settings the service would have accepted.",
+					"maxSettings:c": "Nothing caps the parameters section at 128; the documented ceiling is 256 parameters, and settings beyond that ceiling are rejected rather than quietly trimmed.",
+					"maxSettings:d": "512 is above the documented maximum of 256 parameters, so a file carrying 262 settings would still be over the limit.",
+					"runSwitch:b": "debug gives more information for debugging a failure; it is not the switch that reports on the resources being created.",
+					"runSwitch:c": "trace is not a switch that the deployment cmdlet accepts.",
+					"runSwitch:d": "detailed is not a switch that the deployment cmdlet accepts."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/parameters"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-tutorial-create-first-template"
+				}
+			],
+			"subtopics": [
+				"parameter-naming",
+				"parameter-limits",
+				"deployment-diagnostics"
+			],
+			"reviewed": false
+		}
+	]
+}

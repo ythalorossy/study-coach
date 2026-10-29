@@ -1,0 +1,1745 @@
+{
+	"skill": "storage.accounts",
+	"questions": [
+		{
+			"id": "q_01M5KB9ZZP9S47WPXG2GNYGXHZ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a resource group whose ARM template defines the storage account below for a new analytics platform. Tens of thousands of concurrent clients upload very small objects continuously, and the platform must expose Data Lake Storage Gen2 capabilities. You need the account to keep serving those workloads with consistently low latency. Which changes should you make to the template?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"type\": \"Microsoft.Storage/storageAccounts\",\n  \"apiVersion\": \"2023-01-01\",\n  \"name\": \"contosoanalytics1\",\n  \"sku\": { \"name\": \"Standard_GRS\" },\n  \"kind\": \"StorageV2\",\n  \"properties\": {\n    \"accessTier\": \"Hot\",\n    \"allowBlobPublicAccess\": true,\n    \"minimumTlsVersion\": \"TLS1_2\",\n    \"supportsHttpsTrafficOnly\": true\n  }\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Change kind to BlockBlobStorage and the sku name to Premium_LRS"
+					},
+					{
+						"id": "b",
+						"text": "Change kind to FileStorage and the sku name to Premium_LRS"
+					},
+					{
+						"id": "c",
+						"text": "Change kind to StorageV2 and the sku name to Premium_ZRS"
+					},
+					{
+						"id": "d",
+						"text": "Change kind to StorageV2 and the sku name to Standard_LRS"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The workload described — very small objects, very high transaction rates, consistently low latency — together with Data Lake Storage Gen2 matches the premium block blobs profile. Setting kind to BlockBlobStorage gives SSD-backed storage aimed at high transaction rates, small objects and consistently low latency, and hierarchical namespace (Data Lake Storage) works on standard general-purpose v2 and premium block blobs only. Premium accounts offer only LRS or ZRS, so Premium_LRS is a valid pairing.",
+				"perChoice": {
+					"b": "Premium file shares (FileStorage) expose only Azure Files over SMB/NFS, with no blob service, so they cannot serve small-object uploads. It is also the one premium type with no hierarchical namespace support, which rules it out for Data Lake Storage Gen2.",
+					"c": "There is no premium general-purpose v2 pairing: premium performance requires selecting a specialized account type (block blobs, file shares or page blobs) together with a Premium_LRS or Premium_ZRS sku. Keeping kind at StorageV2 cannot be combined with Premium_ZRS.",
+					"d": "Standard general-purpose v2 with a Standard sku does support hierarchical namespace, but it is the standard, non-SSD performance tier, so it does not deliver the consistently low latency required for sustained high-transaction, small-object workloads. It would also silently remove the geo-redundancy currently configured in the template."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-create"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview"
+				}
+			],
+			"subtopics": [
+				"account-type-and-performance-selection",
+				"hierarchical-namespace",
+				"redundancy-options"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KBE70P4ZGR88ZXSJKGMXM9",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Standard general-purpose v2 storage account whose networking settings are listed below, and a line-of-business application that reads its blob data from a subnet of your virtual network. You need that application to keep working over an address that sits inside the virtual network, while no other client anywhere on the public internet can reach the account. Which change should you make to the storage account?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Network setting",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Public network access",
+							"Enabled"
+						],
+						[
+							"Public network access scope",
+							"All networks"
+						],
+						[
+							"Private endpoint",
+							""
+						],
+						[
+							"Network routing",
+							"Microsoft network routing"
+						],
+						[
+							"Internet protocol",
+							"IPv4"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add a private endpoint and set Public network access to Disabled"
+					},
+					{
+						"id": "b",
+						"text": "Add a private endpoint and set Public network access scope to Selected virtual networks and IP addresses"
+					},
+					{
+						"id": "c",
+						"text": "Add a private endpoint and leave Public network access enabled for all networks"
+					},
+					{
+						"id": "d",
+						"text": "Add a service endpoint to the application subnet and set Public network access scope to Selected virtual networks and IP addresses"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A private endpoint assigns a private IP address from your virtual network to the storage account, which is exactly the in-VNet address the application needs. Because the requirement is that no client on the public internet may reach the account, you must also change Public network access so inbound traffic is blocked; leaving that setting enabled keeps the account's public endpoint open even though a private endpoint exists. Setting Public network access to Disabled together with a private endpoint gives a single reachable path inside the virtual network.",
+				"perChoice": {
+					"b": "This keeps public network access enabled and merely narrows the accepted public sources to selected virtual networks or IP ranges. Traffic from those selected public endpoints would still be accepted, so the account does not satisfy the requirement that nothing on the public internet can reach it.",
+					"c": "A private endpoint alone does not remove the public endpoint. Leaving Public network access enabled for all networks means any client on any network that resolves the public endpoint can still connect, so the account remains internet reachable.",
+					"d": "A service endpoint keeps traffic going to the account's public endpoint and assigns no address inside your virtual network, so the application does not get the in-VNet address the requirement calls for; the public endpoint also stays resolvable rather than being blocked."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-create"
+				}
+			],
+			"subtopics": [
+				"private-endpoint",
+				"public-network-access",
+				"networking"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KBJF0SW4M4PR87G25Q8X9H",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You are creating a storage account for a platform team, and the requirements it must satisfy are listed below. Windows and Linux servers both have to be served from that single account. No workload uses a hierarchical namespace or blob types. Which account type should you choose at creation time?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Area",
+						"Requirement"
+					],
+					"rows": [
+						[
+							"Windows servers",
+							"Connect over SMB 3.x"
+						],
+						[
+							"Linux servers",
+							"Connect over NFS v3"
+						],
+						[
+							"Storage medium",
+							"SSD-backed media, consistently low latency for many small operations"
+						],
+						[
+							"Hierarchical namespace",
+							"Not used by any workload"
+						],
+						[
+							"Block, append and page blobs",
+							"Not used by any workload"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Premium file shares"
+					},
+					{
+						"id": "b",
+						"text": "Premium block blobs"
+					},
+					{
+						"id": "c",
+						"text": "Premium page blobs"
+					},
+					{
+						"id": "d",
+						"text": "Standard general-purpose v2"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Premium file shares (kind = FileStorage) is the type built for Azure Files, and it is the one that lets SMB clients and NFS clients be served from the same account at the same time. It runs on SSD-backed media, which matches the low-latency profile for many small operations, and because no workload uses a hierarchical namespace it does not matter that this is the single premium type without hierarchical namespace support.",
+				"perChoice": {
+					"b": "Premium block blobs targets block and append blob workloads with very high transaction counts and small objects. It offers no Azure Files capability, so neither the SMB nor the NFS clients in the requirements could mount anything from it.",
+					"c": "Premium page blobs is limited to page blobs only and has no file system capability at all, so it cannot serve the SMB or NFS clients.",
+					"d": "Standard general-purpose v2 gives you SMB-based Azure Files, and its NFS v3 setting lets a Linux client mount a blob container rather than an SMB file share, so it does not deliver SMB and NFS mounts side by side from one account. It also runs on Standard HDD-backed media, not the SSD-backed medium the requirements ask for."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-create"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview"
+				}
+			],
+			"subtopics": [
+				"account-types",
+				"azure-files-protocols",
+				"performance-tiers"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KBPNDFT8XZ6FQPXZQSWVR1",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Standard general-purpose v2 storage account whose networking configuration is listed below. A partner application hosted on virtual machines in your virtual network must be able to connect to the account over IPv6 as well as IPv4, because the partner is adding IPv6 addresses to its subnets next quarter. Which change should you make to the storage account?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Networking setting",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Public network access",
+							"Enabled"
+						],
+						[
+							"Private endpoint",
+							"pe-stor-prod (subnet app-subnet, 10.20.4.7)"
+						],
+						[
+							"Network routing",
+							"Internet routing"
+						],
+						[
+							"Internet protocol",
+							"IPv4 only"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Delete the private endpoint and set Network routing to Microsoft network routing"
+					},
+					{
+						"id": "b",
+						"text": "Delete the private endpoint and set Network routing to Internet routing"
+					},
+					{
+						"id": "c",
+						"text": "Keep the private endpoint and set Network routing to Internet routing"
+					},
+					{
+						"id": "d",
+						"text": "Keep the private endpoint and set Network routing to Microsoft network routing"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Turning on IPv6 alongside IPv4 is only possible when the account is reached over a public endpoint and its traffic travels over the Azure network. A private endpoint serves the account over an address inside the virtual network, and Internet routing sends traffic through the POP nearest the account; both of those settings are incompatible with IPv6. Deleting the private endpoint and setting Network routing to Microsoft network routing is therefore the only combination that lets the partner's dual-stack clients connect.",
+				"perChoice": {
+					"b": "Deleting the private endpoint is the right half of the change, but Internet routing remains in place. Routing account traffic through the POP nearest the account is one of the settings that IPv6 cannot be combined with, so the partner's dual-stack clients still cannot connect.",
+					"c": "The private endpoint stays, so the account keeps being reached only over an address inside the virtual network while IPv6 needs a public endpoint, and Internet routing is also incompatible with IPv6. Either fact alone blocks the requirement.",
+					"d": "Microsoft network routing is the right choice, but keeping the private endpoint means the account has no public endpoint, and IPv6 requires one, so Internet protocol cannot be switched to IPv4 and IPv6 together."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-create"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview"
+				}
+			],
+			"subtopics": [
+				"ipv6-support",
+				"network-routing",
+				"private-endpoints"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KBT8XRGBPX0QD32CSWKRV8",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Standard general-purpose v2 storage account with the settings shown below. It stores the nightly output of a food distribution plant, and Facilities has scheduled a full-day electrical maintenance on the one facility that hosts the account's replicas. The remainder of that region stays online throughout. You need the stored data to remain reachable for the whole maintenance window, and the business does not want a copy of this data placed in another region. Which replica configuration should the account use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Account type",
+							"Standard general-purpose v2"
+						],
+						[
+							"Performance",
+							"Standard"
+						],
+						[
+							"Replica configuration",
+							"Locally-redundant storage (LRS)"
+						],
+						[
+							"Access tier",
+							"Hot"
+						],
+						[
+							"Blob soft delete",
+							"Enabled, 90-day retention"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Locally-redundant storage (LRS)"
+					},
+					{
+						"id": "b",
+						"text": "Zone-redundant storage (ZRS)"
+					},
+					{
+						"id": "c",
+						"text": "Geo-redundant storage (GRS)"
+					},
+					{
+						"id": "d",
+						"text": "Read-access geo-redundant storage (RA-GRS)"
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "The account currently replicates locally, so every copy of the data sits in the single facility that is going offline. Zone-redundant storage keeps the account's replicas spread across the separate facilities that make up one region, so the account stays reachable through the loss of any one of them, and all copies remain inside the current region — exactly what the business asked for. ZRS is offered for general-purpose v2 standard accounts, though region support differs, so availability in the chosen region should be confirmed before committing to it.",
+				"perChoice": {
+					"a": "Locally-redundant storage keeps all of the account's copies inside a single facility. That is the current configuration, and it cannot survive the outage of the facility hosting the data, so it fails the availability requirement.",
+					"c": "Geo-redundant storage keeps the local copies and adds a replicated copy in the paired region. The business explicitly ruled out holding this data in another region, so this option contradicts the requirement even though it does add resilience.",
+					"d": "Read-access geo-redundant storage also maintains a replicated copy in the paired region, and its extra feature only governs read access to that secondary copy. It therefore breaks the same no-other-region requirement while adding cost for a capability that does not address the facility outage."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-create"
+				}
+			],
+			"subtopics": [
+				"storage-redundancy",
+				"replication-options",
+				"account-planning"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KC4053VNS719X2B8MYTBZ0",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an ARM template that provisions the storage account below for a records system. Compliance rules state that the keys protecting the data must be created and rotated by your own security team in Azure Key Vault rather than by the platform, that all four services the account exposes must be covered by those keys, and that stored data must carry a second layer of encryption beneath the service. You need the account to satisfy all three rules. Which edit should you make to the template?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"type\": \"Microsoft.Storage/storageAccounts\",\n  \"apiVersion\": \"2023-05-01\",\n  \"name\": \"contosorecords01\",\n  \"location\": \"eastus\",\n  \"kind\": \"StorageV2\",\n  \"sku\": { \"name\": \"Standard_GRS\" },\n  \"identity\": { \"type\": \"None\" },\n  \"properties\": {\n    \"encryption\": {\n      \"keySource\": \"Microsoft.Storage\",\n      \"requireInfrastructureEncryption\": false,\n      \"services\": {\n        \"blob\":  { \"enabled\": true },\n        \"file\":  { \"enabled\": true },\n        \"table\": { \"enabled\": false },\n        \"queue\": { \"enabled\": false }\n      }\n    }\n  }\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set keySource to Microsoft.Keyvault, enable the encryption services for every service type, set requireInfrastructureEncryption to true, and add a user-assigned identity to the account"
+					},
+					{
+						"id": "b",
+						"text": "Set keySource to Microsoft.Keyvault, leave the encryption services as they are, set requireInfrastructureEncryption to true, and add a user-assigned identity to the account"
+					},
+					{
+						"id": "c",
+						"text": "Set keySource to Microsoft.Keyvault, enable the encryption services for every service type, set requireInfrastructureEncryption to false, and add a user-assigned identity to the account"
+					},
+					{
+						"id": "d",
+						"text": "Set keySource to Microsoft.Keyvault, enable the encryption services for every service type, set requireInfrastructureEncryption to true, and keep the account's identity type as None"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Three requirements have to be met together. Taking the keys from the customer's own key vault means keySource becomes Microsoft.Keyvault. With customer-managed keys the default coverage is blobs and files only, so the template must extend it to every service type (the template currently has table and queue disabled). The extra encryption layer below the service is requireInfrastructureEncryption set to true. Finally, choosing customer-managed keys at creation requires a user-assigned identity attached to the account so it can reach the key vault — with identity type None the account has no principal for the key. Only the correct option does all four things.",
+				"perChoice": {
+					"b": "This covers the key-vault and second-layer rules but leaves table and queue encryption disabled, and those two services stay under platform-managed keys. Default coverage for customer-managed keys is blobs and files only, so all four services would not be protected by the customer's keys.",
+					"c": "The key source, service coverage and identity are right, but requireInfrastructureEncryption stays false, so data receives only the service-level layer. The second layer of encryption the auditors require would be missing.",
+					"d": "Everything is satisfied except the identity: a user-assigned identity is mandatory when you pick customer-managed keys, and the template keeps identity type None, so the account has no principal permitted to reach the key vault and the deployment cannot deliver the requirement."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-create"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview"
+				}
+			],
+			"subtopics": [
+				"customer-managed-keys",
+				"encryption",
+				"arm-template"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KCENSZFF1ETV7N92GE4AH5",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Standard general-purpose v2 storage account that backs an Azure Files share mounted by the label printers on a packaging line. The account was created with the configuration shown below. Since last week's network refresh, the plant's LP-450 printers can no longer open the share — they report a protocol mismatch — while the Windows application servers on the same line mount it without any problem. The printer vendor has confirmed that SMB 3.x will never be supported on this firmware. You need the printers working again. Which change should you make to the storage account?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Creation method",
+							"Azure portal wizard, all creation defaults left unchanged"
+						],
+						[
+							"Account kind",
+							"StorageV2"
+						],
+						[
+							"Performance",
+							"Standard"
+						],
+						[
+							"Access tier",
+							"Hot"
+						],
+						[
+							"Require Encryption in Transit for SMB",
+							"Disabled"
+						],
+						[
+							"Enable Managed Identity for SMB",
+							"Disabled"
+						],
+						[
+							"Enable SFTP",
+							"Disabled"
+						],
+						[
+							"Minimum TLS version",
+							"TLS 1.2"
+						],
+						[
+							"LP-450 label printer, firmware 3.4",
+							"SMB 2.1 only; vendor states SMB 3.x is unsupported"
+						],
+						[
+							"Windows Server 2022 application server",
+							"SMB 3.1.2"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Clear Require secure transfer for REST API operations on the account"
+					},
+					{
+						"id": "b",
+						"text": "Enable Require Encryption in Transit for SMB on the account"
+					},
+					{
+						"id": "c",
+						"text": "Enable Managed Identity for SMB on the account"
+					},
+					{
+						"id": "d",
+						"text": "Change the minimum TLS version from TLS 1.2 to TLS 1.0"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "With creation defaults in place, the account still has Require secure transfer for REST API operations enabled, and that setting covers HTTPS, SMB and NFS — so an SMB 2.1-only client, which cannot negotiate modern encryption, is refused. The Windows servers are unaffected because they speak SMB 3.1.2. Because the vendor firmware will never move beyond SMB 2.1, removing that requirement is the only way to let the printers back onto the share; the trade-off is that the account will then accept unencrypted connections, so the security posture of the account is weakened.",
+				"perChoice": {
+					"b": "Require Encryption in Transit for SMB only takes over as the control for SMB traffic to Azure Files once it is selected, and it is not selected on this account. Selecting it keeps SMB traffic protected and would not admit a client that cannot negotiate encrypted SMB, so it does not restore access for the printers.",
+					"c": "Managed identity for SMB changes how an SMB client authenticates to Azure Files (no stored credentials). It has no effect on which versions of the SMB protocol a device can speak, so the LP-450 printers would still fail.",
+					"d": "The minimum TLS version governs the TLS level the service accepts for REST/HTTPS requests. SMB 2.1 does not negotiate TLS at all, so relaxing this setting cannot fix the printers' protocol mismatch, and it lowers the account's security posture instead."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-create"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview"
+				}
+			],
+			"subtopics": [
+				"azure-files-smb",
+				"secure-transfer-setting",
+				"storage-account-security"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KCNBY7Z7A45V84M3NM6NNJ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Standard general-purpose v2 storage account with the configuration shown below. Your security board has decided that long-lived shared secrets must no longer be usable against this account, and the web application that writes to it has already been converted to Microsoft Entra authorization. An on-premises backup product that still presents account keys is scheduled to be replaced before the review closes. You need the account to refuse key-based requests in the meantime. Which change should you make to the storage account?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Account type",
+							"Standard general-purpose v2"
+						],
+						[
+							"Enable storage account key access",
+							"Enabled"
+						],
+						[
+							"Allow enabling anonymous access on individual containers",
+							"Enabled"
+						],
+						[
+							"Require secure transfer for REST API operations",
+							"Enabled"
+						],
+						[
+							"Minimum TLS version",
+							"TLS 1.2"
+						],
+						[
+							"Public network access",
+							"Enabled"
+						],
+						[
+							"Public network access scope",
+							"All networks"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set Enable storage account key access to Disabled"
+					},
+					{
+						"id": "b",
+						"text": "Leave Enable storage account key access on and rotate the two access keys on a 90-day schedule"
+					},
+					{
+						"id": "c",
+						"text": "Set Allow enabling anonymous access on individual containers to Disabled while leaving Enable storage account key access on"
+					},
+					{
+						"id": "d",
+						"text": "Set Public network access to Disabled while leaving Enable storage account key access on"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Turning off the account-level key access setting blocks Shared Key authorization, so any client that presents an account key — such as the backup product still being used — is rejected, and Microsoft Entra ID becomes the only supported way to authorize data operations. Because the web application already authenticates with Microsoft Entra and all other security settings in the exhibit stay unchanged, it continues to work.",
+				"perChoice": {
+					"b": "Rotating credentials does not withdraw the ability to use them: freshly rotated access keys are still honored, so the account would keep accepting key-based requests from the backup product. Rotation also affects clients that use the old keys, but it never stops Shared Key authorization itself.",
+					"c": "That setting only controls whether anonymous, unauthenticated public read access can be turned on for individual containers; no blob is public unless that extra step is taken. It has no bearing on account-key authorization, so the backup product's key-based requests would still succeed.",
+					"d": "Public network access governs reachability (whether inbound traffic is allowed at all), not how a client proves its identity. Setting it to Disabled would cut off all inbound traffic, including the Entra-authorized web application, while key-based authorization would technically remain configured — the opposite of the required outcome."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-create"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview"
+				}
+			],
+			"subtopics": [
+				"shared-key-authorization",
+				"storage-account-security-settings"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KCR0ZRF2NTCD0B5C63E1G8",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are creating a new Standard general-purpose v2 storage account in the Azure portal for a document-processing platform. Before the account goes live, five requests from the delivery team must be satisfied while you work through the wizard. Match each request to the tab of the Create storage account wizard where you configure it.",
+				"items": [
+					{
+						"id": "tab_networking",
+						"text": "Networking"
+					},
+					{
+						"id": "tab_security",
+						"text": "Security"
+					},
+					{
+						"id": "tab_dataprotection",
+						"text": "Data protection"
+					},
+					{
+						"id": "tab_encryption",
+						"text": "Encryption"
+					},
+					{
+						"id": "tab_advanced",
+						"text": "Advanced"
+					}
+				],
+				"slots": [
+					{
+						"id": "req_reach",
+						"label": "Allow only the corporate VNet to reach the account, and give the account its own address inside that VNet."
+					},
+					{
+						"id": "req_https",
+						"label": "Reject every client that sends anything other than HTTPS, and refuse clients that still negotiate TLS 1.0 or TLS 1.1."
+					},
+					{
+						"id": "req_pointintime",
+						"label": "Let a container be restored to any earlier moment in time after somebody deleted an object by mistake."
+					},
+					{
+						"id": "req_keys",
+						"label": "Use keys created and rotated by your own team in Azure Key Vault, with a second protective layer beneath the service itself."
+					},
+					{
+						"id": "req_linuxmount",
+						"label": "Allow Linux servers to mount a blob container as a filesystem."
+					}
+				]
+			},
+			"key": {
+				"req_reach": "tab_networking",
+				"req_https": "tab_security",
+				"req_pointintime": "tab_dataprotection",
+				"req_keys": "tab_encryption",
+				"req_linuxmount": "tab_advanced"
+			},
+			"explanation": {
+				"correct": "The Networking tab holds public network access, its scope (all networks or selected virtual networks/IP ranges) and the private endpoint option, so it covers restricting reachability and assigning an address inside the VNet. The Security tab holds require secure transfer for REST API operations and the minimum TLS version (default TLS 1.2, which rejects TLS 1.0 and 1.1). Point-in-time restore for containers is on the Data protection tab, alongside soft delete, blob versioning and the blob change feed. Key Vault keys, customer-managed key coverage and infrastructure encryption are configured on the Encryption tab. The Advanced tab carries Enable network file system (NFS) v3, which lets Linux clients mount a blob container.",
+				"perChoice": {
+					"tab_networking": "Matches the first request: public network access, public network access scope and the private endpoint that assigns a private IP from your virtual network are all configured on the Networking tab.",
+					"tab_security": "Matches the second request: require secure transfer for REST API operations (HTTPS only) and the minimum TLS version defaulting to TLS 1.2, which rejects TLS 1.0 and TLS 1.1, are Security tab settings.",
+					"tab_dataprotection": "Matches the third request: Enable point-in-time restore for containers lives on the Data protection tab, together with soft delete, versioning and the blob change feed. Note that turning it on also switches on versioning, soft delete and the change feed, so it costs more.",
+					"tab_encryption": "Matches the fourth request: enabling support for customer-managed keys, the key itself, the mandatory user-assigned identity and the optional infrastructure encryption (double encryption) are Encryption tab settings.",
+					"tab_advanced": "Matches the fifth request: Enable network file system (NFS) v3, hierarchical namespace, SFTP, cross-tenant replication and the access tier are Advanced tab settings."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-create"
+				}
+			],
+			"subtopics": [
+				"creation-wizard-configuration",
+				"storage-account-networking",
+				"data-protection-and-encryption"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KCZX55J29WZPP6R2ZTVMXD",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a Standard general-purpose v2 storage account named contosodata. The data platform team is writing connection strings for the five workloads listed below, and each workload has to be reached through the account's own sub-domain rather than through the resource manager endpoint. You need each workload pointed at the correct sub-domain. Match each workload to the endpoint suffix that belongs to it.",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"storageAccountName\": \"contosodata\",\n  \"endpointTemplate\": \"https://contosodata.<service-subdomain>.core.windows.net\"\n}"
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Objects written in block, append and page form, such as virtual hard disks"
+					},
+					{
+						"id": "i2",
+						"text": "Lake paths that need directory-level permissions and renames"
+					},
+					{
+						"id": "i3",
+						"text": "Shares that clients mount over SMB or NFS"
+					},
+					{
+						"id": "i4",
+						"text": "Messages exchanged asynchronously between application components"
+					},
+					{
+						"id": "i5",
+						"text": "Rows held in partitions and located by a row key"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": ".blob.core.windows.net"
+					},
+					{
+						"id": "s2",
+						"label": ".dfs.core.windows.net"
+					},
+					{
+						"id": "s3",
+						"label": ".file.core.windows.net"
+					},
+					{
+						"id": "s4",
+						"label": ".queue.core.windows.net"
+					},
+					{
+						"id": "s5",
+						"label": ".table.core.windows.net"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "Every service in a storage account has its own standard endpoint, formed from the account name as a sub-domain under core.windows.net, and that sub-domain identifies the service. Blob data — objects written in block, append and page form, including virtual hard disks — is reached at the blob sub-domain; Data Lake Storage paths that depend on directory-level permissions and renames are reached at the dfs sub-domain; Azure Files shares mounted over SMB or NFS are reached at the file sub-domain; asynchronous messages exchanged between application components are reached at the queue sub-domain; and rows grouped into partitions and located by row key are reached at the table sub-domain. Addressing each workload through its own sub-domain sends its data plane traffic directly to the right service instead of through the management endpoint.",
+				"perChoice": {
+					"i1": "Belongs at the blob sub-domain. Blob storage serves objects written in block, append and page form, which is why virtual hard disks, backups and documents all sit there; the template's <service-subdomain> placeholder takes the value blob for this workload.",
+					"i2": "Belongs at the dfs sub-domain, the one reserved for Data Lake Storage. Directory-scoped permissions, renames and the namespace an analytics lake relies on are served only through that endpoint, not through the plain blob sub-domain.",
+					"i3": "Belongs at the file sub-domain. Azure Files shares are the ones that clients mount over SMB or NFS, so their REST endpoint carries file rather than blob.",
+					"i4": "Belongs at the queue sub-domain. Asynchronous hand-off between components is the job of queues, and that service has its own endpoint separate from the blob one, so the messages never travel through the blob sub-domain.",
+					"i5": "Belongs at the table sub-domain. Rows grouped into partitions and fetched by a row key are the table service's access pattern, and it is addressed on its own sub-domain rather than through the blob endpoint."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-create"
+				}
+			],
+			"subtopics": [
+				"service-endpoints",
+				"data-plane-access"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KD6VBBYT2ZDBT43H4ASTSZ",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have an ARM template that defines the four storage accounts shown below for a new platform. A refactoring tool removed the kind property from every definition, and each workload only works if its account is created with the right account type. You need to restore the property on each definition. Match each value of kind to the account whose definition must contain it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Account name",
+						"Region",
+						"SKU",
+						"What the workload needs"
+					],
+					"rows": [
+						[
+							"adlsanalytics",
+							"East US",
+							"Standard_ZRS",
+							"Curated lake for the analytics team, exposed with Data Lake Storage Gen2"
+						],
+						[
+							"txnledger",
+							"East US",
+							"Premium_ZRS",
+							"Payment gateway writes block and append blobs continuously, thousands of small objects per second, strictly low latency"
+						],
+						[
+							"designvault",
+							"East US",
+							"Premium_LRS",
+							"Engineering shares only; Windows and Linux servers mount the same account over SMB and NFS"
+						],
+						[
+							"archiveold",
+							"West Europe",
+							"Standard_LRS",
+							"Provisioned years ago on the older multi-service account generation; must stay upgradable in place with no outage"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "StorageV2"
+					},
+					{
+						"id": "i2",
+						"text": "BlockBlobStorage"
+					},
+					{
+						"id": "i3",
+						"text": "FileStorage"
+					},
+					{
+						"id": "i4",
+						"text": "Storage"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "adlsanalytics"
+					},
+					{
+						"id": "s2",
+						"label": "txnledger"
+					},
+					{
+						"id": "s3",
+						"label": "designvault"
+					},
+					{
+						"id": "s4",
+						"label": "archiveold"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "StorageV2 creates a Standard general-purpose v2 account, the type Microsoft recommends for most scenarios; it serves blobs (including Data Lake Storage Gen2), queues, tables and Azure Files, which is what the adlsanalytics lake on Standard_ZRS needs. BlockBlobStorage creates Premium block blobs, which cover block and append blobs for high transaction rates, small objects and consistently low latency, matching the payment gateway writes on txnledger's Premium_ZRS. FileStorage creates Premium file shares, the type to pick when Azure Files must serve both SMB and NFS clients, which is the designvault requirement. Storage creates legacy Standard general-purpose v1, the earlier multi-service account that can still be upgraded in place to general-purpose v2 with no downtime, so it belongs to archiveold, which is still on that older generation.",
+				"perChoice": {
+					"i1": "adlsanalytics. StorageV2 selects Standard general-purpose v2, which supports Data Lake Storage and is the recommended multi-service type; a Standard SKU rules out the premium types here.",
+					"i2": "txnledger. BlockBlobStorage selects Premium block blobs, the premium type limited to block and append blobs and intended for high transaction counts, small objects and low latency.",
+					"i3": "designvault. FileStorage selects Premium file shares, used when the same account must hand out Azure Files over both SMB and NFS; it is the premium type without hierarchical namespace support.",
+					"i4": "archiveold. Storage selects legacy Standard general-purpose v1, the older multi-service account, and only that legacy generation can be upgraded in place to general-purpose v2 with no downtime."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-create"
+				}
+			],
+			"subtopics": [
+				"storage-account-types",
+				"arm-template-configuration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KDB1KSY4PPPYTSKB3W47XD",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are creating six Standard general-purpose v2 storage accounts for separate business units, and each one has its own availability requirement. Four of the requirements listed below are covered by exactly one of the choices you can select. Match each of those four requirements to the choice that satisfies it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Ref",
+						"Business requirement"
+					],
+					"rows": [
+						[
+							"A",
+							"A startup keeps five years of build artifacts. The business accepts that losing a single facility would mean losing them, and it wants the lowest bill possible."
+						],
+						[
+							"B",
+							"A payments application runs in a region built from several physical facilities. If any one of those facilities is taken out by maintenance, the application must keep serving customers. No copy of the payment records may leave the region."
+						],
+						[
+							"C",
+							"Clinic records must be copied to a second region so nothing is lost in a regional disaster, and the clinics must be able to look up patients on the backup copy while the home region is down."
+						],
+						[
+							"D",
+							"Tax filings sit in a region made up of several physical facilities. The tax authority demands that the filings survive both the loss of a single facility and the loss of the whole region, and that examiners can open them from the standby copy during a regional outage."
+						],
+						[
+							"E",
+							"Marketing video masters must survive the loss of the entire region. Marketing does not ask for them to be served from anywhere else while the home region is down."
+						],
+						[
+							"F",
+							"Survey responses for a research project sit in a region made up of several physical facilities. Losing a single facility must not lose responses, and the business does not need a copy held in another region."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Locally-redundant storage (LRS)"
+					},
+					{
+						"id": "i2",
+						"text": "Zone-redundant storage (ZRS)"
+					},
+					{
+						"id": "i3",
+						"text": "Geo-redundant storage (GRS)"
+					},
+					{
+						"id": "i4",
+						"text": "Read-access geo-redundant storage (RA-GRS)"
+					},
+					{
+						"id": "i5",
+						"text": "Geo-zone-redundant storage (GZRS)"
+					},
+					{
+						"id": "i6",
+						"text": "Read-access geo-zone-redundant storage (RA-GZRS)"
+					}
+				],
+				"slots": [
+					{
+						"id": "sA",
+						"label": "A"
+					},
+					{
+						"id": "sB",
+						"label": "B"
+					},
+					{
+						"id": "sC",
+						"label": "C"
+					},
+					{
+						"id": "sD",
+						"label": "D"
+					}
+				]
+			},
+			"key": {
+				"sA": "i1",
+				"sB": "i2",
+				"sC": "i4",
+				"sD": "i6"
+			},
+			"explanation": {
+				"correct": "Each requirement maps to the replica type that matches how far it must survive and whether the standby copy has to stay usable while the home region is offline. A takes the risk of losing one facility and cares only about price, so LRS (one copy set in a single region, the cheapest option) fits. B and F must ride out the loss of one physical facility inside the same region but forbid a copy in another region, which is exactly what ZRS provides. C needs the copy in a second region plus continued lookup from that copy during an outage, which is the read-access geo variant RA-GRS; it stays with plain geo placement because the requirement never asks for single-facility survival. D demands both kinds of resilience at once — loss of one facility and loss of the whole region — plus examiners reading the standby copy during the outage, so only RA-GZRS covers all three. GRS and GZRS are the two correct-placement options that leave no usable standby copy during a regional outage, which is why neither fits C or D.",
+				"perChoice": {
+					"i1": "Requirement A. LRS keeps one copy set in a single region with no replication to any other site, and it is the cheapest of the six options — which is what A asks for when it accepts losing a whole facility and wants the lowest bill.",
+					"i2": "Requirements B and F. ZRS spreads copies across the physical facilities (availability zones) of one region, so a single facility outage does not stop service, while nothing is replicated to a second region. Both B and F state exactly that combination.",
+					"i3": "Fits no requirement. GRS does place a copy in a second region, but during a regional outage that standby copy is not readable, so it fails C and D. It also spreads nothing across the facilities of a single region, so it cannot satisfy B or F, and it offers nothing beyond single-facility loss that A already accepts.",
+					"i4": "Requirement C. RA-GRS replicates to a paired second region and, with the read-access option enabled, keeps the standby copy readable when the primary region is unreachable. C asks for a copy in another region plus lookups from that copy during an outage, and it does not ask for survival of a single facility, so no zone spreading is required.",
+					"i5": "Fits no requirement. GZRS spreads copies across a region's facilities and also replicates to a second region, but the standby copy is not readable during a regional outage, so it fails D. Nothing here wants a cross-region copy that cannot be read, since C and D are the only cross-region requirements and both insist on reading the standby copy.",
+					"i6": "Requirement D. RA-GZRS is the only option that spreads copies across the facilities of the home region, keeps a copy in a paired second region, and leaves that standby copy readable during a regional outage. D is the only requirement that combines all three conditions."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-create"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview"
+				}
+			],
+			"subtopics": [
+				"storage-account-redundancy",
+				"replica-configuration",
+				"availability-zones"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KDJ3YGR39MPKRJHHKABFRX",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a Standard general-purpose v2 storage account whose current configuration is listed below. Five separate requests have come in from different teams, and each request is satisfied by changing exactly one of these settings. Match each request to the setting that has to be changed to satisfy it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Current configuration"
+					],
+					"rows": [
+						[
+							"Minimum TLS version",
+							"TLS 1.0"
+						],
+						[
+							"Allow enabling anonymous access on individual containers",
+							"Enabled"
+						],
+						[
+							"Default to Microsoft Entra authorization in the Azure portal",
+							"Disabled"
+						],
+						[
+							"Require secure transfer for REST API operations",
+							"Disabled"
+						],
+						[
+							"Enable point-in-time restore for containers",
+							"Disabled"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Clients that can only negotiate the two oldest releases of the transport security protocol must be refused at the handshake."
+					},
+					{
+						"id": "i2",
+						"text": "Not even a well-meaning developer should be able to make stored files readable by anyone on the internet who finds the link."
+					},
+					{
+						"id": "i3",
+						"text": "People who sign in to the web interface should have their own identity handle data work, with long-lived credentials used only as a last resort."
+					},
+					{
+						"id": "i4",
+						"text": "Data must never cross the network unencrypted, and the SDKs used by our partner must not be permitted to negotiate plain HTTP."
+					},
+					{
+						"id": "i5",
+						"text": "After a deployment script emptied a whole folder hierarchy last Tuesday, the owner needs the data exactly as it stood at 14:00 the previous afternoon."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Minimum TLS version"
+					},
+					{
+						"id": "s2",
+						"label": "Allow enabling anonymous access on individual containers"
+					},
+					{
+						"id": "s3",
+						"label": "Default to Microsoft Entra authorization in the Azure portal"
+					},
+					{
+						"id": "s4",
+						"label": "Require secure transfer for REST API operations"
+					},
+					{
+						"id": "s5",
+						"label": "Enable point-in-time restore for containers"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "Each request maps to a different security or data-protection setting: the protocol-level refusal of the two oldest transport protocol releases is the Minimum TLS version setting (TLS 1.2 rejects TLS 1.0 and TLS 1.1); stopping stored objects from being published for the whole world is done by turning off Allow enabling anonymous access on individual containers, which removes the account-level ability to expose data and is what Microsoft recommends; making the web interface use the signed-in identity and only fall back to account credentials when role assignments lack data permissions is Default to Microsoft Entra authorization in the Azure portal; forbidding unencrypted traffic and plain HTTP for partner SDKs is Require secure transfer for REST API operations; and recovering the data exactly as it stood at a chosen moment in the past is Enable point-in-time restore for containers (which also switches on blob versioning, blob soft delete and the blob change feed, so it adds cost).",
+				"perChoice": {
+					"i1": "Minimum TLS version — the account is currently set to TLS 1.0, and raising the setting to TLS 1.2 is what rejects clients that can only negotiate TLS 1.0 or TLS 1.1.",
+					"i2": "Allow enabling anonymous access on individual containers — with this setting off, nobody can enable anonymous public reads on a container, so a found link alone never exposes stored files.",
+					"i3": "Default to Microsoft Entra authorization in the Azure portal — the web interface then authorizes data work with the signed-in Entra identity and falls back to account keys only when Azure RBAC lacks the needed data permissions.",
+					"i4": "Require secure transfer for REST API operations — this is the setting that enforces HTTPS (and, by default, SMB and NFS) so nothing crosses the network unencrypted or over plain HTTP.",
+					"i5": "Enable point-in-time restore for containers — this is the only one of the five settings that can return containers to an earlier moment in time; soft delete or versioning alone would not reconstruct the state at 14:00 the previous day."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-create"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview"
+				}
+			],
+			"subtopics": [
+				"account-security-settings",
+				"data-protection"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KDSF50T86Q8H6EPWZD85B3",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are reviewing a Standard general-purpose v2 storage account named contosodata before it goes live, and you want to be able to explain each networking choice to the delivery team. Match each described behaviour to the setting that produces it on the account.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Public network access",
+							"Enabled"
+						],
+						[
+							"Public network access scope",
+							"All networks"
+						],
+						[
+							"Network routing",
+							"Microsoft network routing"
+						],
+						[
+							"Minimum TLS version",
+							"TLS 1.2"
+						],
+						[
+							"Performance",
+							"Standard"
+						],
+						[
+							"Redundancy",
+							"Locally redundant storage (LRS)"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Applications reach contosodata through an address assigned inside your own virtual network."
+					},
+					{
+						"id": "i2",
+						"text": "Requests from any host outside your own network are accepted by contosodata."
+					},
+					{
+						"id": "i3",
+						"text": "Requests to contosodata travel inside the carrier's own backbone to the region where the account sits."
+					},
+					{
+						"id": "i4",
+						"text": "Requests leave through the closest edge site and then continue to contosodata, which can cut connection cost."
+					},
+					{
+						"id": "i5",
+						"text": "Storage traffic is accepted no matter which virtual network or IP address range it originates from."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Public network access: Disabled"
+					},
+					{
+						"id": "s2",
+						"label": "Public network access: Enabled"
+					},
+					{
+						"id": "s3",
+						"label": "Network routing: Microsoft network routing"
+					},
+					{
+						"id": "s4",
+						"label": "Network routing: Internet routing"
+					},
+					{
+						"id": "s5",
+						"label": "Public network access scope: All networks"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "Blocking inbound traffic at the account and reaching it over a private endpoint is what puts clients on an address assigned inside your virtual network (s1). Leaving inbound traffic turned on is what lets requests from any host outside your network be accepted (s2). Microsoft network routing is the default path, where requests travel over the service provider's own backbone to the account's region (s3). Internet routing is the alternative, sending traffic through the point of presence nearest the account, which can cut networking cost (s4). A scope of All networks is what accepts storage traffic no matter which virtual network or IP range it comes from (s5).",
+				"perChoice": {
+					"i1": "Public network access: Disabled — blocking all inbound traffic leaves a private endpoint as the way in, and that endpoint is assigned an address from your virtual network.",
+					"i2": "Public network access: Enabled — inbound traffic is turned on, so requests from any host on the internet are accepted by the account.",
+					"i3": "Network routing: Microsoft network routing — the default path, where requests travel over the service provider's own backbone to the region hosting the account.",
+					"i4": "Network routing: Internet routing — the alternative path, which sends traffic through the point of presence closest to the account and can reduce networking cost.",
+					"i5": "Public network access scope: All networks — with this scope, storage traffic is accepted regardless of the virtual network or IP address range it originates from."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-create"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview"
+				}
+			],
+			"subtopics": [
+				"networking-options",
+				"public-network-access",
+				"network-routing"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KDWK9ENRFGWS4Q4NM2P0K8",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Standard general-purpose v2 storage account named contosodata that was created with the default configuration. Publishing the account's blob data so that anyone on the internet can read it without signing in has never been something the platform team wants, yet a recent audit found that the account still gives a deployment pipeline the means to turn that on for any blob store it creates, with no further review. You need the account itself to stop offering that possibility. Which setting should you change on the storage account?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account name",
+							"contosodata"
+						],
+						[
+							"Account type",
+							"Standard general-purpose v2"
+						],
+						[
+							"Region",
+							"West Europe"
+						],
+						[
+							"Replication",
+							"Standard_GRS"
+						],
+						[
+							"Blob data readable without signing in",
+							"None today"
+						],
+						[
+							"Deployment path",
+							"ARM template applied by the platform pipeline"
+						]
+					]
+				},
+				"statement": "The change you make to contosodata is to {{setting}}.",
+				"slots": [
+					{
+						"id": "setting",
+						"options": [
+							{
+								"id": "a",
+								"text": "set Allow enabling anonymous access on individual containers to Disabled"
+							},
+							{
+								"id": "b",
+								"text": "set Enable storage account key access to Disabled"
+							},
+							{
+								"id": "c",
+								"text": "set Require secure transfer for REST API operations to Disabled"
+							},
+							{
+								"id": "d",
+								"text": "set Minimum TLS version to TLS 1.0"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"setting": "a"
+			},
+			"explanation": {
+				"correct": "Allow enabling anonymous access on individual containers is the account-level switch that is on by default and that leaves the possibility of publishing a container's data on the internet open to every deployment; it publishes nothing by itself, but Microsoft recommends turning this account-level setting off. Doing so makes the account refuse to host publicly readable data while leaving authenticated access untouched.",
+				"perChoice": {
+					"setting:b": "Enable storage account key access controls Shared Key authorization. Turning it off stops clients that present account keys and has no bearing on whether blob data can be published for reads by anyone, so it would break existing clients without removing the audit finding.",
+					"setting:c": "Require secure transfer for REST API operations only enforces HTTPS for requests reaching the account; it says nothing about whether data may be published for reads by anyone, so it does not close the finding.",
+					"setting:d": "Minimum TLS version governs which TLS release clients may negotiate for encrypted transport. Lowering it weakens the transport baseline and leaves the account's ability to publish publicly readable data exactly as it is."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-create"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview"
+				}
+			],
+			"subtopics": [
+				"anonymous-public-access",
+				"storage-account-security"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KE3DVJGHHDX1986A2VDXR9",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Standard general-purpose v2 storage account named contosoreports that holds each night's sales reports, configured as shown below. Reporters at offices in Europe, Asia and South America upload those files and download them again during the day, and Finance has noticed that the charges for moving data in and out of the account grow every quarter. You need to cut those charges without altering which clients may reach the account or how they authenticate. Which setting should you change, and which value should you select for it?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Public network access",
+							"Enabled"
+						],
+						[
+							"Public network access scope",
+							"All networks"
+						],
+						[
+							"Private endpoints",
+							""
+						],
+						[
+							"Internet protocol",
+							"IPv4 only"
+						],
+						[
+							"Allow cross-tenant replication",
+							"Enabled"
+						],
+						[
+							"Access tier",
+							"Hot"
+						]
+					]
+				},
+				"statement": "On contosoreports, change {{setting}} to {{value}} so that the quarterly charges for moving data in and out fall.",
+				"slots": [
+					{
+						"id": "setting",
+						"options": [
+							{
+								"id": "a",
+								"text": "Public network access"
+							},
+							{
+								"id": "b",
+								"text": "Public network access scope"
+							},
+							{
+								"id": "c",
+								"text": "Network routing"
+							},
+							{
+								"id": "d",
+								"text": "Internet protocol"
+							}
+						]
+					},
+					{
+						"id": "value",
+						"options": [
+							{
+								"id": "a",
+								"text": "Microsoft network routing"
+							},
+							{
+								"id": "b",
+								"text": "Route through the POP closest to the account"
+							},
+							{
+								"id": "c",
+								"text": "Route through the POP closest to the client, not the account"
+							},
+							{
+								"id": "d",
+								"text": "Keep Microsoft network routing for all of the account's traffic"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"setting": "c",
+				"value": "b"
+			},
+			"explanation": {
+				"correct": "The setting that governs how traffic from internet clients reaches the account's public endpoint is Network routing. It uses Microsoft network routing by default, and the alternative is to send traffic through the point of presence (POP) closest to the storage account, which can lower networking costs. Because the reporters are spread across several continents while the account's data is served from one region, moving the entry point closer to the account is what cuts the transfer charges, and it changes neither who can reach the account nor how requests are authorized.",
+				"perChoice": {
+					"setting:a": "This setting decides whether inbound traffic is allowed at all — you can enable it, block all traffic, or secure it with a network security perimeter. The account already accepts traffic from every network, so changing this would not reduce transfer charges.",
+					"setting:b": "This only narrows who may connect, by allowing inbound traffic from specific virtual networks or IP address ranges instead of all networks. The account is already open to all networks, and this setting has no effect on the cost of moving data.",
+					"setting:d": "This setting only adds IPv6 alongside IPv4. It says nothing about the path traffic takes or about egress charges, and IPv6 in any case requires a public endpoint, which this account has.",
+					"value:a": "This is the value the account already uses, so selecting it leaves the behaviour unchanged and the charges stay where they are.",
+					"value:c": "Entering traffic at the POP nearest the client is the opposite of what lowers cost here: the files still have to cross from the reporter's region to the region that holds the account, so the transfer charges remain.",
+					"value:d": "This restates the behaviour the account already has, so making this selection produces no change and no saving."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-create"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview"
+				}
+			],
+			"subtopics": [
+				"network-routing",
+				"storage-account-networking",
+				"cost-optimization"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KE7MQJGSZ3JZRVTCR89GYA",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Standard general-purpose v2 storage account named contosodata in the West Europe region, deployed from the template below. Two business conditions must now be met at the same time: every object it holds must sit in Switzerland North, and the account must end up on a premium kind that serves Azure Files to both SMB and NFS clients. You need to satisfy both conditions. Which action should you take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"type\": \"Microsoft.Storage/storageAccounts\",\n  \"apiVersion\": \"2023-01-01\",\n  \"name\": \"contosodata\",\n  \"location\": \"westeurope\",\n  \"kind\": \"StorageV2\",\n  \"sku\": { \"name\": \"Standard_LRS\" },\n  \"properties\": {\n    \"accessTier\": \"Hot\",\n    \"isHnsEnabled\": false,\n    \"supportsHttpsTrafficOnly\": true\n  }\n}"
+				},
+				"statement": "The change you should make is {{change}}.",
+				"slots": [
+					{
+						"id": "change",
+						"options": [
+							{
+								"id": "a",
+								"text": "Create a new account with the new kind in the new region and copy the content across"
+							},
+							{
+								"id": "b",
+								"text": "Edit the existing account's kind and location properties in the template and redeploy it"
+							},
+							{
+								"id": "c",
+								"text": "Apply a new sku and a new location to the existing account in place"
+							},
+							{
+								"id": "d",
+								"text": "Turn on cross-tenant replication so the existing account replicates itself to the new region"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"change": "a"
+			},
+			"explanation": {
+				"correct": "An existing storage account is fixed once it exists: its kind cannot be switched to a different account type, and its region cannot be changed either. Meeting the two conditions therefore means building a second account of the needed kind in Switzerland North and transferring everything the current account holds into it with a tool such as AzCopy, which is exactly what the correct option describes.",
+				"perChoice": {
+					"change:a": "Correct. Because an account's type and its region cannot be altered after it has been created, the only way to satisfy both conditions is a new account of the required kind in the required region plus a data transfer (for example with AzCopy) from the existing account.",
+					"change:b": "Wrong. Editing kind in the template does not convert a live account — a storage account cannot be changed to a different type after creation — and redeploying with a different location value does not move an existing resource to another region.",
+					"change:c": "Wrong. Skus and locations are not in-place switches: a premium kind such as premium file shares must be chosen when the account is created, and a region change likewise means building the account in the new region.",
+					"change:d": "Wrong. Allowing cross-tenant replication only permits object replication to other tenants; it does not relocate the account to another region and does not change the account's kind."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-create"
+				}
+			],
+			"subtopics": [
+				"storage-account-type-change",
+				"account-region-change"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KEB2RYWQK5N03V5S4THTS1",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Standard general-purpose v2 storage account created with the configuration shown below. An overnight job replaces the content of the same invoice files every night instead of writing new ones, and this morning the finance team found that several invoices written two nights ago now hold the wrong figures. They need every one of those files brought back exactly as it stood at 22:00 two nights ago, all of them recovered together as a single whole rather than file by file. You need the account to make that possible. Which setting should you change on the storage account?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account name",
+							"contosofinance"
+						],
+						[
+							"Account type",
+							"Standard general-purpose v2"
+						],
+						[
+							"Redundancy",
+							"Locally redundant storage (LRS)"
+						],
+						[
+							"Soft delete for blobs",
+							"Disabled"
+						],
+						[
+							"Blob versioning",
+							"Disabled"
+						],
+						[
+							"Blob change feed",
+							"Disabled"
+						]
+					]
+				},
+				"statement": "The account setting that has to be changed is {{pitr}}.",
+				"slots": [
+					{
+						"id": "pitr",
+						"options": [
+							{
+								"id": "a",
+								"text": "Enable versioning for blobs"
+							},
+							{
+								"id": "b",
+								"text": "Enable point-in-time restore for containers"
+							},
+							{
+								"id": "c",
+								"text": "Enable blob change feed"
+							},
+							{
+								"id": "d",
+								"text": "Enable soft delete for blobs"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"pitr": "b"
+			},
+			"explanation": {
+				"correct": "Enabling point-in-time restore for containers is what lets the whole blob store be brought back to the state it had at a chosen moment, so finance gets all of the two-night-old invoices back as one whole rather than file by file. Turning it on also switches on blob versioning, blob soft delete and the blob change feed, so budget for the additional cost it introduces.",
+				"perChoice": {
+					"pitr:a": "Versioning keeps earlier copies of a blob so a single file can be rolled back by hand, but it offers no operation that returns every file at once to the state they shared at a chosen past moment.",
+					"pitr:c": "The change feed is an append-only log of blob change events meant for auditing and downstream processing; it does not put the store back to a chosen past state.",
+					"pitr:d": "Soft delete only recovers blobs that were deleted, and it works per blob. These invoices still exist with overwritten content, so soft delete cannot return the earlier figures."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-create"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview"
+				}
+			],
+			"subtopics": [
+				"data-protection",
+				"point-in-time-restore"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KEG5DSXG0D0J94AS11QM7N",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a storage account named contosodata that was deployed several years ago and still runs on the account type it was created with, as shown below. The analytics group now needs the account to serve Data Lake Storage Gen2 with a hierarchical namespace, records governance allows this data to exist in only one storage account, and no application may lose read access to it while the change is made. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account name",
+							"contosodata"
+						],
+						[
+							"kind",
+							"Storage"
+						],
+						[
+							"Sku name",
+							"Standard_LRS"
+						],
+						[
+							"Account type shown in the portal",
+							"Standard general-purpose v1"
+						],
+						[
+							"Location",
+							"West Europe"
+						]
+					]
+				},
+				"statement": "The single action to take is {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Upgrade the existing account to the newer type"
+							},
+							{
+								"id": "b",
+								"text": "Create a new account of the newer type and copy the data across"
+							},
+							{
+								"id": "c",
+								"text": "Move the existing data in the account to a different region"
+							},
+							{
+								"id": "d",
+								"text": "Re-register the existing account as a classic account"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "The account in the exhibit is a legacy general-purpose v1 account (kind = Storage). Legacy general-purpose v1 and legacy Blob Storage accounts can be converted in place to general-purpose v2 with no downtime, and general-purpose v2 is the account type that supports Data Lake Storage Gen2 and a hierarchical namespace. Converting the existing account in place therefore meets all three conditions at once: the required capabilities become available, the data stays in one account, and clients keep reading throughout the change.",
+				"perChoice": {
+					"action:b": "An account's type cannot be changed after creation, so a different type is reached only by creating another account and copying the data into it. That puts a second copy of the records in a separate account and needs a cutover, so it breaks both the single-account rule and the rule that access must not be interrupted.",
+					"action:c": "Relocation is the documented route only when data must be moved to another location. It produces a copy of the records in a second region and changes where the account lives, not which type it is, so the account would still be the one that cannot serve a hierarchical namespace.",
+					"action:d": "Classic (ASM) accounts were retired on 31 August 2024, so re-registering the account as a classic account is not an available route, and that kind would not serve a hierarchical namespace in any case."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-create"
+				}
+			],
+			"subtopics": [
+				"account-type-migration",
+				"general-purpose-v2",
+				"data-lake-storage"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5KEMKWD0017KM7KVVAFM7NJ",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a storage account named contosovideo, described below, that holds the finished broadcast masters of a film studio. Ingest will add further material next quarter, and the licensing terms forbid moving these masters into any other storage account. You need contosovideo itself to be able to hold the entire catalogue. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Account name",
+							"contosovideo"
+						],
+						[
+							"Region",
+							"West Europe"
+						],
+						[
+							"Performance",
+							"Standard"
+						],
+						[
+							"Redundancy",
+							"Standard_GRS"
+						],
+						[
+							"Data held today",
+							"4.8 PiB"
+						],
+						[
+							"Data expected after next quarter",
+							"6.3 PiB"
+						]
+					]
+				},
+				"statement": "The catalogue must stay in contosovideo, so the next step is to {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Submit a request through Azure Support to raise the account's capacity limit"
+							},
+							{
+								"id": "b",
+								"text": "Spread the catalogue across an additional account in the same region"
+							},
+							{
+								"id": "c",
+								"text": "Recreate the account on a premium block blobs kind"
+							},
+							{
+								"id": "d",
+								"text": "Keep the account as it is and let ingest overwrite older masters in place"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "A storage account scales to 5 PiB of data by default, and contosovideo would hold 6.3 PiB once next quarter's ingest completes, so the catalogue cannot fit inside the account's default ceiling. Capacity quotas are raised by request through Azure Support, which is the only option that both lifts the ceiling and leaves every master in the account it already sits in, as the licensing terms demand.",
+				"perChoice": {
+					"action:b": "Wrong because the licensing terms in the scenario require every master to stay in the account that holds it today, so moving part of the catalogue to a second account is not permitted, and contosovideo would still face the same ceiling.",
+					"action:c": "Wrong because premium block blobs is the type for consistently low latency on small objects and high transaction rates, not for a larger storage allowance. Moving to it would also mean creating a new account and copying the data, which the licensing terms forbid, and an account type cannot be changed on an existing account in place.",
+					"action:d": "Wrong because overwriting older masters destroys broadcast material that must be retained, so staying within the current ceiling this way loses data rather than accommodating the catalogue."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-create"
+				}
+			],
+			"subtopics": [
+				"storage-account-capacity-limits",
+				"quota-increase",
+				"storage-account-sizing"
+			],
+			"reviewed": false
+		}
+	]
+}

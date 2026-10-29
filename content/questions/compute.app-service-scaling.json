@@ -1,0 +1,1898 @@
+{
+	"skill": "compute.app-service-scaling",
+	"questions": [
+		{
+			"id": "q_01M5STXD0WS2CVTFQRTBYZJ4ED",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an App Service plan on the Premium v3 tier that hosts three web apps and runs with automatic scaling. The plan is running more instances than its apps require and you are billed for every one of them. Contoso-Reports must keep its current floor because it processes long-running background jobs, and no app's floor may be lowered. You want the plan's billed instance count to come down to 5, and every change must be applied with the Azure CLI. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"App Service plan tier",
+							"Premium v3"
+						],
+						[
+							"Scaling method on the plan",
+							"Automatic scaling"
+						],
+						[
+							"Web apps hosted by the plan",
+							"Contoso-Orders, Contoso-Billing, Contoso-Reports"
+						],
+						[
+							"Always-ready instances - Contoso-Orders",
+							"2"
+						],
+						[
+							"Always-ready instances - Contoso-Billing",
+							"3"
+						],
+						[
+							"Always-ready instances - Contoso-Reports",
+							"5"
+						],
+						[
+							"Assigned instances reported for the plan",
+							"7"
+						],
+						[
+							"Maximum burst",
+							"30"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set Contoso-Billing's always-ready value from 3 to 4, then review the plan's assigned instances."
+					},
+					{
+						"id": "b",
+						"text": "Re-apply Contoso-Billing's existing always-ready value of 3, then review the plan's assigned instances."
+					},
+					{
+						"id": "c",
+						"text": "Set Contoso-Reports's always-ready value from 5 to 4, then review the plan's assigned instances."
+					},
+					{
+						"id": "d",
+						"text": "Lower the plan's Maximum burst from 30 to 5, then review the plan's assigned instances."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A plan only recalculates its assigned instances when an app's always-ready value is genuinely changed, and once it recalculates, the assigned count becomes the highest always-ready value used by any app in the plan. Changing Contoso-Billing from 3 to 4 is a real change made through the Azure CLI (the portal does not apply this recalculation correctly), so the plan recalculates and picks up the highest floor in the plan, Contoso-Reports at 5. Assigned instances therefore drop from 7 to 5 and billing falls with them, while no app's floor is lowered.",
+				"perChoice": {
+					"b": "Re-applying the same always-ready value triggers no recalculation - the value has to actually change - so the plan keeps 7 assigned instances and you continue to pay for 7.",
+					"c": "Lowering Contoso-Reports breaks the requirement to keep that app's floor at 5 and would give the app less capacity for its background work; the recalculated assigned count would become 4 rather than the required 5.",
+					"d": "Maximum burst is the ceiling the plan may scale out to from incoming HTTP requests; it does not set how many instances are assigned to the plan, so the plan stays at 7 assigned instances and the billed count is unchanged."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-automatic-scaling"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-scale-up"
+				}
+			],
+			"subtopics": [
+				"always-ready-instances",
+				"assigned-instances",
+				"automatic-scaling"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5STZNK8VHYHZSK08TD814HT",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an App Service plan on the Standard tier that runs Contoso-Web, with the autoscale setting shown below. During a weekday peak, the site's CPU usage stays near 85 percent for long stretches, yet the plan keeps running only one instance and customers report slow responses. You need the plan to be able to grow to as many as 10 instances during such peaks, and the existing trigger threshold and the number of instances added by the current rule must stay as they are. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"name\": \"autoscale-contoso-plan\",\n  \"properties\": {\n    \"enabled\": true,\n    \"targetResourceId\": \"/subscriptions/sub-id/resourceGroups/rg-app/providers/Microsoft.Web/serverfarms/contoso-plan\",\n    \"profiles\": [\n      {\n        \"name\": \"defaultProfile\",\n        \"rules\": [\n          {\n            \"metricTrigger\": {\n              \"metricName\": \"CpuPercentage\",\n              \"operator\": \"GreaterThan\",\n              \"threshold\": 70,\n              \"timeAggregation\": \"Average\",\n              \"timeWindow\": \"PT10M\"\n            },\n            \"scaleAction\": {\n              \"type\": \"ScaleOut\",\n              \"value\": \"1\",\n              \"cooldown\": \"PT5M\"\n            }\n          }\n        ],\n        \"capacity\": {\n          \"minimum\": 1,\n          \"maximum\": 1,\n          \"default\": 1\n        }\n      }\n    ]\n  }\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set the autoscale profile's capacity maximum to 10."
+					},
+					{
+						"id": "b",
+						"text": "Set the autoscale profile's capacity minimum to 10 and leave the capacity maximum unchanged."
+					},
+					{
+						"id": "c",
+						"text": "Set the autoscale profile's capacity default to 10 and leave the capacity maximum unchanged."
+					},
+					{
+						"id": "d",
+						"text": "Set the autoscale profile's metric trigger threshold to 10 and leave the capacity maximum unchanged."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The capacity maximum is the ceiling on the instance count that the autoscale profile allows for the whole plan. Because it is currently 1, the platform cannot add instances even when the metric rule's scale-out action fires, which is why the plan stays at a single instance during the CPU spike. Raising the capacity maximum to 10 lets the existing rule grow the plan toward 10 instances while leaving the 70 percent CPU threshold and the one-instance scale-out action unchanged.",
+				"perChoice": {
+					"b": "The capacity minimum is the smallest number of instances the plan keeps running; it does not raise the ceiling reached during a spike. Setting it to 10 would also be inconsistent with the current maximum of 1 and would keep ten instances running continuously instead of reacting to load.",
+					"c": "The capacity default is the instance count used when no autoscale rule is active, so changing it to 10 would not cause the plan to expand when the CPU trigger fires during the peak.",
+					"d": "The metric trigger threshold only determines when the rule fires, not how many instances the plan is permitted to run. Lowering it to 10 would make the rule trigger sooner, but with the capacity maximum left at 1 the plan still cannot scale out."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/autoscale/autoscale-get-started"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-automatic-scaling"
+				}
+			],
+			"subtopics": [
+				"app-service-autoscale",
+				"instance-limits"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SV2K38FYNAGNXCKN5KZF3S",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have the App Service plan and the apps that run on it shown below for the Contoso order platform. During traffic spikes visitors must get fast responses without an engineer maintaining thresholds or schedules, and each web app must be able to cap how far it grows so that one busy app does not drive the cost for the others. Which action should you take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "$ az appservice plan show -n ASP-Orders -g rg-contoso --query \"{name:name, sku:sku, state:state, sites:numberOfSites}\"\n{\n  \"name\": \"ASP-Orders\",\n  \"sku\": \"PremiumV3\",\n  \"state\": \"Ready\",\n  \"sites\": 3\n}\n\n$ az webapp list -g rg-contoso --query \"[].{name:name, kind:kind}\" --output table\nName              kind\nContoso-Cart      app\nContoso-Payment   app\nContoso-OrdersFn  functionapp"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Move Contoso-OrdersFn to its own plan on the Functions Premium tier, turn on automatic scaling for ASP-Orders, set the plan's Maximum burst, and set Always ready instances plus a Maximum scale limit for each web app."
+					},
+					{
+						"id": "b",
+						"text": "Move Contoso-OrdersFn to its own plan on the Functions Premium tier, create an Azure Monitor autoscale setting with a CPU Percentage rule for ASP-Orders, and raise the maximum instance count."
+					},
+					{
+						"id": "c",
+						"text": "Keep Contoso-OrdersFn on the ASP-Orders plan, turn on automatic scaling for the plan, and set the Maximum burst to 30 along with Always ready instances of 2 for each web app."
+					},
+					{
+						"id": "d",
+						"text": "Keep Contoso-OrdersFn on the ASP-Orders plan, create an Azure Monitor autoscale setting with a scale condition that runs on weekdays, and set the maximum instance count for the plan to 30."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The two goals — reacting to incoming HTTP traffic instead of to a metric or a clock, and letting each web app grow up to a ceiling of its own — are only met by automatic scaling: it is driven by HTTP traffic, it supports always-ready instances and a plan-wide Maximum burst, and its Maximum scale limit caps a single app's growth. The plan as it stands cannot use that method, because the CLI output shows Contoso-OrdersFn (kind: functionapp) running in the same plan as the two web apps, and automatic scaling is disabled on any plan that mixes web apps and Functions apps. The function app therefore has to be relocated first, and the Functions Premium tier is the recommended home for it. With only web apps left, automatic scaling can be turned on for ASP-Orders (the plan is already on a tier that supports it), the Maximum burst set at the plan level, and each web app given its Always ready instances value and its own Maximum scale limit.",
+				"perChoice": {
+					"b": "Moving the function app off the plan is right, but autoscale is the wrong method for the stated goals. Autoscale acts on metric and schedule rules rather than on the incoming HTTP traffic itself, and its rules apply to the entire App Service plan, so every app in the plan grows and shrinks together. It also offers no always-ready instances, no prewarmed instances and no per-app maximum, so it cannot give each web app its own ceiling.",
+					"c": "Automatic scaling is unavailable while web apps and an Azure Functions app share the plan — the plan shown hosts Contoso-OrdersFn as a functionapp alongside the two web apps. Adjusting the Maximum burst or the Always ready instances values does not remove that restriction, so the method cannot simply be switched on with everything left in place.",
+					"d": "A schedule-driven autoscale condition scales the whole plan on a clock rather than in response to arriving visitors, and autoscale provides no per-app maximum, so one web app cannot cap its own growth. Leaving the function app in the plan also keeps the traffic-driven method, which does support per-app ceilings, out of reach."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-automatic-scaling"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-scale-up"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/autoscale/autoscale-get-started"
+				}
+			],
+			"subtopics": [
+				"automatic-scaling",
+				"autoscale-comparison",
+				"scale-out-methods"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SV76K22XPKEN51ZMXB75E7",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have the App Service plan and the web app shown below for the Contoso storefront. During the holiday campaign the site must handle peak traffic that requires 8 instances running at the same time, and the release team needs a staging slot to rehearse the next release before it reaches customers. Once the campaign work is done, the platform team also wants to be able to configure Azure Monitor autoscale metric and schedule rules on this same plan. The application code must not change, and no additional App Service plan may be created. Which action should you take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "App Service plan   : Contoso-Shop-Plan\nPricing tier       : Basic\nRunning instances  : 2\nScaling method     : Manual\nApps on the plan   : Contoso-Shop (web app)\nDeployment slots   : None\nCustom domain      : shop.contoso.com (mapped)"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Scale out the App Service plan on its current Basic tier until it runs 8 instances."
+					},
+					{
+						"id": "b",
+						"text": "Enable automatic scaling on the App Service plan and set the maximum burst to 8 instances."
+					},
+					{
+						"id": "c",
+						"text": "Add autoscale rules to the App Service plan that add an instance when CPU stays above 70 percent."
+					},
+					{
+						"id": "d",
+						"text": "Scale up the App Service plan to the Standard tier."
+					}
+				]
+			},
+			"key": {
+				"optionId": "d"
+			},
+			"explanation": {
+				"correct": "The plan is on the Basic tier, and a Basic plan scales out to at most 3 instances, so the campaign requirement of 8 instances running simultaneously cannot be met by changing the instance count alone; the pricing tier of the plan has to change. Standard plans scale out to as many as 10 instances, which covers the 8 required, and changing the pricing tier is what delivers the extra capabilities the release team needs, such as staging slots and custom domains and certificates. A Standard plan also meets the prerequisite for Azure Monitor autoscale, which requires a plan on Standard tier or higher. The tier change applies within seconds, affects all apps in the plan, and needs no code change or redeploy.",
+				"perChoice": {
+					"a": "Keeping the plan on the Basic tier means the plan can scale out to only 3 instances, so 8 instances at once is unreachable no matter how the instance count is edited; the extra plan capabilities the release team needs also come from a pricing-tier change, not from a larger instance count.",
+					"b": "Automatic scaling is offered only on Premium v2 to v4 plans, so it cannot be enabled for a Basic plan, and it is configured per app from the app's Scale-out (App Service plan) settings rather than being a tier capability. It also does not provide a staging slot.",
+					"c": "Azure Monitor autoscale requires an App Service plan on Standard tier or higher, plus the Owner or Contributor role (or a custom role with Microsoft.Insights/autoscaleSettings/* permissions) on the plan; on a Basic plan no autoscale setting can be created, and metric rules alone would not give the app a staging slot."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-scale-up"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-automatic-scaling"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/autoscale/autoscale-get-started"
+				}
+			],
+			"subtopics": [
+				"scale-up-pricing-tier",
+				"scale-out-instance-limits",
+				"app-service-plan-tiers"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SVC528VTBNAX0MVVQX26WP",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have the App Service plan and subscription settings shown below for the Contoso employee portal. The portal team wants to rehearse releases in a deployment slot, serve the portal from its own domain with a TLS certificate, and let the plan add instances when CPU stays high on weekday mornings. The application code must not change and no second plan may be created. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Current value"
+					],
+					"rows": [
+						[
+							"App Service plan",
+							"contoso-portal-plan"
+						],
+						[
+							"Current pricing tier",
+							"Free (F1)"
+						],
+						[
+							"Apps hosted on the plan",
+							"1 (contoso-portal)"
+						],
+						[
+							"Deployment slots",
+							"None"
+						],
+						[
+							"Custom domain with TLS binding",
+							"None"
+						],
+						[
+							"Azure Monitor autoscale",
+							"Not supported on the current tier"
+						],
+						[
+							"Subscription spending limit",
+							"Enabled"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Remove the spending limit in Cost Management + Billing, then change the plan's pricing tier to Standard tier or higher on the Scale up page."
+					},
+					{
+						"id": "b",
+						"text": "Change the plan's pricing tier to Standard tier or higher on the Scale up page, then remove the spending limit in Cost Management + Billing."
+					},
+					{
+						"id": "c",
+						"text": "Remove the spending limit in Cost Management + Billing, then raise the plan's instance count on the Scale out page so the portal handles more load."
+					},
+					{
+						"id": "d",
+						"text": "Change the plan's pricing tier to Standard tier or higher on the Scale up page and add Azure Monitor autoscale rules to the plan, leaving the spending limit in place."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The plan is on the Free tier and the subscription still has a spending limit in place. A plan cannot leave the Free tier while a spending limit is active, so the limit has to be cleared in Cost Management + Billing before anything else. Once that is done, changing the pricing tier through the Scale up page is what delivers the three things the portal team needs: dedicated VMs, custom domains with certificates, staging slots, and autoscaling support. Moving to Standard tier or higher also satisfies the tier prerequisite for Azure Monitor autoscale rules and for deployment slots. Doing both in this order means one action chain achieves the requirement without touching application code or creating another plan.",
+				"perChoice": {
+					"b": "This reverses the required order. While the spending limit is still active, the plan is blocked from leaving the Free tier, so the pricing tier change cannot complete until the limit is removed. The limit has to be cleared first, not afterwards.",
+					"c": "Clearing the spending limit is the right first step, but scaling out only runs additional instances of the app that already exists on the plan. It does not deliver deployment slots, a custom domain with a certificate, or autoscaling support — those arrive by moving the plan to a higher pricing tier.",
+					"d": "The pricing tier change and the autoscale rules are appropriate on their own, but the spending limit is left in place. Because a plan cannot leave the Free tier while a spending limit is active, the tier change will not take effect, so the plan stays where it is and none of the requested capabilities are unlocked."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-scale-up"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-automatic-scaling"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/autoscale/autoscale-get-started"
+				}
+			],
+			"subtopics": [
+				"app-service-scale-up",
+				"pricing-tier-capabilities",
+				"subscription-spending-limit"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SVEYBJVZM6SP68HN4DQ60H",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have the App Service plan and the web apps shown below for the Contoso online shop. The November promotion is expected to require up to 12 instances of Contoso-Shop to serve traffic, while Contoso-Admin must not run more instances than it does today, and no other setting on the plan may be changed. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"App Service plan",
+							"Contoso-ShopPlan"
+						],
+						[
+							"Pricing tier",
+							"Premium v3"
+						],
+						[
+							"Scale-out method",
+							"Automatic"
+						],
+						[
+							"Plan Maximum burst",
+							"20"
+						],
+						[
+							"Assigned instances",
+							"3"
+						],
+						[
+							"Contoso-Shop - Always ready instances",
+							"2"
+						],
+						[
+							"Contoso-Shop - Enforce scale-out limit",
+							"On"
+						],
+						[
+							"Contoso-Shop - Maximum scale limit",
+							"4"
+						],
+						[
+							"Contoso-Admin - Always ready instances",
+							"3"
+						],
+						[
+							"Contoso-Admin - Enforce scale-out limit",
+							"On"
+						],
+						[
+							"Contoso-Admin - Maximum scale limit",
+							"5"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "In Contoso-Shop's scale-out settings, change Maximum scale limit from 4 to 12 and keep Enforce scale-out limit On; leave Contoso-Admin's settings and the plan's Maximum burst unchanged."
+					},
+					{
+						"id": "b",
+						"text": "In Contoso-Admin's scale-out settings, change Maximum scale limit from 5 to 12 and keep Enforce scale-out limit On; leave Contoso-Shop's settings and the plan's Maximum burst unchanged."
+					},
+					{
+						"id": "c",
+						"text": "Raise the plan's Maximum burst from 20 to 30 and leave Contoso-Shop's Enforce scale-out limit and Maximum scale limit of 4, along with Contoso-Admin's settings, unchanged."
+					},
+					{
+						"id": "d",
+						"text": "Set Contoso-Shop's Always ready instances from 2 to 12 and leave its Enforce scale-out limit and Maximum scale limit of 4 unchanged."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The value that blocks Contoso-Shop is that app's own Maximum scale limit of 4, which is enforced per web app. The plan's Maximum burst of 20 already allows more instances than the 12 the promotion needs, and Contoso-Admin's limit of 5 is tracked separately for that app. Raising Contoso-Shop's Maximum scale limit to 12 (with Enforce scale-out limit still On, so the per-app cap applies) therefore lifts the only constraint that blocks the promotion, while Contoso-Admin and the plan's Maximum burst stay exactly as they are.",
+				"perChoice": {
+					"b": "The Maximum scale limit applies to a single web app, so editing Contoso-Admin's value has no effect on Contoso-Shop, which would remain capped at 4 instances. It would also break the requirement that Contoso-Admin must not run more instances than it does today.",
+					"c": "Maximum burst is the plan-wide ceiling on how many instances the plan may run. Raising it from 20 to 30 does not remove the per-app Maximum scale limit of 4 that still caps Contoso-Shop, so the app still cannot grow past 4 instances; it also modifies a plan setting that was not to be changed.",
+					"d": "Always ready instances is a floor, not a ceiling: it fixes the minimum number of instances kept for that app, and the plan's assigned instances would rise to the highest always-ready value, so 12 instances would be reserved and billed at all times instead of being added on demand. It also leaves the Maximum scale limit of 4 in place, so traffic-driven growth above 4 would still be blocked."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-automatic-scaling"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-scale-up"
+				}
+			],
+			"subtopics": [
+				"app-service-automatic-scaling",
+				"per-app-scale-out-limits"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SVHFH2GZTBRW1ERZ11XM66",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have the App Service plan and the web app shown below for the Contoso shopping-cart service. The plan runs on the Premium v3 tier with automatic scaling active, and Contoso-Cart was added to the plan after that switch was made. Every weekday evening the request volume rises sharply, yet the plan never grows beyond a single instance, the backlog of pending requests keeps growing, and users report that each request is served by the same instance. The service must add instances by itself when traffic arrives, with no engineer maintaining thresholds or schedules. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Resource",
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Contoso-Plan (Premium v3)",
+							"Scale-out (App Service plan)",
+							"Automatic"
+						],
+						[
+							"Contoso-Plan (Premium v3)",
+							"Maximum burst",
+							"10"
+						],
+						[
+							"Contoso-Plan (Premium v3)",
+							"Assigned instances",
+							"1"
+						],
+						[
+							"Contoso-Cart",
+							"Always ready instances",
+							"1"
+						],
+						[
+							"Contoso-Cart",
+							"Health check",
+							"On"
+						],
+						[
+							"Contoso-Cart",
+							"Session affinity",
+							"On"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "For Contoso-Cart, open Settings > Configuration > General settings, set Session affinity to Off, and save."
+					},
+					{
+						"id": "b",
+						"text": "For Contoso-Cart, open Settings > Configuration > General settings, set Session affinity to On, and save."
+					},
+					{
+						"id": "c",
+						"text": "For Contoso-Cart, open Settings > Configuration > General settings, set Health check to Off, and save."
+					},
+					{
+						"id": "d",
+						"text": "For Contoso-Cart, open Settings > Scale-out (App Service plan), raise Maximum burst from 10 to 20, and save."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Automatic scaling is already active on this plan and its Maximum burst of 10 leaves plenty of headroom, so the ceiling is not the blocker. The blocker is the app's Session affinity (ARR affinity): those cookies pin requests to one specific instance, which restricts scaling and stops the plan from adding instances when traffic arrives. Setting Session affinity to Off for Contoso-Cart in Settings > Configuration > General settings and saving removes the pinning, so automatic scaling can then add instances up to the Maximum burst. Health check does not interfere with automatic scaling, and the app was added after the plan switched to automatic scaling, so its affinity setting was never cleared for it.",
+				"perChoice": {
+					"b": "Session affinity is on by default and it is the affinity cookies, not the tier or the burst value, that hold traffic on a single instance. Leaving it On or setting it On keeps the plan pinned to one instance, so the service still cannot add instances on its own when requests arrive.",
+					"c": "Health check does not have to be turned off; it can run alongside automatic scaling and it reports on app health. Disabling it removes a useful signal while leaving in place the affinity setting that keeps every request on the same instance, so the plan still never grows.",
+					"d": "Maximum burst is only the highest instance count the plan may reach once it decides to scale out. Raising it from 10 to 20 changes nothing while the app's requests are pinned to one instance, so the plan still stays at a single instance during the evening peak."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-automatic-scaling"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-scale-up"
+				}
+			],
+			"subtopics": [
+				"automatic-scaling",
+				"arr-affinity",
+				"scale-out"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SVP5DRVZ0BVMV75JYB1YS5",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have the App Service plan and the autoscale setting shown below for the Contoso order-tracking site, which runs on the Standard tier. Several times a day the plan adds an instance and then takes it away again a few minutes later, so response times swing between fast and slow and customers complain about slow pages. The plan must keep growing under sustained load using the CPU trigger that is configured today, and it must also be able to return to the minimum instance count when traffic drops, without the instance count oscillating. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Autoscale setting on Contoso-Plan (Standard tier)\nApps on the plan       : Contoso-Orders (web app)\nRules configured       : 1 (scale out only)\nMetric monitored       : CPU Percentage\nCondition              : Above 70% for 10 minutes\nAction when met        : Add 1 instance\nCool-down period       : 5 minutes\nMinimum instance count : 1\nMaximum instance count : 10"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add a scale-in rule with operator Less than and threshold 20 and keep the 5-minute cool-down period on the rules."
+					},
+					{
+						"id": "b",
+						"text": "Add a scale-out rule with operator Greater than and threshold 90 and keep the 5-minute cool-down period on the rules."
+					},
+					{
+						"id": "c",
+						"text": "Change the threshold of the existing scale-out rule from 70 to 90 and keep the 5-minute cool-down period on the rules."
+					},
+					{
+						"id": "d",
+						"text": "Raise the Maximum instance count in the autoscale setting from 10 to 20 and keep the 5-minute cool-down period on the rules."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The plan is flapping: an instance is added under load, the platform then removes it, CPU on the remaining instances rises again, and the scale-out rule adds one back. The documented remedy is to pair the scale-out rule with a scale-in rule and to use cool-down periods. A scale-in rule with operator Less than, metric threshold 20 and an operation that decreases the instance count gives the plan a metric-driven way to return to its minimum instance count when traffic falls, while the 5-minute cool-down stops the two rules from acting back-to-back. The existing CPU trigger (above 70 percent for 10 minutes, one instance at a time) and the maximum instance count of 10 stay exactly as they are, so the plan still grows under sustained load as required.",
+				"perChoice": {
+					"b": "This adds another reason for the plan to add instances and gives it no metric-driven way to remove them, so the plan still cannot settle back at its minimum instance count and the add/remove cycle continues. It does not address the oscillation at all.",
+					"c": "This only makes the plan add instances less often; it does not give the plan any way to remove instances when traffic drops, and it weakens the growth behaviour the site must keep. The oscillating add/remove cycle remains unresolved.",
+					"d": "Raising the ceiling for growth changes nothing about when instances are added or removed, so the plan keeps adding and removing instances in the same cycle and never settles at its minimum count. It is also not achievable on this plan: the Standard tier caps a plan at 10 instances, so a maximum of 20 cannot be configured there."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/autoscale/autoscale-get-started"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-scale-up"
+				}
+			],
+			"subtopics": [
+				"autoscale-rules",
+				"scale-in-rule",
+				"cool-down-period"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SVWV6AVAY7QYB5908TQRGJ",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have four Contoso App Service plans, with the pricing tier and hosted app listed below. Each plan has one open production issue, and all four must be resolved without changing application code. Drag each corrective action to the plan issue it resolves.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Plan",
+						"Pricing tier",
+						"Hosted app"
+					],
+					"rows": [
+						[
+							"contoso-portal-plan",
+							"Free",
+							"Contoso-Portal"
+						],
+						[
+							"contoso-api-plan",
+							"Standard",
+							"Contoso-Api"
+						],
+						[
+							"contoso-worker-plan",
+							"Premium v3",
+							"Contoso-Worker"
+						],
+						[
+							"contoso-shop-plan",
+							"Premium v3",
+							"Contoso-Shop"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Remove the spending limit on the subscription in Cost Management + Billing, then move it to a paid plan."
+					},
+					{
+						"id": "b",
+						"text": "Grant the Owner or Contributor role on the plan, or a custom role that includes Microsoft.Insights/autoscaleSettings/* permissions."
+					},
+					{
+						"id": "c",
+						"text": "Remove the Azure Monitor autoscale setting from the plan so that only the Automatic scaling method remains active."
+					},
+					{
+						"id": "d",
+						"text": "Maximum burst must be raised to at least the plan's assigned instance count."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "contoso-portal-plan: an attempt to change the plan off its current level is refused, and the portal gives no reason."
+					},
+					{
+						"id": "s2",
+						"label": "contoso-api-plan: the operations engineer has read-only access to the resource group, so attempts to configure the plan are denied."
+					},
+					{
+						"id": "s3",
+						"label": "contoso-worker-plan: two separate approaches are configured to add workers at the same time and they fight each other."
+					},
+					{
+						"id": "s4",
+						"label": "contoso-shop-plan: the ceiling for growth is set below the floor the plan must always run, and the portal rejects the change."
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d"
+			},
+			"explanation": {
+				"correct": "Each action maps to exactly one plan issue. The Free-tier plan cannot be moved to a paid plan while a spending limit is still active on the subscription, so that limit has to be cleared first. Configuring rules on a Standard-or-higher plan requires the Owner or Contributor role, or a custom role that carries Microsoft.Insights/autoscaleSettings/* permissions, so the read-only operator is the reason the configuration is denied. A plan may run only one scaling method at a time, so when two approaches are configured simultaneously the Azure Monitor autoscale setting has to be removed and the traffic-driven Automatic scaling method left in place. Finally, on a Premium plan the traffic ceiling (Maximum burst) may not sit below the instance count the plan always runs, so a value under the plan's assigned instance count is rejected and the ceiling must be raised to at least that count.",
+				"perChoice": {
+					"a": "Fits contoso-portal-plan. A plan on the Free tier can only be moved to a paid plan after the spending limit in place on the subscription is removed in Cost Management + Billing, which explains the unexplained refusal.",
+					"b": "Fits contoso-api-plan. Autoscale on a Standard-or-higher plan requires the Owner or Contributor role, or a custom role with Microsoft.Insights/autoscaleSettings/* permissions, on the plan; an operator with read-only access therefore cannot create the rules.",
+					"c": "Fits contoso-worker-plan. Only one scaling method should be active per App Service plan, so the competing Azure Monitor autoscale setting must be removed while the traffic-driven Automatic scaling method stays in place.",
+					"d": "Fits contoso-shop-plan. The Maximum burst value has to be equal to or greater than the plan's worker/instance count, so a ceiling below the floor the plan runs is refused by the portal and must be raised to at least the assigned instance count."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-scale-up"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-automatic-scaling"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/autoscale/autoscale-get-started"
+				}
+			],
+			"subtopics": [
+				"app-service-plan-scaling",
+				"autoscale-prerequisites",
+				"automatic-scaling-constraints"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SW1HKZ5X2HVN23XCSRM0X4",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have the App Service plan shown below for the Contoso member portal. The plan runs on the Premium v3 tier and adds instances on its own as requests arrive. The platform team has written down five behaviors that the plan and the apps on it show today, and each behavior comes from one configuration setting. Drag each behavior to the setting that produces it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Resource",
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Contoso-Portal-Plan",
+							"Pricing tier",
+							"Premium v3"
+						],
+						[
+							"Contoso-Portal-Plan",
+							"Growth method",
+							"Automatic, driven by incoming HTTP requests"
+						],
+						[
+							"Contoso-Portal-Plan",
+							"Apps hosted",
+							"Contoso-Portal, Contoso-Admin"
+						],
+						[
+							"Contoso-Portal",
+							"Instances running now",
+							"2"
+						],
+						[
+							"Contoso-Admin",
+							"Instances running now",
+							"1"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "b1",
+						"text": "Contoso-Portal stops taking on new instances of its own once it reaches 8, even though the plan's overall allowance for the season is higher."
+					},
+					{
+						"id": "b2",
+						"text": "The plan may be given an allowance of 30 instances for the peak of the campaign, but that number must never be set below the instances the plan is already running."
+					},
+					{
+						"id": "b3",
+						"text": "Every request from a signed-in shopper is handled by the same instance, so the shopper's place in the checkout flow survives."
+					},
+					{
+						"id": "b4",
+						"text": "Contoso-Portal keeps two instances running overnight, and the platform team can raise that floor later without changing the application code."
+					},
+					{
+						"id": "b5",
+						"text": "A spare instance is held in reserve and starts only when a busy period begins, so the first request of that period is not delayed while a new instance starts up."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Maximum scale limit"
+					},
+					{
+						"id": "s2",
+						"label": "Session affinity (ARR affinity)"
+					},
+					{
+						"id": "s3",
+						"label": "Prewarmed instances"
+					},
+					{
+						"id": "s4",
+						"label": "Always ready instances"
+					},
+					{
+						"id": "s5",
+						"label": "Maximum burst"
+					}
+				]
+			},
+			"key": {
+				"s1": "b1",
+				"s2": "b3",
+				"s3": "b5",
+				"s4": "b4",
+				"s5": "b2"
+			},
+			"explanation": {
+				"correct": "The app that refuses to grow past 8 of its own instances is capped by the per-app Maximum scale limit; the plan-wide allowance of 30 that may never be set below the instance count the plan already runs is the Maximum burst; requests always landing on the same instance come from Session affinity (ARR affinity); the two instances kept running overnight are the Always ready instances; and the spare instance held back for the start of a busy period is a Prewarmed instance.",
+				"perChoice": {
+					"b1": "Belongs in the Maximum scale limit slot. The behavior describes one web app refusing to add instances past 8 while the plan's own allowance is higher, which is what the per-app Maximum scale limit does: it is turned on with the Enforce scale-out limit option and takes a value between 1 and the plan's maximum burst.",
+					"b2": "Belongs in the Maximum burst slot. The behavior describes a plan-wide allowance of 30 instances that cannot be set below the instance count the plan already runs, matching Maximum burst, which on Premium v2, v3 and v4 can be specified up to 30 and must be equal to or greater than the plan's worker/instance count.",
+					"b3": "Belongs in the Session affinity (ARR affinity) slot. ARR affinity cookies pin requests to a specific instance, which keeps a signed-in shopper on the same instance; when the plan grows in response to HTTP traffic this setting should be turned off so work can spread across instances.",
+					"b4": "Belongs in the Always ready instances slot. This per-app setting fixes the minimum instance count the app runs (two here, and the plan is billed for those), and that floor can be raised later without changing application code.",
+					"b5": "Belongs in the Prewarmed instances slot. Prewarmed instances act as a buffer that activates on HTTP scale and activation events so the first request of a busy period is not delayed by a cold start; the count defaults to 1 and can only be changed with the Azure CLI."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-automatic-scaling"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-scale-up"
+				}
+			],
+			"subtopics": [
+				"automatic-scaling-settings",
+				"app-service-plan-scale-out"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SWCDF74KDBSJQ3FWNH29T6",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Contoso operates several App Service plans in one environment. The operations team has listed six open issues across those plans. Drag each corrective action to the issue it resolves.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Plan",
+						"Pricing tier",
+						"Apps hosted",
+						"Configuration observed today"
+					],
+					"rows": [
+						[
+							"Contoso-Storefront plan",
+							"Premium v3",
+							"Contoso-Storefront, Contoso-Admin",
+							"The platform adds workers as HTTP requests arrive; Maximum burst is 20"
+						],
+						[
+							"Contoso-Reporting plan",
+							"Standard",
+							"Contoso-Reporting",
+							"A CPU rule adds 1 worker when CPU stays above 70 percent for 10 minutes; at most 10 workers run and otherwise 1 worker runs"
+						],
+						[
+							"Contoso-Legacy plan",
+							"Free",
+							"Contoso-Legacy",
+							"No configuration options are offered on this plan"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Set Always ready instances"
+					},
+					{
+						"id": "i2",
+						"text": "Change the prewarmed instance count with the Azure CLI"
+					},
+					{
+						"id": "i3",
+						"text": "Turn on Enforce scale-out limit"
+					},
+					{
+						"id": "i4",
+						"text": "Remove the spending limit on the subscription"
+					},
+					{
+						"id": "i5",
+						"text": "Turn Health Check back on"
+					},
+					{
+						"id": "i6",
+						"text": "Add a scale condition for repeated days with a start time and an end time"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Contoso-Storefront must stay responsive to staff overnight and at weekends, without waiting for extra workers to be created."
+					},
+					{
+						"id": "s2",
+						"label": "On the Contoso-Storefront plan, a traffic spike makes the earliest requests wait for a new worker to boot; a spare worker should already be standing by and replaced once it has been used."
+					},
+					{
+						"id": "s3",
+						"label": "During the January sale, Contoso-Storefront keeps adding workers until the shared database is saturated; that site must stop at four workers while Contoso-Admin keeps growing as traffic demands."
+					},
+					{
+						"id": "s4",
+						"label": "The team wants to move Contoso-Legacy off the Free tier, but every attempt is rejected, and the platform team says the billing options for the account must be adjusted first."
+					},
+					{
+						"id": "s5",
+						"label": "On the Contoso-Storefront plan, the probe that removes workers which stop responding has been switched off because an engineer believed it would interfere with the platform-driven growth; the team wants it running again."
+					},
+					{
+						"id": "s6",
+						"label": "Every Monday from 08:00 to 18:00 the team wants Contoso-Reporting to run a fixed number of workers, with the usual behavior applying outside that window."
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5",
+				"s6": "i6"
+			},
+			"explanation": {
+				"correct": "Each issue matches exactly one action. Keeping the site answerable during quiet hours is done by the per-app minimum that automatic scaling maintains, which is set with Always ready instances. The cold-boot delay when traffic arrives is solved by the spare warm capacity held for scale-out and activation events, whose size can only be adjusted with the Azure CLI. Stopping one site at a chosen number of workers while another site continues to grow needs the per-app cap provided by the Enforce scale-out limit option, whose value can sit anywhere between 1 and the plan's Maximum burst. Leaving the Free tier is blocked while a spending limit is still active on the subscription, so that limit has to be removed in Cost Management + Billing first. The probe that withdraws unhealthy workers can simply be switched back on, because Health Check works together with the platform-driven growth used on the Premium v3 plan. Finally, holding a fixed worker count inside a weekly Monday window requires a rule with repeated days plus a start time and an end time, with the default condition applying outside that window.",
+				"perChoice": {
+					"i1": "Belongs with the overnight and weekend responsiveness issue on Contoso-Storefront: Always ready instances fixes the per-app minimum number of instances that stay running, so no worker has to be created on demand.",
+					"i2": "Belongs with the traffic spike issue on the Contoso-Storefront plan: prewarmed instances keep a warm buffer for scale-out and activation events, and their count can only be changed with the Azure CLI, not in the portal.",
+					"i3": "Belongs with the January sale issue: the Enforce scale-out limit (Maximum scale limit) caps how far a single web app in the plan grows, so Contoso-Storefront can stop at four workers while Contoso-Admin continues to grow.",
+					"i4": "Belongs with the rejected move off the Free tier: a plan cannot leave the Free tier while a spending limit is still active on the subscription, so that limit must be removed first in Cost Management + Billing.",
+					"i5": "Belongs with the disabled probe issue: Health Check can remain enabled alongside the platform-driven growth on this plan, so the probe that removes workers which stop responding can be turned back on.",
+					"i6": "Belongs with the Monday 08:00 to 18:00 requirement on Contoso-Reporting: a condition that scales to a specific instance count with repeated days plus a start time and an end time gives a fixed worker count in that window, while the default condition applies outside it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-automatic-scaling"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-scale-up"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/autoscale/autoscale-get-started"
+				}
+			],
+			"subtopics": [
+				"automatic-scaling",
+				"autoscale-conditions",
+				"app-service-plan-tiers"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SWJVMZNJE0RAX2BVW508XS",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have four Contoso App Service plans, each with one open request from the business. The configuration observed on each plan and the request raised for it are shown below. Drag the configuration change that satisfies each request to the plan it applies to; any change that answers no request is left unused.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Plan",
+						"Pricing tier",
+						"Configuration observed today",
+						"Request from the business"
+					],
+					"rows": [
+						[
+							"Contoso-Reports",
+							"Standard",
+							"An Azure Monitor autoscale setting exists on the plan; it holds no metric rule; the instance count is pinned at 2; the requester holds Contributor on the plan",
+							"Add instances when CPU stays high on weekday mornings and drop back to a smaller instance count overnight, and every app in the plan must react in the same way."
+						],
+						[
+							"Contoso-Catalog",
+							"Premium v3",
+							"The instance count is set by hand; three web apps share the plan",
+							"Add instances on its own when HTTP requests arrive, without anyone maintaining thresholds or schedules, and let each app in the plan grow to its own maximum."
+						],
+						[
+							"Contoso-Invoices",
+							"Free",
+							"No scaling method is configured; the subscription has an active spending limit",
+							"Move to a paid tier so that the site can run more than a single instance."
+						],
+						[
+							"Contoso-Members",
+							"Premium v3",
+							"The plan already adds instances on its own from incoming requests; only one instance runs when traffic is low",
+							"Run a floor of four instances for this app at all hours, even when no requests arrive, so the site never starts up from scratch overnight."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Add CPU metric and scale-in rules plus a repeating schedule to the plan's Azure Monitor autoscale setting."
+					},
+					{
+						"id": "i2",
+						"text": "Enable Automatic scaling for the plan with a Maximum burst value, and turn on the per-app Maximum scale limit."
+					},
+					{
+						"id": "i3",
+						"text": "Remove the subscription spending limit in Cost Management + Billing, then move the plan to the Basic tier."
+					},
+					{
+						"id": "i4",
+						"text": "Set Always ready instances to 4 for the app."
+					},
+					{
+						"id": "i5",
+						"text": "Raise the plan's prewarmed instance count to 3 in the portal."
+					},
+					{
+						"id": "i6",
+						"text": "Enable Health Check for the apps on the plan."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Contoso-Reports"
+					},
+					{
+						"id": "s2",
+						"label": "Contoso-Catalog"
+					},
+					{
+						"id": "s3",
+						"label": "Contoso-Invoices"
+					},
+					{
+						"id": "s4",
+						"label": "Contoso-Members"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Contoso-Reports asks for rule-based, plan-wide behaviour — growth on a CPU trigger during the morning and a smaller instance count overnight, with every app in the plan reacting together — which is exactly what Azure Monitor autoscale provides on a Standard tier plan that has at least one app and the required role: metric rules, scale-in rules, a repeating schedule, and a scope that covers the whole plan. Contoso-Catalog is a Premium v3 plan that hosts only web apps and wants instances added from incoming HTTP requests with no thresholds or schedules to maintain, plus a ceiling that each app controls on its own; that is the per-app Automatic scaling mode, where Maximum burst caps the plan and the per-app Maximum scale limit caps a single app. Contoso-Invoices cannot leave the Free tier while the subscription still carries a spending limit, so the limit has to be removed in Cost Management + Billing before the plan can be moved to the Basic tier. Contoso-Members already adds instances from incoming requests but needs a fixed floor of four instances, which is what the per-app Always ready instances setting provides.",
+				"perChoice": {
+					"i1": "Fits Contoso-Reports. Azure Monitor autoscale is the method that supports metric rules, scale-in rules and schedules, it applies to the entire App Service plan so every app reacts together, and the plan already meets the prerequisites: Standard tier or higher, at least one app, and the requester holds Contributor on the plan.",
+					"i2": "Fits Contoso-Catalog. Only the per-app Automatic scaling mode adds instances from incoming HTTP requests without metric thresholds or schedules, and it is available on Premium v2 through v4; Maximum burst sets the plan ceiling and the per-app Maximum scale limit lets each app cap its own growth, which is what the request describes.",
+					"i3": "Fits Contoso-Invoices. A plan cannot leave the Free tier while the subscription spending limit is active, so that limit must be removed in Cost Management + Billing first; the Basic tier is a paid tier that allows more than one instance.",
+					"i4": "Fits Contoso-Members. Always ready instances is the per-app setting that fixes the minimum number of instances for an app, so setting it to 4 gives the four-instance floor the request asks for on a plan that already reacts to incoming requests.",
+					"i5": "Fits no plan. The prewarmed instance count is a buffer used during scale and activation events rather than a per-app floor, and the count cannot be changed in the portal at all — it must be changed with the Azure CLI — so it answers none of the four requests.",
+					"i6": "Fits no plan. Health Check can be enabled together with the per-app scale-out mode and does not have to be turned off, but it is not a scaling method, so it answers none of the four requests."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-automatic-scaling"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/autoscale/autoscale-get-started"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-scale-up"
+				}
+			],
+			"subtopics": [
+				"app-service-plan-scaling",
+				"automatic-scaling-per-app",
+				"autoscale-plan-wide-rules"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SX0RBXT2MAJ80Q8P77ZYN8",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have the App Service plans shown below for Contoso. Each plan has one unmet business request, and every request must be met by the plan's own configuration, without any application code update. Drag the scaling method or corrective step to the request it satisfies; one entry satisfies no request and is left unused.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Plan",
+						"Pricing tier",
+						"Hosted apps",
+						"Current instance count",
+						"Notes"
+					],
+					"rows": [
+						[
+							"CHK",
+							"Premium v3",
+							"Contoso-Storefront (web app), Contoso-Catalog (web app)",
+							"2",
+							"Both apps are public-facing."
+						],
+						[
+							"OPS",
+							"Standard",
+							"Contoso-Ops (web app)",
+							"2",
+							"Used mainly during business hours."
+						],
+						[
+							"LEG",
+							"Basic",
+							"Contoso-Legacy (web app)",
+							"3",
+							"Serves a small internal audience."
+						],
+						[
+							"NEW",
+							"Free",
+							"Contoso-New (web app)",
+							"1",
+							"Cost Management + Billing shows an active monthly cap on this subscription."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "m1",
+						"text": "Manual scaling"
+					},
+					{
+						"id": "m2",
+						"text": "Autoscale"
+					},
+					{
+						"id": "m3",
+						"text": "Automatic scaling"
+					},
+					{
+						"id": "m4",
+						"text": "Enable predictive autoscale"
+					},
+					{
+						"id": "m5",
+						"text": "Remove the spending limit and change to a higher pricing tier"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "CHK: extra instances must be added in reaction to the requests that reach each web app, and each app must be able to cap its own growth so that one busy app does not drive up the cost for the others."
+					},
+					{
+						"id": "s2",
+						"label": "OPS: extra instances must be added whenever CPU usage stays high during working hours, and extra instances must already be running before the morning shift even when CPU is low."
+					},
+					{
+						"id": "s3",
+						"label": "LEG: the site must keep running the exact number of instances that the operations team enters, and no traffic pattern may alter that count."
+					},
+					{
+						"id": "s4",
+						"label": "NEW: the site must serve far more concurrent visitors than it can today, and the team must validate a new version in a staging slot before customers see it."
+					}
+				]
+			},
+			"key": {
+				"s1": "m3",
+				"s2": "m2",
+				"s3": "m1",
+				"s4": "m5"
+			},
+			"explanation": {
+				"correct": "CHK (s1) needs growth driven by incoming requests with each app able to limit its own growth, which is what automatic scaling provides on Premium v2 to v4, so m3 belongs there. OPS (s2) needs both a CPU-metric rule and a scheduled rule, which is Azure Monitor autoscale on Standard tier and up, so m2 belongs there. LEG (s3) must keep a fixed instance count chosen by the operations team, which is manual scaling on Basic tier and up, so m1 belongs there. NEW (s4) sits on the Free tier with a monthly cap in effect, and a plan cannot leave the Free tier while that cap is active, so the spending limit must be removed in Cost Management + Billing first and the plan then moved to a higher pricing tier that supports the required capacity and a staging slot, so m5 belongs there. Predictive autoscale is a Virtual Machine Scale Set capability rather than an App Service plan capability, so m4 satisfies no request.",
+				"perChoice": {
+					"m1": "Fits LEG (s3): manual scaling is available on Basic tier and up and keeps the instance count at whatever the operations team enters, with no rules or schedules, which matches the requirement that no traffic pattern alters the count.",
+					"m2": "Fits OPS (s2): autoscale on Standard tier and up supports metric rules such as CPU percentage plus scheduled scale conditions, and its rules apply to the whole plan, which satisfies both the CPU trigger and the pre-shift schedule.",
+					"m3": "Fits CHK (s1): automatic scaling is driven by incoming HTTP traffic, lets each app inside the plan scale independently of the others, and is available on Premium v2 to v4, which is the tier CHK runs on.",
+					"m4": "Fits no slot: predictive autoscale is a Virtual Machine Scale Set capability, not an App Service plan scaling method, so it cannot deliver any of the four requests.",
+					"m5": "Fits NEW (s4): a plan cannot leave the Free tier while a spending limit is active on the subscription, so the limit must be removed in Cost Management + Billing before the plan is moved to a higher pricing tier that supports the extra capacity and a staging slot."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-scale-up"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-automatic-scaling"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/autoscale/autoscale-get-started"
+				}
+			],
+			"subtopics": [
+				"scaling-methods",
+				"scale-up",
+				"autoscale"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5SX6D3Z5V5ESES82Q6M9Z27",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have the App Service plan shown below for the Contoso reporting site, which hosts a single Windows web app on the Standard tier with a fixed instance count. Before the December season the platform team must prepare this plan, and no application code may change. The plan has to move up to a tier where growth can be driven by incoming HTTP requests; that traffic-driven growth must stop at 30 instances; one spare instance must stay in reserve so the first surge does not wait on a cold start; a returning visitor must not be sent back to the same instance on every request; and a weekday morning window must bring the plan to 5 instances and revert to the default outside it. Drag each configuration change to the place in Azure where you make the change.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Current value"
+					],
+					"rows": [
+						[
+							"App Service plan",
+							"contoso-report-prod"
+						],
+						[
+							"Pricing tier",
+							"Standard"
+						],
+						[
+							"Apps hosted",
+							"Contoso-Report (Windows)"
+						],
+						[
+							"Current scale-out method",
+							"Manual"
+						],
+						[
+							"Session affinity",
+							"On"
+						],
+						[
+							"Autoscale setting",
+							"Not configured"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "tier",
+						"text": "Move the pricing tier to Premium v3"
+					},
+					{
+						"id": "burst",
+						"text": "Enter a maximum burst of 30 instances"
+					},
+					{
+						"id": "affinity",
+						"text": "Turn session affinity off"
+					},
+					{
+						"id": "prewarm",
+						"text": "Change the prewarmed instance count"
+					},
+					{
+						"id": "condition",
+						"text": "Create a condition for repeating days with its own instance count"
+					}
+				],
+				"slots": [
+					{
+						"id": "scaleup",
+						"label": "App Service plan → Scale up"
+					},
+					{
+						"id": "scaleout",
+						"label": "Web app → Settings → Scale-out (App Service plan)"
+					},
+					{
+						"id": "configtab",
+						"label": "Web app → Settings → Configuration → General settings tab"
+					},
+					{
+						"id": "cli",
+						"label": "Azure CLI"
+					},
+					{
+						"id": "monitor",
+						"label": "Monitor → Settings → Autoscale"
+					}
+				]
+			},
+			"key": {
+				"scaleup": "tier",
+				"scaleout": "burst",
+				"configtab": "affinity",
+				"cli": "prewarm",
+				"monitor": "condition"
+			},
+			"explanation": {
+				"correct": "Each of the five requested changes is made in a different place. The pricing tier is changed from the plan's Scale up page (App Service plan → Scale up), which is also the tier family needed for traffic-driven growth. The ceiling on that growth (Maximum burst) belongs on the web app's Scale-out (App Service plan) page, where Automatic is chosen and the value is saved; on Premium v2/v3/v4 the value may be as high as 30. The cookie that pins a visitor to one instance is switched off under the app's Configuration → General settings tab by setting Session affinity to Off. The prewarmed instance count is the one item that has no portal page at all, so it must be changed with the Azure CLI. Finally, a repeating time window with its own instance count is a time-based condition, which only the autoscale setting supports, and that setting is opened from Monitor → Settings → Autoscale.",
+				"perChoice": {
+					"tier": "This belongs to App Service plan → Scale up: the capacity of a plan is raised by picking a new pricing tier there and confirming it, and the change takes effect within seconds for every app in the plan. Premium v3 is also one of the tiers where traffic-driven growth is available.",
+					"burst": "This belongs to Web app → Settings → Scale-out (App Service plan): the highest instance count the plan may reach from incoming HTTP requests (Maximum burst) is set on that page, where Automatic is selected and the value saved. A value of 30 is allowed on Premium v2, v3 and v4.",
+					"affinity": "This belongs to Web app → Settings → Configuration → General settings tab: the ARR affinity cookie is turned off by setting Session affinity to Off there and saving, which removes the pin that keeps a visitor on one instance and blocks growth.",
+					"prewarm": "This belongs to Azure CLI: the prewarmed instance count cannot be edited in the portal, so it must be changed with the CLI. These spare instances act as a buffer during HTTP scale and activation events, and the default count of 1 is normally kept.",
+					"condition": "This belongs to Monitor → Settings → Autoscale: a condition that repeats on chosen days and carries its own instance count is a time-based (schedule) capability, and traffic-driven scaling has no schedules at all. The autoscale setting, where such conditions are added, is reached from the Monitor autoscale pane (and also from the plan's Scale out page)."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-scale-up"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-automatic-scaling"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/autoscale/autoscale-get-started"
+				}
+			],
+			"subtopics": [
+				"automatic-scaling",
+				"autoscale",
+				"scale-up"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TC7V7D2KNZTFGWXDGQ37PG",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have the App Service plan shown below for the Contoso storefront, which hosts the Contoso-Store web app and the Contoso-Orders function app. The platform team wants the plan to add instances on its own whenever incoming request volume rises, so that nobody has to maintain thresholds or schedules by hand, but that option is reported as unavailable for this plan. Contoso-Store must stay on the current plan so that its existing custom domain and deployment slot keep working, and Contoso-Orders must end up on a plan type intended for function workloads.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"App Service plan",
+							"Contoso-Plan"
+						],
+						[
+							"Plan SKU",
+							"P0v3"
+						],
+						[
+							"Web apps on the plan",
+							"Contoso-Store"
+						],
+						[
+							"Function apps on the plan",
+							"Contoso-Orders"
+						],
+						[
+							"Scale-out (App Service plan)",
+							"Manual"
+						],
+						[
+							"Autoscale setting for the plan",
+							"Not configured"
+						],
+						[
+							"Observed behavior",
+							"The control that adds instances on its own is greyed out and the portal reports that it is unavailable for this plan"
+						],
+						[
+							"Peak load",
+							"About 900 requests per minute during promotions, while the plan stays at a single instance"
+						]
+					]
+				},
+				"statement": "You should {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Move the Function app to its own plan on the Azure Functions Premium tier"
+							},
+							{
+								"id": "b",
+								"text": "Move the web app to its own plan and leave the Function app on the current plan"
+							},
+							{
+								"id": "c",
+								"text": "Move both apps to separate plans on the Azure Functions Premium tier"
+							},
+							{
+								"id": "d",
+								"text": "Keep both apps on the current plan and enable Azure Monitor autoscale rules on it"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "The request-driven scaling option that grows a plan as HTTP requests arrive applies to App Service web apps only, and it is disabled whenever one plan hosts both web apps and function apps, which is exactly why the portal reports it as unavailable for Contoso-Plan. Relocating Contoso-Orders onto its own plan on the Azure Functions Premium tier, the plan type recommended for function workloads, removes the mix from Contoso-Plan. Contoso-Store then remains alone on the current plan with its custom domain and deployment slot untouched, and the traffic-driven scaling option becomes selectable for that plan, with no application code change and no second plan for the web app.",
+				"perChoice": {
+					"action:b": "Wrong because it leaves Contoso-Orders on the plan that also hosts the web app, so the function app never lands on a plan type intended for function workloads, and it also moves Contoso-Store off the plan the business requires it to stay on. It is the function app that has to be relocated for the mixed-plan restriction to be lifted.",
+					"action:c": "Wrong because a web app does not belong on the Azure Functions Premium plan, and the requirement is that Contoso-Store remain on the current plan so its custom domain and deployment slot keep working. Only the function app needs to be placed on a different plan.",
+					"action:d": "Wrong because leaving both apps on one plan keeps the request-driven scaling option unavailable for that plan. Azure Monitor autoscale is also not what was asked for: it is driven by metric thresholds or schedules that an engineer maintains, and its rules apply to the whole plan, so every app in the plan scales together instead of reacting to its own request volume."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-automatic-scaling"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-scale-up"
+				}
+			],
+			"subtopics": [
+				"automatic-scaling",
+				"mixed-app-plans",
+				"function-app-planning"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TCACXEV7Q62STX35VTRWZZ",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have the App Service plan shown below for the Contoso online shop, which already grows on its own as requests arrive. Before the spring sale, the shop team needs the plan as a whole to be able to reach 25 running instances during the busiest hours, and the search app on the same plan must never run more than 18 instances of its own. Which changes should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"App Service plan",
+							"Contoso-Shop-Plan"
+						],
+						[
+							"Pricing tier",
+							"Premium v3"
+						],
+						[
+							"Operating system",
+							"Linux"
+						],
+						[
+							"Scaling method in use",
+							"Automatic"
+						],
+						[
+							"Assigned instances",
+							"12"
+						],
+						[
+							"Maximum burst",
+							"14"
+						],
+						[
+							"Apps on the plan",
+							"Contoso-Shop, Contoso-Search"
+						],
+						[
+							"Contoso-Shop always ready instances",
+							"2"
+						],
+						[
+							"Contoso-Search always ready instances",
+							"1"
+						]
+					]
+				},
+				"statement": "First, {{planCeiling}}. Then, {{appCeiling}}.",
+				"slots": [
+					{
+						"id": "planCeiling",
+						"options": [
+							{
+								"id": "a",
+								"text": "set Maximum burst to 25 in Scale-out (App Service plan)"
+							},
+							{
+								"id": "b",
+								"text": "set Maximum burst to 40 in Scale-out (App Service plan)"
+							},
+							{
+								"id": "c",
+								"text": "set the pricing tier to a higher level in App Service plan -> Scale up"
+							},
+							{
+								"id": "d",
+								"text": "set the plan's Instance limits maximum to 25 in the autoscale setting"
+							}
+						]
+					},
+					{
+						"id": "appCeiling",
+						"options": [
+							{
+								"id": "a",
+								"text": "turn on Enforce scale-out limit for Contoso-Search and set it to 18"
+							},
+							{
+								"id": "b",
+								"text": "turn on Enforce scale-out limit for Contoso-Shop and set it to 18"
+							},
+							{
+								"id": "c",
+								"text": "turn on Enforce scale-out limit for Contoso-Search and set it to 25"
+							},
+							{
+								"id": "d",
+								"text": "set Always ready instances to 18 for Contoso-Search"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"appCeiling": "a",
+				"planCeiling": "a"
+			},
+			"explanation": {
+				"correct": "The plan-wide limit on how many instances request traffic may add is the Maximum burst value, configured under Scale-out (App Service plan). On Premium v3 this value can be set up to 30, and it must be at least the plan's instance count; with 12 assigned instances, raising it from 14 to 25 is valid and lets the whole plan reach 25 instances. The per-app limit is a different control: the Enforce scale-out limit option on Contoso-Search, whose value must be between 1 and the plan's maximum burst, so 18 is acceptable once the burst is 25. Always ready instances fixes a floor rather than a ceiling, and the autoscale Instance limits maximum belongs to a different scaling method that should not be active alongside the one already in use.",
+				"perChoice": {
+					"appCeiling:b": "The cap belongs to Contoso-Search. Contoso-Shop is the app expected to use the plan's full capacity, and capping it at 18 would prevent the plan from reaching 25 instances during the sale.",
+					"appCeiling:c": "A value of 25 would let the search app scale out to the plan-wide ceiling, which is more than the 18 instances the business allows for it.",
+					"appCeiling:d": "Always ready instances fixes the minimum number of instances the app keeps running; it does not cap how far the app may scale out, so the search app could still exceed 18 instances under load.",
+					"planCeiling:b": "A maximum burst of 40 exceeds the highest value that can be specified on Premium v2, v3 and v4, which is 30, so this value would not be accepted.",
+					"planCeiling:c": "Changing the pricing tier changes the size and capacity of each instance and unlocks tier features; it does not set how many instances the plan may add in response to incoming requests, which is controlled by the Maximum burst value.",
+					"planCeiling:d": "Instance limits maximum is part of the Azure Monitor autoscale setting. Only one scaling method should be active for a plan, and this plan already grows from request traffic, so adding autoscale rules would conflict with the method in use; it would also cap every app in the plan instead of one app."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-automatic-scaling"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-scale-up"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/autoscale/autoscale-get-started"
+				}
+			],
+			"subtopics": [
+				"automatic-scaling",
+				"maximum-burst",
+				"per-app-scale-limits"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TCEGBZ5XN1QG8QG05NAHX5",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have the App Service plan shown below for the Contoso intranet tools portal, which hosts a single web app. The operations team wants the plan to react to processor load by itself: add an instance while the CPU percentage stays high and remove one again once it falls, with nobody editing thresholds by hand. The plan must also be able to run as many as 10 instances during busy periods. Nothing on the plan currently changes its instance count, and the team's automation account already holds the Owner role on it. Which change should the team make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"App Service plan",
+							"Basic B1"
+						],
+						[
+							"Apps hosted on the plan",
+							"Contoso-Tools (web app)"
+						],
+						[
+							"Autoscale setting status",
+							"Not configured"
+						],
+						[
+							"Scaling method in use",
+							"Manual"
+						]
+					]
+				},
+				"statement": "The operations team should {{slot1}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "Move the plan up to the Standard tier"
+							},
+							{
+								"id": "b",
+								"text": "Add the CPU percentage rule to the plan's autoscale setting in the Azure Monitor portal"
+							},
+							{
+								"id": "c",
+								"text": "Turn on automatic scaling in the app's Scale-out (App Service plan) settings"
+							},
+							{
+								"id": "d",
+								"text": "Give the automation account the Contributor role on the plan and then add the CPU percentage rule"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a"
+			},
+			"explanation": {
+				"correct": "Autoscale settings for an App Service plan are only supported when the plan is on the Standard tier or higher and has at least one app, and the person configuring them holds the Owner role, the Contributor role, or a custom role with Microsoft.Insights/autoscaleSettings/* permissions on the plan. Contoso-Tools' plan is Basic B1, so the plan must be moved to the Standard tier before any CPU percentage rule can be created; Basic also caps a plan at three instances, which is short of the ten the portal team needs. The Owner role is already in place and no other scaling method is configured, so nothing has to be disabled first.",
+				"perChoice": {
+					"slot1:b": "The rule itself is what the team wants, but a Basic B1 plan cannot carry an autoscale setting at all. The plan has to sit on the Standard tier or higher first, so adding the rule on its own cannot work.",
+					"slot1:c": "Automatic scaling is a separate, request-traffic-driven option that requires a Premium v2, v3 or v4 plan, and it reacts to incoming HTTP traffic rather than to the CPU percentage. It is also unavailable on a Basic plan, so it cannot deliver the required behaviour.",
+					"slot1:d": "The automation account already holds the Owner role, which is one of the accepted permissions for creating autoscale settings, and granting Contributor adds nothing. The real blocker is that the plan is below the pricing level where autoscale is supported, so this option leaves the requirement unmet."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/autoscale/autoscale-get-started"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-scale-up"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-automatic-scaling"
+				}
+			],
+			"subtopics": [
+				"autoscale-prerequisites",
+				"app-service-plan-tiers"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TCKW1296HE2GT0JSXPAA55",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have the Contoso public API App Service plan and the apps it hosts shown below. The plan runs the Premium v3 tier and already adds instances on its own as request volume rises. Ahead of the annual partner summit the plan must be able to run more than 25 instances at the same time, while the shared front-end app must never occupy more than 12 of them. Which two changes should the platform team make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"App Service plan",
+							"contoso-public-api"
+						],
+						[
+							"Pricing tier",
+							"Premium v3"
+						],
+						[
+							"Apps hosted",
+							"Contoso-API, Contoso-Public"
+						],
+						[
+							"Assigned instances",
+							"4"
+						],
+						[
+							"Always ready instances (Contoso-API)",
+							"3"
+						],
+						[
+							"Always ready instances (Contoso-Public)",
+							"4"
+						],
+						[
+							"Highest instance count reached from incoming requests",
+							"10"
+						]
+					]
+				},
+				"statement": "The platform team should apply {{planChange}} for the plan and {{appChange}} for Contoso-Public.",
+				"slots": [
+					{
+						"id": "planChange",
+						"options": [
+							{
+								"id": "a",
+								"text": "Maximum burst to 30"
+							},
+							{
+								"id": "b",
+								"text": "Autoscale instance limit to 30"
+							},
+							{
+								"id": "c",
+								"text": "Always ready instances to 30"
+							},
+							{
+								"id": "d",
+								"text": "Pricing tier to Premium v4"
+							}
+						]
+					},
+					{
+						"id": "appChange",
+						"options": [
+							{
+								"id": "a",
+								"text": "Maximum scale limit to 12 with Enforce scale-out limit enabled"
+							},
+							{
+								"id": "b",
+								"text": "Autoscale instance limit to 12 for the whole plan"
+							},
+							{
+								"id": "c",
+								"text": "Always ready instances to 12"
+							},
+							{
+								"id": "d",
+								"text": "Session affinity turned off"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"appChange": "a",
+				"planChange": "a"
+			},
+			"explanation": {
+				"correct": "Because the plan already grows as requests arrive, the plan-wide ceiling for that growth is the Maximum burst value, which on the Premium v3 tier can be set to at most 30 instances; 30 is the only value that covers the requirement of more than 25 concurrent instances, and it is also at or above the plan's current instance count of 4 as the platform requires. The cap for a single app inside that plan is the Maximum scale limit, which has to be turned on with the Enforce scale-out limit option and given a value between 1 and the plan's Maximum burst, so 12 is valid once the burst is 30.",
+				"perChoice": {
+					"appChange:b": "An autoscale instance limit caps the entire plan rather than one app, and it belongs to the metric- and schedule-driven method instead of the request-driven method already in use. It would also stop the plan from ever reaching the higher instance count the summit needs.",
+					"appChange:c": "Always ready instances sets the floor of instances an app always keeps, not a ceiling, so it cannot stop Contoso-Public from occupying more than 12 instances during a spike.",
+					"appChange:d": "Turning off session affinity stops requests from being pinned to a single instance and supports growth, but it places no ceiling on how many instances Contoso-Public may run, so the 12-instance limit is still not enforced.",
+					"planChange:b": "Azure Monitor autoscale reacts to a metric or to a schedule and its rules apply to the whole plan; it does not react to incoming request traffic. Only one growth method should be active on a plan at a time, and this plan already reacts to request volume, so an autoscale instance limit is not what raises the traffic-driven ceiling.",
+					"planChange:c": "Always ready instances fixes the number of instances an app keeps running as its floor, not a ceiling. Setting it to 30 would keep 30 instances running and billed around the clock instead of letting the plan react to demand, so it does not deliver the requested on-demand ceiling.",
+					"planChange:d": "Changing the pricing tier changes the capacity of each instance, not how many instances the plan runs, and Premium v4 still tops out at 30 instances; the tier change is also not the control that lets a plan carry more than 25 instances at once."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-automatic-scaling"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-scale-up"
+				}
+			],
+			"subtopics": [
+				"automatic-scaling",
+				"maximum-burst",
+				"per-app-scale-limit"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5TCQZ37S3P2Z34P8SMW5396",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have the App Service plan and the apps it hosts shown below for the Contoso commerce platform. The plan runs on the Premium v3 tier. Last year the plan was given a rules-based configuration that grows and shrinks the whole plan according to processor load, and that configuration is still in place today. The platform team has since switched the plan to grow on its own as requests arrive, set a ceiling of 20 instances on the plan, and given Contoso-Shop a personal ceiling of 8 instances. The plan still grows and shrinks in lockstep for all three apps whenever processor load crosses the old threshold, and Contoso-Shop regularly runs on more than 8 instances. No application code may change and no second App Service plan may be created. Which change should the platform team make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"App Service plan",
+							"contoso-commerce-prod"
+						],
+						[
+							"Pricing tier",
+							"Premium v3"
+						],
+						[
+							"Apps hosted on the plan",
+							"Contoso-Shop, Contoso-Catalog, Contoso-Status"
+						],
+						[
+							"Scale-out method selected on the plan",
+							"Automatic"
+						],
+						[
+							"Maximum burst (plan ceiling)",
+							"20 instances"
+						],
+						[
+							"Contoso-Shop - Maximum scale limit",
+							"8 instances"
+						],
+						[
+							"Azure Monitor autoscale setting on the plan",
+							"Enabled"
+						],
+						[
+							"Autoscale maximum instance count",
+							"12 instances"
+						],
+						[
+							"Autoscale scale-out rule",
+							"CPU Percentage above 70% for 10 minutes, add 1 instance"
+						],
+						[
+							"Autoscale scale-in rule",
+							"CPU Percentage below 20%, decrease count by 1"
+						]
+					]
+				},
+				"statement": "The platform team should {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Remove the autoscale setting from the plan"
+							},
+							{
+								"id": "b",
+								"text": "Raise the plan's instance ceiling to 30"
+							},
+							{
+								"id": "c",
+								"text": "Delete only the scale-in rule from the autoscale setting"
+							},
+							{
+								"id": "d",
+								"text": "Lower the processor-load threshold on the autoscale setting"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "Only one scaling method should be active on an App Service plan at a time. This plan still carries the earlier Azure Monitor autoscale setting (Enabled, CPU-based scale-out and scale-in rules, up to 12 instances), so two scaling methods act on the plan at once: the rules-based one keeps scaling the entire plan in lockstep and can take the plan past the per-app ceiling of 8, while the traffic-driven method is meant to grow the plan on its own up to the plan ceiling of 20. Deleting the autoscale setting from the plan (in the portal, choosing Manual scale on the plan strips the autoscale rules) leaves the traffic-driven method as the only configured method, after which the plan ceiling of 20 and Contoso-Shop's ceiling of 8 govern growth on their own.",
+				"perChoice": {
+					"action:b": "The plan already has a ceiling of 20 instances, which is a valid value on this tier, and raising it changes nothing about the conflict: while the earlier rules-based setting stays on the plan it keeps scaling all apps together and can still run Contoso-Shop on more than 8 instances.",
+					"action:c": "Deleting only the scale-in rule leaves the autoscale setting on the plan with its scale-out rule, so the plan still grows in lockstep for every app and still runs Contoso-Shop above its 8-instance ceiling; the whole setting has to go, not just one of its rules.",
+					"action:d": "Lowering the threshold only changes when the old rules-based method reacts. That method stays configured alongside the traffic-driven one, so the two keep conflicting and the entire plan keeps growing and shrinking together."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-automatic-scaling"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/autoscale/autoscale-get-started"
+				}
+			],
+			"subtopics": [
+				"app-service-scaling-methods",
+				"app-service-autoscale",
+				"app-service-automatic-scaling"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M5V2GQGYFCK4DQVMVDTDYN5G",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have the Contoso media portal App Service plan shown below. It hosts a single Windows web app on the Free tier, and the subscription reports that a spending limit is in place. Ahead of the December premiere the portal must be able to run 30 instances at the same time, the release team needs a deployment slot to rehearse the new player, and the portal has to be served from its own domain with a TLS certificate. No application code may change and no second App Service plan may be created. Which action should the team take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "App Service plan : Contoso-Media-Plan  (resource group contoso-media-rg)\nPricing tier     : Free\nWeb app on plan  : Contoso-Media  (Windows)\nSubscription spending limit : On  -  1,000 USD per month\nScale-out method : Manual"
+				},
+				"statement": "The team must {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "remove the spending limit on the subscription in Cost Management + Billing, then change the plan's pricing tier to Premium"
+							},
+							{
+								"id": "b",
+								"text": "change the plan's pricing tier to Premium, then remove the spending limit on the subscription in Cost Management + Billing"
+							},
+							{
+								"id": "c",
+								"text": "remove the spending limit on the subscription in Cost Management + Billing, then change the plan's pricing tier to Standard"
+							},
+							{
+								"id": "d",
+								"text": "remove the spending limit in the plan's Scale up blade, then change the plan's pricing tier to Premium"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "A plan cannot be moved off the Free tier while a spending limit is still in place for the subscription, so the limit has to be removed first in Cost Management + Billing; only after that does the scale-up to a higher pricing tier succeed. The target tier follows from the December requirement: Basic plans scale out to at most 3 instances, Standard plans to 10, and Premium plans to 30, so only Premium can run the 30 instances the premiere needs. Moving up to Premium is also what makes dedicated capacity, custom domains with certificates, and staging slots available, and the tier change applies within seconds to the apps in the plan without any code change or redeploy.",
+				"perChoice": {
+					"action:b": "The order is wrong. While the subscription still has a spending limit in place, the plan cannot leave the Free tier, so the pricing-tier change is rejected and can only be attempted after the limit is removed.",
+					"action:c": "Standard plans scale out to at most 10 instances, so they cannot deliver the 30 simultaneous instances required for the premiere. Premium is the tier whose scale-out ceiling reaches 30.",
+					"action:d": "The spending limit is a subscription-level setting managed in Cost Management + Billing, not a setting on the plan's Scale up blade, so removing it there leaves the scale-up blocked and the plan on the Free tier."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-scale-up"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/app-service/manage-automatic-scaling"
+				}
+			],
+			"subtopics": [
+				"scale-up-pricing-tier",
+				"spending-limit"
+			],
+			"reviewed": false
+		}
+	]
+}
