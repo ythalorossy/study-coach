@@ -8,6 +8,7 @@ import {
 	type Key,
 	type PublicQuestion,
 	type QuestionBody,
+	shuffleBody,
 } from "./question-schema.ts";
 import type { AttemptPurpose, QuestionFormat } from "./types.ts";
 
@@ -67,13 +68,11 @@ function getRow(db: CoachDb, id: string): QuestionRow | null {
 	return r ? parseRow(r) : null;
 }
 
-export function toPublicQuestion(row: {
-	id: string;
-	skillId: string;
-	format: QuestionFormat;
-	body: QuestionBody;
-}): PublicQuestion {
-	return { id: row.id, skillId: row.skillId, format: row.format, body: row.body };
+export function toPublicQuestion(
+	row: { id: string; skillId: string; format: QuestionFormat; body: QuestionBody },
+	rng: () => number = Math.random,
+): PublicQuestion {
+	return { id: row.id, skillId: row.skillId, format: row.format, body: shuffleBody(row.body, rng) };
 }
 
 export function insertQuestion(db: CoachDb, c: CandidateQuestion, readAt: Record<string, string>): string {
@@ -128,12 +127,12 @@ export function nextPracticeQuestion(
 	const rank = (r: Record<string, unknown>) => (r.last_attempt as string | null) ?? "";
 	const best = pool.reduce((m, r) => (rank(r) < m ? rank(r) : m), rank(pool[0]));
 	const tied = pool.filter((r) => rank(r) === best);
-	return toPublicQuestion(parseRow(tied[Math.min(Math.floor(rng() * tied.length), tied.length - 1)]));
+	return toPublicQuestion(parseRow(tied[Math.min(Math.floor(rng() * tied.length), tied.length - 1)]), rng);
 }
 
 export function followupQuestion(
 	db: CoachDb,
-	opts: { questionId: string; sessionId: string },
+	opts: { questionId: string; sessionId: string; rng?: () => number },
 ): PublicQuestion | null {
 	const origin = getRow(db, opts.questionId);
 	if (!origin) return null;
@@ -145,7 +144,7 @@ export function followupQuestion(
 		.map(parseRow);
 	const shared = candidates.find((c) => c.subtopics.some((s) => origin.subtopics.includes(s)));
 	const pick = shared ?? candidates[0];
-	return pick ? toPublicQuestion(pick) : null;
+	return pick ? toPublicQuestion(pick, opts.rng) : null;
 }
 
 export function recordAttempt(

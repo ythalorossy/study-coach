@@ -91,6 +91,26 @@ export interface PublicQuestion {
 	body: QuestionBody;
 }
 
+/** Fisher-Yates on a copy; `rng` returns a number in [0, 1). */
+function shuffled<T>(items: T[], rng: () => number): T[] {
+	const out = [...items];
+	for (let i = out.length - 1; i > 0; i--) {
+		const j = Math.min(Math.floor(rng() * (i + 1)), i);
+		[out[i], out[j]] = [out[j], out[i]];
+	}
+	return out;
+}
+
+/**
+ * The body as shown to a learner, with the choices in a random order: stored questions tend to list
+ * the answer first or in slot order. Ids stay with their text, so keys and explanations still match.
+ */
+export function shuffleBody(body: QuestionBody, rng: () => number = Math.random): QuestionBody {
+	if (body.format === "multiple-choice") return { ...body, options: shuffled(body.options, rng) };
+	if (body.format === "drag-drop") return { ...body, items: shuffled(body.items, rng) };
+	return { ...body, slots: body.slots.map((s) => ({ ...s, options: shuffled(s.options, rng) })) };
+}
+
 /** Valibot schema for the response shape of a format (used as an LLM result schema). */
 export function responseSchemaFor(format: QuestionFormat) {
 	return format === "multiple-choice" ? v.object({ optionId: v.string() }) : v.record(v.string(), v.string());

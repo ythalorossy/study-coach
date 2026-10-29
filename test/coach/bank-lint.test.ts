@@ -33,6 +33,10 @@ describe("bank lint", () => {
 		body.options[1].text = "A very long correct option that spells out far more than any of the others do";
 		expect(codes(bank({ body }))).toContain("long-key");
 	});
+	it("flags an explanation that refers to an option by letter", () => {
+		const explanation = { ...mcFixture.explanation, correct: `Option b is right. ${mcFixture.explanation.correct}` };
+		expect(codes(bank({ explanation }))).toContain("letter-reference");
+	});
 	it("counts multiple-choice key positions", () => {
 		expect(keyPositions([bank(), bank(), bank({ key: { optionId: "a" } })])).toEqual({ b: 2, a: 1 });
 	});

@@ -36,6 +36,13 @@ export function lintQuestion(q: BankQuestion, sheet: Set<string>): LintIssue[] {
 	if (b.format === "drag-drop") {
 		if (new Set(b.items.map((i) => i.text.trim().toLowerCase())).size < b.items.length) add("duplicate-items", "two items have the same text");
 	}
+	if (b.format === "multiple-choice") {
+		// Options are shown without letters and in a random order, so a letter means nothing to the learner.
+		const texts = [stem, q.explanation.correct, ...Object.values(q.explanation.perChoice), ...b.options.map((o) => o.text)];
+		if (texts.some((t) => /\b(?:options?|choices?|answers?)\s+\(?[a-d]\)?(?![\w-])/i.test(t))) {
+			add("letter-reference", "the text refers to an option by letter, but options are shown without letters in random order");
+		}
+	}
 	if (stem.length < 60) add("short-stem", "the stem is under 60 characters");
 	if (q.sources.length === 0) add("no-sources", "the question cites no page");
 	const outside = q.sources.filter((s) => !sheet.has(normalizeUrl(s.url)));

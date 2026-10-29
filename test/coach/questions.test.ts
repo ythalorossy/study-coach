@@ -3,6 +3,7 @@ import { openCoachDb, type CoachDb } from "../../src/coach/db.ts";
 import { GUIDE_VERSION } from "../../src/coach/seed.ts";
 import {
 	checkAnswer,
+	shuffleBody,
 	responseSchemaFor,
 	validateCandidate,
 	type CandidateQuestion,
@@ -267,5 +268,50 @@ describe("question bank", () => {
 			).toThrow(UnknownQuestionError);
 			expect(() => flagQuestion(db, "q_nope", "x")).toThrow(UnknownQuestionError);
 		});
+	});
+});
+
+describe("shuffleBody", () => {
+	const seeded = (seed: number) => () => {
+		seed = (seed * 1664525 + 1013904223) % 4294967296;
+		return seed / 4294967296;
+	};
+	it("reorders multiple-choice options without changing which text carries which id", () => {
+		const out = shuffleBody(mcFixture.body, seeded(7));
+		if (out.format !== "multiple-choice" || mcFixture.body.format !== "multiple-choice") throw new Error("fixture");
+		expect(out.options.map((o) => o.id)).not.toEqual(mcFixture.body.options.map((o) => o.id));
+		expect([...out.options].sort((a, b) => a.id.localeCompare(b.id))).toEqual(mcFixture.body.options);
+		expect(checkAnswer(out, mcFixture.key, mcCorrect)).toBe(true);
+	});
+	it("reorders drag-drop items and keeps the slots in place", () => {
+		const out = shuffleBody(dragDropFixture.body, seeded(3));
+		if (out.format !== "drag-drop" || dragDropFixture.body.format !== "drag-drop") throw new Error("fixture");
+		expect(out.slots).toEqual(dragDropFixture.body.slots);
+		expect([...out.items].sort((a, b) => a.id.localeCompare(b.id))).toEqual(
+			[...dragDropFixture.body.items].sort((a, b) => a.id.localeCompare(b.id)),
+		);
+		expect(checkAnswer(out, dragDropFixture.key, dragDropCorrect)).toBe(true);
+	});
+	it("reorders each complete-sentence slot's options", () => {
+		const original = completeSentenceFixture.body;
+		const out = shuffleBody(original, seeded(11));
+		if (out.format !== "complete-sentence" || original.format !== "complete-sentence") throw new Error("fixture");
+		out.slots.forEach((s, i) => {
+			const orig = original.slots[i];
+			expect(s.id).toBe(orig.id);
+			expect([...s.options].sort((a, b) => a.id.localeCompare(b.id))).toEqual([...orig.options].sort((a, b) => a.id.localeCompare(b.id)));
+		});
+		expect(checkAnswer(out, completeSentenceFixture.key, completeSentenceCorrect)).toBe(true);
+	});
+	it("does not change the stored question, and spreads the correct option across positions", () => {
+		const before = structuredClone(mcFixture.body);
+		const rng = seeded(1);
+		const positions = new Set<number>();
+		for (let i = 0; i < 40; i++) {
+			const out = shuffleBody(mcFixture.body, rng);
+			if (out.format === "multiple-choice") positions.add(out.options.findIndex((o) => o.id === "b"));
+		}
+		expect(mcFixture.body).toEqual(before);
+		expect(positions.size).toBe(4);
 	});
 });
