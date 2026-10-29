@@ -119,6 +119,7 @@ Every question carries `"reviewed": false` until a person has checked it, and th
 
 ```sh
 npm run review:sheet -- --skill storage.explorer-azcopy   # fact sheet + sample questions in data/review/ (--area <prefix>, --all, --count <n>)
+npm run questions:lint   # structural checks over the whole bank (no model): missing exhibits, sources the fact sheet doesn't link, key-position skew
 npm run questions:review -- --skill storage.explorer-azcopy   # mark a skill's questions reviewed (--id <q>, --undo)
 npm run questions:export   # rewrite content/questions/ from your local database
 ```
