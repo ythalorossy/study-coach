@@ -14,7 +14,7 @@ A local study coach for Microsoft certification exams, starting with AZ-104, bui
 | Implement and manage virtual networking | 15–20% | Planned | — | — |
 | Monitor and maintain Azure resources | 10–15% | Planned | — | — |
 
-Every supported skill has a fact sheet in `content/fact-sheets/`, and the question generator targets 20 questions per skill. Planned areas appear on Home as coming later. Other Microsoft certifications may follow.
+Every supported skill has a fact sheet in `content/fact-sheets/` and a bank of 20 questions in `content/questions/`. Planned areas appear on Home as coming later. Other Microsoft certifications may follow.
 
 ## The agents
 
@@ -47,14 +47,7 @@ Every supported skill has a fact sheet in `content/fact-sheets/`, and the questi
    cp .env.sample .env
    ```
 
-3. Build your local data. The repository ships the fact sheets but not the question bank or your progress, which live in `data/` and stay on your machine:
-
-   ```sh
-   npm run docs:sync                    # download the Microsoft docs the skills use
-   npm run generate -- --until-target   # write and verify the question bank
-   ```
-
-   Generation takes a while (roughly 60 to 100 questions an hour); you can stop it and restart it at any time. See [Generate questions](#generate-questions).
+3. Start the app. On first run it loads the committed question bank (`content/questions/`; see [Question bank](#question-bank)) into a new local database at `data/coach.db`, which also holds your progress and stays on your machine. To read the source docs or fill gaps in the bank, see [Read the docs](#read-the-docs) and [Generate questions](#generate-questions).
 
 ## Choose models
 
@@ -117,6 +110,20 @@ A question that runs longer than 10 minutes (`--question-timeout <minutes>`), or
 To fill one skill or format: `npm run generate -- --skill identity.sspr --format drag-drop`. The Coverage page shows how full the bank is.
 
 To compare runs, `npm run generate:stats -- --area storage` prints an area's attempts, the share of each rejection reason and the share of its questions you flagged, read from `data/generate-log.jsonl` and `data/coach.db`.
+
+## Question bank
+
+The verified questions are committed as one JSON file per skill in `content/questions/`, so a fresh clone can study straight away. When `data/coach.db` is created and has no questions, the app loads them; a database that already has questions is left alone. Flagged questions are not included.
+
+Every question carries `"reviewed": false` until a person has checked it, and the fact sheet it came from, against the linked Learn pages. Questions are written and verified by models, so treat unreviewed ones as unofficial practice material that can contain mistakes. These are original questions, not real exam items.
+
+```sh
+npm run review:sheet -- --skill storage.explorer-azcopy   # fact sheet + sample questions in data/review/ (--area <prefix>, --all, --count <n>)
+npm run questions:review -- --skill storage.explorer-azcopy   # mark a skill's questions reviewed (--id <q>, --undo)
+npm run questions:export   # rewrite content/questions/ from your local database
+```
+
+To fix a question, edit its JSON file and open a pull request; the diff shows exactly what changed. Importing validates every question and skips invalid ones with a message.
 
 ## Tests and evals
 

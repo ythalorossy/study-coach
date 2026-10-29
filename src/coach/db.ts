@@ -1,6 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import { importQuestionBankIfEmpty } from "./question-bank.ts";
 import { seedCoachDb } from "./seed.ts";
 
 export interface CoachDb {
@@ -80,7 +81,8 @@ function migrate(raw: DatabaseSync): void {
 	if (!columns.includes("area_id")) raw.exec("ALTER TABLE sessions ADD COLUMN area_id TEXT");
 }
 
-export function openCoachDb(path: string): CoachDb {
+/** `questionBank`: the folder to load on first run (default content/questions), or false to skip loading. */
+export function openCoachDb(path: string, opts: { questionBank?: string | false } = {}): CoachDb {
 	if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
 	const raw = new DatabaseSync(path);
 	if (path !== ":memory:") {
@@ -92,6 +94,11 @@ export function openCoachDb(path: string): CoachDb {
 	migrate(raw);
 	const db: CoachDb = { raw };
 	seedCoachDb(db);
+	// A database on disk with no questions yet gets the committed bank; in-memory ones start empty.
+	if (path !== ":memory:" && opts.questionBank !== false) {
+		const loaded = importQuestionBankIfEmpty(db, opts.questionBank);
+		if (loaded) console.log(`Loaded ${loaded.added} questions from the question bank (${loaded.invalid.length} invalid).`);
+	}
 	return db;
 }
 

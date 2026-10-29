@@ -57,7 +57,7 @@ describe("file-backed db", () => {
 	it("uses WAL and a busy timeout so concurrent writers wait", () => {
 		const dir = mkdtempSync(join(tmpdir(), "coach-db-"));
 		try {
-			const db = openCoachDb(join(dir, "coach.db"));
+			const db = openCoachDb(join(dir, "coach.db"), { questionBank: false });
 			expect((db.raw.prepare("PRAGMA journal_mode").get() as Row).journal_mode).toBe("wal");
 			expect((db.raw.prepare("PRAGMA busy_timeout").get() as Row).timeout).toBeGreaterThan(0);
 			db.raw.close();
@@ -79,11 +79,11 @@ describe("file-backed db", () => {
 )`);
 		old.prepare("INSERT INTO sessions VALUES ('s1', 'lesson', '[\"identity.sspr\"]', 'Old', 'x', 'x')").run();
 		old.close();
-		const db = openCoachDb(path);
+		const db = openCoachDb(path, { questionBank: false });
 		const cols = (db.raw.prepare("PRAGMA table_info(sessions)").all() as { name: string }[]).map((c) => c.name);
 		expect(cols).toContain("area_id");
 		expect({ ...db.raw.prepare("SELECT id, title, area_id FROM sessions").get() }).toEqual({ id: "s1", title: "Old", area_id: null });
 		db.raw.close();
-		expect(() => openCoachDb(path)).not.toThrow();
+		expect(() => openCoachDb(path, { questionBank: false })).not.toThrow();
 	});
 });

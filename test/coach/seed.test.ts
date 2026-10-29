@@ -51,10 +51,10 @@ describe("seeding areas", () => {
 
 	it("leaves an existing database's rows untouched when reopened", () => {
 		const path = join(mkdtempSync(join(tmpdir(), "seed-")), "coach.db");
-		const first = openCoachDb(path);
+		const first = openCoachDb(path, { questionBank: false });
 		first.raw.prepare("UPDATE skills SET name = 'kept' WHERE id = 'identity.sspr'").run();
 		first.raw.close();
-		const again = openCoachDb(path);
+		const again = openCoachDb(path, { questionBank: false });
 		expect((again.raw.prepare("SELECT name FROM skills WHERE id = 'identity.sspr'").get() as { name: string }).name).toBe("kept");
 		expect((again.raw.prepare("SELECT COUNT(*) AS n FROM skills").get() as { n: number }).n).toBe(56);
 	});

@@ -13,6 +13,7 @@ Study Coach is a [Flue](https://flueframework.com) project: agents are TypeScrip
 - `scripts/` — command-line jobs: docs sync, fact sheets, question generation.
 - `web/` — the React web app (Vite).
 - `content/fact-sheets/` — committed fact sheets, one per skill.
+- `content/questions/` — the committed question bank, one JSON file per skill, loaded on first run (`src/coach/question-bank.ts`).
 - `test/` — unit tests; live-model evals are in `src/evals/`.
 
 ## Commands
@@ -29,4 +30,5 @@ Study Coach is a [Flue](https://flueframework.com) project: agents are TypeScrip
 - Run `npm test` and `npm run check:types` before every commit.
 - Keep exam-specific facts (areas, skills, instructors, documentation pages) in data, not in prompts or code paths, so other certifications can be added later.
 - Fact sheets and questions must be original wording, every fact linked to its Microsoft Learn page; never copy text from books, exam dumps or third-party question sites.
+- Questions are edited in `content/questions/*.json` and carry a `reviewed` flag; set it only after checking against the linked Learn pages.
 - Never commit secrets or local data: `.env` and `data/` are git-ignored; `.env.sample` documents the settings.
