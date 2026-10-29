@@ -31,10 +31,10 @@ export function lintQuestion(q: BankQuestion, sheet: Set<string>): LintIssue[] {
 		const others = b.options.filter((o) => o.id !== key).map((o) => o.text.length);
 		const longestOther = Math.max(...others);
 		if (keyLen > 40 && keyLen > longestOther * 1.8) add("long-key", "the correct option is much longer than every distractor");
-		if (new Set(b.options.map((o) => o.text.trim().toLowerCase())).size < lengths.length) add("duplicate-options", "two options have the same text");
+		if (new Set(b.options.map((o) => o.text.trim())).size < lengths.length) add("duplicate-options", "two options have the same text");
 	}
 	if (b.format === "drag-drop") {
-		if (new Set(b.items.map((i) => i.text.trim().toLowerCase())).size < b.items.length) add("duplicate-items", "two items have the same text");
+		if (new Set(b.items.map((i) => i.text.trim())).size < b.items.length) add("duplicate-items", "two items have the same text");
 	}
 	// Choices are shown without letters and in random order, so a letter means nothing to the learner.
 	const choiceTexts =

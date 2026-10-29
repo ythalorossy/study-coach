@@ -37,6 +37,15 @@ describe("bank lint", () => {
 		const explanation = { ...mcFixture.explanation, correct: `Option b is right. ${mcFixture.explanation.correct}` };
 		expect(codes(bank({ explanation }))).toContain("letter-reference");
 	});
+	it("treats options that differ only by case as different, but flags identical ones", () => {
+		const body = structuredClone(mcFixture.body);
+		if (body.format !== "multiple-choice") throw new Error("fixture");
+		body.options[0].text = "finance-reports";
+		body.options[2].text = "Finance-Reports";
+		expect(codes(bank({ body }))).not.toContain("duplicate-options");
+		body.options[2].text = "finance-reports";
+		expect(codes(bank({ body }))).toContain("duplicate-options");
+	});
 	it("counts multiple-choice key positions", () => {
 		expect(keyPositions([bank(), bank(), bank({ key: { optionId: "a" } })])).toEqual({ b: 2, a: 1 });
 	});
