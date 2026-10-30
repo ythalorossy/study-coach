@@ -18,11 +18,11 @@ if (!existsSync(path)) {
 	process.exit(1);
 }
 const file = readBankFile(path);
-const only = values.id ? new Set(values.id) : null;
+const only = values.id ? new Set(values.id) : null; // --id limits the change to these questions
 let changed = 0;
 for (const q of file.questions) {
 	if (only && !only.has(q.id)) continue;
-	if (q.reviewed === !values.undo) continue;
+	if (q.reviewed === !values.undo) continue; // already in the wanted state
 	q.reviewed = !values.undo;
 	changed++;
 }

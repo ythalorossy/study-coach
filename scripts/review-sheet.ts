@@ -10,7 +10,8 @@ import { SKILLS } from "../src/coach/seed.ts";
 const { values } = parseArgs({
 	options: { skill: { type: "string" }, area: { type: "string" }, all: { type: "boolean" }, count: { type: "string" } },
 });
-const count = Number(values.count ?? 3);
+const count = Number(values.count ?? 3); // questions to put on each sheet
+// Pick skills by --all, --skill or --area prefix (skill ids look like "<area>.<skill>")
 const ids = SKILLS.map(([id]) => id).filter((id) =>
 	values.all ? true : values.skill ? id === values.skill : values.area ? id.startsWith(`${values.area}.`) : false,
 );
@@ -19,6 +20,7 @@ if (ids.length === 0 || !Number.isInteger(count) || count < 1) {
 	process.exit(1);
 }
 mkdirSync("data/review", { recursive: true });
+// One sheet per skill
 for (const id of ids) {
 	const { questions } = readBankFile(join(QUESTION_BANK_ROOT, `${id}.json`));
 	writeFileSync(join("data/review", `${id}.md`), renderReviewSheet(id, questions, count));

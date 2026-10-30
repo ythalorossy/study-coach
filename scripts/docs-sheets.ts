@@ -12,6 +12,7 @@ import { classifyProviderFailure, ProviderFailure, runFlue, runScheduled } from 
 
 const SOURCES_DIR = "./data/fact-sheet-sources";
 
+// The skill's doc pages as markdown; a page that can't be read is skipped
 async function readPages(db: CoachDb, skillId: string): Promise<SourcePage[]> {
 	const pages: SourcePage[] = [];
 	for (const url of skillDocUrls(skillId)) {
@@ -24,6 +25,7 @@ async function readPages(db: CoachDb, skillId: string): Promise<SourcePage[]> {
 	return pages;
 }
 
+// Problems the writer logged on its latest attempt for this skill since `since`
 function lastProblems(skillId: string, since: string): string[] {
 	if (!existsSync(FACT_SHEET_LOG_PATH)) return [];
 	const entries = readFileSync(FACT_SHEET_LOG_PATH, "utf8")
@@ -48,6 +50,7 @@ async function main(): Promise<void> {
 		process.exit(1);
 	}
 	const parallel = Number(values.parallel ?? process.env.GENERATE_PARALLEL ?? 6);
+	// Skills to build: the --skill one, and only missing/stale sheets unless --all
 	const selected = skillIds
 		.filter((id) => !values.skill || id === values.skill)
 		.filter((id) => values.all || factSheetStatus(id) !== "fresh");
@@ -58,12 +61,12 @@ async function main(): Promise<void> {
 
 	const db = openCoachDb(process.env.COACH_DB_PATH ?? "./data/coach.db");
 	mkdirSync(SOURCES_DIR, { recursive: true });
-	const results = new Map<string, string>();
+	const results = new Map<string, string>(); // outcome line per skill
 	const started = new Date().toISOString();
 	let providerError: string | undefined;
 	try {
 		await runScheduled(
-			selected.map((skillId) => ({ lane: skillId, skillId })),
+			selected.map((skillId) => ({ lane: skillId, skillId })), // one job per skill
 			{
 				parallel,
 				onSlowdown: (from, to) => console.warn(`Rate limit hit: parallel ${from} → ${to}`),
@@ -73,12 +76,14 @@ async function main(): Promise<void> {
 						results.set(skillId, "failed (no pages could be read)");
 						return;
 					}
+					// The writer reads the pages from a file, not from the prompt
 					const sourcesPath = join(SOURCES_DIR, `${skillId}.json`);
 					writeFileSync(sourcesPath, JSON.stringify(pages));
 					console.log(`${skillId}: writing from ${pages.length} page(s)`);
 					const runId = `sheet-${skillId}-${Date.now()}`;
 					const child = await runFlue("src/agents/fact-sheet-writer.ts", runId, { skillId, sourcesPath }, "Write the fact sheet.");
 					if (child.status !== 0) {
+						// Quota/key/rate-limit errors stop or slow the whole run
 						const provider = classifyProviderFailure(`${child.stdout}\n${child.stderr}`);
 						if (provider) throw new ProviderFailure(`${runId}: provider failure, ${provider}`, provider);
 						process.stderr.write(child.stderr);
@@ -95,6 +100,7 @@ async function main(): Promise<void> {
 		providerError = e.message;
 	}
 
+	// Summary in plan order; skills never reached show as "not run"
 	console.log("\nSummary:");
 	for (const skillId of selected) console.log(`${skillId}: ${results.get(skillId) ?? "not run"}`);
 	if (providerError) {

@@ -21,13 +21,16 @@ export function syncCommands(repo: DocRepo, dir: string, dirs: string[], exists:
 	// Markdown only: the folders' media make up most of their size, and pages skip images.
 	const patterns = ["/*", "!/*/", ...dirs.map((d) => `/${d}/**/*.md`)];
 	const sparse = ["git", "-C", dir, "sparse-checkout", "set", "--no-cone", ...patterns];
+	// First run: shallow, blobless clone, then narrow to the wanted folders
 	if (!exists) {
 		const url = `https://github.com/MicrosoftDocs/${repo}.git`;
 		return [["git", "clone", "--depth", "1", "--filter=blob:none", "--sparse", "--branch", "main", url, dir], sparse];
 	}
+	// Later runs: re-apply the folders, then move to the newest main
 	return [sparse, ["git", "-C", dir, "fetch", "--depth", "1", "origin", "main"], ["git", "-C", dir, "reset", "--hard", "FETCH_HEAD"]];
 }
 
+// Short license name from the repo's LICENSE text
 export function licenseName(text: string): string {
 	if (text.includes("Attribution 4.0")) return "CC BY 4.0";
 	if (/\bMIT License\b/.test(text)) return "MIT";
@@ -42,6 +45,7 @@ function readLicense(dir: string): string {
 	}
 }
 
+// Runs a command and returns its stdout; a non-zero exit throws
 function runChecked(run: Run, argv: string[]): string {
 	const { status, stdout } = run(argv);
 	if (status !== 0) throw new Error(`${argv.join(" ")} failed (exit ${status})`);
@@ -51,8 +55,9 @@ function runChecked(run: Run, argv: string[]): string {
 export function syncCorpus(opts: { root: string; urls: string[]; run: Run; now: () => Date }): SyncState {
 	const { root, urls, run } = opts;
 	mkdirSync(root, { recursive: true });
-	const commits: SyncState["commits"] = {};
+	const commits: SyncState["commits"] = {}; // commit each repo ended at
 	const licenses: SyncState["licenses"] = {};
+	// Sync each repo that holds skill pages
 	for (const [repo, dirs] of Object.entries(sparseDirs(urls)) as [DocRepo, string[]][]) {
 		// sparseDirs always lists includes; a repo with nothing else has no skill pages.
 		if (dirs.length < 2) continue;
@@ -64,6 +69,7 @@ export function syncCorpus(opts: { root: string; urls: string[]; run: Run; now: 
 		commits[repo] = runChecked(run, ["git", "-C", dir, "rev-parse", "HEAD"]).trim();
 		licenses[repo] = readLicense(dir);
 	}
+	// URLs with no local file (read live from Learn instead)
 	const missing = urls.filter((url) => {
 		const mapped = learnUrlToRepoPath(url);
 		return !mapped || !existsSync(join(root, mapped.repo, mapped.path));
@@ -75,7 +81,8 @@ export function syncCorpus(opts: { root: string; urls: string[]; run: Run; now: 
 }
 
 function main(): void {
-	const urls = [...new Set(SKILLS.flatMap(([, , , docUrls]) => docUrls))];
+	const urls = [...new Set(SKILLS.flatMap(([, , , docUrls]) => docUrls))]; // distinct doc URLs of all skills
+	// Real command runner: stdout captured, stderr passed through
 	const run: Run = (argv) => {
 		const child = spawnSync(argv[0], argv.slice(1), { stdio: ["ignore", "pipe", "inherit"], encoding: "utf8" });
 		return { status: child.status, stdout: child.stdout ?? "" };
@@ -88,6 +95,7 @@ function main(): void {
 	}
 	for (const url of state.missing) console.log(`not in the local docs, will be read live from Learn: ${url}`);
 	console.log(`Synced ${urls.length - state.missing.length}/${urls.length} skill pages.`);
+	// Remind which fact sheets the new docs may have made stale
 	console.log("\nFact sheets (npm run docs:sheets builds missing and stale ones):");
 	for (const [skillId] of SKILLS) console.log(`${skillId}: ${factSheetStatus(skillId)}`);
 }

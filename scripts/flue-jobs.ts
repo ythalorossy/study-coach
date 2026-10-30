@@ -66,6 +66,7 @@ function forwardInterrupts(): void {
 /** Runs a command, capturing its output; with a time limit, stops it and its children when the limit passes. */
 export function runProcess(command: string, args: string[], opts: RunOptions = {}): Promise<FlueRunResult> {
 	return new Promise((resolve) => {
+		// detached = own process group, so the whole tree can be signalled
 		const child = spawn(command, args, { stdio: ["ignore", "pipe", "pipe"], env: opts.env ?? process.env, detached: true });
 		const pid = child.pid;
 		if (pid) {
@@ -76,6 +77,7 @@ export function runProcess(command: string, args: string[], opts: RunOptions = {
 		let stderr = "";
 		let timedOut = false;
 		const timers: NodeJS.Timeout[] = [];
+		// Time limit: ask the group to stop, then kill it 5 s later
 		if (opts.timeoutMs && pid) {
 			timers.push(
 				setTimeout(() => {
@@ -85,13 +87,16 @@ export function runProcess(command: string, args: string[], opts: RunOptions = {
 				}, opts.timeoutMs),
 			);
 		}
+		// Single exit: clear timers, forget the group, resolve once
 		const done = (result: FlueRunResult) => {
 			for (const t of timers) clearTimeout(t);
 			if (pid) groups.delete(pid);
 			resolve(timedOut ? { ...result, timedOut } : result);
 		};
+		// Collect all output as text
 		child.stdout.setEncoding("utf8").on("data", (d: string) => (stdout += d));
 		child.stderr.setEncoding("utf8").on("data", (d: string) => (stderr += d));
+		// Could not start at all (e.g. npx missing)
 		child.on("error", (err) => done({ status: null, stdout, stderr: `${stderr}${err.message}` }));
 		child.on("close", (status) => {
 			// A timed-out group may leave a straggler holding the pipes; make sure it is gone.
@@ -110,6 +115,7 @@ export function flueRunEnv(base: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
 	return { ...base, FLUE_DB_PATH: ":memory:" };
 }
 
+// `npx flue run <agent>` with the id, data and message, JSON output
 export function runFlue(agent: string, id: string, data: unknown, message: string, opts: RunOptions = {}): Promise<FlueRunResult> {
 	const argv = ["flue", "run", agent, "--id", id, "--data", JSON.stringify(data), "--message", message, "--json"];
 	return runProcess("npx", argv, { ...opts, env: flueRunEnv(opts.env ?? process.env) });
@@ -135,8 +141,8 @@ export interface ScheduleResult {
  * Any other error stops new launches and rejects once running jobs settle.
  */
 export function runScheduled<J extends { lane: string }>(jobs: J[], opts: ScheduleOptions<J>): Promise<ScheduleResult> {
-	const queue = [...jobs];
-	const busy = new Set<string>();
+	const queue = [...jobs]; // waiting jobs, in order
+	const busy = new Set<string>(); // lanes with a job running
 	const slowdowns: ScheduleResult["slowdowns"] = [];
 	const retryDelayMs = opts.retryDelayMs ?? 30_000;
 	let parallel = Math.max(1, opts.parallel);
@@ -144,10 +150,11 @@ export function runScheduled<J extends { lane: string }>(jobs: J[], opts: Schedu
 	let failure: { error: unknown } | null = null;
 
 	return new Promise((resolve, reject) => {
+		// Start what fits, then finish when nothing is running and nothing is left
 		const pump = () => {
 			if (!failure) {
 				for (let i = 0; i < queue.length && running < parallel; ) {
-					if (busy.has(queue[i].lane)) i++;
+					if (busy.has(queue[i].lane)) i++; // lane taken: try the next job
 					else start(queue.splice(i, 1)[0]);
 				}
 			}
@@ -158,13 +165,14 @@ export function runScheduled<J extends { lane: string }>(jobs: J[], opts: Schedu
 		};
 
 		const start = (job: J) => {
-			const startedAt = parallel;
+			const startedAt = parallel; // level this job started at
 			running++;
 			busy.add(job.lane);
 			opts
 				.run(job)
 				.catch(async (error: unknown) => {
 					const limited = error instanceof ProviderFailure && error.label === RATE_LIMITED;
+					// Final: any other error, or a rate limit with nothing left to slow down
 					if (!limited || (parallel === 1 && startedAt === 1)) {
 						failure ??= { error };
 						return;
@@ -176,10 +184,11 @@ export function runScheduled<J extends { lane: string }>(jobs: J[], opts: Schedu
 						opts.onSlowdown?.(parallel, to);
 						parallel = to;
 					}
-					if (retryDelayMs) await new Promise((r) => setTimeout(r, retryDelayMs));
-					queue.unshift(job);
+					if (retryDelayMs) await new Promise((r) => setTimeout(r, retryDelayMs)); // let the limit cool off
+					queue.unshift(job); // retry first
 				})
 				.finally(() => {
+					// Free the slot and lane, then look for the next job
 					running--;
 					busy.delete(job.lane);
 					pump();

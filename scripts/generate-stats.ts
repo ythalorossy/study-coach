@@ -18,27 +18,28 @@ function inArea(skillId: string, areaId: string): boolean {
 	try {
 		return areaOfSkill(skillId) === areaId;
 	} catch {
-		return false;
+		return false; // a skill id the seed no longer knows
 	}
 }
 
 export function areaRates(logText: string, areaId: string): AreaRates {
 	let attempts = 0;
 	let saved = 0;
-	const counts: Record<string, number> = {};
+	const counts: Record<string, number> = {}; // rejections by reason
 	for (const line of logText.split("\n")) {
 		if (!line.trim()) continue;
 		let e: { skillId?: string; saved?: boolean; reason?: string };
 		try {
 			e = JSON.parse(line);
 		} catch {
-			continue;
+			continue; // torn line: skip it
 		}
-		if (!e.skillId || !inArea(e.skillId, areaId)) continue;
+		if (!e.skillId || !inArea(e.skillId, areaId)) continue; // other areas' attempts
 		attempts++;
 		if (e.saved) saved++;
 		else if (e.reason) counts[e.reason] = (counts[e.reason] ?? 0) + 1;
 	}
+	// Counts become shares of all attempts
 	const rates = Object.fromEntries(Object.entries(counts).map(([r, n]) => [r, n / attempts]));
 	return { attempts, saved, rates };
 }
@@ -65,11 +66,12 @@ function main(): void {
 		console.error(`Usage: npm run generate:stats -- --area <id>. Areas: ${ids.join(", ")}`);
 		process.exit(1);
 	}
+	// Rejection rates come from the admission log, flag rate from the database
 	const log = existsSync(GENERATE_LOG_PATH) ? readFileSync(GENERATE_LOG_PATH, "utf8") : "";
 	const r = areaRates(log, values.area);
 	const db = openCoachDb(process.env.COACH_DB_PATH ?? "./data/coach.db");
 	console.log(`Area ${values.area}: ${r.attempts} attempts, ${r.saved} saved (${percent(r.saved / Math.max(1, r.attempts))})`);
-	const reasons = Object.entries(r.rates).sort((a, b) => b[1] - a[1]);
+	const reasons = Object.entries(r.rates).sort((a, b) => b[1] - a[1]); // most common first
 	console.log(`Rejections: ${reasons.length ? reasons.map(([k, v]) => `${k} ${percent(v)}`).join(", ") : "none"}`);
 	console.log(`Flagged: ${percent(flagRate(db, values.area))} of the area's questions`);
 }
