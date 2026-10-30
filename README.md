@@ -14,7 +14,7 @@ A local study coach for Microsoft certification exams, starting with AZ-104, bui
 | Implement and manage virtual networking | 15–20% | Planned | — | — |
 | Monitor and maintain Azure resources | 10–15% | Planned | — | — |
 
-Every supported skill has a fact sheet in `content/fact-sheets/` and a bank of up to 20 questions in `content/questions/` (1,120 in all). Planned areas appear on Home as coming later. Other Microsoft certifications may follow.
+Every supported skill has a fact sheet in `content/fact-sheets/` and a bank of up to 20 questions in `content/questions/` (1,120 in all). Planned areas appear on Home as coming later. Other Microsoft certifications may follow; see [CONTRIBUTING.md](CONTRIBUTING.md) to help.
 
 ## The agents
 

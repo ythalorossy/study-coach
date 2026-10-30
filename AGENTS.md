@@ -29,6 +29,15 @@ Study Coach is a [Flue](https://flueframework.com) project: agents are TypeScrip
 - `npx flue run src/agents/<agent>.ts --message "Hi"` — run an agent locally, no server.
 - `npx flue docs search <query>` — search the Flue docs from the terminal (then `flue docs read <path>`).
 
+## Contributing recipes
+
+Task recipes (review a skill, fix a question, generate questions, add an area) are numbered steps with a "done when" check in `CONTRIBUTING.md`. Follow the matching recipe rather than improvising. In particular:
+
+- Ask before running `docs:sheets`, `generate` or `evals`: they spend the contributor's model quota.
+- Never set `reviewed: true` on a question yourself; only a person who checked the Learn pages does.
+- Stop at the recipe's "done when" and report; show the diff before committing.
+- Only AZ-104 is supported; the multi-exam plan is `docs/multi-exam-design.md`.
+
 ## Conventions
 
 - Run `npm test` and `npm run check:types` before every commit.
