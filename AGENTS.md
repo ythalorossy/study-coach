@@ -23,6 +23,7 @@ Study Coach is a [Flue](https://flueframework.com) project: agents are TypeScrip
 
 - `npm test` — unit tests, no model calls.
 - `npm run check:types` — typecheck the server and the web app.
+- `npm run db:setup` — create `data/coach.db` from the committed bank (`-- --reset` backs it up and rebuilds it).
 - `npm run dev` — run the app at http://127.0.0.1:5173.
 - `npm run evals -- --maxConcurrency 2` — live-model checks of the coach (needs an API key in `.env`).
 - `npx flue run src/agents/<agent>.ts --message "Hi"` — run an agent locally, no server.

@@ -47,7 +47,15 @@ Every supported skill has a fact sheet in `content/fact-sheets/` and a bank of u
    cp .env.sample .env
    ```
 
-3. Start the app. On first run it loads the committed question bank (`content/questions/`; see [Question bank](#question-bank)) into a new local database at `data/coach.db`, which also holds your progress and stays on your machine. To read the source docs or fill gaps in the bank, see [Read the docs](#read-the-docs) and [Generate questions](#generate-questions).
+3. Create the local database. This loads the committed question bank (`content/questions/`; see [Question bank](#question-bank)) into `data/coach.db`, which also holds your progress and stays on your machine. The app does the same on its first start if you skip this step.
+
+   ```sh
+   npm run db:setup
+   ```
+
+   To start over, stop the app and run `npm run db:setup -- --reset`. It saves the old database as `data/coach.db.bak-<time>` and builds a new one from the bank.
+
+4. Start the app with `npm run dev` (see [Study](#study)). To read the source docs or fill gaps in the bank, see [Read the docs](#read-the-docs) and [Generate questions](#generate-questions).
 
 ## Choose models
 
@@ -113,7 +121,7 @@ To compare runs, `npm run generate:stats -- --area storage` prints an area's att
 
 ## Question bank
 
-The verified questions are committed as one JSON file per skill in `content/questions/`, so a fresh clone can study straight away. When `data/coach.db` is created and has no questions, the app loads them; a database that already has questions is left alone. Flagged questions are not included.
+The verified questions are committed as one JSON file per skill in `content/questions/`, so a fresh clone can study straight away. When `data/coach.db` is created and has no questions, `npm run db:setup` or the app loads them; a database that already has questions is left alone. Flagged questions are not included.
 
 Every question carries `"reviewed": false` until a person has checked it, and the fact sheet it came from, against the linked Learn pages. Questions are written and verified by models, so treat unreviewed ones as unofficial practice material that can contain mistakes. These are original questions, not real exam items.
 
