@@ -1,5 +1,14 @@
 // Builds the fact sheets that are missing or stale (or all with --all), one
 // FactSheetWriter run per skill, several skills at once.
+//
+// Usage: npm run docs:sheets [-- <flags>]
+//   --skill <id>    one skill only
+//   --all           rebuild every sheet, not just missing or stale ones
+//   --parallel <n>  skills at once (default GENERATE_PARALLEL or 6)
+//
+// Reads:  data/docs/ (from `npm run docs:sync`; pages not there are read live from Learn), data/coach.db (COACH_DB_PATH)
+// Writes: content/fact-sheets/<skill>.md (committed), data/fact-sheet-sources/, data/fact-sheet-log.jsonl
+// Needs:  API key in .env (uses model quota)
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs } from "node:util";

@@ -1,3 +1,10 @@
+// Checks that every Learn page linked from a skill can still be fetched.
+//
+// Usage: npm run check:doc-urls   (no flags)
+//
+// Reads:  the skills' doc URLs in src/coach/exam/seed.ts
+// Writes: nothing (uses a throwaway in-memory database); exits 1 if any link fails
+// Needs:  network (no API key)
 import { openCoachDb } from "../src/coach/db.ts";
 import { DocFetchError, fetchMsDoc } from "../src/coach/docs/docs.ts";
 

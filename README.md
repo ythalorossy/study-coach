@@ -97,6 +97,8 @@ npm run docs:sync
 
 This downloads the Markdown of the Microsoft documentation the skills use, from [MicrosoftDocs/azure-docs](https://github.com/MicrosoftDocs/azure-docs) and [MicrosoftDocs/entra-docs](https://github.com/MicrosoftDocs/entra-docs), into `data/docs/` (about 100 MB, no images). Rerun it to pick up Microsoft's updates. The azure-docs content is licensed CC BY 4.0 and the entra-docs content MIT; each page in the Docs screen names its source and license. A few skill pages live in other Microsoft repositories; the app reads those live from Learn.
 
+To check that every Learn page the skills link to still loads, run `npm run check:doc-urls`. It lists the failures and exits with an error if any link is dead.
+
 ```sh
 npm run docs:sheets
 ```
@@ -164,9 +166,10 @@ To restore, stop the servers and copy the backup back to `data/`.
 | `src/tools/` | Tools the agents call (lesson state, questions, Microsoft docs) |
 | `src/coach/` | The app's data layer and logic: skills and areas, questions, answer checking, readiness, docs corpus |
 | `src/app.ts` | The server: coach conversation routes and the JSON API |
-| `scripts/` | Command-line jobs: docs sync, fact sheets, question generation and stats |
+| `scripts/` | Command-line jobs: database setup, docs sync, fact sheets, question generation and review; see [scripts/README.md](scripts/README.md) |
 | `web/` | The React web app |
 | `content/fact-sheets/` | One committed fact sheet per skill |
+| `content/questions/` | The committed question bank, one JSON file per skill |
 | `architecture-docs/` | C4 diagrams and an architecture report |
 | `test/` | Unit tests; live-model evals are in `src/evals/` |
 

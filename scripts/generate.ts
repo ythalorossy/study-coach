@@ -1,3 +1,18 @@
+// Fills the question bank: for each skill and format below its target count, runs
+// the question writer (one `flue run` per question, several at once). One pass by
+// default; a question that fails the admission checks or the verifier is not saved.
+//
+// Usage: npm run generate [-- <flags>]
+//   --skill <id>              one skill only (e.g. storage.blob-tiers)
+//   --format <format>         one question format only (e.g. drag-drop)
+//   --until-target            repeat passes until every target is met or a pass saves nothing
+//   --parallel <n>            questions at once (default GENERATE_PARALLEL or 6); halves on rate limits
+//   --question-timeout <min>  minutes before a question is retried (default 10)
+//   --fallback-model <model>  model for the one retry after a timeout or model error (default DEFAULT_MODEL in src/coach/models.ts)
+//
+// Reads:  content/fact-sheets/, data/coach.db (COACH_DB_PATH), models from .env
+// Writes: verified questions to data/coach.db, data/generate-log.jsonl, data/generate-usage.jsonl
+// Needs:  API key in .env (uses model quota). Run `npm run questions:export` afterwards to commit the new questions.
 import { existsSync, readFileSync } from "node:fs";
 import { parseArgs, parseEnv } from "node:util";
 import { GENERATE_LOG_PATH } from "../src/agents/question-writer.ts";

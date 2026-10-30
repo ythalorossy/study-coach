@@ -1,5 +1,15 @@
-// Writes review sheets to data/review/<skill>.md.
-// Usage: npm run review:sheet -- --skill <id> | --area <prefix> | --all  [--count 3]
+// Writes a review sheet per skill: its fact sheet next to a few sample questions,
+// to check against the linked Learn pages before marking them reviewed.
+//
+// Usage: npm run review:sheet -- --skill <id> | --area <prefix> | --all  [--count <n>]
+//   --skill <id>       one skill
+//   --area <prefix>    every skill of an area (e.g. storage)
+//   --all              every skill
+//   --count <n>        sample questions per sheet (default 3)
+//
+// Reads:  content/questions/*.json, content/fact-sheets/
+// Writes: data/review/<skill>.md
+// Needs:  nothing (no API key, no network)
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs } from "node:util";

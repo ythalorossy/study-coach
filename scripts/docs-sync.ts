@@ -1,6 +1,12 @@
 // Downloads the folders of MicrosoftDocs/azure-docs and MicrosoftDocs/entra-docs
 // that the skills' doc URLs live in, as shallow sparse git checkouts under
 // data/docs. Rerunning it pulls Microsoft's updates.
+//
+// Usage: npm run docs:sync   (no flags)
+//
+// Reads:  the skills' doc URLs in src/coach/exam/seed.ts
+// Writes: data/docs/<repo>/ checkouts and their sync state; prints which fact sheets are stale
+// Needs:  git and network (no API key)
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";

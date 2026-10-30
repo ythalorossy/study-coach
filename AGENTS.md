@@ -13,7 +13,7 @@ Study Coach is a [Flue](https://flueframework.com) project: agents are TypeScrip
   - `docs/` — the docs corpus, Learn page fetching and rendering, fact sheets.
 - `src/app.ts` — the server: coach conversation routes and the JSON API.
 - `src/db.ts` — the persistence adapter for durable conversations.
-- `scripts/` — command-line jobs: docs sync, fact sheets, question generation.
+- `scripts/` — command-line jobs: database setup, docs sync, fact sheets, question generation and review. `scripts/README.md` maps them all.
 - `web/` — the React web app (Vite).
 - `content/fact-sheets/` — committed fact sheets, one per skill.
 - `content/questions/` — the committed question bank, one JSON file per skill, loaded on first run (`src/coach/questions/question-bank.ts`).
@@ -35,4 +35,5 @@ Study Coach is a [Flue](https://flueframework.com) project: agents are TypeScrip
 - Keep exam-specific facts (areas, skills, instructors, documentation pages) in data, not in prompts or code paths, so other certifications can be added later.
 - Fact sheets and questions must be original wording, every fact linked to its Microsoft Learn page; never copy text from books, exam dumps or third-party question sites.
 - Questions are edited in `content/questions/*.json` and carry a `reviewed` flag; set it only after checking against the linked Learn pages.
+- Every script starts with the standard header (what it does, usage and flags, reads, writes, needs) shown in `scripts/README.md`; a new script also gets a row in that file's table.
 - Never commit secrets or local data: `.env` and `data/` are git-ignored; `.env.sample` documents the settings.

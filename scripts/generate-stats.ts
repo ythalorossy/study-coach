@@ -1,5 +1,12 @@
 // Rejection and flag rates for one area, to compare a generation run with the
-// first area's v1 baseline: `npm run generate:stats -- --area <id>`.
+// first area's v1 baseline.
+//
+// Usage: npm run generate:stats -- --area <id>
+//   --area <id>  the area to report on (required; e.g. storage)
+//
+// Reads:  data/generate-log.jsonl, data/coach.db (COACH_DB_PATH)
+// Writes: nothing; prints attempts, saved share, rejection reasons and flagged share
+// Needs:  nothing (no API key, no network)
 import { existsSync, readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 import { GENERATE_LOG_PATH } from "../src/agents/question-writer.ts";

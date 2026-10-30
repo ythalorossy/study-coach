@@ -1,5 +1,12 @@
-// Lists questions with structural problems, worst skills first. Writes data/review/lint.md.
+// Lists questions with structural problems, worst skills first: missing exhibits,
+// sources the fact sheet doesn't link, answer keys bunched on one position.
+//
 // Usage: npm run questions:lint [-- --skill <id>]
+//   --skill <id>  one skill only (default: the whole bank)
+//
+// Reads:  content/questions/*.json, content/fact-sheets/
+// Writes: data/review/lint.md, plus a summary on screen
+// Needs:  nothing (no API key, no network)
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs } from "node:util";

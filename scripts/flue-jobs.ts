@@ -1,5 +1,9 @@
 // Runs agents with `flue run` as child processes, several at once, slowing
 // down when the model provider rate-limits.
+//
+// A library, not a command: `generate` and `docs:sheets` use it.
+// Main exports: runFlue (one agent run), runScheduled (a job queue with lanes and
+// back-off), classifyProviderFailure and RATE_LIMITED (reading provider errors).
 import { spawn } from "node:child_process";
 
 export const RATE_LIMITED = "rate limited (429)";

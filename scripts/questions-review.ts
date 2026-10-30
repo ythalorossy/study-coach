@@ -1,5 +1,14 @@
 // Marks a skill's questions as reviewed (or not) in content/questions/<skill>.json.
-// Usage: npm run questions:review -- --skill <id> [--undo] [--id <questionId>]
+// Set it only after checking the questions against their linked Learn pages.
+//
+// Usage: npm run questions:review -- --skill <id> [--id <questionId>]... [--undo]
+//   --skill <id>  the skill whose file to change (required)
+//   --id <q>      only this question; repeat for several (default: every question of the skill)
+//   --undo        clear the mark instead of setting it
+//
+// Reads:  content/questions/<skill>.json
+// Writes: the same file (committed)
+// Needs:  nothing (no API key, no network)
 import { existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
