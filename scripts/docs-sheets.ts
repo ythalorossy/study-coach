@@ -4,10 +4,10 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
 import { FACT_SHEET_LOG_PATH, type SourcePage } from "../src/agents/fact-sheet-writer.ts";
-import { readDoc } from "../src/coach/corpus.ts";
+import { readDoc } from "../src/coach/docs/corpus.ts";
 import { openCoachDb, type CoachDb } from "../src/coach/db.ts";
-import { factSheetStatus, readFactSheet, skillDocUrls } from "../src/coach/fact-sheets.ts";
-import { SKILLS } from "../src/coach/seed.ts";
+import { factSheetStatus, readFactSheet, skillDocUrls } from "../src/coach/docs/fact-sheets.ts";
+import { SKILLS } from "../src/coach/exam/seed.ts";
 import { classifyProviderFailure, ProviderFailure, runFlue, runScheduled } from "./flue-jobs.ts";
 
 const SOURCES_DIR = "./data/fact-sheet-sources";

@@ -14,8 +14,8 @@ import type { AgentProps } from "@flue/runtime";
 import * as v from "valibot";
 import { getCoachDb } from "../coach/db.ts";
 import { modelFor } from "../coach/models.ts";
-import { SKILLS } from "../coach/seed.ts";
-import { areaName, SPECIALISTS, specialistArea } from "../coach/instructors.ts";
+import { SKILLS } from "../coach/exam/seed.ts";
+import { areaName, SPECIALISTS, specialistArea } from "../coach/exam/instructors.ts";
 import { specialistSubagents } from "../subagents/specialists.ts";
 import {
 	closesTurn,

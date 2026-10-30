@@ -1,8 +1,8 @@
 import { defineSubagent, useTool } from "@flue/runtime";
 import { getCoachDb } from "../coach/db.ts";
-import { SPECIALISTS } from "../coach/instructors.ts";
-import { SKILLS } from "../coach/seed.ts";
-import type { SpecialistId } from "../coach/types.ts";
+import { SPECIALISTS } from "../coach/exam/instructors.ts";
+import { SKILLS } from "../coach/exam/seed.ts";
+import type { SpecialistId } from "../coach/exam/types.ts";
 import { makeReadMsDocsTool } from "../tools/read-ms-docs.ts";
 
 const readMsDocs = makeReadMsDocsTool(getCoachDb);

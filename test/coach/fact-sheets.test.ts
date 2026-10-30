@@ -9,7 +9,7 @@ import {
 	readFactSheet,
 	sourceHash,
 	validateFactSheetBody,
-} from "../../src/coach/fact-sheets.ts";
+} from "../../src/coach/docs/fact-sheets.ts";
 
 const LOCKS = "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/lock-resources";
 const ARM = "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/overview";

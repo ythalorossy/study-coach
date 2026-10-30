@@ -1,11 +1,11 @@
 import { Hono } from "hono";
 import * as v from "valibot";
 import type { CoachDb } from "./db.ts";
-import { createDocsApi, type DocsApiOptions } from "./docs-api.ts";
-import { flagQuestion, nextPracticeQuestion, recordAttempt, UnknownQuestionError } from "./questions.ts";
+import { createDocsApi, type DocsApiOptions } from "./docs/docs-api.ts";
+import { flagQuestion, nextPracticeQuestion, recordAttempt, UnknownQuestionError } from "./questions/questions.ts";
 import { skillProgress } from "./progress.ts";
 import { COVERAGE_TARGET, overallReady } from "./readiness.ts";
-import type { QuestionFormat } from "./types.ts";
+import type { QuestionFormat } from "./exam/types.ts";
 
 const FORMATS = Object.keys(COVERAGE_TARGET) as QuestionFormat[];
 

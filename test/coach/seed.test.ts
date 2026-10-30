@@ -3,9 +3,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { openCoachDb } from "../../src/coach/db.ts";
-import { areaName, areaOfSkill, SPECIALISTS } from "../../src/coach/instructors.ts";
+import { areaName, areaOfSkill, SPECIALISTS } from "../../src/coach/exam/instructors.ts";
 import { skillProgress } from "../../src/coach/progress.ts";
-import { SKILLS } from "../../src/coach/seed.ts";
+import { SKILLS } from "../../src/coach/exam/seed.ts";
 
 describe("seeding areas", () => {
 	it("seeds the 17 storage skills in the storage area with positions 1 to 17", () => {

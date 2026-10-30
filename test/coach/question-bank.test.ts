@@ -8,8 +8,8 @@ import {
 	importQuestionBank,
 	importQuestionBankIfEmpty,
 	readBankFile,
-} from "../../src/coach/question-bank.ts";
-import { flagQuestion, insertQuestion } from "../../src/coach/questions.ts";
+} from "../../src/coach/questions/question-bank.ts";
+import { flagQuestion, insertQuestion } from "../../src/coach/questions/questions.ts";
 import { dragDropFixture, mcFixture } from "./fixtures.ts";
 
 const readAt = (urls: string[]) => Object.fromEntries(urls.map((u) => [u, "2026-04-17T00:00:00.000Z"]));

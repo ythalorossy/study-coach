@@ -11,9 +11,9 @@ import {
 	SYNC_STATE_FILE,
 	type DocRepo,
 	type SyncState,
-} from "../src/coach/corpus.ts";
-import { factSheetStatus } from "../src/coach/fact-sheets.ts";
-import { SKILLS } from "../src/coach/seed.ts";
+} from "../src/coach/docs/corpus.ts";
+import { factSheetStatus } from "../src/coach/docs/fact-sheets.ts";
+import { SKILLS } from "../src/coach/exam/seed.ts";
 
 type Run = (argv: string[]) => { status: number | null; stdout: string };
 

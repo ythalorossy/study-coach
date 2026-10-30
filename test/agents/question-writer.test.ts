@@ -10,7 +10,7 @@ import {
 	QuestionWriter,
 	writerInstructions,
 } from "../../src/agents/question-writer.ts";
-import { buildVerifierPrompt } from "../../src/coach/admit.ts";
+import { buildVerifierPrompt } from "../../src/coach/questions/admit.ts";
 import { openCoachDb } from "../../src/coach/db.ts";
 import { mcCorrect, mcFixture } from "../coach/fixtures.ts";
 

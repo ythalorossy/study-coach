@@ -3,7 +3,7 @@ import { Hono } from "hono";
 import { corpusPage, DOCS_ROOT, readSyncState } from "./corpus.ts";
 import { renderDocHtml } from "./doc-render.ts";
 import { FACT_SHEETS_ROOT, factSheetStatus, readFactSheet } from "./fact-sheets.ts";
-import { SKILLS } from "./seed.ts";
+import { SKILLS } from "../exam/seed.ts";
 
 export interface DocsApiOptions {
 	docsRoot?: string;

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import * as v from "valibot";
 import { DiagramSchema } from "../../src/coach/diagram-schema.ts";
 import { openCoachDb, type CoachDb } from "../../src/coach/db.ts";
-import { insertQuestion, recordAttempt } from "../../src/coach/questions.ts";
+import { insertQuestion, recordAttempt } from "../../src/coach/questions/questions.ts";
 import {
 	closesTurn,
 	gateWhileWaiting,

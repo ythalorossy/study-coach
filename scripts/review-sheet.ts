@@ -3,9 +3,9 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
-import { QUESTION_BANK_ROOT, readBankFile } from "../src/coach/question-bank.ts";
-import { renderReviewSheet } from "../src/coach/review-sheet.ts";
-import { SKILLS } from "../src/coach/seed.ts";
+import { QUESTION_BANK_ROOT, readBankFile } from "../src/coach/questions/question-bank.ts";
+import { renderReviewSheet } from "../src/coach/questions/review-sheet.ts";
+import { SKILLS } from "../src/coach/exam/seed.ts";
 
 const { values } = parseArgs({
 	options: { skill: { type: "string" }, area: { type: "string" }, all: { type: "boolean" }, count: { type: "string" } },

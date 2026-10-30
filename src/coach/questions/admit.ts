@@ -1,5 +1,5 @@
-import type { CoachDb } from "./db.ts";
-import { DocFetchError } from "./docs.ts";
+import type { CoachDb } from "../db.ts";
+import { DocFetchError } from "../docs/docs.ts";
 import { checkAnswer, validateCandidate, type QuestionBody } from "./question-schema.ts";
 import { findLeak } from "./leak.ts";
 import { insertQuestion, listSkillCandidates } from "./questions.ts";

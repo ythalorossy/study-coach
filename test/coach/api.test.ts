@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { createCoachApi } from "../../src/coach/api.ts";
 import { openCoachDb, type CoachDb } from "../../src/coach/db.ts";
-import { flagQuestion, insertQuestion } from "../../src/coach/questions.ts";
+import { flagQuestion, insertQuestion } from "../../src/coach/questions/questions.ts";
 import {
 	completeSentenceFixture,
 	dragDropFixture,

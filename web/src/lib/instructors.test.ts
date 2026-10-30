@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { EDGE_KINDS as SERVER_EDGES, NODE_TYPES as SERVER_NODES } from "../../../src/coach/diagram-schema.ts";
-import { SPECIALISTS } from "../../../src/coach/instructors.ts";
+import { SPECIALISTS } from "../../../src/coach/exam/instructors.ts";
 import { instructorsFor, WEB_INSTRUCTORS } from "./instructors.ts";
 import { EDGE_KINDS, NODE_TYPES } from "./types.ts";
 

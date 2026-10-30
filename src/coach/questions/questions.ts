@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
-import type { CoachDb } from "./db.ts";
-import { GUIDE_VERSION } from "./seed.ts";
+import type { CoachDb } from "../db.ts";
+import { GUIDE_VERSION } from "../exam/seed.ts";
 import {
 	checkAnswer,
 	type CandidateQuestion,
@@ -10,7 +10,7 @@ import {
 	type QuestionBody,
 	shuffleBody,
 } from "./question-schema.ts";
-import type { AttemptPurpose, QuestionFormat } from "./types.ts";
+import type { AttemptPurpose, QuestionFormat } from "../exam/types.ts";
 
 export type { CandidateQuestion, Explanation, Key, PublicQuestion, QuestionBody };
 

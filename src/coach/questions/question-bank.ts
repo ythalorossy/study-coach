@@ -3,9 +3,9 @@
 // Learner data (attempts, sessions, flags) never goes into these files.
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import type { CoachDb } from "./db.ts";
+import type { CoachDb } from "../db.ts";
 import { type CandidateQuestion, validateCandidate } from "./question-schema.ts";
-import { GUIDE_VERSION } from "./seed.ts";
+import { GUIDE_VERSION } from "../exam/seed.ts";
 
 export const QUESTION_BANK_ROOT = "./content/questions";
 

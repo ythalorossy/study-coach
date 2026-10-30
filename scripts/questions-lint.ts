@@ -3,10 +3,10 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
-import { type LintIssue, keyPositions, lintQuestion, sheetUrls } from "../src/coach/bank-lint.ts";
-import { FACT_SHEETS_ROOT } from "../src/coach/fact-sheets.ts";
-import { type BankQuestion, QUESTION_BANK_ROOT, readBankFile } from "../src/coach/question-bank.ts";
-import { SKILLS } from "../src/coach/seed.ts";
+import { type LintIssue, keyPositions, lintQuestion, sheetUrls } from "../src/coach/questions/bank-lint.ts";
+import { FACT_SHEETS_ROOT } from "../src/coach/docs/fact-sheets.ts";
+import { type BankQuestion, QUESTION_BANK_ROOT, readBankFile } from "../src/coach/questions/question-bank.ts";
+import { SKILLS } from "../src/coach/exam/seed.ts";
 
 const { values } = parseArgs({ options: { skill: { type: "string" } } });
 const ids = SKILLS.map(([id]) => id).filter((id) => !values.skill || id === values.skill); // --skill narrows to one

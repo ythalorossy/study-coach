@@ -1,7 +1,7 @@
 import { defineTool } from "@flue/runtime";
 import * as v from "valibot";
 import type { CoachDb } from "../coach/db.ts";
-import { readDoc } from "../coach/corpus.ts";
+import { readDoc } from "../coach/docs/corpus.ts";
 
 export function makeReadMsDocsTool(getDb: () => CoachDb) {
 	return defineTool({

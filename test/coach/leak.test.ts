@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { findLeak, stem } from "../../src/coach/leak.ts";
-import type { CandidateQuestion } from "../../src/coach/question-schema.ts";
+import { findLeak, stem } from "../../src/coach/questions/leak.ts";
+import type { CandidateQuestion } from "../../src/coach/questions/question-schema.ts";
 import { completeSentenceFixture, dragDropFixture, mcFixture } from "./fixtures.ts";
 
 function mc(stemText: string, options: string[], keyIndex: number, exhibit?: CandidateQuestion["body"]["exhibit"]) {

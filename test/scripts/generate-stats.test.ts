@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { areaRates, flagRate } from "../../scripts/generate-stats.ts";
 import { openCoachDb } from "../../src/coach/db.ts";
-import { flagQuestion, insertQuestion } from "../../src/coach/questions.ts";
+import { flagQuestion, insertQuestion } from "../../src/coach/questions/questions.ts";
 import { dragDropFixture, mcFixture } from "../coach/fixtures.ts";
 
 describe("areaRates", () => {

@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { licenseName, syncCommands, syncCorpus } from "../../scripts/docs-sync.ts";
-import { readSyncState } from "../../src/coach/corpus.ts";
+import { readSyncState } from "../../src/coach/docs/corpus.ts";
 
 const POLICY = "https://learn.microsoft.com/en-us/azure/governance/policy/overview";
 const LOCKS = "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/lock-resources";

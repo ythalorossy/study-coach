@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { CandidateQuestion } from "../../src/coach/question-schema.ts";
-import { isNearDuplicate } from "../../src/coach/similarity.ts";
+import type { CandidateQuestion } from "../../src/coach/questions/question-schema.ts";
+import { isNearDuplicate } from "../../src/coach/questions/similarity.ts";
 import { dragDropFixture, mcFixture } from "./fixtures.ts";
 
 const clone = <T>(x: T): T => structuredClone(x);

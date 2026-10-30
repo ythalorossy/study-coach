@@ -1,5 +1,3 @@
-import type { CoachDb } from "./db.ts";
-import { specialistArea } from "./instructors.ts";
 import type { SpecialistId } from "./types.ts";
 
 export const GUIDE_VERSION = "2026-04-17";
@@ -573,30 +571,3 @@ export const SKILLS: [id: string, specialist: SpecialistId, name: string, docUrl
 		],
 	],
 ];
-
-export function seedCoachDb(db: CoachDb): void {
-	const area = db.raw.prepare(
-		"INSERT OR IGNORE INTO areas (id, name, weight_min, weight_max, position) VALUES (?, ?, ?, ?, ?)",
-	);
-	const skill = db.raw.prepare(
-		"INSERT OR IGNORE INTO skills (id, area_id, specialist, name, position, guide_version, doc_urls) VALUES (?, ?, ?, ?, ?, ?, ?)",
-	);
-	db.raw.exec("BEGIN");
-	try {
-		AREAS.forEach(([id, name, min, max], i) => {
-			area.run(id, name, min, max, i + 1);
-		});
-		// Positions count within each area, so existing rows keep theirs.
-		const inArea = new Map<string, number>();
-		for (const [id, specialist, name, docUrls] of SKILLS) {
-			const areaId = specialistArea(specialist);
-			const position = (inArea.get(areaId) ?? 0) + 1;
-			inArea.set(areaId, position);
-			skill.run(id, areaId, specialist, name, position, GUIDE_VERSION, JSON.stringify(docUrls));
-		}
-		db.raw.exec("COMMIT");
-	} catch (error) {
-		db.raw.exec("ROLLBACK");
-		throw error;
-	}
-}

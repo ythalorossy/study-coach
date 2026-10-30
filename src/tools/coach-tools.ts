@@ -4,10 +4,10 @@ import * as v from "valibot";
 import type { CoachDb } from "../coach/db.ts";
 import { DiagramSchema } from "../coach/diagram-schema.ts";
 import { skillProgress } from "../coach/progress.ts";
-import { followupQuestion, nextPracticeQuestion, UnknownQuestionError } from "../coach/questions.ts";
-import type { PublicQuestion } from "../coach/question-schema.ts";
-import { areaName, areaOfSkill, SPECIALISTS } from "../coach/instructors.ts";
-import type { InstructorId } from "../coach/types.ts";
+import { followupQuestion, nextPracticeQuestion, UnknownQuestionError } from "../coach/questions/questions.ts";
+import type { PublicQuestion } from "../coach/questions/question-schema.ts";
+import { areaName, areaOfSkill, SPECIALISTS } from "../coach/exam/instructors.ts";
+import type { InstructorId } from "../coach/exam/types.ts";
 
 const INSTRUCTORS = ["lead", ...SPECIALISTS.map((s) => s.id)] as [InstructorId, ...InstructorId[]];
 

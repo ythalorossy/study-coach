@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { docsPageHref, renderDocHtml } from "../../src/coach/doc-render.ts";
+import { docsPageHref, renderDocHtml } from "../../src/coach/docs/doc-render.ts";
 
 const BASICS = "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/definition-structure-basics";
 const ctx = {

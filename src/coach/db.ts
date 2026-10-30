@@ -1,8 +1,9 @@
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { importQuestionBankIfEmpty } from "./question-bank.ts";
-import { seedCoachDb } from "./seed.ts";
+import { importQuestionBankIfEmpty } from "./questions/question-bank.ts";
+import { specialistArea } from "./exam/instructors.ts";
+import { AREAS, GUIDE_VERSION, SKILLS } from "./exam/seed.ts";
 
 export interface CoachDb {
 	raw: DatabaseSync;
@@ -100,6 +101,34 @@ export function openCoachDb(path: string, opts: { questionBank?: string | false 
 		if (loaded) console.log(`Loaded ${loaded.added} questions from the question bank (${loaded.invalid.length} invalid).`);
 	}
 	return db;
+}
+
+// Areas and skills from the exam data; INSERT OR IGNORE keeps existing rows
+export function seedCoachDb(db: CoachDb): void {
+	const area = db.raw.prepare(
+		"INSERT OR IGNORE INTO areas (id, name, weight_min, weight_max, position) VALUES (?, ?, ?, ?, ?)",
+	);
+	const skill = db.raw.prepare(
+		"INSERT OR IGNORE INTO skills (id, area_id, specialist, name, position, guide_version, doc_urls) VALUES (?, ?, ?, ?, ?, ?, ?)",
+	);
+	db.raw.exec("BEGIN");
+	try {
+		AREAS.forEach(([id, name, min, max], i) => {
+			area.run(id, name, min, max, i + 1);
+		});
+		// Positions count within each area, so existing rows keep theirs.
+		const inArea = new Map<string, number>();
+		for (const [id, specialist, name, docUrls] of SKILLS) {
+			const areaId = specialistArea(specialist);
+			const position = (inArea.get(areaId) ?? 0) + 1;
+			inArea.set(areaId, position);
+			skill.run(id, areaId, specialist, name, position, GUIDE_VERSION, JSON.stringify(docUrls));
+		}
+		db.raw.exec("COMMIT");
+	} catch (error) {
+		db.raw.exec("ROLLBACK");
+		throw error;
+	}
 }
 
 let singleton: CoachDb | undefined;

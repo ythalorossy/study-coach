@@ -7,13 +7,16 @@ Study Coach is a [Flue](https://flueframework.com) project: agents are TypeScrip
 - `src/agents/` — agent modules. A module whose first line is the `'use agent'` directive exports agents: every exported capitalized function is one, and the function name is its durable identity.
 - `src/subagents/` — the area instructors the lead Coach delegates to.
 - `src/tools/` — tools the agents call.
-- `src/coach/` — the app's data layer and pure logic (skills and areas in `seed.ts`, instructors in `instructors.ts`, questions, answer checking, readiness, docs corpus).
+- `src/coach/` — the app's data layer and pure logic: `db.ts` (schema and seeding), readiness, progress and the JSON API.
+  - `exam/` — exam-specific data: areas and skills in `seed.ts`, instructors in `instructors.ts`, shared types.
+  - `questions/` — question schema, answer checking, admission checks (leak, similarity), the bank and its lint.
+  - `docs/` — the docs corpus, Learn page fetching and rendering, fact sheets.
 - `src/app.ts` — the server: coach conversation routes and the JSON API.
 - `src/db.ts` — the persistence adapter for durable conversations.
 - `scripts/` — command-line jobs: docs sync, fact sheets, question generation.
 - `web/` — the React web app (Vite).
 - `content/fact-sheets/` — committed fact sheets, one per skill.
-- `content/questions/` — the committed question bank, one JSON file per skill, loaded on first run (`src/coach/question-bank.ts`).
+- `content/questions/` — the committed question bank, one JSON file per skill, loaded on first run (`src/coach/questions/question-bank.ts`).
 - `test/` — unit tests; live-model evals are in `src/evals/`.
 
 ## Commands

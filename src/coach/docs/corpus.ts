@@ -3,7 +3,7 @@
 // `npm run docs:sync`. A Learn URL maps to its repo file by a fixed rule.
 import { readFileSync } from "node:fs";
 import { join, posix, resolve, sep } from "node:path";
-import type { CoachDb } from "./db.ts";
+import type { CoachDb } from "../db.ts";
 import { prepareMarkdown } from "./doc-markdown.ts";
 import { fetchMsDoc, type MsDoc } from "./docs.ts";
 

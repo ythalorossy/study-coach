@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createCoachApi } from "../../src/coach/api.ts";
 import { openCoachDb } from "../../src/coach/db.ts";
-import { formatFactSheet, sourceHash } from "../../src/coach/fact-sheets.ts";
+import { formatFactSheet, sourceHash } from "../../src/coach/docs/fact-sheets.ts";
 
 const POLICY = "https://learn.microsoft.com/en-us/azure/governance/policy/overview";
 

@@ -14,10 +14,10 @@ import { start } from "@flue/runtime/node";
 import { afterAll, describe, expect, it } from "vitest";
 import { Coach } from "../agents/coach.ts";
 import { getCoachDb, openCoachDb } from "../coach/db.ts";
-import { insertQuestion, recordAttempt } from "../coach/questions.ts";
-import { areaOfSkill } from "../coach/instructors.ts";
-import { SKILLS } from "../coach/seed.ts";
-import type { CandidateQuestion } from "../coach/question-schema.ts";
+import { insertQuestion, recordAttempt } from "../coach/questions/questions.ts";
+import { areaOfSkill } from "../coach/exam/instructors.ts";
+import { SKILLS } from "../coach/exam/seed.ts";
+import type { CandidateQuestion } from "../coach/questions/question-schema.ts";
 import { completeSentenceFixture, dragDropFixture, mcFixture } from "../../test/coach/fixtures.ts";
 
 // A throwaway coach database seeded with the fixtures; set before anything calls getCoachDb().

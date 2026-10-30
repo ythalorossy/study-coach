@@ -1,4 +1,4 @@
-import type { CoachDb } from "./db.ts";
+import type { CoachDb } from "../db.ts";
 
 export type DocFetchReason = "not-allowed" | "http-error" | "timeout" | "empty";
 

@@ -3,8 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
-import { openCoachDb } from "../../src/coach/db.ts";
-import { seedCoachDb } from "../../src/coach/seed.ts";
+import { openCoachDb, seedCoachDb } from "../../src/coach/db.ts";
 
 type Row = Record<string, unknown>;
 

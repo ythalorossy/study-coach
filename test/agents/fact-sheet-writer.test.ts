@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import * as v from "valibot";
 import { FactSheetWriter, factSheetInstructions, makeSaveFactSheetTool } from "../../src/agents/fact-sheet-writer.ts";
-import { readFactSheet, sourceHash } from "../../src/coach/fact-sheets.ts";
+import { readFactSheet, sourceHash } from "../../src/coach/docs/fact-sheets.ts";
 
 const LOCKS = "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/lock-resources";
 const pages = [{ url: LOCKS, markdown: "# Lock your resources\nA CanNotDelete lock lets authorized users read and modify a resource." }];

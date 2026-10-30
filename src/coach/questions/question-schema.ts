@@ -1,5 +1,5 @@
 import * as v from "valibot";
-import type { QuestionFormat } from "./types.ts";
+import type { QuestionFormat } from "../exam/types.ts";
 
 const text = v.pipe(v.string(), v.minLength(1));
 const id = v.pipe(v.string(), v.minLength(1));

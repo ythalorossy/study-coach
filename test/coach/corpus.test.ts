@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { corpusPage, learnUrlToRepoPath, readDoc, repoPathToLearnUrl, sparseDirs } from "../../src/coach/corpus.ts";
+import { corpusPage, learnUrlToRepoPath, readDoc, repoPathToLearnUrl, sparseDirs } from "../../src/coach/docs/corpus.ts";
 import { openCoachDb } from "../../src/coach/db.ts";
 
 describe("Learn URL to repo path", () => {

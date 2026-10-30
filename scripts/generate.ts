@@ -4,9 +4,9 @@ import { GENERATE_LOG_PATH } from "../src/agents/question-writer.ts";
 import { openCoachDb, type CoachDb } from "../src/coach/db.ts";
 import { DEFAULT_MODEL, modelFor } from "../src/coach/models.ts";
 import { COVERAGE_TARGET } from "../src/coach/readiness.ts";
-import { SKILLS } from "../src/coach/seed.ts";
+import { SKILLS } from "../src/coach/exam/seed.ts";
 import { formatUsage, parseUsage, sumUsage, USAGE_LOG_PATH } from "../src/coach/usage-log.ts";
-import type { QuestionFormat } from "../src/coach/types.ts";
+import type { QuestionFormat } from "../src/coach/exam/types.ts";
 import { classifyProviderFailure, ProviderFailure, runFlue, runScheduled, type FlueRunResult } from "./flue-jobs.ts";
 
 export { classifyProviderFailure };

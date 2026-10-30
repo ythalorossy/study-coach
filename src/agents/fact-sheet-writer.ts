@@ -7,16 +7,16 @@ import { dirname, join } from "node:path";
 import { defineTool, useInitialData, useModel, useTool } from "@flue/runtime";
 import type { AgentProps } from "@flue/runtime";
 import * as v from "valibot";
-import { DOCS_ROOT } from "../coach/corpus.ts";
+import { DOCS_ROOT } from "../coach/docs/corpus.ts";
 import {
 	FACT_SHEETS_ROOT,
 	formatFactSheet,
 	skillDocUrls,
 	sourceHash,
 	validateFactSheetBody,
-} from "../coach/fact-sheets.ts";
+} from "../coach/docs/fact-sheets.ts";
 import { modelFor } from "../coach/models.ts";
-import { SKILLS } from "../coach/seed.ts";
+import { SKILLS } from "../coach/exam/seed.ts";
 
 export const FACT_SHEET_LOG_PATH = "./data/fact-sheet-log.jsonl";
 

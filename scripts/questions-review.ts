@@ -3,7 +3,7 @@
 import { existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
-import { QUESTION_BANK_ROOT, readBankFile } from "../src/coach/question-bank.ts";
+import { QUESTION_BANK_ROOT, readBankFile } from "../src/coach/questions/question-bank.ts";
 
 const { values } = parseArgs({
 	options: { skill: { type: "string" }, id: { type: "string", multiple: true }, undo: { type: "boolean" } },

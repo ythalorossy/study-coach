@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { openCoachDb } from "../../src/coach/db.ts";
-import { DocFetchError, fetchMsDoc, htmlToText } from "../../src/coach/docs.ts";
+import { DocFetchError, fetchMsDoc, htmlToText } from "../../src/coach/docs/docs.ts";
 
 const URL_OK = "https://learn.microsoft.com/en-us/entra/identity/authentication/concept-sspr-howitworks";
 const html = readFileSync(new URL("../fixtures/learn-page.html", import.meta.url), "utf8");

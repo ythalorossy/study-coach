@@ -2,7 +2,7 @@
 // check both against the linked Learn pages. Written to data/review/ (git-ignored).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { FACT_SHEETS_ROOT } from "./fact-sheets.ts";
+import { FACT_SHEETS_ROOT } from "../docs/fact-sheets.ts";
 import type { BankQuestion } from "./question-bank.ts";
 
 export function sampleQuestions(questions: BankQuestion[], count: number): BankQuestion[] {

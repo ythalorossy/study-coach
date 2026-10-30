@@ -4,8 +4,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 import { GENERATE_LOG_PATH } from "../src/agents/question-writer.ts";
 import { openCoachDb, type CoachDb } from "../src/coach/db.ts";
-import { AREAS } from "../src/coach/seed.ts";
-import { areaOfSkill } from "../src/coach/instructors.ts";
+import { AREAS } from "../src/coach/exam/seed.ts";
+import { areaOfSkill } from "../src/coach/exam/instructors.ts";
 
 export interface AreaRates {
 	attempts: number;

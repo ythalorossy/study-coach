@@ -76,7 +76,7 @@ function SourcePage({ skillId, url }: { skillId: string; url: string }) {
 	if (!page) return <p className="muted">Loading…</p>;
 	return (
 		<article className="doc-page">
-			{/* The server sanitizes this HTML (src/coach/doc-render.ts). */}
+			{/* The server sanitizes this HTML (src/coach/docs/doc-render.ts). */}
 			<div className="doc-html" onClick={onAnchorClick} dangerouslySetInnerHTML={{ __html: page.html }} />
 			<footer className="caption">
 				From{" "}
@@ -124,7 +124,7 @@ function SkillDocs({ skillId, tab, pageUrl }: { skillId: string; tab: DocsTab; p
 								stale
 							</p>
 						)}
-						{/* The server sanitizes this HTML (src/coach/doc-render.ts). */}
+						{/* The server sanitizes this HTML (src/coach/docs/doc-render.ts). */}
 						<div className="doc-html" onClick={onAnchorClick} dangerouslySetInnerHTML={{ __html: docs.factSheet.html }} />
 					</article>
 				) : (

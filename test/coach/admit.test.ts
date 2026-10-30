@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import { admitQuestion, buildVerifierPrompt, type VerifierInput } from "../../src/coach/admit.ts";
+import { admitQuestion, buildVerifierPrompt, type VerifierInput } from "../../src/coach/questions/admit.ts";
 import { openCoachDb } from "../../src/coach/db.ts";
-import { DocFetchError } from "../../src/coach/docs.ts";
+import { DocFetchError } from "../../src/coach/docs/docs.ts";
 import {
 	completeSentenceCorrect,
 	completeSentenceFixture,

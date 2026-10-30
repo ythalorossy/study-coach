@@ -1,4 +1,4 @@
-import type { QuestionFormat } from "./types.ts";
+import type { QuestionFormat } from "./exam/types.ts";
 
 export const COVERAGE_TARGET: Record<QuestionFormat, number> = {
 	"multiple-choice": 8,

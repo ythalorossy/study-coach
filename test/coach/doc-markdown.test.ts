@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { prepareMarkdown } from "../../src/coach/doc-markdown.ts";
+import { prepareMarkdown } from "../../src/coach/docs/doc-markdown.ts";
 
 const none = { readInclude: () => null };
 

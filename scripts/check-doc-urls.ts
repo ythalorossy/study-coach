@@ -1,5 +1,5 @@
 import { openCoachDb } from "../src/coach/db.ts";
-import { DocFetchError, fetchMsDoc } from "../src/coach/docs.ts";
+import { DocFetchError, fetchMsDoc } from "../src/coach/docs/docs.ts";
 
 // Fresh in-memory seed: never reads or writes the real cache.
 const db = openCoachDb(":memory:");

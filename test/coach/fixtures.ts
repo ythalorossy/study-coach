@@ -1,4 +1,4 @@
-import type { CandidateQuestion } from "../../src/coach/question-schema.ts";
+import type { CandidateQuestion } from "../../src/coach/questions/question-schema.ts";
 
 export const mcFixture: CandidateQuestion = {
 	skillId: "identity.external-users",

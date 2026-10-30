@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { keyPositions, lintQuestion, sheetUrls } from "../../src/coach/bank-lint.ts";
-import type { BankQuestion } from "../../src/coach/question-bank.ts";
+import { keyPositions, lintQuestion, sheetUrls } from "../../src/coach/questions/bank-lint.ts";
+import type { BankQuestion } from "../../src/coach/questions/question-bank.ts";
 import { mcFixture } from "./fixtures.ts";
 
 const bank = (over: Partial<BankQuestion> = {}): BankQuestion => ({

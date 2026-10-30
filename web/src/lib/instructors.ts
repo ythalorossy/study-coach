@@ -1,5 +1,5 @@
 // The room's instructors as the page shows them. Must list the same specialists,
-// in the same order, as src/coach/instructors.ts (a test checks this); each needs
+// in the same order, as src/coach/exam/instructors.ts (a test checks this); each needs
 // a --c-<id> colour token in styles.css.
 import type { InstructorId } from "./types.ts";
 

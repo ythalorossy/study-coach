@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { openCoachDb, type CoachDb } from "../../src/coach/db.ts";
-import { GUIDE_VERSION } from "../../src/coach/seed.ts";
+import { GUIDE_VERSION } from "../../src/coach/exam/seed.ts";
 import {
 	checkAnswer,
 	shuffleBody,
 	responseSchemaFor,
 	validateCandidate,
 	type CandidateQuestion,
-} from "../../src/coach/question-schema.ts";
+} from "../../src/coach/questions/question-schema.ts";
 import {
 	flagQuestion,
 	followupQuestion,
@@ -16,7 +16,7 @@ import {
 	recordAttempt,
 	toPublicQuestion,
 	UnknownQuestionError,
-} from "../../src/coach/questions.ts";
+} from "../../src/coach/questions/questions.ts";
 import * as v from "valibot";
 import {
 	completeSentenceCorrect,

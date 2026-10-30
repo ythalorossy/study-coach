@@ -5,7 +5,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { corpusPage, DOCS_ROOT } from "./corpus.ts";
-import { SKILLS } from "./seed.ts";
+import { SKILLS } from "../exam/seed.ts";
 
 export const FACT_SHEETS_ROOT = "./content/fact-sheets";
 
