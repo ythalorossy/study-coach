@@ -16,6 +16,9 @@ const T = `${L}/azure/azure-resource-manager/templates`;
 const B = `${L}/azure/azure-resource-manager/bicep`;
 const V = `${L}/azure/virtual-machines`;
 const AS = `${L}/azure/app-service`;
+const N = `${L}/azure/virtual-network`;
+const NW = `${L}/azure/network-watcher`;
+const LB = `${L}/azure/load-balancer`;
 
 // Exported so specialist instructions list the same doc URLs the database is seeded with.
 export const SKILLS: [id: string, specialist: SpecialistId, name: string, docUrls: string[]][] = [
@@ -568,6 +571,133 @@ export const SKILLS: [id: string, specialist: SpecialistId, name: string, docUrl
 		[
 			`${AS}/deploy-staging-slots`,
 			`${AS}/deploy-best-practices`,
+		],
+	],
+	[
+		"networking.vnet-subnets",
+		"virtual-networks",
+		"Create and configure virtual networks and subnets",
+		[
+			`${N}/virtual-networks-overview`,
+			`${N}/manage-virtual-network`,
+			`${N}/virtual-network-manage-subnet`,
+		],
+	],
+	[
+		"networking.vnet-peering",
+		"virtual-networks",
+		"Create and configure virtual network peering",
+		[
+			`${N}/virtual-network-peering-overview`,
+			`${N}/virtual-network-manage-peering`,
+		],
+	],
+	[
+		"networking.public-ip",
+		"virtual-networks",
+		"Configure public IP addresses",
+		[
+			`${N}/ip-services/public-ip-addresses`,
+			`${N}/ip-services/virtual-network-public-ip-address`,
+		],
+	],
+	[
+		"networking.user-defined-routes",
+		"virtual-networks",
+		"Configure user-defined routes",
+		[
+			`${N}/virtual-networks-udr-overview`,
+			`${N}/manage-route-table`,
+		],
+	],
+	[
+		"networking.troubleshoot-connectivity",
+		"virtual-networks",
+		"Troubleshoot network connectivity",
+		[
+			`${NW}/ip-flow-verify-overview`,
+			`${NW}/next-hop-overview`,
+			`${NW}/connection-troubleshoot-overview`,
+		],
+	],
+	[
+		"networking.nsg-asg",
+		"network-security",
+		"Create and configure network security groups (NSGs) and application security groups",
+		[
+			`${N}/network-security-groups-overview`,
+			`${N}/application-security-groups`,
+			`${N}/manage-network-security-group`,
+		],
+	],
+	[
+		"networking.nsg-effective-rules",
+		"network-security",
+		"Evaluate effective security rules in NSGs",
+		[
+			`${N}/network-security-group-how-it-works`,
+			`${N}/diagnose-network-traffic-filter-problem`,
+		],
+	],
+	[
+		"networking.bastion",
+		"network-security",
+		"Implement Azure Bastion",
+		[
+			`${L}/azure/bastion/bastion-overview`,
+			`${L}/azure/bastion/configuration-settings`,
+			`${L}/azure/bastion/tutorial-create-host-portal`,
+		],
+	],
+	[
+		"networking.service-endpoints",
+		"network-security",
+		"Configure service endpoints for Azure platform as a service (PaaS)",
+		[
+			`${N}/virtual-network-service-endpoints-overview`,
+			`${N}/virtual-network-service-endpoint-policies-overview`,
+			`${N}/tutorial-restrict-network-access-to-resources`,
+		],
+	],
+	[
+		"networking.private-endpoints",
+		"network-security",
+		"Configure private endpoints for Azure PaaS",
+		[
+			`${L}/azure/private-link/private-endpoint-overview`,
+			`${L}/azure/private-link/private-endpoint-dns`,
+			`${L}/azure/private-link/create-private-endpoint-portal`,
+		],
+	],
+	[
+		"networking.azure-dns",
+		"dns-load-balancing",
+		"Configure Azure DNS",
+		[
+			`${L}/azure/dns/dns-overview`,
+			`${L}/azure/dns/dns-zones-records`,
+			`${L}/azure/dns/private-dns-overview`,
+			`${L}/azure/dns/dns-delegate-domain-azure-dns`,
+		],
+	],
+	[
+		"networking.load-balancer",
+		"dns-load-balancing",
+		"Configure an internal or public load balancer",
+		[
+			`${LB}/load-balancer-overview`,
+			`${LB}/components`,
+			`${LB}/skus`,
+		],
+	],
+	[
+		"networking.load-balancer-troubleshoot",
+		"dns-load-balancing",
+		"Troubleshoot load balancing",
+		[
+			`${LB}/load-balancer-troubleshoot`,
+			`${LB}/load-balancer-custom-probe-overview`,
+			`${LB}/load-balancer-standard-diagnostics`,
 		],
 	],
 ];

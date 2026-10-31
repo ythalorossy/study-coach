@@ -24,6 +24,9 @@ export const WEB_INSTRUCTORS: WebInstructor[] = [
 	{ id: "virtual-machines", areaId: "compute", name: "Virtual machines", initials: "VM", topic: "Sizes, disks, scale sets" },
 	{ id: "containers", areaId: "compute", name: "Containers", initials: "CT", topic: "Registry, instances, apps" },
 	{ id: "app-service", areaId: "compute", name: "App Service", initials: "AP", topic: "Plans, TLS, slots" },
+	{ id: "virtual-networks", areaId: "networking", name: "Virtual networks", initials: "VN", topic: "Subnets, peering, routes" },
+	{ id: "network-security", areaId: "networking", name: "Network security", initials: "NS", topic: "NSGs, Bastion, endpoints" },
+	{ id: "dns-load-balancing", areaId: "networking", name: "DNS and load balancing", initials: "DL", topic: "DNS zones, load balancers" },
 ];
 
 /** The lead plus the area's specialists; everyone when the area is unknown. */

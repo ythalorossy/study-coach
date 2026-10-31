@@ -81,6 +81,26 @@ export const SPECIALISTS = [
 		description:
 			"App Service instructor: App Service plans and their scaling, creating apps, certificates and TLS, custom domains, backup, networking and deployment slots.",
 	},
+	{
+		id: "virtual-networks",
+		areaId: "networking",
+		title: "virtual networks",
+		description:
+			"Virtual networks instructor: virtual networks and subnets, peering, public IP addresses, user-defined routes, and troubleshooting connectivity with Network Watcher.",
+	},
+	{
+		id: "network-security",
+		areaId: "networking",
+		title: "network security",
+		description:
+			"Network security instructor: network security groups and application security groups, effective security rules, Azure Bastion, and service endpoints and private endpoints for PaaS.",
+	},
+	{
+		id: "dns-load-balancing",
+		areaId: "networking",
+		title: "DNS and load balancing",
+		description: "DNS and load balancing instructor: Azure DNS public and private zones, internal and public load balancers, and troubleshooting load balancing.",
+	},
 ] as const satisfies readonly Specialist[];
 
 export function specialistArea(specialistId: string): string {

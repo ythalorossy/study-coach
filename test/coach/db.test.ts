@@ -8,12 +8,12 @@ import { openCoachDb, seedCoachDb } from "../../src/coach/db.ts";
 type Row = Record<string, unknown>;
 
 describe("coach db", () => {
-	it("seeds five areas and 56 skills (15 identity and governance, 17 storage, 24 compute)", () => {
+	it("seeds five areas and 69 skills (15 identity and governance, 17 storage, 24 compute, 13 networking)", () => {
 		const db = openCoachDb(":memory:");
 		const areas = db.raw.prepare("SELECT COUNT(*) AS n FROM areas").get() as Row;
 		const skills = db.raw.prepare("SELECT COUNT(*) AS n FROM skills").get() as Row;
 		expect(areas.n).toBe(5);
-		expect(skills.n).toBe(56);
+		expect(skills.n).toBe(69);
 		const sspr = db.raw.prepare("SELECT * FROM skills WHERE id = ?").get("identity.sspr") as Row;
 		expect(sspr.specialist).toBe("identity");
 		expect(sspr.area_id).toBe("identity-governance");
@@ -25,13 +25,13 @@ describe("coach db", () => {
 		seedCoachDb(db);
 		seedCoachDb(db);
 		const skills = db.raw.prepare("SELECT COUNT(*) AS n FROM skills").get() as Row;
-		expect(skills.n).toBe(56);
+		expect(skills.n).toBe(69);
 	});
 
 	it("every skill has 2 to 4 learn.microsoft.com doc URLs", () => {
 		const db = openCoachDb(":memory:");
 		const rows = db.raw.prepare("SELECT id, doc_urls FROM skills").all() as Row[];
-		expect(rows).toHaveLength(56);
+		expect(rows).toHaveLength(69);
 		for (const row of rows) {
 			const urls = JSON.parse(row.doc_urls as string) as string[];
 			expect(urls.length).toBeGreaterThanOrEqual(2);

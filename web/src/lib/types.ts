@@ -99,7 +99,10 @@ export type InstructorId =
 	| "templates"
 	| "virtual-machines"
 	| "containers"
-	| "app-service";
+	| "app-service"
+	| "virtual-networks"
+	| "network-security"
+	| "dns-load-balancing";
 
 export const NODE_TYPES = [
 	"tenant",

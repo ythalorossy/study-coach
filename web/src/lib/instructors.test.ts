@@ -20,6 +20,7 @@ describe("web instructors", () => {
 		expect(instructorsFor("storage").map((i) => i.id)).toEqual(["lead", "storage-security", "storage-accounts", "files-blobs"]);
 		expect(instructorsFor("identity-governance").map((i) => i.id)).toEqual(["lead", "identity", "access", "governance"]);
 		expect(instructorsFor("compute").map((i) => i.id)).toEqual(["lead", "templates", "virtual-machines", "containers", "app-service"]);
-		expect(instructorsFor(null)).toHaveLength(11);
+		expect(instructorsFor("networking").map((i) => i.id)).toEqual(["lead", "virtual-networks", "network-security", "dns-load-balancing"]);
+		expect(instructorsFor(null)).toHaveLength(14);
 	});
 });
