@@ -1,0 +1,542 @@
+{
+	"skill": "networking.vnet-subnets",
+	"questions": [
+		{
+			"id": "q_01M67CQA56RDZ2A0GFMP1JV9NE",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have drafted three new subnets for an existing virtual network (IPv4 address space 10.30.0.0/16, East US 2, subscription Contoso-Prod) that today holds only a gateway subnet. You need Azure to accept every range as a valid, non-overlapping subnet range, and each subnet must be able to host the workload listed with room left for growth. Which change should you make to the draft before you submit it?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Subnet name",
+						"Address range",
+						"Workload the subnet must host"
+					],
+					"rows": [
+						[
+							"appgw",
+							"10.30.8.0/24",
+							"Azure Application Gateway v2"
+						],
+						[
+							"app-tier",
+							"10.30.9.0/26",
+							"8 web VMs"
+						],
+						[
+							"data-tier",
+							"10.30.9.64/29",
+							"SQL VM, cache VM, monitoring agent, backup agent"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set the data-tier address range to 10.30.9.64/28"
+					},
+					{
+						"id": "b",
+						"text": "Set the data-tier address range to 10.30.9.64/30"
+					},
+					{
+						"id": "c",
+						"text": "Set the data-tier address range to 10.30.9.128/29"
+					},
+					{
+						"id": "d",
+						"text": "Set the app-tier address range to 10.30.8.16/26"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A /29 range provides eight addresses, and Azure reserves the first and the last address for protocol conformance plus three more for Azure service use, leaving only three usable addresses. The data-tier subnet must host four workloads (SQL VM, cache VM, monitoring agent, backup agent) and still leave room for growth, so the drafted /29 is too small. Widening data-tier to 10.30.9.64/28 keeps the range inside the virtual network's 10.30.0.0/16 address space, stays clear of app-tier's 10.30.9.0/26 (which ends at 10.30.9.63), and raises usable capacity to eleven addresses, enough for the planned workloads plus growth.",
+				"perChoice": {
+					"b": "A /30 range is smaller than the smallest subnet range Azure accepts, which is /29, so this request is rejected outright before any capacity question arises.",
+					"c": "Relocating the subnet does not change its size: 10.30.9.128/29 is still eight addresses with five reserved by Azure, so only three usable addresses remain, which cannot hold the four planned workloads plus growth.",
+					"d": "A /26 at 10.30.8.16 spans 10.30.8.16 through 10.30.8.79, which falls inside the appgw range of 10.30.8.0/24 (10.30.8.0 through 10.30.8.255). Azure rejects subnet ranges that overlap inside the same virtual network, and this change also leaves data-tier at three usable addresses."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-subnet"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-virtual-network"
+				}
+			],
+			"subtopics": [
+				"subnet-address-range",
+				"subnet-sizing",
+				"vnet-subnet-configuration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M67CS8TDWCKWK8M679S6SKYK",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a virtual network that contains a single subnet named `integration`, and that subnet holds two private endpoints (one for Azure Storage and one for Azure Key Vault). The security team wants the network security group and route table that already protect this subnet to also protect every private endpoint inside it, so that one set of rules covers the whole subnet. Which change should you make to the subnet?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Subnet name",
+						"Address prefix",
+						"Network security group",
+						"Route table",
+						"Private endpoints deployed"
+					],
+					"rows": [
+						[
+							"integration",
+							"10.60.4.0/24",
+							"nsg-integration",
+							"rt-integration",
+							"2"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Enable network policies for private endpoints on the subnet so that the subnet's network security group and route table apply to every private endpoint in it."
+					},
+					{
+						"id": "b",
+						"text": "Enable the service endpoints for Azure Storage and Azure Key Vault services on the subnet so that every resource of those services can accept traffic from it."
+					},
+					{
+						"id": "c",
+						"text": "Enable subnet delegation to Microsoft.Network/privateEndpoints so that the platform creates and manages the private endpoint network interfaces inside the delegated subnet."
+					},
+					{
+						"id": "d",
+						"text": "Move the private endpoints into a separate subnet that has its own network security group and route table, leaving the current subnet and its controls unchanged."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Turning on the subnet's setting for network policies on private endpoints makes the network security group and route table assigned to that subnet apply to every private endpoint deployed in it. Because the requirement is that the existing controls in the `integration` subnet cover the private endpoints that live there, enabling this setting at subnet scope is the change that satisfies it.",
+				"perChoice": {
+					"b": "Service endpoints solve a different problem: the Azure service keeps its public endpoint and Azure restricts access to that public endpoint to your VNet, and each resource of the service (for example each Storage account) must separately be permitted to accept traffic from the subnet. They do not extend the subnet's network security group or route table to private endpoints, so they do not deliver the single set of rules the security team asked for.",
+					"c": "Subnet delegation grants one service permission to create its own service-specific resources in the subnet during deployment; it is not a way of extending the subnet's network security group or route table to private endpoints. Delegation also cannot be added or removed while resources of the delegated service are already deployed in the subnet, so it is the wrong lever for this goal.",
+					"d": "Relocating the private endpoints to another subnet that carries different controls leaves the network security group and route table in the `integration` subnet unchanged, so the endpoints still would not be covered by the protections already in force for that subnet. Moving resources also adds work without meeting the stated requirement."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-subnet"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-overview"
+				}
+			],
+			"subtopics": [
+				"private-endpoints",
+				"network-security-groups",
+				"subnet-configuration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M67CWFRT0HCFR2C3ESMTA09Y",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You created the virtual network `app-vnet` through the portal last week and deployed two Linux virtual machines into its `app` subnet. The machines reach each other and resolve Azure service names, but every attempt to open a connection to an internet-hosted service fails, and the team does not want public IP addresses on the virtual machines. You need outbound internet connectivity for these virtual machines. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "$ az network vnet show -n app-vnet -g rg-net --query \"{space:addressSpace.addressPrefixes,defaultOutboundAccess:defaultOutboundAccess,subnets:subnets[].{name:name,prefix:addressPrefix,nsg:networkSecurityGroup.id,routeTable:routeTable.id}}\"\n{\n  \"space\": [\n    \"10.40.0.0/16\"\n  ],\n  \"defaultOutboundAccess\": false,\n  \"subnets\": [\n    {\n      \"name\": \"app\",\n      \"prefix\": \"10.40.1.0/24\",\n      \"nsg\": null,\n      \"routeTable\": null\n    }\n  ]\n}\n\n$ az network nic show -n nic-app-01 -g rg-compute --query \"{ip:ipConfigurations[0].privateIPAddress,publicIP:ipConfigurations[0].publicIPAddress.id}\"\n{\n  \"ip\": \"10.40.1.4\",\n  \"publicIP\": null\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add a NAT gateway to the `app` subnet"
+					},
+					{
+						"id": "b",
+						"text": "Add a service endpoint for Azure Storage to the `app` subnet"
+					},
+					{
+						"id": "c",
+						"text": "Create a virtual network peering from `app-vnet` to the `shared-services` virtual network"
+					},
+					{
+						"id": "d",
+						"text": "Enable the private endpoints network policy setting on the `app` subnet"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Virtual networks created through the portal, and by API versions released after March 31, 2026, are created with `defaultOutboundAccess` set to `false`, so their subnets are private by default and the virtual machines get no implicit outbound public IP. The output shows exactly that state for `app-vnet`: `defaultOutboundAccess` is false and the network interface of `nic-app-01` has no public IP address, which is why the machines can reach each other but nothing on the internet. Virtual machines in such a subnet need an explicit outbound method — a NAT gateway associated with the subnet, a public IP on the network interface, or a public load balancer with outbound rules. Because the requirement rules out public IP addresses on the virtual machines, associating a NAT gateway with the `app` subnet is the change that restores outbound connectivity; the NAT gateway must be created in the same subscription and region as the virtual network.",
+				"perChoice": {
+					"b": "Service endpoints leave the service's own public endpoint in place and simply restrict it to your virtual network; enabling the Azure Storage endpoint only affects traffic that is destined for Azure Storage. It does not give the virtual machines a general path out to internet-hosted services and does not change the subnet's lack of an outbound method.",
+					"c": "Virtual network peering links two virtual networks so the resources on either side can communicate with each other, in the same or different regions and even across subscriptions. It is not an outbound connectivity method for the virtual machines in the `app` subnet, so it does not restore their access to the internet.",
+					"d": "The private endpoints network policy setting is what makes a subnet's network security group and route table apply to the private endpoints placed inside that subnet. The `app` subnet has no network security group, no route table and no private endpoints, and this setting has no effect on the outbound connectivity of ordinary virtual machines."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-subnet"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-virtual-network"
+				}
+			],
+			"subtopics": [
+				"default-outbound-access",
+				"subnet-configuration",
+				"outbound-connectivity"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M67CZVYCKZGV4A5QADYN4SNX",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a virtual network `data-vnet` with a subnet `svc-subnet` that holds two Linux virtual machines. An application on those machines reads from the storage account `contosodata`. The subnet has the Microsoft.Storage service endpoint turned on, but the machines time out whenever they reach the account. You need the machines in `svc-subnet` to reach `contosodata` again while keeping the account reachable only from that subnet. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Current configuration"
+					],
+					"rows": [
+						[
+							"Service endpoint on `svc-subnet`",
+							"Microsoft.Storage"
+						],
+						[
+							"`contosodata` — public network access",
+							"Selected networks"
+						],
+						[
+							"`contosodata` — virtual networks allowed",
+							"None listed"
+						],
+						[
+							"Traffic from the virtual machines to `contosodata`",
+							"Times out"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "In the `contosodata` storage account, allow the `svc-subnet` subnet of the `data-vnet` virtual network."
+					},
+					{
+						"id": "b",
+						"text": "In the `contosodata` storage account, change public network access to allow all networks instead of the subnet list."
+					},
+					{
+						"id": "c",
+						"text": "In the `data-vnet` virtual network, remove the Microsoft.Storage service endpoint from `svc-subnet`."
+					},
+					{
+						"id": "d",
+						"text": "In the `data-vnet` virtual network, attach a route table to `svc-subnet` and enable a default route to the internet."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Turning on the service endpoint for Microsoft.Storage on `svc-subnet` only creates the VNet-scoped path to the storage service; each storage account that should accept traffic must separately permit the subnet. Because `contosodata` currently lists no allowed virtual networks, the change needed is to add `svc-subnet` (in `data-vnet`) to the allowed list on that storage account. The account keeps its public endpoint, but access is confined to the virtual network.",
+				"perChoice": {
+					"b": "Switching the account to allow all networks exposes `contosodata` to traffic from the public internet, which contradicts the requirement that only the subnet in `data-vnet` may reach it. The point of the service endpoint is to keep the service's public endpoint while limiting it to your virtual network.",
+					"c": "Removing the endpoint discards the VNet-scoped restriction and sends storage traffic out over the public path, so the account would no longer be locked to `svc-subnet`. It also does not make the subnet an accepted caller on the account itself.",
+					"d": "A route table only decides the next hop for traffic; it does not make the storage account accept connections from the subnet. The account-side permission for the subnet is what must change, and replacing the endpoint's path with a default route to the internet would also move storage traffic away from the VNet-scoped route."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-subnet"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-overview"
+				}
+			],
+			"subtopics": [
+				"service-endpoints",
+				"subnet-configuration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M67D27A6VG8BCHY6MX3GJ7BR",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have just replaced the DNS server list on the virtual network `corp-vnet` with the corporate resolvers `10.40.0.4` and `10.40.0.5`, because the Azure-provided DNS server can resolve names only inside the virtual network. The workloads sitting in that network are still answering from the old resolver, so the applications hosted there fail to find the on-premises services they depend on, such as `api.corp.contoso.com`. You need every workload in `corp-vnet` to use the new resolvers, and the network itself must not be rebuilt. Which action should you take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Resource in corp-vnet                   | Resource type                  | Name resolution currently in use\n---------------------------------------+--------------------------------+-------------------------------------------\ncorp-vnet (10.40.0.0/16, West Europe)   | Virtual network DNS server list | Changed today to 10.40.0.4 and 10.40.0.5\nvm-app-01                               | Virtual machine (Linux)         | Azure-provided DNS server\nvm-app-02                               | Virtual machine (Windows)       | Azure-provided DNS server\nfw-app                                   | Azure Firewall                  | Azure-provided DNS server\nagw-app                                  | Application Gateway             | Azure-provided DNS server"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Restart the virtual machines, the Azure Firewall and the Application Gateway so they load the new DNS settings."
+					},
+					{
+						"id": "b",
+						"text": "Recreate the virtual network with the new DNS settings and redeploy every workload into it."
+					},
+					{
+						"id": "c",
+						"text": "Wait for the new DNS settings to propagate by themselves to the virtual machines, the Azure Firewall and the Application Gateway."
+					},
+					{
+						"id": "d",
+						"text": "Remove the DNS server list from the virtual network so the virtual machines, the Azure Firewall and the Application Gateway fall back to the Azure-provided DNS server."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Changing the DNS servers on a virtual network does not reconfigure the resources that are already running inside it. Virtual machines, Azure Firewalls and Application Gateways keep the DNS settings they had until they are restarted, so restarting each of the workloads listed in the exhibit is what makes them use the new resolvers 10.40.0.4 and 10.40.0.5. This satisfies the requirement without rebuilding the virtual network.",
+				"perChoice": {
+					"b": "Recreating the virtual network would throw away and rebuild every workload, which the requirement rules out. The new resolver list can be put into effect on the resources that are already running, so there is no need to redeploy anything.",
+					"c": "The DNS change is not pushed to running resources automatically. Virtual machines, Azure Firewalls and Application Gateways continue using their previous DNS settings until they are restarted, so waiting on propagation leaves the name-resolution failure in place.",
+					"d": "Removing the DNS server list returns the workloads to the Azure-provided DNS server, which resolves names only within the virtual network and is exactly the configuration that could not resolve the on-premises names. The goal is to use the two corporate resolvers, not to fall back to the default one."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-virtual-network"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-overview"
+				}
+			],
+			"subtopics": [
+				"dns-configuration",
+				"virtual-network-settings"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M67D4HRV30G1WE19XDKAAYP5",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a subnet named `aks-subnet` inside the virtual network `hub-vnet`. The platform team wants to retire the AKS cluster that runs there and hand the subnet over to a service that requires its own delegation, but every attempt to change the subnet's delegation is rejected and the subnet stays tied to the current service. You need the delegation removed so the subnet can be reused, without changing any address space. Which sequence of actions should you take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Virtual network : hub-vnet   (10.70.0.0/16, East US 2)\nSubnet          : aks-subnet   (10.70.10.0/24)\nDelegation      : Microsoft.ContainerService/managedClusters\nIn aks-subnet   : AKS cluster hub-aks (control plane, node pool np-01 with 3 nodes)\nbuild-subnet    : 10.70.20.0/24 - 1 build agent virtual machine, no delegation"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Delete the AKS cluster and its resources from `aks-subnet`, and then remove the delegation from the subnet."
+					},
+					{
+						"id": "b",
+						"text": "Remove the delegation from `aks-subnet`, and then delete the AKS cluster and its resources."
+					},
+					{
+						"id": "c",
+						"text": "Create a second subnet with the same address range and the same delegation, then delete the original subnet and its resources."
+					},
+					{
+						"id": "d",
+						"text": "Delete only the worker node pool of the AKS cluster, and then remove the delegation from `aks-subnet`."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Azure refuses to add or remove a delegation on a subnet that still holds resources of the delegated service. The exhibit shows that `aks-subnet` is delegated to Microsoft.ContainerService/managedClusters and still hosts the AKS cluster `hub-aks` (control plane and node pool np-01). Removing that cluster and its resources from the subnet clears the condition, after which the delegation can be removed and the subnet handed over to the new service, which satisfies the goal of retiring the cluster and reusing the subnet without touching any address space.",
+				"perChoice": {
+					"b": "This reverses the required order. While the AKS cluster and its node resources are still deployed in `aks-subnet`, the platform rejects removal of the delegation, so the deletion of the cluster would never be reached in a working sequence.",
+					"c": "Two subnets inside one virtual network cannot hold overlapping address ranges, so a second subnet cannot be created with 10.70.10.0/24, and the original subnet cannot be deleted while it still holds resources. The approach also leaves the delegation in place on the replacement subnet, which is the opposite of the stated goal.",
+					"d": "Deleting the worker node pool still leaves the AKS cluster itself deployed in `aks-subnet`, so the removal of the delegation continues to be rejected. Every resource of the delegated service must be cleared out of the subnet first."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-subnet"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-overview"
+				}
+			],
+			"subtopics": [
+				"subnet-delegation",
+				"vnet-subnet-management"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M67D8N49K0PSMQCYS7RQ22N8",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have the virtual network `hub-vnet` in subscription Contoso-Prod, whose IPv4 address space is currently 10.50.0.0/16 and which holds two subnets. The IPAM team wants a second IPv4 address range added to this network so that a new `partner` subnet can later host roughly 40 virtual machines with room for growth, but the range they submitted, 169.254.0.0/24, is refused by Azure. You need to hand the IPAM team a replacement range that Azure will accept and that stays clear of the address space already in use. Which range should you request?",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "$ az network vnet show --name hub-vnet --resource-group rg-net \\\n    --query \"{addressSpace:addressSpace.addressPrefixes, subnets:subnets[].{name:name, prefix:addressPrefix}}\"\n{\n  \"addressSpace\": [\n    \"10.50.0.0/16\"\n  ],\n  \"subnets\": [\n    { \"name\": \"gateway\", \"prefix\": \"10.50.0.0/26\" },\n    { \"name\": \"app\", \"prefix\": \"10.50.0.64/26\" }\n  ]\n}\n\nIPAM request for a second IPv4 range: 169.254.0.0/24   -> rejected by the platform\nPlanned subnet 'partner': roughly 40 virtual machines, with room for growth"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "10.50.128.0/24"
+					},
+					{
+						"id": "b",
+						"text": "224.0.0.0/4"
+					},
+					{
+						"id": "c",
+						"text": "172.20.0.0/20"
+					},
+					{
+						"id": "d",
+						"text": "168.63.129.16/32"
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "172.20.0.0/20 is a private RFC 1918 range that Azure accepts, and it does not clash with the space the network already uses: the network's existing range is 10.50.0.0/16 and both current subnets sit inside that range, so a range drawn from 172.20.0.0/16 can be added as a second address space while the existing range and subnets remain untouched. At /20 it also provides far more addresses than the roughly 40 virtual machines the planned `partner` subnet needs, leaving room for growth, whereas the submitted 169.254.0.0/24 falls in the link-local space that Azure never allows in a virtual network's address space.",
+				"perChoice": {
+					"a": "10.50.128.0/24 sits inside 10.50.0.0/16, the range this virtual network already uses, so adding it would put two overlapping ranges in the same address space. A virtual network's IPv4 address space is one or more non-overlapping CIDR ranges, and any new range must also stay clear of space used by peered networks or on-premises networks.",
+					"b": "224.0.0.0/4 is the multicast range, one of the ranges Azure never lets you add to a virtual network, so the request would be turned down no matter how the partner subnet is sized.",
+					"d": "168.63.129.16/32 is the single address Azure keeps for its own internal DNS, DHCP and Load Balancer health probes, so it cannot become part of a virtual network's address space; on top of that, a single address leaves no room at all for the planned subnet."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-virtual-network"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-subnet"
+				}
+			],
+			"subtopics": [
+				"ip-address-planning",
+				"reserved-address-ranges",
+				"subnet-sizing"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M67DEGT2M37R0N1WM10DC5B3",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Linux virtual machine `web-01` that runs in the `app` subnet of the virtual network `prod-vnet`. A redesign calls for the machine to run in the `app` subnet of `hub-vnet` instead, and the data on its OS disk has to survive the change. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Current",
+						"Required state"
+					],
+					"rows": [
+						[
+							"Virtual machine",
+							"web-01 (Linux, Standard_D4s_v5)",
+							"web-01 (Linux, Standard_D4s_v5)"
+						],
+						[
+							"Virtual network",
+							"prod-vnet",
+							"hub-vnet"
+						],
+						[
+							"Subnet",
+							"app",
+							"app"
+						],
+						[
+							"Subscription",
+							"Contoso-Prod",
+							"Contoso-Prod"
+						],
+						[
+							"Region",
+							"East US 2",
+							"East US 2"
+						],
+						[
+							"Network interface",
+							"web-01-nic",
+							"an interface in the app subnet of hub-vnet"
+						],
+						[
+							"OS disk",
+							"web-01-osdisk (managed disk, 128 GiB)",
+							"keep the data on the existing disk"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Delete the virtual machine web-01 and create a replacement in the hub-vnet app subnet, reusing the existing managed OS disk and a new network interface in that subnet."
+					},
+					{
+						"id": "b",
+						"text": "Move the existing network interface web-01-nic from the prod-vnet app subnet to the hub-vnet app subnet and attach it to the virtual machine web-01 so that it can reach the new hub services."
+					},
+					{
+						"id": "c",
+						"text": "Move the existing virtual machine web-01 and its network interface into the hub-vnet app subnet, keeping the current OS disk and its data."
+					},
+					{
+						"id": "d",
+						"text": "Create a new virtual machine in the hub-vnet app subnet with a new managed OS disk and a new network interface in that subnet."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Azure has no in-place relocation for a virtual machine that must run in a different virtual network: the supported path is to remove the machine and build it again in the destination network, and the machine's disks can be carried over to the new machine. Because both virtual networks are in the same subscription and region, the managed disk `web-01-osdisk` can be reused. Deleting web-01 and creating a replacement in the hub-vnet `app` subnet, reattaching that existing managed OS disk and letting a new network interface be created in that subnet, keeps the data intact and puts the machine in the required subnet.",
+				"perChoice": {
+					"b": "An existing network interface cannot be transferred into another virtual network or subnet; it belongs to the network and subnet in which it was created. Relocating the workload into hub-vnet therefore requires the machine itself to be removed and rebuilt there, so shifting only the interface does not accomplish the move.",
+					"c": "Azure does not move a virtual machine into another virtual network. Peering or other connectivity between prod-vnet and hub-vnet would let the machine in prod-vnet reach hub-vnet, but the machine would still run in the prod-vnet `app` subnet, so the required placement is not met.",
+					"d": "Building the replacement machine with a brand-new managed OS disk starts from an empty disk, so the data on web-01-osdisk would be left behind rather than preserved. Keeping the data requires reusing the existing managed OS disk in the recreated machine."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-virtual-network"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-subnet"
+				}
+			],
+			"subtopics": [
+				"vm-migration-between-vnets",
+				"managed-disks",
+				"network-interfaces"
+			],
+			"reviewed": false
+		}
+	]
+}
