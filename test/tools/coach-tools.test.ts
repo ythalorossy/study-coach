@@ -105,6 +105,32 @@ describe("DiagramSchema", () => {
 		expect(v.safeParse(DiagramSchema, compute).success).toBe(true);
 	});
 
+	it("accepts networking nodes and peering, association and routing edges", () => {
+		const networking = {
+			nodes: [
+				{ id: "hub", type: "virtual-network", label: "hub-vnet 10.0.0.0/16" },
+				{ id: "spoke", type: "virtual-network", label: "spoke-vnet 10.1.0.0/16" },
+				{ id: "snet", type: "subnet", label: "app 10.1.1.0/24", parent: "spoke" },
+				{ id: "vm", type: "virtual-machine", label: "web-01", parent: "snet" },
+				{ id: "nsg", type: "network-security-group", label: "nsg-app" },
+				{ id: "rt", type: "route-table", label: "rt-to-firewall" },
+				{ id: "lb", type: "load-balancer", label: "lb-web (public)" },
+				{ id: "pip", type: "public-ip", label: "pip-lb" },
+				{ id: "bas", type: "bastion", label: "bastion-hub", parent: "hub" },
+				{ id: "dns", type: "dns-zone", label: "contoso.com" },
+			],
+			edges: [
+				{ from: "hub", to: "spoke", kind: "peered-with" },
+				{ from: "nsg", to: "snet", kind: "associated-with" },
+				{ from: "rt", to: "snet", kind: "associated-with", label: "0.0.0.0/0 to NVA" },
+				{ from: "lb", to: "vm", kind: "routes-to", label: "TCP 80" },
+				{ from: "pip", to: "lb", kind: "associated-with" },
+			],
+			highlight: ["nsg"],
+		};
+		expect(v.safeParse(DiagramSchema, networking).success).toBe(true);
+	});
+
 	it("is the input of show_diagram", async () => {
 		expect(v.safeParse(showDiagramTool.input, { ...chain, highlight: ["ghost"] }).success).toBe(false);
 		expect(await call(showDiagramTool, chain)).toEqual({ output: { ok: true } });

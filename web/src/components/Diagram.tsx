@@ -37,6 +37,15 @@ const TYPE_LABEL: Record<NodeType, string> = {
 	"app-service": "App Service",
 	"deployment-slot": "Deployment slot",
 	template: "Template",
+	subnet: "Subnet",
+	"network-interface": "Network interface",
+	"network-security-group": "NSG",
+	"application-security-group": "ASG",
+	"route-table": "Route table",
+	"public-ip": "Public IP",
+	"load-balancer": "Load balancer",
+	bastion: "Bastion",
+	"dns-zone": "DNS zone",
 };
 
 const EDGE_COLOR: Record<EdgeKind, string> = {
@@ -49,6 +58,9 @@ const EDGE_COLOR: Record<EdgeKind, string> = {
 	"grants-access": "var(--c-storage-security)",
 	deploys: "var(--c-templates)",
 	"swaps-with": "var(--c-app-service)",
+	"peered-with": "var(--c-virtual-networks)",
+	"associated-with": "var(--c-network-security)",
+	"routes-to": "var(--c-dns-load-balancing)",
 };
 
 const EDGE_DASH: Record<EdgeKind, string | undefined> = {
@@ -61,7 +73,13 @@ const EDGE_DASH: Record<EdgeKind, string | undefined> = {
 	"grants-access": undefined,
 	deploys: undefined,
 	"swaps-with": "2 4",
+	"peered-with": undefined,
+	"associated-with": "6 4",
+	"routes-to": undefined,
 };
+
+/** Connections that run both ways get an arrowhead at each end. */
+const SYMMETRIC: ReadonlySet<EdgeKind> = new Set(["peered-with", "swaps-with"]);
 
 /** Cuts text to at most `max` characters, ending with an ellipsis when cut. */
 function cut(text: string, max: number): string {
@@ -219,6 +237,7 @@ export function Diagram({ diagram }: { diagram: DiagramData | null }) {
 						style={{ stroke: EDGE_COLOR[l.kind] }}
 						strokeWidth={1.5}
 						strokeDasharray={EDGE_DASH[l.kind]}
+						markerStart={SYMMETRIC.has(l.kind) ? `url(#dg-arrow-${l.kind})` : undefined}
 						markerEnd={`url(#dg-arrow-${l.kind})`}
 					>
 						<title>{l.title}</title>

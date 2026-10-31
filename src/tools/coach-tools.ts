@@ -28,7 +28,7 @@ export const speakTool = defineTool({
 export const showDiagramTool = defineTool({
 	name: "show_diagram",
 	description:
-		"Show a diagram of Azure scopes, identities or storage on the whiteboard. Nodes need unique ids; edges, parents and highlights must reference those ids. Replaces the previous diagram.",
+		"Show a diagram of Azure scopes, identities, storage, compute or networking on the whiteboard. Nodes need unique ids; edges, parents and highlights must reference those ids. Nest with parent (a subnet in its virtual network, a VM in its subnet); connect with edges (peered-with between virtual networks, associated-with for a network security group or route table on a subnet, routes-to for a load balancer or route). Replaces the previous diagram.",
 	input: DiagramSchema,
 	run() {
 		return { output: { ok: true } };

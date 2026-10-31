@@ -139,6 +139,15 @@ export const NODE_TYPES = [
 	"app-service",
 	"deployment-slot",
 	"template",
+	"subnet",
+	"network-interface",
+	"network-security-group",
+	"application-security-group",
+	"route-table",
+	"public-ip",
+	"load-balancer",
+	"bastion",
+	"dns-zone",
 ] as const;
 export const EDGE_KINDS = [
 	"contains",
@@ -150,6 +159,9 @@ export const EDGE_KINDS = [
 	"grants-access",
 	"deploys",
 	"swaps-with",
+	"peered-with",
+	"associated-with",
+	"routes-to",
 ] as const;
 export type NodeType = (typeof NODE_TYPES)[number];
 export type EdgeKind = (typeof EDGE_KINDS)[number];
