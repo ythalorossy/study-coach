@@ -28,6 +28,11 @@ describe("modelFor", () => {
 		expect(modelFor("verifier", env)).toBe("openai/gpt-5");
 	});
 
+	it("lets the fact-sheet reviewer follow the writer unless set", () => {
+		expect(modelFor("reviewer", { WRITER_MODEL: "openai/gpt-5" })).toBe("openai/gpt-5");
+		expect(modelFor("reviewer", { WRITER_MODEL: "openai/gpt-5", REVIEWER_MODEL: "minimax/MiniMax-M3.1-Flash" })).toBe("minimax/MiniMax-M3.1-Flash");
+	});
+
 	it("lets the fact-sheet writer follow the writer unless set", () => {
 		expect(modelFor("sheet", {})).toBe(DEFAULT_MODEL);
 		expect(modelFor("sheet", { WRITER_MODEL: "openai/gpt-5" })).toBe("openai/gpt-5");

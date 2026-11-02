@@ -68,6 +68,7 @@ Every agent runs on `minimax/MiniMax-M3` unless you pick another model in `.env`
 | `WRITER_MODEL` | question writer (`npm run generate`) | MiniMax |
 | `VERIFIER_MODEL` | blind re-answer of each new question | same as `WRITER_MODEL` |
 | `FACT_SHEET_MODEL` | fact-sheet writer (`npm run docs:sheets`) | same as `WRITER_MODEL` |
+| `REVIEWER_MODEL` | fact-sheet reviewer (`npm run docs:review`) | same as `WRITER_MODEL` |
 
 Add the provider's key next to it. For example, `ANTHROPIC_API_KEY` for `anthropic/...`, `OPENAI_API_KEY` for `openai/...`, `GEMINI_API_KEY` for `google/...` or `OPENROUTER_API_KEY` for `openrouter/...`:
 
@@ -104,6 +105,12 @@ npm run docs:sheets
 ```
 
 This writes a fact sheet per skill into `content/fact-sheets/`: the settings, limits, comparisons and which-one-to-use points the exam tests, in original wording, every fact linked to its Learn page. It builds only the sheets that are missing or whose source pages changed since the last sync; `--skill <id>` builds one, `--all` rebuilds every sheet, and `--parallel <n>` sets how many run at once. The sheets are committed, so a rebuild shows up as a diff you can review. `npm run docs:sync` lists which sheets are out of date.
+
+```sh
+npm run docs:review -- --skill identity.sspr   # or --area <prefix>, --all
+```
+
+A reviewer agent (`src/agents/fact-sheet-reviewer.ts`) checks each bullet of a sheet against the Learn page it links to and writes the ones that look wrong, with the page's own text as evidence, to `data/review/fact-check/<skill>.md`. Set `REVIEWER_MODEL` to a different model from `WRITER_MODEL` for a more independent check. It narrows a person's review and does not replace it: it can miss errors, and it never marks anything reviewed.
 
 Open the Docs screen to read a skill's fact sheet and its source pages. Links between downloaded pages stay in the app; other links open on Microsoft Learn.
 
@@ -161,7 +168,7 @@ To restore, stop the servers and copy the backup back to `data/`.
 
 | Path | What it holds |
 |---|---|
-| `src/agents/` | Flue agents: the lead Coach, the question writer and the fact-sheet writer |
+| `src/agents/` | Flue agents: the lead Coach, the question writer, the fact-sheet writer and the fact-sheet reviewer |
 | `src/subagents/` | The area instructors the lead hands lessons to |
 | `src/tools/` | Tools the agents call (lesson state, questions, Microsoft docs) |
 | `src/coach/` | The app's data layer and logic: skills and areas, questions, answer checking, readiness, docs corpus |

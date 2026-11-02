@@ -1,6 +1,6 @@
 export const DEFAULT_MODEL = "minimax/MiniMax-M3";
 
-export type ModelRole = "coach" | "specialist" | "writer" | "verifier" | "sheet";
+export type ModelRole = "coach" | "specialist" | "writer" | "verifier" | "sheet" | "reviewer";
 
 const VARIABLE: Record<ModelRole, string> = {
 	coach: "COACH_MODEL",
@@ -8,11 +8,12 @@ const VARIABLE: Record<ModelRole, string> = {
 	writer: "WRITER_MODEL",
 	verifier: "VERIFIER_MODEL",
 	sheet: "FACT_SHEET_MODEL",
+	reviewer: "REVIEWER_MODEL",
 };
 
 // An unset role borrows from its partner: specialists speak with the coach's voice,
-// and the verifier and fact-sheet writer use the writer's model unless told otherwise.
-const FALLBACK: Partial<Record<ModelRole, ModelRole>> = { specialist: "coach", verifier: "writer", sheet: "writer" };
+// and the verifier, fact-sheet writer and fact-sheet reviewer use the writer's model unless told otherwise.
+const FALLBACK: Partial<Record<ModelRole, ModelRole>> = { specialist: "coach", verifier: "writer", sheet: "writer", reviewer: "writer" };
 
 const SPECIFIER = /^[a-z0-9][a-z0-9-]*\/\S+$/;
 
