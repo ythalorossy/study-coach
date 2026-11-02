@@ -508,7 +508,7 @@
 				"correct": "Once blob versioning is turned on, a delete request changes the meaning of delete: the current version of the file becomes a previous version instead of being freed, and that version stays in the account and keeps being billed. That is why the container lists no files while the capacity shown for it did not fall and the invoice is unchanged. To actually release the space you have to remove the versions themselves, one version at a time, passing the identifier of the version you want removed (the service lets you delete a specific version by its version ID). Soft delete does not change this: when a blob is deleted while versioning is on, no soft-deleted entry is created for the blob, so the retention window does not apply to that deletion.",
 				"perChoice": {
 					"b": "With versioning enabled, deleting a blob turns its current version into a previous version and does not create a soft-deleted entry for the blob, so the soft delete retention period never starts for that request and waiting for it to expire frees nothing. The content has to be removed by deleting the versions that are still there.",
-					"c": "Moving a version to another access tier does not free the capacity that the data occupies; the content is still stored in the account and still billed. Moving versions to the archive tier also bills the full content length of every version and snapshot in the account, and once a tier is set explicitly on a version it cannot be undone, so this both fails to release the space and makes the bill larger.",
+					"c": "Moving a version to another access tier does not free the capacity that the data occupies; the content is still stored in the account and still billed. Moving versions to the archive tier also bills the full content length of every version and snapshot of that blob, and once a tier is set explicitly on a version it cannot be undone, so this both fails to release the space and makes the bill larger.",
 					"d": "Turning the setting off does not delete existing versions, snapshots or blobs. They remain in the account and continue to be billed, and afterwards they can still be read, listed and deleted, so disabling versioning on its own leaves the space in use."
 				}
 			},
@@ -950,7 +950,7 @@
 					},
 					{
 						"id": "i3",
-						"text": "Moving a version into the archive tier charges the full content length of every version and snapshot in the account, not only the version that was moved."
+						"text": "Moving a version into the archive tier charges the full content length of every version and snapshot of that blob, not only the version that was moved."
 					},
 					{
 						"id": "i4",
@@ -992,7 +992,7 @@
 				"s_e": "i5"
 			},
 			"explanation": {
-				"correct": "Each observation is produced by one specific billing or performance behavior of versioned blobs. A: when no tier is explicitly set for the versions of a blob, the account is billed for the unique blocks across all versions, and a block that is replaced is billed as a unique block even when its ID and data are unchanged, so a nightly rewrite of identical bytes keeps adding charge for report.csv (i1). B: when a tier is explicitly set on a version, that version is billed for its full content length, and explicitly setting the tier cannot be undone, so a file whose tier was set stays billed at full content length wherever it sits afterwards (i2). C: when a blob or version is moved to the archive tier, the account is billed for the full content length of all versions and snapshots, so archiving one old video version pushed the account-wide amount far beyond the size of that single file (i3). D: a large number of versions per blob degrades blob listing performance, and Microsoft recommends maintaining fewer than 1,000 versions per blob, which explains the slower retrieval of previous versions of the frequently rewritten log file (i4). E: once versioning is enabled, versions already capture every update and delete of block blobs, so continuing to take manual snapshots adds no protection, duplicates data and increases cost (i5).",
+				"correct": "Each observation is produced by one specific billing or performance behavior of versioned blobs. A: when no tier is explicitly set for the versions of a blob, the account is billed for the unique blocks across all versions, and a block that is replaced is billed as a unique block even when its ID and data are unchanged, so a nightly rewrite of identical bytes keeps adding charge for report.csv (i1). B: when a tier is explicitly set on a version, that version is billed for its full content length, and explicitly setting the tier cannot be undone, so a file whose tier was set stays billed at full content length wherever it sits afterwards (i2). C: when a blob or version is moved to the archive tier, the account is billed for the full content length of all of that blob's versions and snapshots, so archiving one old video version pushed the amount billed for that file far beyond the size of that single version (i3). D: a large number of versions per blob degrades blob listing performance, and Microsoft recommends maintaining fewer than 1,000 versions per blob, which explains the slower retrieval of previous versions of the frequently rewritten log file (i4). E: once versioning is enabled, versions already capture every update and delete of block blobs, so continuing to take manual snapshots adds no protection, duplicates data and increases cost (i5).",
 				"perChoice": {
 					"i1": "Observation A. When no tier is explicitly set on the versions, billing counts unique blocks across all versions; a block that is replaced is billed as unique even when it has the same block ID and the same data as in the previous version, so rewriting report.csv with unchanged bytes every night keeps increasing the amount billed for that file.",
 					"i2": "Observation B. Once a tier is explicitly set on a version, that version is billed for its full content length, and explicitly setting the tier cannot be undone: moving the blob back to its original tier still bills the full content length, so the amount stays at the full content length of the file no matter which tier it occupies now.",
@@ -1177,7 +1177,7 @@
 				"perChoice": {
 					"slot1:a": "Raising daysAfterCreationGreaterThan changes only the length of the measurement window, not its starting point. The property is still counted from the time the version's data was written, so every replaced copy is retained for the configured number of days from its own write date rather than 30 days after it was replaced, and copies of files that are replaced often would be kept far longer than the business wants.",
 					"slot1:b": "Soft delete is a recovery mechanism for deleted blobs and deleted versions, not an automatic cleanup mechanism for previous versions. With blob versioning enabled, the data of a replaced copy persists as a previous version until it is explicitly removed, and soft delete retention only controls how long a deliberately deleted version stays recoverable.",
-					"slot1:c": "Archiving the replaced copies and deleting them with a scheduled script makes cleanup a manual, script-driven process and does not deliver the automatic removal 30 days after a replacement. Moving a version to the archive tier also changes billing for the whole account, since setting the archive tier on a version bills the full content length of every version and snapshot in the account, not only the one that was moved."
+					"slot1:c": "Archiving the replaced copies and deleting them with a scheduled script makes cleanup a manual, script-driven process and does not deliver the automatic removal 30 days after a replacement. Moving a version to the archive tier also changes billing for the whole account, since setting the archive tier on a version bills the full content length of every version and snapshot of that blob, not only the one that was moved."
 				}
 			},
 			"sources": [
@@ -1387,7 +1387,7 @@
 							},
 							{
 								"id": "d",
-								"text": "it is billed for the full content length of every version and snapshot in the account, and no later move reduces that amount"
+								"text": "it is billed for the full content length of every version and snapshot of that blob, and no later move reduces that amount"
 							}
 						]
 					}
@@ -1405,7 +1405,7 @@
 					"op:d": "Set Blob Metadata writes metadata and never changes an access tier; on a previous version it cannot even change metadata, because previous versions are immutable.",
 					"billing:b": "Billing per unique block or page is the model that applies only while no tier has been set explicitly. Once the copy is placed in the cool tier its full content length is billed, and the tier decision cannot be reversed by moving the copy back.",
 					"billing:c": "The full-content-length charge is correct, but moving the copy back to hot does not return it to the earlier per-block pricing, because explicitly setting the tier cannot be undone.",
-					"billing:d": "Charging the full content length of every version and snapshot in the account is the behavior that applies when a copy is moved to the archive tier. This copy is going to the cool tier, so only that copy's full content length is billed."
+					"billing:d": "Charging the full content length of every version and snapshot of that blob is the behavior that applies when a copy is moved to the archive tier. This copy is going to the cool tier, so only that copy's full content length is billed."
 				}
 			},
 			"sources": [
@@ -1487,7 +1487,7 @@
 			"explanation": {
 				"correct": "Blob versioning records every write and delete of a blob automatically, so with versioning enabled on contosologs the history the team needs is already kept by the service itself. The app's own block blob snapshots are extra copies that add cost without adding recovery options the account does not already provide, and Microsoft recommends stopping block blob snapshots once versioning is enabled. Removing the app's snapshot step is therefore what lowers the charge while every earlier state of the log files stays restorable from the versions the account maintains.",
 				"perChoice": {
-					"action:b": "Moving the app's snapshot copies to the archive tier does not reduce the account's charge. When a version is moved to the archive tier, the full content length of every version and snapshot in the account is billed, not only the one that was moved, so this change can raise the account-wide capacity cost instead of lowering it, and the snapshot copies remain billable storage either way.",
+					"action:b": "Moving the app's snapshot copies to the archive tier does not reduce the account's charge. When a version is moved to the archive tier, the full content length of every version and snapshot of that blob is billed, not only the one that was moved, so this change can raise the capacity cost for that blob's data instead of lowering it, and the snapshot copies remain billable storage either way.",
 					"action:c": "Turning off versioning moves the account in the wrong direction for the stated requirement. Snapshots are application-managed checkpoints taken on the app's schedule, so they do not record every update or delete the way the service's automatic history does, and disabling versioning does not remove the versions that are already stored, so the charge would not fall as expected.",
 					"action:d": "Container soft delete governs recovering blobs that were deleted inside a container; it does not reduce the charge for copies that are still stored. The extra cost in this workload comes from the app creating a snapshot on every upload, so soft delete is not the setting that brings the charge down."
 				}
