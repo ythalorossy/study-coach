@@ -48,7 +48,7 @@ built: 2026-10-23T02:59:28.030Z
 
 ## Gotchas
 
-- A policy cannot rehydrate blobs into an online tier, so do not expect a rule to bring archived or cool data back online; the cool-to-hot move on access is a storage behavior, not a policy action ([Learn](https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-overview)).
+- A policy cannot rehydrate archived blobs into an online tier, but it can move a blob from cool back to hot when it is accessed ([Learn](https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-overview)).
 - Tiering is unsupported in premium block blob storage accounts, and on every other account it applies only to block blobs, never to append or page blobs ([Learn](https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-overview)).
 - The delete action does not work on blobs in an immutable container, because immutability allows creates and reads but blocks modification and deletion ([Learn](https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-overview)).
 - With soft delete enabled, a policy delete does not remove data immediately: the blob lands in a soft-deleted state for the soft-delete retention period, and the action cannot delete a blob that is already in that state ([Learn](https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-overview)).
