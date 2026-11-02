@@ -14,7 +14,7 @@ built: 2026-10-24T15:14:41.355Z
 - During platform upgrades the service pre-warms replicas before shifting traffic, so you can briefly see more replicas than configured; the extras are removed automatically and production traffic is unaffected. ([Learn](https://learn.microsoft.com/en-us/azure/container-apps/scale-app))
 - Vertical scaling (resizing CPU/memory of a running revision) is not supported; a resource change means a new revision. ([Learn](https://learn.microsoft.com/en-us/azure/container-apps/scale-app))
 - Replica quantities are a target amount, not a guarantee. ([Learn](https://learn.microsoft.com/en-us/azure/container-apps/scale-app))
-- Azure Container Instances (ACI) has no built-in autoscaling; it is bounded by per-deployment **resource limits** and per-subscription **quota**. ([Learn](https://learn.microsoft.com/en-us/azure/container-instances/container-instances-resource-and-quota-limits))
+- Azure Container Instances (ACI) is bounded by per-deployment **resource limits** and per-subscription **quota**. ([Learn](https://learn.microsoft.com/en-us/azure/container-instances/container-instances-resource-and-quota-limits))
 - ACI limits split into **unchangeable (hard)** limits, which a quota request can never raise, and **changeable** limits, which Azure may raise after a support request. ([Learn](https://learn.microsoft.com/en-us/azure/container-instances/container-instances-resource-and-quota-limits))
 - ACI's published values are the maximum resources for a **single container group deployment**; a group can still fail to deploy if the region is under heavy load. ([Learn](https://learn.microsoft.com/en-us/azure/container-instances/container-instances-resource-and-quota-limits))
 
@@ -54,7 +54,7 @@ built: 2026-10-24T15:14:41.355Z
 - If you define more than one rule, the app starts scaling as soon as the first condition of any rule is met. ([Learn](https://learn.microsoft.com/en-us/azure/container-apps/scale-app))
 - Use `ScaledObject`-based custom rules for long-running services and `ScaledJob`-based custom rules for event-driven **Container Apps jobs**. ([Learn](https://learn.microsoft.com/en-us/azure/container-apps/scale-app))
 - Set `minReplicas` to 1 or higher when a revision must always have a running instance, for example to keep one instance always up. ([Learn](https://learn.microsoft.com/en-us/azure/container-apps/scale-app))
-- Choose the **Consumption** workload profile for scale-to-zero serverless apps; choose **Dedicated** when you need larger images, larger CPU/memory allocations or a dedicated compute footprint. ([Learn](https://learn.microsoft.com/en-us/azure/container-apps/containers))
+- Choose the **Consumption** workload profile for scale-to-zero serverless apps; choose **Dedicated** when you need support for larger container images. ([Learn](https://learn.microsoft.com/en-us/azure/container-apps/containers))
 - Prefer managed identity with the `acrPull` role over storing registry usernames and passwords as app secrets. ([Learn](https://learn.microsoft.com/en-us/azure/container-apps/containers))
 - Use init containers for setup work that must complete before the main container starts; use sidecars only for tightly coupled processes, since all containers in one app share disk, network and lifecycle. ([Learn](https://learn.microsoft.com/en-us/azure/container-apps/containers))
 - Deploy each microservice as its own container app rather than packing multiple containers into one app. ([Learn](https://learn.microsoft.com/en-us/azure/container-apps/containers))

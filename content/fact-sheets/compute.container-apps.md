@@ -64,9 +64,9 @@ built: 2026-10-24T15:17:07.179Z
 ## Gotchas
 
 - CPU- and memory-based scaling is the exception to scale-to-zero, so those apps keep at least one instance running and are billed for it ([Learn](https://learn.microsoft.com/en-us/azure/container-apps/overview))
-- If `Microsoft.App` is not registered in the subscription, the portal creation flow fails before you reach the **Basics** tab ([Learn](https://learn.microsoft.com/en-us/azure/container-apps/quickstart-portal))
+- If `Microsoft.App` is not registered in the subscription, registration is listed as a prerequisite for creating a container app in the portal ([Learn](https://learn.microsoft.com/en-us/azure/container-apps/quickstart-portal))
 - Ticking **Optimize for Azure Functions** produces a function app, not a plain container app, which changes the runtime and available features ([Learn](https://learn.microsoft.com/en-us/azure/container-apps/quickstart-portal))
-- **Container Apps environment** defaults to a new environment for you; pointing it at an existing environment makes the app inherit that environment's virtual network, log destination and deletion policy ([Learn](https://learn.microsoft.com/en-us/azure/container-apps/quickstart-portal))
+- **Container Apps environment** the quickstart says to use the default value ([Learn](https://learn.microsoft.com/en-us/azure/container-apps/quickstart-portal))
 - Deleting a single container app is done by deleting its whole resource group, which also removes the environment and every other app inside it ([Learn](https://learn.microsoft.com/en-us/azure/container-apps/quickstart-portal))
 - All apps in an environment publish to one Log Analytics workspace by default, so per-app log separation depends on how you configure `properties.appLogsConfiguration` ([Learn](https://learn.microsoft.com/en-us/azure/container-apps/environment))
 - An idle environment can vanish after 90 days — keep at least one container app or job running, keep virtual network and Azure Policy configuration valid, and respond to notifications about a problematic environment state ([Learn](https://learn.microsoft.com/en-us/azure/container-apps/environment))

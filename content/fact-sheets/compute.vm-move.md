@@ -42,7 +42,7 @@ built: 2026-10-24T15:05:39.437Z
 
 ## Compare and choose
 
-- Choose **Move to a new resource group** for a scope change within one subscription, and **Move to a new subscription** when the tenant stays but billing organization changes. ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription))
+- The portal offers **Move to a new resource group** and **Move to a new subscription**; a cross-subscription move needs both subscriptions in the same Microsoft Entra tenant. ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription))
 - Choose **Move to a new region** for geographic relocation, regional feature access, governance, or capacity reasons, since a standard move cannot change region. ([Learn](https://learn.microsoft.com/en-us/azure/resource-mover/tutorial-move-region-virtual-machines))
 - Dry-run with `az resource invoke-action --action validateMoveResources` or `Invoke-AzResourceAction -Action validateMoveResources`; every real move validates automatically anyway. ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription))
 - Execute with `az resource move --destination-group <rg> --ids <id1> <id2>` plus `--destination-subscription-id`, or `Move-AzResource -DestinationResourceGroupName <rg> -ResourceId <ids>` plus `DestinationSubscriptionId`. ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription))

@@ -18,7 +18,7 @@ built: 2026-10-24T15:02:54.252Z
 - Deployment requires write access to the resources plus all operations on `Microsoft.Resources/deployments`; a virtual machine also needs `Microsoft.Compute/virtualMachines/write`, and what-if requires the same permissions. ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-cli))
 - Scope determines the command: resource group `az deployment group create`, subscription `az deployment sub create`, management group `az deployment mg create`, and tenant `az deployment tenant create`. ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-cli))
 - Subscription, management-group, and tenant deployments require `--location`; the deployer also needs resource-creation rights at the selected scope. ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-cli))
-- `--name` labels a deployment; without it, the file name becomes the name, so `azuredeploy.json` yields `azuredeploy` and `main.bicep` yields `main`. ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-cli))
+- `--name` labels a deployment; without it, the file name becomes the name, so `azuredeploy.json` yields `azuredeploy` and `main.bicep` yields `main`. ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-cli)) ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deploy-cli))
 - A template spec is a subscription resource containing an ARM template; Azure RBAC controls who can use it. The feature is currently in preview. ([Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deploy-cli))
 
 ## Settings and limits
