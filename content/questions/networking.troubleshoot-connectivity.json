@@ -1,0 +1,1738 @@
+{
+	"skill": "networking.troubleshoot-connectivity",
+	"questions": [
+		{
+			"id": "q_01M6FM90XY4RZJJ7XN6KZ6XFSD",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You run an Azure environment where the virtual machine web-01, in the spoke virtual network app-spoke, must open TCP sessions on port 443 to a partner application at 203.0.113.10 reached over ExpressRoute. Users report that the sessions fail intermittently, while other outbound connections from the same machine succeed. You need to identify the network security group rule responsible for the failures so the team can adjust it, and the partner agreement does not allow probes to be sent to their production endpoint. Which Network Watcher capability should you use for this investigation?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Source",
+							"Virtual machine web-01 with network interface nic-web-01"
+						],
+						[
+							"Destination",
+							"203.0.113.10, partner application reachable over ExpressRoute"
+						],
+						[
+							"Protocol and port",
+							"TCP 443"
+						],
+						[
+							"Direction under investigation",
+							"Outbound"
+						],
+						[
+							"Security groups in scope",
+							"nsg-app-nic on nic-web-01; nsg-app-subnet on subnet app-subnet"
+						],
+						[
+							"Network policy",
+							"Azure Virtual Network Manager policy p-hub-admin with admin rules applied to vnet app-spoke"
+						],
+						[
+							"Compute in scope",
+							"Individual virtual machine only; no scale set involved"
+						],
+						[
+							"Protocols in scope",
+							"TCP and UDP; ICMP is not part of this case"
+						],
+						[
+							"Output the team needs",
+							"Whether this connection is allowed or denied, the identity of the rule that decided it, and the group holding that rule"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "IP flow verify, because it reports the matching network security group rule for the traffic without contacting the destination"
+					},
+					{
+						"id": "b",
+						"text": "Connection troubleshoot, because it reports the matching network security group rule after running live probes"
+					},
+					{
+						"id": "c",
+						"text": "NSG diagnostics, because it reports the matching network security group rule for virtual machine scale set instances"
+					},
+					{
+						"id": "d",
+						"text": "Next hop, because it reports the next hop type, its IP address, and the route table for the destination"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "IP flow verify statically evaluates the rules that apply to the virtual machine's network interface and subnet, combining the rules of every attached network security group with the Azure Virtual Network Manager admin rules in force on the virtual network. It returns whether the connection is allowed or denied together with the name of the rule that decided it and the group holding that rule, and it supports TCP and UDP on an individual virtual machine. Because it only simulates rule evaluation and never opens a connection to the destination, it also satisfies the partner's restriction on probes.",
+				"perChoice": {
+					"b": "Connection troubleshoot runs live probes toward the destination to measure latency and draw the hop-by-hop topology, which the partner agreement in this scenario forbids. It also checks TCP or ICMP connections only and is aimed at end-to-end reachability rather than a rule-level evaluation, so it is not the right choice here.",
+					"c": "NSG diagnostics is the tool to reach for when rules apply to a virtual machine scale set or when ICMP rules have to be evaluated. In this case the endpoint is an individual virtual machine, the protocols in scope are TCP and UDP, and admin rules from Azure Virtual Network Manager are in force on the virtual network, which NSG diagnostics does not weigh.",
+					"d": "Next hop answers where a destination address would be routed: it returns the next hop type, that hop's IP address, and the route table involved. It never evaluates network security group rules or admin rules, so it cannot identify the rule responsible for the failed sessions."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/ip-flow-verify-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-troubleshoot-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/next-hop-overview"
+				}
+			],
+			"subtopics": [
+				"network-watcher-ip-flow-verify",
+				"nsg-rule-evaluation",
+				"connectivity-troubleshooting"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FN0Q2545PHZ7E71SVZFHZK",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You support a workload running in the virtual network app-spoke. The scale set ss-app must reach a partner API by hostname api.partner.example over TCP 443 in the outbound direction, but those sessions time out. The team wants a single diagnostic run that reports measured round-trip latency, renders the path from source to destination step by step, and tells them whether the failure sits in their own configuration or in the platform. The images used by ss-app are frozen, so nothing may be added to the instances. Which Network Watcher capability should you use?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Item                : Value\nVirtual network     : app-spoke (East US)\nSource              : Scale set ss-app, instance address 10.1.0.21\nDestination         : Hostname api.partner.example (partner API)\nTraffic profile     : TCP 443, outbound\nImage governance    : ss-app images are frozen; no monitoring extension may be installed\nReported symptom    : Sessions from ss-app instances to api.partner.example:443 time out"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "IP flow verify"
+					},
+					{
+						"id": "b",
+						"text": "Next hop"
+					},
+					{
+						"id": "c",
+						"text": "Connection troubleshoot"
+					},
+					{
+						"id": "d",
+						"text": "NSG diagnostics"
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "Connection troubleshoot is the only Network Watcher capability that performs an end-to-end reachability run and returns measured latency (minimum, maximum, average), a step-by-step topology from source to destination, and per-hop issues with origin, severity and type — for example GuestFirewall, DnsResolution, NetworkSecurityRule, UserDefinedRoute, CPU or Memory — so the team can tell whether the fault is in their own configuration or in the platform. It also accepts the inputs in this scenario: a virtual machine scale set is a supported source, a fully qualified domain name is a supported destination, and TCP is a supported protocol. Its agentless experience (currently preview) runs the diagnostics over Azure platform APIs, so no extension has to be added to the frozen ss-app images. IP flow verify only simulates the security and admin rules that would apply to a single virtual machine's traffic and reports no live test, latency or listener state; next hop reports where traffic would be routed and never evaluates rules or measures reachability; NSG diagnostics reports which rules apply to subnets and scale sets but gives no latency measurement and no attribution to the guest operating system firewall, name resolution or resource saturation.",
+				"perChoice": {
+					"a": "This option is a static rule simulation: it reports whether the rules in force would permit or block the traffic and names the matched rule and the group holding it, but it never opens a session, so it produces no latency figures, no step-by-step path and no evidence that a process is listening at the destination. It also exercises only TCP and UDP rules for a single virtual machine, and rules attached to a scale set fall outside its scope, so it cannot answer the end-to-end question raised here.",
+					"b": "This option reports the forwarding target for a destination address, that target's address and the routing table that supplied the entry. It answers where traffic would go, not whether traffic actually arrives: it measures no latency, opens no session, and reports no issues that can be attributed to the guest operating system firewall, name resolution or CPU and memory pressure. It therefore cannot satisfy the latency, topology and root-cause attribution the team asked for.",
+					"d": "This option reports which rules apply to subnets and to virtual machine scale sets and how each rule was matched, which is the right tool for rule questions such as an ICMP rule or a scale-set rule set. It does not run a reachability test, does not measure latency, and does not report DNS, guest firewall or resource-saturation issues, so it cannot deliver the end-to-end diagnosis described in the scenario."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-troubleshoot-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/ip-flow-verify-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/next-hop-overview"
+				}
+			],
+			"subtopics": [
+				"connection-troubleshoot",
+				"network-watcher",
+				"reachability-diagnosis"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FN3V0EB04B3CPQGS1RK5WM",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You support an application hosted in the virtual network vnet-spoke. The virtual machine gw-app-01 is supposed to send traffic to an on-premises server at 10.60.5.20, but the team observes that this traffic is being handed to a network virtual appliance instead of leaving through the ExpressRoute gateway. You need a report for the destination address 10.60.5.20 that states which routing device the platform uses for that destination, the IP address of that device, and the route table that holds the route that was applied. Live probes to the on-premises network are not permitted. Which Network Watcher capability should you use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Source virtual machine",
+							"gw-app-01, subnet app-subnet, virtual network vnet-spoke"
+						],
+						[
+							"Destination address being investigated",
+							"10.60.5.20 (inside the on-premises range 10.60.0.0/16)"
+						],
+						[
+							"Route table attached to app-subnet",
+							"rt-spoke-udr"
+						],
+						[
+							"Prefix in rt-spoke-udr that matches the destination address",
+							"10.0.0.0/8"
+						],
+						[
+							"Target of that prefix",
+							"Network virtual appliance 10.1.0.4"
+						],
+						[
+							"Route covering 10.60.0.0/16",
+							"Learned through BGP from the ExpressRoute circuit; not present in rt-spoke-udr"
+						],
+						[
+							"Live probes against the destination",
+							"Not permitted by the on-premises network team"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Next hop"
+					},
+					{
+						"id": "b",
+						"text": "IP flow verify"
+					},
+					{
+						"id": "c",
+						"text": "Connection troubleshoot"
+					},
+					{
+						"id": "d",
+						"text": "NSG diagnostics"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Next hop is the capability built for route resolution. Given a destination address, it reports the type of routing device the platform would use (such as VirtualAppliance, VirtualNetworkGateway or Internet), the IP address of that device, and the identifier of the route table that contains the matching route; when the matching route comes from no user-created table, the table is reported as System Route. It evaluates the platform's routing configuration only, so nothing is probed at 10.60.5.20 and the on-premises team's restriction is respected. That is exactly the three-part answer the team asked for: device type, device address, and route table holding the applied route — and it explains why traffic for 10.60.5.20 follows the 10.0.0.0/8 prefix in rt-spoke-udr toward the virtual appliance rather than the ExpressRoute gateway.",
+				"perChoice": {
+					"b": "IP flow verify simulates whether traffic would be permitted or blocked by network security group rules and Virtual Network Manager admin rules, and it names the security rule that matched. It never reports a routing device for a destination address or the route table involved, and it does not evaluate user-defined routes, so it cannot answer a routing question.",
+					"c": "Connection troubleshoot runs live probes and returns reachability, latency and a hop-by-hop topology, which is not permitted here because the on-premises team forbids probes to the destination. It may flag a route as a contributing cause, but it is not the tool that hands back the routing device type, its IP address and the route table as a routing report.",
+					"d": "NSG diagnostics inspects network security group rules and their logs for traffic to a specific virtual machine or network interface and reports which security rule matched. It says nothing about where the platform routes a destination address, so it cannot produce the routing report that was requested."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/next-hop-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/ip-flow-verify-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-troubleshoot-overview"
+				}
+			],
+			"subtopics": [
+				"network-watcher-routing",
+				"user-defined-routes",
+				"troubleshoot-connectivity"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FN8BPTCAEGFNAF44B38KMC",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a web tier that runs as the virtual machine scale set ss-web in the virtual network vnet-app. The subnet snet-web carries the security group web-tier-sg, and the scale set network profile contributes further entries that apply to every instance network interface. Operations reports that the monitoring host 10.20.1.24 completes TCP 443 sessions to the instances without trouble, while its ICMP echo requests to instance address 10.20.5.31 are never answered. You need a rule-level report showing the entries in force for those instances and identifying the one that discards the echo traffic, so the correction can be applied once in the group instead of instance by instance. Which Network Watcher capability should you use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Observed value"
+					],
+					"rows": [
+						[
+							"Scale set",
+							"ss-web (uniform orchestration), three instances running"
+						],
+						[
+							"Placement",
+							"Virtual network vnet-app, subnet snet-web"
+						],
+						[
+							"Security group attachment",
+							"web-tier-sg on subnet snet-web; the scale set network profile also carries entries that land on every instance network interface"
+						],
+						[
+							"Failing flow",
+							"ICMP echo request, source 10.20.1.24, destination 10.20.5.31, no reply received"
+						],
+						[
+							"Working flow",
+							"TCP 443, source 10.20.1.24, destination 10.20.5.31, session completes"
+						],
+						[
+							"Instance reachability",
+							"All three instances answer through the internal load balancer on TCP 443"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Network Watcher NSG diagnostics"
+					},
+					{
+						"id": "b",
+						"text": "Network Watcher IP flow verify"
+					},
+					{
+						"id": "c",
+						"text": "Network Watcher next hop"
+					},
+					{
+						"id": "d",
+						"text": "Network Watcher connection troubleshoot"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Two facts in this scenario narrow the choice. The flow that is being dropped is ICMP, and the entries in question are the ones that land on the network interfaces of a virtual machine scale set. IP flow verify can exercise only TCP and UDP rules, and only the security and admin rules applied to a single virtual machine's network interface, so it cannot evaluate this flow at all. NSG diagnostics covers exactly these gaps: it simulates a given flow against the rules of the groups in scope, states whether the flow is allowed or denied, names the entry responsible, and it accepts virtual machine scale set network interfaces as a target. That gives the team the entry-level view needed to fix the group once.",
+				"perChoice": {
+					"b": "This capability only exercises TCP and UDP rules and only the security and admin rules attached to one virtual machine's network interface, so it cannot evaluate an ICMP flow and it does not cover entries applied to virtual machine scale sets. It is the right tool when a TCP or UDP flow on a single virtual machine is being blocked.",
+					"c": "This capability reports the type of next hop, its IP address and the route table that applies for a destination address. It never evaluates security group entries, so it cannot tell you which entry is discarding the echo traffic.",
+					"d": "This capability answers end-to-end reachability questions by probing, and it reports latency, a source-to-destination topology and per-hop issues. The requirement here is a rule-level view of the entries in force for the scale set's instances and the identity of the entry that drops the flow, which is not what a probe-based run provides."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/ip-flow-verify-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/next-hop-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-troubleshoot-overview"
+				}
+			],
+			"subtopics": [
+				"nsg-diagnostics",
+				"icmp-rule-evaluation",
+				"virtual-machine-scale-sets"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FNB3QYJGW288V45FQQZZF8",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You support an application that runs in the virtual network spoke-app. The virtual machine api-01 must open TCP sessions on port 443 to the server 10.20.4.15 in the peered virtual network hub-core, but every attempt times out. You ran a Network Watcher connection troubleshoot check between the two machines and got the result shown below. You need a configuration change that restores the traffic between the two virtual networks. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Observed value"
+					],
+					"rows": [
+						[
+							"Source",
+							"Virtual machine api-01 (10.30.2.7) in spoke-app / snet-app"
+						],
+						[
+							"Destination",
+							"10.20.4.15, virtual machine in hub-core"
+						],
+						[
+							"Diagnostic result",
+							"Unreachable"
+						],
+						[
+							"Probes sent",
+							"100"
+						],
+						[
+							"Probes failed",
+							"100"
+						],
+						[
+							"Reported error code",
+							"VnetAccessNotAllowed"
+						],
+						[
+							"Network security group on the hub subnet",
+							"Allows inbound TCP 443 from 10.30.0.0/16"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set AllowVNetAccess to enabled on the peering between spoke-app and hub-core"
+					},
+					{
+						"id": "b",
+						"text": "Set AllowGatewayTransit to enabled on the peering between spoke-app and hub-core"
+					},
+					{
+						"id": "c",
+						"text": "Set UseRemoteGateways to enabled on the peering between spoke-app and hub-core"
+					},
+					{
+						"id": "d",
+						"text": "Set AllowVNetAccess to disabled on the peering between spoke-app and hub-core and add an inbound TCP 443 rule to the hub subnet network security group"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The path error VnetAccessNotAllowed reported by the diagnostic run occurs when the virtual network peering has AllowVNetAccess set to false, because that setting blocks traffic from crossing the peering boundary. Enabling AllowVNetAccess on the peering between spoke-app and hub-core re-opens that boundary, so the TCP 443 sessions from api-01 to 10.20.4.15 can proceed. The hub subnet's network security group already permits inbound TCP 443 from the spoke address range, so no group change is needed for this failure.",
+				"perChoice": {
+					"b": "AllowGatewayTransit decides whether a gateway in the peered virtual network, such as an ExpressRoute or VPN gateway, may be used to reach on-premises destinations. It does not govern ordinary traffic between virtual machines that live in the two peered networks, so enabling it does not clear the reported VnetAccessNotAllowed error for a session that terminates on 10.20.4.15.",
+					"c": "UseRemoteGateways tells the spoke to send traffic that leaves the network through the gateway in the peered virtual network rather than through its own gateway. It applies to routes toward on-premises destinations, not to traffic that terminates on a virtual machine in the peered virtual network, so it does not remove the VnetAccessNotAllowed error here.",
+					"d": "AllowVNetAccess must be enabled for traffic to cross the peering boundary; turning it off withdraws exactly the permission the failing sessions need. A network security group rule cannot grant access across a peering whose access control forbids it, and the hub subnet group already allows inbound TCP 443 from the spoke range, so adding another rule changes nothing for this failure."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-troubleshoot-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/ip-flow-verify-overview"
+				}
+			],
+			"subtopics": [
+				"connection-troubleshoot",
+				"peering-access-control",
+				"error-code-interpretation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FNJ1RPGMNAGNFXNBVE9ZHQ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an order-processing service that runs as the virtual machine api-01 in the subnet snet-app of the virtual network vnet-app. It has to open TCP sessions on port 8080 to the virtual machine svc-orders in the subnet snet-orders of the same virtual network, but every session attempt from api-01 times out, while sessions from the other virtual machines in snet-app to svc-orders are established normally. You ran a Network Watcher connection troubleshoot check from api-01 to svc-orders and stored the result below. You need the sessions from api-01 to be established again. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"ConnectionStatus\": \"Unreachable\",\n  \"ProbesSent\": 30,\n  \"ProbesFailed\": 30,\n  \"AvgLatencyInMs\": null,\n  \"MinLatencyInMs\": null,\n  \"MaxLatencyInMs\": null,\n  \"Hops\": [\n    {\n      \"Type\": \"Source\",\n      \"Id\": \"aaaaaaaa-0000-1111-2222-bbbbbbbbbbbb\",\n      \"Address\": \"10.20.1.7\",\n      \"ResourceId\": \"/subscriptions/sub1/resourceGroups/rg-app/providers/Microsoft.Compute/virtualMachines/api-01\",\n      \"NextHopIds\": [ \"bbbbbbbb-1111-2222-3333-cccccccccccc\" ],\n      \"Issues\": [\n        { \"Origin\": \"Local\", \"Severity\": \"Error\", \"Type\": \"GuestFirewall\", \"Context\": [] }\n      ]\n    },\n    {\n      \"Type\": \"VirtualMachine\",\n      \"Id\": \"bbbbbbbb-1111-2222-3333-cccccccccccc\",\n      \"Address\": \"10.20.2.11\",\n      \"ResourceId\": \"/subscriptions/sub1/resourceGroups/rg-app/providers/Microsoft.Compute/virtualMachines/svc-orders\",\n      \"NextHopIds\": [],\n      \"Issues\": []\n    }\n  ],\n  \"SourceSecurityRuleAnalysis\": {\n    \"Results\": [\n      {\n        \"Profile\": { \"Source\": \"10.20.1.7\", \"Destination\": \"10.20.2.11\", \"DestinationPort\": \"8080\", \"Protocol\": \"TCP\", \"Direction\": \"Outbound\" },\n        \"NetworkSecurityGroupResult\": {\n          \"SecurityRuleAccessResult\": \"Allow\",\n          \"EvaluatedSecurityGroups\": [\n            {\n              \"AppliedTo\": \"/subscriptions/sub1/resourceGroups/rg-app/providers/Microsoft.Network/virtualNetworks/vnet-app/subnets/snet-app\",\n              \"MatchedRule\": { \"Action\": \"Allow\", \"RuleName\": \"AllowApiToOrders\" },\n              \"NetworkSecurityGroupId\": \"/subscriptions/sub1/resourceGroups/rg-app/providers/Microsoft.Network/networkSecurityGroups/app-nsg\"\n            }\n          ]\n        }\n      }\n    ]\n  },\n  \"DestinationSecurityRuleAnalysis\": {\n    \"Results\": [\n      {\n        \"Profile\": { \"Source\": \"10.20.1.7\", \"Destination\": \"10.20.2.11\", \"DestinationPort\": \"8080\", \"Protocol\": \"TCP\", \"Direction\": \"Inbound\" },\n        \"NetworkSecurityGroupResult\": {\n          \"SecurityRuleAccessResult\": \"Allow\",\n          \"EvaluatedSecurityGroups\": [\n            {\n              \"AppliedTo\": \"/subscriptions/sub1/resourceGroups/rg-app/providers/Microsoft.Network/virtualNetworks/vnet-app/subnets/snet-orders\",\n              \"MatchedRule\": { \"Action\": \"Allow\", \"RuleName\": \"AllowApiToOrders\" },\n              \"NetworkSecurityGroupId\": \"/subscriptions/sub1/resourceGroups/rg-app/providers/Microsoft.Network/networkSecurityGroups/orders-nsg\"\n            }\n          ]\n        }\n      }\n    ]\n  },\n  \"NextHopAnalysis\": {\n    \"NextHopType\": \"VnetLocal\",\n    \"NextHopIpAddress\": \"10.20.2.11\"\n  }\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Update the guest operating system firewall on the source virtual machine so that it permits the traffic to the destination port"
+					},
+					{
+						"id": "b",
+						"text": "Update the guest operating system firewall on the destination virtual machine so that it permits the traffic from the source"
+					},
+					{
+						"id": "c",
+						"text": "Update the network security group on the destination subnet so that it permits the traffic to the destination port"
+					},
+					{
+						"id": "d",
+						"text": "Update the route table on the source subnet so that it contains a route to the destination address"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The result places the fault on the first hop, whose type is Source and whose resource is the api-01 virtual machine: that hop carries an issue of type GuestFirewall with origin Local, and Local means the issue is on that hop itself. The hop for the destination virtual machine reports an empty issue list, so the block is not attributed to the destination host. The security rule analysis returns an access result of Allow on both the source side and the destination side, with the matched rules named, and no issue of type NetworkSecurityRule is reported, so no network security group rule is refusing the traffic. The next hop analysis returns a next hop type of VnetLocal and no fault of type UserDefinedRoute is reported, so routing is not the cause either. The traffic is therefore stopped by the guest operating system firewall inside the source virtual machine, and that firewall has to permit the traffic to the destination port before the sessions can be established.",
+				"perChoice": {
+					"b": "This option points at the wrong host. The only guest firewall issue in the result is attached to the hop whose resource is api-01, and its origin is Local, which means the issue is on that hop itself. The hop for the destination virtual machine has an empty issue list, so the result does not attribute the block to the guest operating system firewall on the destination.",
+					"c": "The result contradicts this change: the security rule analysis returns an access result of Allow for the evaluated groups on both the source side and the destination side, with the matched rules and their Allow actions named, and no issue of type NetworkSecurityRule appears on any hop. Nothing in the output points at a rule in the network security group of the destination subnet.",
+					"d": "The next hop analysis in the result reports a next hop type of VnetLocal rather than None, and no fault of type UserDefinedRoute is reported for the path. The output therefore does not point at a missing or wrong route in the route table of the source subnet."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-troubleshoot-overview"
+				}
+			],
+			"subtopics": [
+				"connection-troubleshoot",
+				"guest-firewall",
+				"diagnostic-result-interpretation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FNTBQ69QYMGTB2Z60A7K3R",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You support an application running as virtual machine app-01 in subnet snet-app, inside virtual network vnet-spoke. That machine must reach on-premises server 10.70.9.5 through the ExpressRoute gateway in hub virtual network vnet-hub, yet the sessions never arrive at the server. A colleague ran a Network Watcher next hop check for 10.70.9.5 from app-01 and stored the result below. You need to understand where the platform sends that traffic so the team can correct the configuration. Which statement best describes what this result shows?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Source",
+							"app-01 (10.20.1.10)"
+						],
+						[
+							"Destination IP address",
+							"10.70.9.5"
+						],
+						[
+							"Next hop type",
+							"Internet"
+						],
+						[
+							"Route table",
+							"System Route"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "The next hop check confirms that no route you created matches traffic to 10.70.9.5, so the traffic leaves the virtual network via the public Internet path rather than reaching the ExpressRoute gateway."
+					},
+					{
+						"id": "b",
+						"text": "The next hop check confirms that a route you created sends 10.70.9.5 to the virtual appliance in the hub virtual network, so the traffic takes the appliance path instead of the ExpressRoute gateway."
+					},
+					{
+						"id": "c",
+						"text": "The next hop check confirms that a security group rule denies the traffic, so open port 443 in the network security group attached to snet-app before the sessions can reach the Internet."
+					},
+					{
+						"id": "d",
+						"text": "The next hop check confirms missing ARP entries on the ExpressRoute circuit, so the fault lies with the on-premises network rather than in your own routing of that prefix."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The stored output combines two well-known fields of a next hop result: the next hop type (Internet) and the route table (System Route). The route table is reported as System Route when no route you created applies to the destination, so nothing in your own route tables redirects 10.70.9.5 toward the ExpressRoute gateway. Traffic therefore falls back to the platform's built-in egress over the Internet, which is why the on-premises server never sees the sessions, and the routing design has to be corrected with an appropriate route for that prefix. A next hop result describes only where traffic would be sent; it says nothing about whether security group or Virtual Network Manager admin rules would allow it.",
+				"perChoice": {
+					"b": "A route you created that matched the destination would have been reported together with the route table holding it, not as System Route, and a virtual appliance destination would appear with the VirtualAppliance next hop type plus the appliance address. Neither appears in the stored output, so this reading does not match the result.",
+					"c": "A next hop result never evaluates network security group rules or Virtual Network Manager admin rules, so it cannot confirm that a rule denies the traffic, and it does not name a rule to open. Rule-level answers for TCP or UDP traffic on a single virtual machine come from IP flow verify, while end-to-end reachability with root-cause detail comes from connection troubleshoot.",
+					"d": "Missing ARP entries on an ExpressRoute circuit are surfaced by connection troubleshoot as a routing error, not by a next hop check. A next hop result only reports the next hop type, its IP address and the route table that matched, so it cannot confirm an ARP condition."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/next-hop-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/ip-flow-verify-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-troubleshoot-overview"
+				}
+			],
+			"subtopics": [
+				"next-hop",
+				"route-analysis",
+				"network-watcher"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FP0798F4NDDJ43FA73M209",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a workload that runs as the virtual machine app-01 in subnet snet-app of the virtual network vnet-app. Traffic from app-01 that is bound for the on-premises server 10.60.4.25 is handed to the network virtual appliance fw-01 in subnet snet-nva, and the sessions never complete, although the appliance itself is powered on and healthy. A Network Watcher connection troubleshoot run between app-01 and 10.60.4.25 produced the result below. You need the sessions from app-01 to the on-premises server to be established. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"ConnectionStatus\": \"Unreachable\",\n  \"NextHopAnalysis\": {\n    \"NextHopType\": \"VirtualAppliance\",\n    \"NextHopIP\": \"10.20.7.9\"\n  },\n  \"Hops\": [\n    {\n      \"Type\": \"Source\",\n      \"ResourceId\": \"/subscriptions/sub1/resourceGroups/rg-app/providers/Microsoft.Compute/virtualMachines/app-01\",\n      \"Issues\": []\n    },\n    {\n      \"Type\": \"VirtualAppliance\",\n      \"ResourceId\": \"/subscriptions/sub1/resourceGroups/rg-app/providers/Microsoft.Compute/virtualMachines/fw-01\",\n      \"Issues\": [\n        {\n          \"ErrorCode\": \"IPForwardingNotEnabled\",\n          \"Origin\": \"Local\",\n          \"Severity\": \"Error\"\n        }\n      ]\n    }\n  ]\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Enable IP forwarding on the network interface of the network virtual appliance that forwards traffic to the on-premises network."
+					},
+					{
+						"id": "b",
+						"text": "Enable IP forwarding on the network interface of the source virtual machine that originates the traffic."
+					},
+					{
+						"id": "c",
+						"text": "Enable IP forwarding on the network interface of the network virtual appliance in the hub virtual network."
+					},
+					{
+						"id": "d",
+						"text": "Enable IP forwarding on the network interface of the destination virtual machine in the on-premises network."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The run reports the session as Unreachable, the next hop for the destination as a VirtualAppliance (10.20.7.9), and an issue on that appliance hop with error code IPForwardingNotEnabled, Origin Local and Severity Error. Origin Local means the condition sits on the hop itself, so the fault is on the network virtual appliance that sits in the path of the on-premises prefix. IPForwardingNotEnabled is the routing condition reported when the network interface of such an appliance is not enabled for IP forwarding: the appliance receives the traffic from app-01 but will not route it onward to the on-premises network, which is why the sessions never complete. Turning on IP forwarding for the network interface of the appliance that handles this traffic restores the path.",
+				"perChoice": {
+					"a": "Enable IP forwarding on the network interface of the network virtual appliance that forwards traffic to the on-premises network.",
+					"b": "app-01 only originates the sessions; it is not a device that relays traffic between segments, so switching on IP forwarding for its own network interface cannot change what the appliance does with it. The recorded condition belongs to the hop that plays the virtual appliance role, and no issue is reported on the source hop.",
+					"c": "The result identifies the appliance hop in the application virtual network (NextHopType VirtualAppliance, resource id of fw-01) and reports no condition on any interface in the hub virtual network. Enabling forwarding on an interface that is not on the reported path leaves the reported error untouched.",
+					"d": "The condition concerns an Azure network interface inside the virtual network. The host in the on-premises network does not relay this traffic, and enabling forwarding on its interface has no bearing on the behaviour of the appliance that received it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-troubleshoot-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/next-hop-overview"
+				}
+			],
+			"subtopics": [
+				"connection-troubleshoot",
+				"routing-errors",
+				"network-virtual-appliance"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FP842H3PQ3JPM80ZX034XC",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have three separate traffic investigations for workloads running in a retail platform's Azure environment, and each one needs a different Network Watcher capability. You need to assign the capability that fits each investigation. Which capability should you use for each investigation? Drag each capability into the matching slot.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Case",
+						"What operations observed",
+						"What the team needs from the platform"
+					],
+					"rows": [
+						[
+							"A",
+							"The virtual machine vm-billing in the virtual network vnet-prod is enrolled in a Virtual Network Manager hub. Its TCP sessions on port 443 toward the service endpoint in the peered virtual network vnet-data are refused.",
+							"The name of the rule that produced the refusal, plus confirmation of whether that rule is an administrator rule in Virtual Network Manager or an entry in the security group applied to the machine. Live probes toward the service are not permitted."
+						],
+						[
+							"B",
+							"The virtual machine vm-report in the virtual network vnet-app must reach the destination address 10.80.2.15 in a peered virtual network through a virtual network gateway, but the sessions never arrive.",
+							"The kind of routing device the platform uses for that destination, the address of that device, and whether the route that applied comes from a route table the team created or from the platform's built-in set. Live probes are not permitted."
+						],
+						[
+							"C",
+							"The Application Gateway v2 instance agw-front in the virtual network vnet-edge fronts an order service that calls a partner API at api.partner.example over TCP 443. Callers report intermittent failures.",
+							"Whether any service is listening on the target port, which stage of the path carries the problem and on which side of that stage it appears, and how many probes failed. No software may be added to the appliance."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "IP flow verify"
+					},
+					{
+						"id": "i2",
+						"text": "Next hop"
+					},
+					{
+						"id": "i3",
+						"text": "Connection troubleshoot"
+					}
+				],
+				"slots": [
+					{
+						"id": "slot-a",
+						"label": "Case A"
+					},
+					{
+						"id": "slot-b",
+						"label": "Case B"
+					},
+					{
+						"id": "slot-c",
+						"label": "Case C"
+					}
+				]
+			},
+			"key": {
+				"slot-a": "i1",
+				"slot-b": "i2",
+				"slot-c": "i3"
+			},
+			"explanation": {
+				"correct": "Case A asks which rule produced a refusal and whether that rule comes from Virtual Network Manager administrator configuration or from a security group entry, and it forbids live probes. That is a static rule simulation that weighs security group rules together with Virtual Network Manager administrator rules and returns the name of the deciding rule, which is what IP flow verify does. Case B asks where the platform routes a destination address, which routing device is used, its address, and whether a created route table or the platform's built-in route set supplied the route, without sending live probes; that is the next hop report, which names the next hop type, its address and the route table, and shows System Route when no user-created route applies. Case C needs an end-to-end check that reports whether anything is listening on the target port, which stage of the path carries the problem and on which side of that stage it appears, and the number of failed probes, with nothing installable on the source; those per-stage results and probe counters come from a connection troubleshoot run, whose agentless experience also allows an Application Gateway v2 source.",
+				"perChoice": {
+					"i1": "Belongs in Case A: it simulates whether traffic is permitted based on the security and administrator rules in force, including Virtual Network Manager administrator rules, returns Access allowed or Access denied together with the name of the rule responsible, and never sends live probes.",
+					"i2": "Belongs in Case B: for a destination address it reports the kind of routing device used, the address of that device, and the route table involved, reporting System Route when no user-created route applies; it says where traffic would go and does not judge whether the rules allow it.",
+					"i3": "Belongs in Case C: it performs the end-to-end check and returns the status of the destination port, the path stages with the origin of each issue (inbound, outbound or local) and its severity and type, plus the counts of probes sent and failed, and it can run without installing an extension on the source."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/ip-flow-verify-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/next-hop-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-troubleshoot-overview"
+				}
+			],
+			"subtopics": [
+				"ip-flow-verify",
+				"next-hop",
+				"connection-troubleshoot"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GWZT8GMNWACF2T33B6Y90W",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have four connectivity investigations for workloads in your Azure environment, and each one used Network Watcher connection troubleshoot to test a path between two endpoints. You need to record the error code that the tool reported for each investigation, so the team can act on the right problem. Which error code belongs to each run? Drag each error code into the matching slot.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Run R1\n  Start virtual machine: vm-app-01\n  End point: vm-db-02\n  Test performed: TCP 443 outbound\n  Outcome reported by the run: The run could not start. The Network Watcher extension installed for vm-app-01 was not responding, and zero probes were sent.\n\nRun R2\n  Start virtual machine: vm-app-02\n  End point: vm-web-03\n  Test performed: TCP 8080 outbound\n  Outcome reported by the run: The run reached vm-web-03, but the check confirmed that nothing there accepted connections for 8080.\n\nRun R3\n  Start virtual machine: vm-app-03\n  End point: 10.70.9.5 (on-premises via ExpressRoute)\n  Test performed: TCP 443 outbound\n  Outcome reported by the run: The run reported that traffic for 10.70.9.5 is handed to a next hop of None instead of leaving through the ExpressRoute gateway, so every session fails.\n\nRun R4\n  Start virtual machine: vm-app-04\n  End point: vm-api-05\n  Test performed: TCP 443 outbound\n  Outcome reported by the run: The run failed to open a local socket: the socket it needed was still lingering in the TIME_WAIT state left over from an earlier check."
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "AgentStopped"
+					},
+					{
+						"id": "i2",
+						"text": "NoListenerOnDestination"
+					},
+					{
+						"id": "i3",
+						"text": "UserDefinedRoute"
+					},
+					{
+						"id": "i4",
+						"text": "SourcePortInUse"
+					},
+					{
+						"id": "i5",
+						"text": "RouteMissing"
+					},
+					{
+						"id": "i6",
+						"text": "UDRLoop"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Error code for R1 (vm-app-01 to vm-db-02)"
+					},
+					{
+						"id": "s2",
+						"label": "Error code for R2 (vm-app-02 to vm-web-03)"
+					},
+					{
+						"id": "s3",
+						"label": "Error code for R3 (vm-app-03 to 10.70.9.5)"
+					},
+					{
+						"id": "s4",
+						"label": "Error code for R4 (vm-app-04 to vm-api-05)"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Each run's outcome matches the error code that connection troubleshoot reports for that condition. R1 is AgentStopped, because the run could not start once the Network Watcher extension on the starting virtual machine stopped responding. R2 is NoListenerOnDestination, because the target was reached but the check confirmed that nothing there accepted connections for 8080. R3 is UserDefinedRoute, because a route in the customer's own configuration sends the traffic to a next hop of None, which is the blackhole the tool reports. R4 is SourcePortInUse, because the probe could not bind since the local socket it needed was still in the TIME_WAIT state from an earlier check.",
+				"perChoice": {
+					"i1": "Fits R1: the run aborted because the Network Watcher agent on the starting virtual machine had stopped or was unresponsive, which the tool reports as AgentStopped.",
+					"i2": "Fits R2: the destination answered, but the check confirmed that no process was listening on 8080, which is reported as NoListenerOnDestination.",
+					"i3": "Fits R3: a route matched the traffic and steered it to a next hop of None, creating the blackhole routing reported as UserDefinedRoute.",
+					"i4": "Fits R4: the probe could not open its socket because the local port it selected was still in the TIME_WAIT state, which is reported as SourcePortInUse.",
+					"i5": "Fits no slot: RouteMissing is raised when no valid route to the destination can be found at a hop, and no run reported that. In R3 a route was found; it simply points at a next hop of None.",
+					"i6": "Fits no slot: UDRLoop describes a routing loop in which the next hop IP matches the current hop IP, and none of the four runs showed a loop."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-troubleshoot-overview"
+				}
+			],
+			"subtopics": [
+				"connection-troubleshoot",
+				"error-codes",
+				"network-watcher"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GX7CN1Q5S6X9XTWVY4EWZH",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have run Network Watcher connection troubleshoot checks against several Azure workloads, and each run ended with one of the error codes listed in the slots below. You need to record, for each code, the configuration detail that explains it, so the team can correct the underlying design instead of only the symptom. Which configuration detail belongs to each code? Drag each detail into the matching slot.",
+				"items": [
+					{
+						"id": "i1",
+						"text": "A user-defined route sends the traffic to the address of the hop that is already handling it"
+					},
+					{
+						"id": "i2",
+						"text": "The hub virtual network does not let its on-premises connection carry traffic on behalf of the spoke"
+					},
+					{
+						"id": "i3",
+						"text": "The spoke virtual network is not pointed at the hub's on-premises connection for on-premises destinations"
+					},
+					{
+						"id": "i4",
+						"text": "The ExpressRoute circuit has no address resolution entries for the on-premises next hop"
+					},
+					{
+						"id": "i5",
+						"text": "Two network interfaces of one virtual machine share one address range"
+					},
+					{
+						"id": "i6",
+						"text": "The local socket left over from the earlier test is still holding the TIME_WAIT state"
+					},
+					{
+						"id": "i7",
+						"text": "The destination service is refusing connections on the number the test targeted"
+					},
+					{
+						"id": "i8",
+						"text": "The name of the destination failed to resolve into an address"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "UDRLoop"
+					},
+					{
+						"id": "s2",
+						"label": "AllowGatewayTransitNotEnabled"
+					},
+					{
+						"id": "s3",
+						"label": "UseRemoteGatewaysNotEnabled"
+					},
+					{
+						"id": "s4",
+						"label": "ARPMissing"
+					},
+					{
+						"id": "s5",
+						"label": "MultiNICsInSameSubnet"
+					},
+					{
+						"id": "s6",
+						"label": "SourcePortInUse"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5",
+				"s6": "i6"
+			},
+			"explanation": {
+				"correct": "Every code in the slots points at one specific configuration detail. A user-defined route that sends traffic to the address of the hop already handling it produces UDRLoop. A hub virtual network that will not let its on-premises connection carry traffic on behalf of the spoke produces AllowGatewayTransitNotEnabled, while a spoke that is not pointed at the hub's on-premises connection for on-premises destinations produces UseRemoteGatewaysNotEnabled. An ExpressRoute circuit with no address resolution entries for the on-premises next hop produces ARPMissing. Two network interfaces of one virtual machine sharing an address range produce MultiNICsInSameSubnet, which is reported because that setup can lead to asymmetric routing and unpredictable traffic. A local socket still holding the TIME_WAIT state from an earlier test produces SourcePortInUse, because the port chosen as the source of the next test is still in that state.",
+				"perChoice": {
+					"i1": "This belongs in the UDRLoop slot: the tool reports that code when the next hop of a user-defined route equals the address of the hop that is already processing the traffic, so the traffic loops.",
+					"i2": "This belongs in the AllowGatewayTransitNotEnabled slot: the hub side of the topology must allow its on-premises connection to carry traffic on behalf of the spoke, otherwise this code is raised.",
+					"i3": "This belongs in the UseRemoteGatewaysNotEnabled slot: the spoke side must point at the hub's on-premises connection for on-premises destinations, and this code is raised when it does not.",
+					"i4": "This belongs in the ARPMissing slot: the tool reports that code when the ExpressRoute circuit has no address resolution entries for the on-premises next hop it is supposed to use.",
+					"i5": "This belongs in the MultiNICsInSameSubnet slot: the tool reports that code when several network interfaces of a single virtual machine sit in one subnet, which can cause asymmetric routing and unpredictable traffic.",
+					"i6": "This belongs in the SourcePortInUse slot: a source port left in the TIME_WAIT state by an earlier test makes the following test fail with that code, because the chosen source port is still busy.",
+					"i7": "This fits no slot here: a host that is not listening on the target port is reported as NoListenerOnDestination, and that code is not one of the conditions listed.",
+					"i8": "This fits no slot here: a hostname lookup that fails is reported as DNSResolution, and that code is not one of the conditions listed."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-troubleshoot-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/next-hop-overview"
+				}
+			],
+			"subtopics": [
+				"network-watcher-connection-troubleshoot",
+				"connection-error-codes"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GXG70GZAQ5V56AST1E9DVV",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You support an application that runs as the virtual machine app-01 in subnet snet-app of vnet-app. Your team uses the connection troubleshoot capability to investigate sessions that fail, and the runs report issue types against the hops they traverse. Four different types have come back from recent investigations, and you need to record, for each one, what it tells you about the connection, so the engineers know which part of the environment to correct. Drag each reported type into the slot that describes what it indicates.",
+				"items": [
+					{
+						"id": "a",
+						"text": "GuestFirewall"
+					},
+					{
+						"id": "b",
+						"text": "DNSResolution"
+					},
+					{
+						"id": "c",
+						"text": "NetworkSecurityRule"
+					},
+					{
+						"id": "d",
+						"text": "UserDefinedRoute"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "The operating system running inside the virtual machine stopped the packets before they left it."
+					},
+					{
+						"id": "s2",
+						"label": "The name of the destination could not be turned into an address, so the check never started."
+					},
+					{
+						"id": "s3",
+						"label": "An entry in the group that controls permitted traffic on the interface or its subnet refused the traffic."
+					},
+					{
+						"id": "s4",
+						"label": "An entry that someone on the team added pointed the traffic at a next hop that discards it."
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d"
+			},
+			"explanation": {
+				"correct": "Each type carried on a hop points at one specific aspect of the failed path: GuestFirewall marks traffic that was dropped by the operating system inside the virtual machine, DNSResolution marks a destination name that could not be turned into an address, NetworkSecurityRule marks an entry in the traffic filtering group attached to the interface or the subnet refusing the traffic, and UserDefinedRoute marks a forwarding entry created by the team that hands the traffic to a next hop that discards it.",
+				"perChoice": {
+					"a": "This is the type reported when the operating system inside the virtual machine drops the traffic with its own blocking rules, so it belongs in the slot about packets being stopped before they left the machine.",
+					"b": "This is the type reported when the lookup of the destination name fails and no address is obtained, so it belongs in the slot about the name that could not be turned into an address.",
+					"c": "This is the type reported when an entry in the traffic filtering group attached to the interface or the subnet refuses inbound or outbound traffic, so it belongs in the slot about the group that controls permitted traffic.",
+					"d": "This is the type reported when a forwarding entry created by the team sends the traffic to a next hop that drops it, so it belongs in the slot about the entry that someone on the team added."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-troubleshoot-overview"
+				}
+			],
+			"subtopics": [
+				"network-watcher",
+				"connection-troubleshoot",
+				"hop-issue-types"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GXPYJVV4V4Y0375HXQJYG2",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a monitoring pipeline that stores the output of every Network Watcher check your platform team runs, and the engineers who read that data keep asking which piece of a stored run answers their question. You need to map each request to the field that carries the answer. Which field should each engineer be given? Drag each field name into the matching slot.",
+				"items": [
+					{
+						"id": "f1",
+						"text": "ConnectionStatus"
+					},
+					{
+						"id": "f2",
+						"text": "AvgLatencyInMs"
+					},
+					{
+						"id": "f3",
+						"text": "ProbesFailed"
+					},
+					{
+						"id": "f4",
+						"text": "SecurityRuleAccessResult"
+					},
+					{
+						"id": "f5",
+						"text": "AppliedTo"
+					},
+					{
+						"id": "f6",
+						"text": "DestinationPortStatus"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Overall verdict on whether the far end answered the check during the run"
+					},
+					{
+						"id": "s2",
+						"label": "Mean round-trip delay measured while the traffic flowed successfully"
+					},
+					{
+						"id": "s3",
+						"label": "How many of the attempts issued during the run did not complete, capped at 100"
+					},
+					{
+						"id": "s4",
+						"label": "Allow-or-block outcome produced by evaluating the entries in force"
+					},
+					{
+						"id": "s5",
+						"label": "Whether the group that decided the outcome is bound at the interface level or at the subnet level"
+					},
+					{
+						"id": "s6",
+						"label": "Condition of the far endpoint during the attempt, such as timeout or no answer"
+					}
+				]
+			},
+			"key": {
+				"s1": "f1",
+				"s2": "f2",
+				"s3": "f3",
+				"s4": "f4",
+				"s5": "f5",
+				"s6": "f6"
+			},
+			"explanation": {
+				"correct": "Each request describes one specific piece of evidence carried by a stored Network Watcher connection troubleshoot run. ConnectionStatus holds the overall verdict of the check (Reachable or Unreachable), so it answers whether the far end answered. AvgLatencyInMs holds the average round-trip delay and, together with the minimum and maximum values, is returned only when the check succeeded, so it answers the request for mean round-trip delay. ProbesFailed counts the probes that did not complete and is capped at 100, matching the request about how many issued attempts did not complete. SecurityRuleAccessResult reports Allow or Deny once the entries in force on the interface and subnet have been evaluated, so it produces the allow-or-block outcome. AppliedTo records whether the group holding the matched entry sits on the network interface or on the subnet, which answers the attachment-level question. DestinationPortStatus reports the state of the destination port (Unknown, Reachable, Unstable, NoConnection or Timeout), which is the condition of the far endpoint during the attempt, including timeouts and no-answer cases.",
+				"perChoice": {
+					"f1": "ConnectionStatus carries the outcome of the whole check as Reachable or Unreachable, so it belongs in the slot asking for the overall verdict on whether the far end answered.",
+					"f2": "AvgLatencyInMs is the average round-trip delay in milliseconds, reported only when the check succeeded, so it belongs in the slot asking for the mean round-trip delay.",
+					"f3": "ProbesFailed counts the probes that did not complete and is capped at 100, so it belongs in the slot asking how many of the issued attempts did not complete.",
+					"f4": "SecurityRuleAccessResult holds Allow or Deny for the entries in force on the interface and the subnet, so it belongs in the slot asking for the allow-or-block outcome.",
+					"f5": "AppliedTo records whether the group holding the matched entry is attached to the network interface or to the subnet, so it belongs in the slot asking about the attachment level.",
+					"f6": "DestinationPortStatus reports the state of the destination port as Unknown, Reachable, Unstable, NoConnection or Timeout, so it belongs in the slot describing the condition of the far endpoint during the attempt."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-troubleshoot-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/ip-flow-verify-overview"
+				}
+			],
+			"subtopics": [
+				"connection-troubleshoot",
+				"network-watcher-output-fields",
+				"connectivity-diagnostics"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GXYE7QT900P7DZCHGBM6PP",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You maintain the routing design for the spoke environment of a retail platform, and before every change the team asks for a Network Watcher next hop report for each destination that is in scope. The table below shows, for each destination, the route entry that matched, the next hop value in that entry, and what that value belongs to. You need to file the next hop type that the report returns for each destination, so the routing design can be reviewed against the intended path. Drag each next hop type into the matching slot.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Destination tested",
+						"Route table that matched",
+						"Next hop value",
+						"What the next hop value belongs to"
+					],
+					"rows": [
+						[
+							"203.0.113.20",
+							"System Route",
+							"0.0.0.0",
+							"the platform's own default path out of the subscription, with no customer device in front of it"
+						],
+						[
+							"10.60.8.14",
+							"rt-spoke",
+							"10.60.0.4",
+							"the IP address of the ExpressRoute circuit router that sits in the hub virtual network"
+						],
+						[
+							"10.20.3.7",
+							"rt-spoke",
+							"10.20.3.7",
+							"the IP address of fw-01, the firewall device that inspects traffic in snet-nva"
+						],
+						[
+							"10.90.2.15",
+							"rt-spoke",
+							"10.90.2.15",
+							"the address of the other virtual network that is linked to this one"
+						],
+						[
+							"10.30.5.9",
+							"rt-spoke",
+							"10.30.5.9",
+							"a private address published for a storage resource inside the subscription"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "internet",
+						"text": "Internet"
+					},
+					{
+						"id": "vapp",
+						"text": "VirtualAppliance"
+					},
+					{
+						"id": "vngateway",
+						"text": "VirtualNetworkGateway"
+					},
+					{
+						"id": "vpeer",
+						"text": "VirtualNetworkPeering"
+					},
+					{
+						"id": "vserviceendpoint",
+						"text": "VirtualNetworkServiceEndpoint"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Destination 203.0.113.20"
+					},
+					{
+						"id": "s2",
+						"label": "Destination 10.60.8.14"
+					},
+					{
+						"id": "s3",
+						"label": "Destination 10.20.3.7"
+					},
+					{
+						"id": "s4",
+						"label": "Destination 10.90.2.15"
+					},
+					{
+						"id": "s5",
+						"label": "Destination 10.30.5.9"
+					}
+				]
+			},
+			"key": {
+				"s1": "internet",
+				"s2": "vngateway",
+				"s3": "vapp",
+				"s4": "vpeer",
+				"s5": "vserviceendpoint"
+			},
+			"explanation": {
+				"correct": "The next hop capability reports the kind of forwarding device the platform uses for a destination address, the address of that device, and the route table holding the route that was applied; when no user-created route applies, the route table is shown as System Route. For 203.0.113.20 no customer route matched (the report shows System Route) and the next hop value is the platform's own default path, so the reported type is Internet. For 10.60.8.14 the matching route points at the ExpressRoute circuit router in the hub virtual network, so the type is VirtualNetworkGateway. For 10.20.3.7 the matching route points at the inspection device fw-01, so the type is VirtualAppliance. For 10.90.2.15 the matching route points at the paired virtual network that is linked to this one, so the type is VirtualNetworkPeering. For 10.30.5.9 the matching route points at a private address published for a platform resource, so the type is VirtualNetworkServiceEndpoint. Note that this report only describes where traffic would be sent; it never evaluates security or admin rules, so it cannot tell you whether the traffic is permitted.",
+				"perChoice": {
+					"internet": "Belongs to destination 203.0.113.20, where no customer route matched and traffic follows the platform's default path out to a public address.",
+					"vapp": "Belongs to destination 10.20.3.7, where the matching route points at the firewall device fw-01 that inspects traffic in snet-nva.",
+					"vngateway": "Belongs to destination 10.60.8.14, where the matching route points at the ExpressRoute circuit router in the hub virtual network.",
+					"vpeer": "Belongs to destination 10.90.2.15, where the matching route points at the other virtual network that is linked to this one.",
+					"vserviceendpoint": "Belongs to destination 10.30.5.9, where the matching route points at a private address published for a platform resource."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/next-hop-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-troubleshoot-overview"
+				}
+			],
+			"subtopics": [
+				"next-hop-capability",
+				"next-hop-types",
+				"user-defined-routes"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GYA8MTY3T1MHB5BBVJ73C2",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a service that runs as the virtual machine srv-02 at 10.20.6.44 in the subnet snet-app of the virtual network vnet-app. A client virtual machine client-01 at 10.20.4.19 opens TCP sessions to srv-02 on port 443, and every attempt is refused. You ran a Network Watcher IP flow verify check for the inbound traffic from client-01 and stored the result below. The result reports the rule that produced the refusal, but it points to no network security group. You need the sessions from client-01 to be accepted. Which interpretation and change should you apply?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Network Watcher region",
+							"East US"
+						],
+						[
+							"Virtual machine region",
+							"East US"
+						],
+						[
+							"Local IP",
+							"10.20.6.44"
+						],
+						[
+							"Remote IP",
+							"10.20.4.19"
+						],
+						[
+							"Direction",
+							"Inbound"
+						],
+						[
+							"Protocol",
+							"TCP"
+						],
+						[
+							"Local port",
+							"443"
+						],
+						[
+							"Remote port",
+							"51234"
+						],
+						[
+							"Result",
+							"Access denied"
+						],
+						[
+							"Rule that matched",
+							"DenyAllInBound"
+						],
+						[
+							"Network security group",
+							"No link returned"
+						]
+					]
+				},
+				"statement": "The stored result shows that {{interpretation}}, so you should {{correction}}.",
+				"slots": [
+					{
+						"id": "interpretation",
+						"options": [
+							{
+								"id": "a",
+								"text": "a default security rule produced the refusal, and no network security group is named"
+							},
+							{
+								"id": "b",
+								"text": "a custom rule that belongs to a scale set produced the refusal, and no network security group is named"
+							},
+							{
+								"id": "c",
+								"text": "a custom rule in the network security group applied to the client produced the refusal, so that group should be opened"
+							},
+							{
+								"id": "d",
+								"text": "the check ran in a region other than the virtual machine's, so no rule can be named for it"
+							}
+						]
+					},
+					{
+						"id": "correction",
+						"options": [
+							{
+								"id": "a",
+								"text": "add a custom allow rule for the inbound TCP traffic to a network security group applied to the machine that runs the service"
+							},
+							{
+								"id": "b",
+								"text": "add a custom allow rule for the outbound TCP traffic to a network security group applied to the machine that runs the service"
+							},
+							{
+								"id": "c",
+								"text": "add a custom allow rule for the inbound TCP traffic to a network security group applied to the machine that sends the traffic"
+							},
+							{
+								"id": "d",
+								"text": "remove the rule named in the result from a network security group applied to the machine that runs the service"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"interpretation": "a",
+				"correction": "a"
+			},
+			"explanation": {
+				"correct": "The stored result reports Access denied, names the rule DenyAllInBound and returns no link to a network security group. The documentation states that the result omits the link when a default security rule is the one deciding the outcome, so the missing link tells you that no custom rule in force permits this traffic and that the built-in rule named in the result is what refuses it. The other explanations do not survive the stored facts: rules that belong to a scale set are not evaluated by this check at all, a custom rule always comes back with the group that holds it, and the check cannot even run for a virtual machine that sits in a different region from the Network Watcher instance. Because the groups evaluated for the checked virtual machine are the network security groups applied to its network interface or its subnet, the correction is a custom allow rule for the inbound TCP traffic in one of the groups applied to the machine that runs the service.",
+				"perChoice": {
+					"interpretation:b": "Rules applied to virtual machine scale sets are outside this check, so a scale set rule cannot be the one named in the result; those rules have to be examined with NSG diagnostics instead.",
+					"interpretation:c": "A custom rule is always reported together with the network security group that holds it, so the missing link rules this out; for inbound traffic the groups in force are the ones applied to the machine that runs the service, not the client's.",
+					"interpretation:d": "The check needs a Network Watcher instance in the same subscription and region as the virtual machine, so a result could not have been produced from another region; both regions in the stored result are the same.",
+					"correction:b": "The stored check was run in the inbound direction for the machine that runs the service, so the rule that admits the traffic has to sit in a group applied to that machine; an outbound rule for the same traffic is not consulted for this direction.",
+					"correction:c": "For the inbound direction the groups that decide the outcome are those applied to the machine that runs the service; a rule added to the client's group would not be consulted for traffic arriving at the service.",
+					"correction:d": "The rule that produced the refusal is one of the built-in default rules, so there is nothing to delete and the result names no group to edit; the outcome changes only by adding a rule that permits the traffic."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/ip-flow-verify-overview"
+				}
+			],
+			"subtopics": [
+				"network-watcher",
+				"ip-flow-verify",
+				"network-security-groups"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GYFENBQH9M5BD61NGHJRB5",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You support a payment gateway that runs as the virtual machine gw-01 in the virtual network vnet-pay. Since this morning's rollout, the DNS queries that gw-01 sends to the on-premises resolver 10.30.0.10 go unanswered, and the operations team cannot tell whether the offending entry sits in the security group attached to the machine or in the admin rules that Azure Virtual Network Manager applies to vnet-pay. The team needs the exact entry that is responsible so that it can be corrected. Which Network Watcher capability should you run, and what does it report?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Workload details for gw-01\n--------------------------\nVirtual machine .......... gw-01\nAddress in vnet-pay ....... 10.40.2.17\nDestination ............... 10.30.0.10 (on-premises resolver)\nTraffic under review ..... DNS queries over UDP, port 53\nDirection of travel ....... Outbound\nOutbound controls ........ security group on the network interface plus admin rules applied to vnet-pay by Azure Virtual Network Manager"
+				},
+				"statement": "You should run {{capability}} for this investigation, and it will report {{outcome}}.",
+				"slots": [
+					{
+						"id": "capability",
+						"options": [
+							{
+								"id": "a",
+								"text": "IP flow verify"
+							},
+							{
+								"id": "b",
+								"text": "connection troubleshoot"
+							},
+							{
+								"id": "c",
+								"text": "next hop"
+							},
+							{
+								"id": "d",
+								"text": "NSG diagnostics"
+							}
+						]
+					},
+					{
+						"id": "outcome",
+						"options": [
+							{
+								"id": "a",
+								"text": "A verdict of allowed or denied, the entry that decided it, and a pointer to where that entry is defined"
+							},
+							{
+								"id": "b",
+								"text": "The next hop type for the destination, the address of that hop, and the route table that supplied the entry"
+							},
+							{
+								"id": "c",
+								"text": "Minimum, maximum and average latency, a graphical view of the path, and the number of probes that failed"
+							},
+							{
+								"id": "d",
+								"text": "The entries in force for the network interfaces of the target, and the one that drops the traffic"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"capability": "a",
+				"outcome": "a"
+			},
+			"explanation": {
+				"correct": "IP flow verify is the capability built for this case. It simulates a flow against the security rules of every network security group attached to the virtual machine's interface or subnet together with the admin rules that Azure Virtual Network Manager applies to the virtual network, so it covers both possible sources of the offending entry in this scenario. It uses direction of travel, protocol, local and remote address, and local and remote port, which matches the outbound UDP port 53 traffic under investigation, and it covers TCP and UDP. Its result is Access allowed or Access denied, the name of the rule that decided the outcome, and a link to the network security group that holds that rule so the entry can be corrected (no link is offered when a default security rule decided the result).",
+				"perChoice": {
+					"capability:b": "Connection troubleshoot only checks TCP or ICMP connections, so it cannot exercise a UDP flow to the resolver, and it reports latency, a graphical topology view and probe counts rather than the security entry that discarded the traffic.",
+					"capability:c": "A next hop report shows where traffic for a destination would be sent — the next hop type, its IP address and the route table — and it never evaluates security or admin rules, so it cannot name the entry that discarded the DNS traffic.",
+					"capability:d": "NSG diagnostics is the documented path for ICMP rules and for rules that apply to virtual machine scale set instances; it is not the capability that weighs the admin rules that Azure Virtual Network Manager applies to vnet-pay.",
+					"outcome:b": "These are the fields of a next hop report, which answers where traffic for the destination would go rather than whether the security and admin entries permit it.",
+					"outcome:c": "These are the findings of a connection troubleshoot run — latency measurements, a graphical path view and failed probe counts — which describe an observed path rather than the rule that decided a simulated check.",
+					"outcome:d": "This is the shape of an NSG diagnostics report, which lists the entries that apply to a target and the one that stops the traffic; it is not the result of a simulated traffic check against security and admin rules."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/ip-flow-verify-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-troubleshoot-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/next-hop-overview"
+				}
+			],
+			"subtopics": [
+				"ip-flow-verify",
+				"network-watcher",
+				"connectivity-troubleshooting"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GYJACH4PMWHYQRBPAPS0JP",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You support a workload that runs as the virtual machine resolver-01 in the subnet snet-app of the virtual network vnet-app. The machine must send DNS queries over UDP port 53 to the on-premises resolver at 10.30.0.10, but the queries are dropped in transit. The team needs to know whether the entries in force on resolver-01 would allow that UDP traffic and which entry is responsible, so that it can be corrected. The agreement with the on-premises team forbids live probes to the resolver. Which Network Watcher capability should you use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Source virtual machine",
+							"resolver-01 (10.20.3.14) in vnet-app / snet-app"
+						],
+						[
+							"Security groups in scope",
+							"nic-nsg-resolver on the network interface; snet-app-nsg on the subnet"
+						],
+						[
+							"Destination",
+							"on-premises resolver 10.30.0.10"
+						],
+						[
+							"Traffic under investigation",
+							"DNS queries, UDP port 53, outbound"
+						],
+						[
+							"Probing constraint",
+							"Live probes to the destination are not permitted"
+						]
+					]
+				},
+				"statement": "The Network Watcher capability that fits this investigation is {{cap}}.",
+				"slots": [
+					{
+						"id": "cap",
+						"options": [
+							{
+								"id": "a",
+								"text": "IP flow verify"
+							},
+							{
+								"id": "b",
+								"text": "Connection troubleshoot"
+							},
+							{
+								"id": "c",
+								"text": "Next hop"
+							},
+							{
+								"id": "d",
+								"text": "NSG diagnostics"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"cap": "a"
+			},
+			"explanation": {
+				"correct": "IP flow verify is the capability that evaluates the security and admin rules that apply to a virtual machine against a specified direction of travel, protocol, local and remote addresses and ports. It returns Access allowed or Access denied together with the name of the rule that decided the outcome and a link to the network security group that holds it, so the offending entry can be edited. It exercises TCP and UDP rules, and because it is a static evaluation of the rule set it sends nothing toward the destination, which honours the no-probe constraint. It also considers every network security group that touches the virtual machine, whether the group sits on the network interface or on the subnet, so both groups listed for resolver-01 are taken into account.",
+				"perChoice": {
+					"cap:b": "Connection troubleshoot sends live probes to the endpoints, which breaches the no-probing constraint, and it can only check TCP or ICMP connections, so a UDP exchange cannot be exercised with it at all.",
+					"cap:c": "Next hop only reports where traffic for a destination address would be routed - the next hop type, that hop's address and the route table involved - and it never evaluates security or admin rules, so it cannot say whether the UDP traffic is permitted.",
+					"cap:d": "NSG diagnostics lists the entries applied to a resource and is the recommended fallback for evaluating ICMP rules or entries that come from a virtual machine scale set; it does not produce an allowed-or-denied verdict with the deciding rule for a single virtual machine, and both groups here belong to an individual machine."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/ip-flow-verify-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-troubleshoot-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/next-hop-overview"
+				}
+			],
+			"subtopics": [
+				"ip-flow-verify",
+				"network-watcher-capabilities",
+				"udp-rule-evaluation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GYNG8MGTEE1SF84EZEYW0M",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You support an ordering service that runs as the virtual machine ord-01 in the subnet snet-orders of the virtual network vnet-orders. The machine has to open TCP sessions on 443 to a third-party endpoint published as orders.example.net, and every attempt fails. The team needs to learn two things from a single investigation: whether orders.example.net is turned into an address on ord-01 at all, and whether any service at the far end is accepting sessions on 443. Live probes against that endpoint are permitted for this check. Which Network Watcher capability should you run, and what does it report?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Source virtual machine",
+							"ord-01 (10.20.3.18)"
+						],
+						[
+							"Source subnet",
+							"snet-orders"
+						],
+						[
+							"Source virtual network",
+							"vnet-orders"
+						],
+						[
+							"Remote endpoint",
+							"orders.example.net"
+						],
+						[
+							"Traffic",
+							"TCP 443, outbound"
+						],
+						[
+							"Symptom",
+							"Every session attempt to the endpoint times out"
+						]
+					]
+				},
+				"statement": "You should run {{capability}} for this investigation, and it reports {{finding}}.",
+				"slots": [
+					{
+						"id": "capability",
+						"options": [
+							{
+								"id": "a",
+								"text": "IP flow verify"
+							},
+							{
+								"id": "b",
+								"text": "Next hop"
+							},
+							{
+								"id": "c",
+								"text": "NSG diagnostics"
+							},
+							{
+								"id": "d",
+								"text": "Connection troubleshoot"
+							}
+						]
+					},
+					{
+						"id": "finding",
+						"options": [
+							{
+								"id": "a",
+								"text": "Whether the traffic would be permitted by the security rules in force, and which rule and group are applied at the interface"
+							},
+							{
+								"id": "b",
+								"text": "Whether the name resolves, whether listeners are present at the destination, and the hops and latency measured"
+							},
+							{
+								"id": "c",
+								"text": "Which routing device would handle the traffic for the destination address, and which route table holds the entry"
+							},
+							{
+								"id": "d",
+								"text": "The entries that apply to the instances of a scale set, and which rule is applied at the interface"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"capability": "d",
+				"finding": "b"
+			},
+			"explanation": {
+				"correct": "Connection troubleshoot is the capability that actually exercises the path: it can test a TCP check to a fully qualified domain name, it validates that the hostname resolves (reported as a DNSResolution problem when it does not) and it is the only one of the three that confirms whether something is listening on the target port (NoListenerOnDestination). A single run also returns the hop-by-hop view from source to destination, the reachable/unreachable status, and the minimum, maximum and average latency when the check succeeds. IP flow verify is a static simulation of the security and admin rules in force and never contacts the far end; next hop only reports routing; NSG diagnostics lists the rules that apply to the instances of a scale set.",
+				"perChoice": {
+					"capability:a": "IP flow verify only evaluates the security and admin rules in force for the direction, protocol, addresses and ports you supply, and names the matched rule and its group. It does not send probes, so it cannot tell you whether the hostname resolves or whether a service accepts sessions on the port.",
+					"capability:b": "Next hop answers where the platform would route traffic for a destination address by returning the next hop type, that hop's IP address and the route table involved. It never evaluates security rules and never tests live reachability, so it cannot answer either of the team's two questions.",
+					"capability:c": "NSG diagnostics reports the rules that apply to the network interfaces of a virtual machine scale set and is the tool to use for ICMP rules, which IP flow verify cannot exercise. It does not probe the path, so it cannot validate name resolution or whether anything is accepting sessions.",
+					"finding:a": "This describes a static evaluation of the rules in force, which identifies the responsible rule and the group holding it but never contacts the endpoint. It therefore cannot reveal whether the name resolves or whether a service accepts sessions on 443.",
+					"finding:c": "This describes a routing report, which answers where traffic for an address would go rather than whether it is permitted by the rules or whether the far end is accepting sessions.",
+					"finding:d": "This describes the rule listing produced for the instances of a scale set, which is used when the entries themselves need review, not when you need to validate name resolution or confirm that a service is listening."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-troubleshoot-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/ip-flow-verify-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/next-hop-overview"
+				}
+			],
+			"subtopics": [
+				"network-watcher-capabilities",
+				"connection-troubleshoot",
+				"reachability-validation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GYVGY9MW28N1HKY6TM2TEP",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a recurring Network Watcher profile that checks whether the rules in force would let the virtual machine app-01 reach the Azure service tag AzureCloud. The profile has to cover only the UDP traffic leaving app-01, every destination port has to be in scope, and the source side has to stay unrestricted so that machines added later are covered automatically. The platform team keeps having its profile submissions refused, and the team cannot tell which field causes the refusal. You need to submit a profile that the service accepts. Which configuration should you use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Monitoring objective",
+						"Required scope"
+					],
+					"rows": [
+						[
+							"Virtual machine under observation",
+							"app-01 (10.20.7.31) in vnet-app"
+						],
+						[
+							"Traffic source",
+							"Unrestricted, so machines added later are covered automatically"
+						],
+						[
+							"Traffic destination",
+							"The Azure service tag AzureCloud"
+						],
+						[
+							"Traffic direction",
+							"Traffic leaving app-01"
+						],
+						[
+							"Protocol",
+							"UDP only"
+						],
+						[
+							"Destination ports",
+							"All destination ports"
+						]
+					]
+				},
+				"statement": "The profile should be submitted as {{profile}}.",
+				"slots": [
+					{
+						"id": "profile",
+						"options": [
+							{
+								"id": "a",
+								"text": "Source: *, Destination: Service Tag AzureCloud, Destination port: *, Protocol: UDP, Direction: Outbound"
+							},
+							{
+								"id": "b",
+								"text": "Source: *, Destination: Service Tag AzureCloud, Destination port: 443, 8443, Protocol: UDP, Direction: Outbound"
+							},
+							{
+								"id": "c",
+								"text": "Source: *, Destination: Service Tag AzureCloud, Destination port: *, Protocol: ICMP, Direction: Outbound"
+							},
+							{
+								"id": "d",
+								"text": "Source: *, Destination: Service Tag AzureCloud, Destination port: *, Protocol: UDP, Direction: Outbound, Inbound"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"profile": "a"
+			},
+			"explanation": {
+				"correct": "A diagnostic profile accepts one value per field: source and destination may be * or an IP address/CIDR or a service tag, the destination port may be * or a single port in the 0-65535 range, the protocol may be *, TCP or UDP, and the direction may be Outbound or Inbound. The keyed configuration uses only accepted values in every field and matches the required scope of the monitoring objective.",
+				"perChoice": {
+					"profile:b": "The destination port field takes either * or one port in the 0-65535 range, so a pair of ports is not a value the service accepts. It also would not cover every destination port, which the monitoring objective requires.",
+					"profile:c": "The protocol field takes *, TCP or UDP, so ICMP cannot be entered in a profile. Connection troubleshoot can perform ICMP checks even though the profile protocol field does not accept an ICMP value.",
+					"profile:d": "The direction field takes a single value, Outbound or Inbound, so listing both directions together is rejected. The required scope is also traffic leaving app-01 only."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-troubleshoot-overview"
+				}
+			],
+			"subtopics": [
+				"connection-troubleshoot",
+				"diagnostic-profile",
+				"network-watcher"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GZ763VN3P2NJV6WMXZRJ22",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You support a service that runs as the virtual machine app-01 in the subnet snet-app of the virtual network vnet-app. The service calls the virtual machine api-01 in the subnet snet-api of the peered virtual network vnet-api over TCP 443, and every call now times out, although the peering between the two virtual networks and the security groups on both sides were verified as correct this morning. A colleague ran a Network Watcher connection troubleshoot check from app-01 to api-01 and stored the result below. You need the calls from app-01 to api-01 to succeed again. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"ConnectionStatus\": \"Unreachable\",\n  \"ProbesSent\": 100,\n  \"ProbesFailed\": 100,\n  \"Hops\": [\n    {\n      \"Hop\": 1,\n      \"Type\": \"Source\",\n      \"ResourceId\": \"/subscriptions/sub-prod/resourceGroups/rg-app/providers/Microsoft.Compute/virtualMachines/app-01\"\n    },\n    {\n      \"Hop\": 2,\n      \"Type\": \"VnetLocal\",\n      \"ResourceId\": \"/subscriptions/sub-prod/resourceGroups/rg-app/providers/Microsoft.Network/virtualNetworks/vnet-app/subnets/snet-app\"\n    },\n    {\n      \"Hop\": 3,\n      \"Type\": \"VnetLocal\",\n      \"ResourceId\": \"/subscriptions/sub-prod/resourceGroups/rg-api/providers/Microsoft.Network/virtualNetworks/vnet-api/subnets/snet-api\"\n    }\n  ],\n  \"Issues\": [\n    {\n      \"Hop\": 3,\n      \"Type\": \"GuestFirewall\",\n      \"Severity\": \"Error\",\n      \"Origin\": \"Inbound\"\n    }\n  ]\n}"
+				},
+				"statement": "To restore the calls from app-01 to api-01, you should {{fix}}.",
+				"slots": [
+					{
+						"id": "fix",
+						"options": [
+							{
+								"id": "a",
+								"text": "Change the operating system firewall rules on api-01, so that the traffic arriving at it is accepted."
+							},
+							{
+								"id": "b",
+								"text": "Change the operating system firewall rules on api-01, so that the traffic leaving it is accepted."
+							},
+							{
+								"id": "c",
+								"text": "Change the network security group rules attached to the network interface of app-01, so that the traffic is accepted."
+							},
+							{
+								"id": "d",
+								"text": "Change the user-defined routes in the route table of the subnet snet-app, so that the traffic is sent to a different next hop."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"fix": "a"
+			},
+			"explanation": {
+				"correct": "The run lists a single hop issue, and it is recorded on hop 3, which is the subnet that hosts api-01. The type GuestFirewall means the filtering rules inside the operating system of the machine on that hop blocked the traffic, and the Origin Inbound places the fault on the link that arrives at the current hop. So the traffic that comes in to api-01 is dropped by the filtering rules of api-01's own operating system, and the fix is to allow that incoming traffic in those rules. This matches the scenario, in which the peering and the security groups on both sides were already verified as correct, and the run reports no other issue types.",
+				"perChoice": {
+					"fix:b": "This option works on the traffic leaving api-01. The recorded Origin is Inbound, which places the fault on the link that arrives at the current hop, so what the operating system rules rejected is the traffic coming in to api-01, not the traffic leaving it.",
+					"fix:c": "This option changes a network security group rule on the source interface. The recorded issue type is GuestFirewall, which refers to the filtering rules inside the operating system of the machine on the hop where the issue was recorded, and the security groups on both sides were already verified as correct.",
+					"fix:d": "This option changes routing in the source subnet. A routing fault would be recorded with the type UserDefinedRoute, and no such issue appears in the run; the only recorded fault on the hop is a host filtering rule on the machine reached at that hop."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-troubleshoot-overview"
+				}
+			],
+			"subtopics": [
+				"network-watcher",
+				"connection-troubleshoot",
+				"hop-issue-origin"
+			],
+			"reviewed": false
+		}
+	]
+}

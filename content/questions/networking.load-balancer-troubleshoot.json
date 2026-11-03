@@ -1,0 +1,1241 @@
+{
+	"skill": "networking.load-balancer-troubleshoot",
+	"questions": [
+		{
+			"id": "q_01M6H0PCF0RYCCX4345P86X983",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Standard Azure Load Balancer in the subscription contoso-prod that fronts a three-instance Linux web tier. Its single load balancing rule references the health probe shown below, and that probe was deployed from an ARM template. Since the template was applied, the load balancer has not delivered a single new client connection to any of the three instances, the Health Probe Status metric reads 0 for every backend IP address, and clients that already had a session keep it. You need new connections to reach the backends again. The probe must poll as often as the portal schedules probes by default, and the number of consecutive results required before an instance changes state must stay as it is today. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Load balancer SKU",
+							"Standard"
+						],
+						[
+							"Load balancing rule",
+							"Rule-HTTP-443 — frontend TCP 443 to backend TCP 8080"
+						],
+						[
+							"Probe name",
+							"probe-web-app"
+						],
+						[
+							"Probe protocol",
+							"HTTP"
+						],
+						[
+							"Probe port",
+							"8080"
+						],
+						[
+							"Probe path",
+							"/health"
+						],
+						[
+							"Probe interval (seconds)",
+							"120"
+						],
+						[
+							"Probe threshold",
+							"2"
+						],
+						[
+							"Probe 'Used by'",
+							"Rule-HTTP-443"
+						],
+						[
+							"Backend pool members",
+							"vm-a (10.0.1.4), vm-b (10.0.1.5), vm-c (10.0.1.6)"
+						],
+						[
+							"Health Probe Status, last 15 minutes",
+							"0 for vm-a, vm-b and vm-c"
+						],
+						[
+							"Direct GET /health from a host inside the VNet",
+							"HTTP 200 returned in 40 ms by all three instances"
+						],
+						[
+							"NSG rule on the backend subnet",
+							"Allow source AzureLoadBalancer to TCP 8080"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set the probe interval to 5 seconds and leave the threshold unchanged"
+					},
+					{
+						"id": "b",
+						"text": "Set the probe interval to 5 seconds and raise the threshold to 10"
+					},
+					{
+						"id": "c",
+						"text": "Leave the probe interval at 120 seconds and raise the threshold to 10"
+					},
+					{
+						"id": "d",
+						"text": "Leave the probe interval at 120 seconds and change the probe protocol to TCP"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "An HTTP probe request is subject to a built-in 30-second timeout. This probe's interval is 120 seconds, which is longer than that timeout, so each probe times out and is recorded as failed even though the application answers /health with HTTP 200 in milliseconds when called directly. A failed probe only stops the load balancer from sending new connections to that instance, and with all three probes failing the Standard load balancer delivers no new flows while established TCP sessions survive — exactly the reported symptoms. Lowering the interval to 5 seconds (the cadence the portal applies by default, and also the smallest value Azure allows) lets each probe finish inside the timeout window, and keeping the threshold as it is preserves the current behaviour for how many consecutive results flip an instance's state.",
+				"perChoice": {
+					"b": "Lowering the interval is the right direction, but the threshold was not to be changed. Raising it to 10 only alters how many consecutive failures or silent probes are needed to flip the instance state; it cannot turn a probe that never completes within the timeout into a valid answer, and it contradicts the requirement to leave the threshold as it is.",
+					"c": "Leaving the interval at 120 seconds keeps every probe running past the 30-second timeout that applies to HTTP probes, so the probes keep timing out and failing and the instances never re-enter rotation for new connections. Raising the threshold merely delays the state change instead of making the probe succeed.",
+					"d": "A TCP probe has no built-in request timeout of its own — it is judged once the interval elapses and the next probe is sent — and keeping the 120-second cadence does not satisfy the requirement to poll at the portal's default frequency. Changing the protocol also replaces the application's own health verdict with a plain check that a listener accepted the connection, which is not the signal this workload relies on."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-custom-probe-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-diagnostics"
+				}
+			],
+			"subtopics": [
+				"health-probe-configuration",
+				"probe-interval-timeout",
+				"standard-load-balancer"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6H0TVQ39R0EVKFZZFJ9CP3R",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Standard public load balancer named lb-app-prod in the subscription contoso-prod that fronts a three-instance web tier. The on-call rotation must be paged when the load balancer stops delivering traffic to clients, and separately when a backend instance stops answering its health check. Each page has to name the exact frontend IP and port, or the exact backend instance and port, that stopped working, and a single failing sample inside a five-minute evaluation window must not raise a page. The two alert rules you inherited are listed below. Which set of edits should you apply?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Alert rule",
+						"Metric",
+						"Aggregation",
+						"Split by",
+						"Condition",
+						"Evaluation window"
+					],
+					"rows": [
+						[
+							"LB-DataPath-Inbound",
+							"Data Path Availability",
+							"Count",
+							"Frontend IP address",
+							"Less than or equal to 0",
+							"5 minutes"
+						],
+						[
+							"LB-HealthProbe-Inbound",
+							"Health Probe Status",
+							"Count",
+							"Backend IP address",
+							"Less than or equal to 0",
+							"5 minutes"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Use the Average aggregation on both rules, but split Data Path Availability by frontend IP address alone and split Health Probe Status by backend IP address alone, keeping the condition of less than or equal to 0 on both."
+					},
+					{
+						"id": "b",
+						"text": "Use the Average aggregation on both rules, split Data Path Availability by frontend IP address and frontend port, and split Health Probe Status by backend IP address and backend port, keeping the condition of less than or equal to 0 on both."
+					},
+					{
+						"id": "c",
+						"text": "Use the Count aggregation on both rules, split Data Path Availability by frontend IP address and frontend port, and split Health Probe Status by backend IP address and backend port, keeping the condition of less than or equal to 0 on both."
+					},
+					{
+						"id": "d",
+						"text": "Use the Average aggregation on both rules, but split Data Path Availability by backend IP address and backend port, and split Health Probe Status by frontend IP address and frontend port, keeping the condition of less than or equal to 0 on both."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "Both metrics are recommended with the Average aggregation, and the documented inbound alerting pattern splits Data Path Availability by frontend IP address and frontend port with a condition of less than or equal to 0, and Health Probe Status by backend IP address and backend port using Average. Averaging over the five-minute window means a single zero sample no longer drives the rule to zero, so brief dips do not page the team, while the split dimensions tell the engineer exactly which frontend IP and port stopped delivering traffic or which backend instance on which port stopped answering its probe.",
+				"perChoice": {
+					"a": "Splitting on the IP address alone omits the port dimension, so a page cannot tell the engineer which frontend port or which backend port stopped working. The documented inbound rules split data path availability by frontend port and frontend IP address, and health probe status by backend IP address and backend port.",
+					"c": "Counting samples is explicitly not recommended for Data Path Availability and Health Probe Status; the recommended aggregation for both is Average. With Count, one zero sample inside the five-minute window is enough for the condition of less than or equal to 0 to fire, so the team is paged for a one-minute dip, which contradicts the requirement.",
+					"d": "The dimensions are attached to the wrong metrics. A data path availability rule split by backend IP address and backend port never identifies the frontend that stopped delivering traffic, and a health probe status rule split by frontend IP address and frontend port never identifies the backend instance that stopped answering its probe, so neither page carries the information on-call needs."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-diagnostics"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-troubleshoot"
+				}
+			],
+			"subtopics": [
+				"azure-monitor-metrics",
+				"alert-configuration",
+				"load-balancer-diagnostics"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6H0ZW7PGSYXVQVQS3QAJYWM",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Standard internal Azure Load Balancer named lb-edge in the subscription contoso-prod. It fronts two FortiGate network virtual appliances in active-active mode, and each appliance forwards traffic onward to a web tier of four Linux VMs. The single load balancing rule references the health probe shown below, and since the web VM named web-04 was stopped, that probe has been failing on both appliances. New client connections to the application no longer reach the web tier, even though three of the four web VMs are healthy and serving traffic. You need new client connections to keep reaching the web tier while a single web VM is stopped. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Load balancer lb-edge     : Standard, internal, frontend 10.0.2.10 port 443, rule lbrule-nva\nBackend pool pool-nva     : fw-a on NIC 10.0.1.4, fw-b on NIC 10.0.1.5 (FortiGate appliances, active-active)\nHealth probe hp-nva       : Protocol HTTP | Port 80 | Path / | Interval 5 s | Threshold 2 | Used by lbrule-nva\nProbe results, last four  : fw-a: 502, 502, 502, 502 | fw-b: 502, 502, 502, 502\nFortiGate health check    : HTTP GET / sent to member web-04 only, on both appliances\nWeb tier                  : web-01, web-02, web-03 running; web-04 stopped (four web VMs)\nNSG on appliance subnet   : Inbound allow from the AzureLoadBalancer service tag to TCP 80"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Change the health probe protocol to TCP and the probe port to 443, so that each FortiGate appliance is no longer judged by the HTTP status returned after forwarding the request to one of the web VMs."
+					},
+					{
+						"id": "b",
+						"text": "Set the probe threshold to 1 and the probe interval to 5 seconds, so that an appliance whose forwarded health check fails leaves the backend pool sooner."
+					},
+					{
+						"id": "c",
+						"text": "Add an NSG rule to the appliance subnet allowing inbound traffic from 168.63.129.16 to the probe port on each FortiGate NIC, so both appliances accept the probe instead of dropping it."
+					},
+					{
+						"id": "d",
+						"text": "Reconfigure the FortiGate appliances so that each one replies to the health probe locally on the NIC where the probe arrives, rather than forwarding the probe to the web VMs."
+					}
+				]
+			},
+			"key": {
+				"optionId": "d"
+			},
+			"explanation": {
+				"correct": "Both appliances are currently answering the probe by forwarding it to a host behind them (member web-04 only), so stopping that one web VM turned every probe into an HTTP 502. After two consecutive failures the threshold removes both appliances from the backend pool, and a single unhealthy server cascades into an application outage. When a load balancer fronts a network virtual appliance, the probe must be answered by the appliance itself on the NIC where the probe arrives, and the appliance must not forward the probe to the VMs behind it. Once each FortiGate serves the probe on that NIC, the probe stays healthy, the appliances stay in the pool, and new client connections keep reaching the web tier while web-04 is stopped.",
+				"perChoice": {
+					"a": "Changing the protocol or the port does not help, because the appliances would still be answering the probe by forwarding it to web-04, which is stopped; a TCP check against a stopped host fails just as an HTTP one does. What decides the outcome is which component replies to the probe, not the protocol or port it uses.",
+					"b": "Threshold and interval only control how quickly an instance is taken out of the pool once its probe fails; they cannot turn a failing probe into a successful one. Lowering the threshold to 1 would remove the appliances from the pool sooner and widen the outage.",
+					"c": "The probe is already reaching both appliances — each one returns HTTP 502 instead of dropping the packet — and the NSG already permits probe traffic by default through the AzureLoadBalancer service tag. An extra rule for 168.63.129.16 changes nothing, and blocking that platform address on a production system is unsupported in any case."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-custom-probe-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-troubleshoot"
+				}
+			],
+			"subtopics": [
+				"network-virtual-appliance-probing",
+				"health-probe-troubleshooting",
+				"azure-load-balancer"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6H12SDF2JN3MB1N9WA58EJK",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Standard internal Azure Load Balancer named lb-web-in in the subscription contoso-prod. It sits in front of three Ubuntu virtual machines that run nginx, and its single load balancing rule maps frontend port 443 to backend port 8443 on those machines. That rule references the health probe and the server configuration shown below. Since the probe was created, the Health Probe Status metric has read 0 for every backend IP address, no new client connection reaches the servers, and the few sessions that were already established keep running. You need new connections to be spread over the three machines again, and the team is not allowed to add or change anything on the machines themselves. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Health probe name",
+							"probe-web-app"
+						],
+						[
+							"Probe protocol",
+							"HTTP"
+						],
+						[
+							"Probe port",
+							"80"
+						],
+						[
+							"Probe path",
+							"/"
+						],
+						[
+							"Probe interval (seconds)",
+							"15"
+						],
+						[
+							"Probe threshold",
+							"2"
+						],
+						[
+							"Probe referenced by",
+							"lbrule-web-443"
+						],
+						[
+							"Load balancing rule frontend port",
+							"443"
+						],
+						[
+							"Load balancing rule backend port",
+							"8443"
+						],
+						[
+							"Ports listening on each virtual machine",
+							"8443 only"
+						],
+						[
+							"Service on 8443",
+							"nginx with TLS enabled; a request for path / is answered with status 200"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set the probe protocol to HTTPS and the probe port to 8443"
+					},
+					{
+						"id": "b",
+						"text": "Set the probe protocol to HTTP and the probe port to 8443"
+					},
+					{
+						"id": "c",
+						"text": "Set the probe protocol to HTTPS and the probe port to 443"
+					},
+					{
+						"id": "d",
+						"text": "Set the probe port to 8443 and the probe interval to 5 seconds"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The probe has to talk to the port the virtual machines actually listen on, and it has to use the same transport that port expects. The only listener on each machine is nginx on 8443 with TLS enabled, while the probe is a plain HTTP probe aimed at port 80, where nothing is listening. A plain HTTP probe never adds TLS, so it can never obtain a 200 answer from that listener (the TLS handshake fails or the port answers with a non-200 status, and either outcome counts as a failed probe). Because every probe attempt fails, all three instances stay out of rotation and the load balancer stops handing out new connections, while the sessions that were already open survive because a failed probe only removes an instance from receiving new traffic. Switching the probe to HTTPS on port 8443 makes it complete the TLS session and receive the 200 response for path /, so the instances return to the pool and new client connections are distributed over them again.",
+				"perChoice": {
+					"b": "Changing only the port leaves the probe as a clear-text HTTP probe. The listener on 8443 expects TLS, so an HTTP GET sent without TLS cannot return 200; the probe still fails, the instances stay marked unhealthy, and new connections are still not delivered.",
+					"c": "The port has to be one the virtual machines really listen on, and no process listens on 443 on the backends; the frontend port only belongs to the load balancer. An HTTPS probe aimed at 443 gets no answer, so the probe fails and no instance returns to the pool.",
+					"d": "Shortening the interval only makes the same mismatched probe run more often, so every attempt still fails and the instances remain out of rotation. The threshold counts consecutive results and cannot make a probe succeed; the protocol and target port are what must match the listener."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-custom-probe-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-troubleshoot"
+				}
+			],
+			"subtopics": [
+				"health-probe-configuration",
+				"probe-protocol-and-port",
+				"load-balancer-troubleshooting"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HH5AQV8EPJ1BGBEEA5PTGW",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Basic Azure Load Balancer named lb-orders in the subscription contoso-prod that fronts two Windows VMs running an order-processing service. Its single load balancing rule uses the health probe shown below. During a simultaneous reboot of both VMs, the probe failed on each instance, no new client connections were accepted, and every in-flight client session was cut instead of finishing. You need the in-flight sessions to survive a full backend outage while no new client connections are accepted during that outage, and the retired tier must be left behind. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"SKU",
+							"Basic (retired)"
+						],
+						[
+							"Frontend IP",
+							"203.0.113.40 (static)"
+						],
+						[
+							"Backend pool members",
+							"vm-orders-01, vm-orders-02"
+						],
+						[
+							"Load balancing rule",
+							"TCP 443 to backend TCP 8443"
+						],
+						[
+							"Health probe",
+							"HTTP, port 8080, path /health, interval 5 s, threshold 2"
+						],
+						[
+							"Probe status shown in the portal",
+							"Down on vm-orders-01 and vm-orders-02"
+						],
+						[
+							"New client connections during the outage",
+							"None accepted"
+						],
+						[
+							"Established client sessions during the outage",
+							"All terminated"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Replace the Basic load balancer with a Standard load balancer."
+					},
+					{
+						"id": "b",
+						"text": "Keep the Basic load balancer and add a second health probe with a lower threshold so established client sessions survive the outage."
+					},
+					{
+						"id": "c",
+						"text": "Keep the Basic load balancer and change the health probe protocol from HTTP to TCP so established client sessions survive the outage."
+					},
+					{
+						"id": "d",
+						"text": "Keep the Basic load balancer and enable HA Ports on the load balancing rule so established client sessions survive the outage."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The behaviour seen in the exhibit is a tier difference, not a probe configuration problem. When every probe in the pool is down, a Standard load balancer keeps established TCP flows alive as long as the pool holds more than one backend instance, and it simply stops sending new flows, which matches the requirement that in-flight sessions finish while no new client connections are accepted. Basic behaves differently: all TCP flows expire when the probes are down, which is why every open session was cut during the simultaneous reboot. Moving the workload onto a Standard load balancer satisfies the requirement and also leaves behind the retired Basic tier.",
+				"perChoice": {
+					"b": "Adding another probe or lowering the threshold only affects how quickly an instance is marked up or down and how quickly it recovers; it does not change how the tier handles already-established TCP flows when every probe is down. On Basic those flows still expire, so the in-flight client sessions would still be cut.",
+					"c": "HTTP and TCP probes are both supported on Basic, so switching the protocol only changes what the probe checks and the response it accepts. Neither protocol alters the treatment of established flows during a full probe outage, so the sessions would continue to be terminated.",
+					"d": "HA Ports is a Standard-only capability and cannot be enabled on a Basic load balancer. It also changes how inbound ports are distributed across backends rather than controlling what happens to connections that are already established."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-custom-probe-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-troubleshoot"
+				}
+			],
+			"subtopics": [
+				"standard-vs-basic",
+				"health-probe-failover",
+				"tcp-flow-continuity"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HH9D4V8P2QHCEWKE81P6J6",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Standard internal Azure Load Balancer named lb-app in the subscription contoso-prod. It fronts two Linux web servers that run in a virtual network; the prefix of that network was set during a recent migration of the hub segment, and the single load balancing rule references the health probe shown below. Since that migration, the Health Probe Status metric has read 0 for both pool members, no new client connection has reached either server, and sessions that clients had already opened keep running; outbound calls from the servers succeed normally. You need new client connections to reach the backends again. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Virtual network prefix            : 168.63.0.0/16\nLoad balancer lb-app             : Standard, internal\nBackend pool pool-web            : vm-web-01, vm-web-02\nHealth probe                     : TCP, port 8080, interval 5 seconds, threshold 2\nHealth Probe Status              : 0 for both pool members\nOutbound calls from pool members : Succeeding"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Place the load balancer and its backend instances in a new network whose prefix excludes the Microsoft-owned block that carries the probe source IP."
+					},
+					{
+						"id": "b",
+						"text": "Add a network security group rule on the backend subnet that allows inbound TCP on the probe port from the AzureLoadBalancer service tag."
+					},
+					{
+						"id": "c",
+						"text": "Replace the health probe with an HTTP probe on port 8080 and set the threshold to one response."
+					},
+					{
+						"id": "d",
+						"text": "Create a new network that uses the same prefix, put the load balancer in it, and keep the backend instances in the original network."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Every IPv4 health probe is sent from the platform address 168.63.129.16. The virtual network in this deployment uses 168.63.0.0/16, so the probe source address falls inside the network's own address space and can no longer be treated as platform probe traffic: the probe never reaches the pool members, Health Probe Status stays at 0, the load balancer stops sending new connections, already established sessions continue, and outbound traffic is unaffected because a failing probe only gates inbound traffic. The range that Microsoft owns and that contains 168.63.129.16 must be left out of the virtual network, so the load balancer and its backends have to run in a network whose prefix avoids that block, which is exactly what this option describes.",
+				"perChoice": {
+					"b": "The AzureLoadBalancer service tag already lets probe traffic through network security groups by default, so another allow rule changes nothing here. The probe is not being filtered by a security group; its source address overlaps the address space of the network itself, so the request never arrives at the pool members and the metric would still read 0.",
+					"c": "Changing the probe protocol or lowering the threshold does not change where the probe comes from. The request would still originate from the same address that sits inside the network's own address space, so it would still fail and the Health Probe Status metric would still read 0 for every pool member.",
+					"d": "Keeping the same prefix leaves the overlap with the probe source address in place, so probes would still fail. On top of that, an internal load balancer has to live in the same network as the backends it forwards traffic to, so the backends cannot remain behind in the original network."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-custom-probe-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-diagnostics"
+				}
+			],
+			"subtopics": [
+				"health-probe-configuration",
+				"virtual-network-address-space"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HHE320EXJ3GFHSY820D5HS",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a dual-stack Standard internal Azure Load Balancer named lb-app-dual in the subscription contoso-prod. It fronts three Ubuntu virtual machines that serve an HTTPS application, and every machine carries both an IPv4 and an IPv6 address. The single load balancing rule references the health probe shown below, and the network security group that covers the backend subnet is listed as well. Since the load balancer was converted to dual-stack, no new IPv6 client connection has reached the servers: the Health Probe Status metric reads 1 for the IPv4 address of each backend and 0 for the IPv6 address of each backend, while the IPv6 sessions that clients had already opened keep running. IPv6 clients must be able to open new connections to the application, and no change may be made on the backend machines themselves. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "$ az network lb frontend-ip list -g contoso-prod --lb-name lb-app-dual -o table\nName              PrivateIPAddress  PrivateIPv6Address\nfrontend-ipv4     10.10.0.10\nfrontend-ipv6                        fd00::10\n\n$ az network lb probe show -g contoso-prod --lb-name lb-app-dual --name probe-app-443 \\\n    --query \"{protocol:protocol, port:port, interval:intervalInSeconds, threshold:numberOfProbes}\" -o table\nprotocol  port  interval  threshold\nTCP       443   15         2\n\n$ az network nsg rule list -g contoso-prod --nsg nsg-app-subnet \\\n    --query \"[].{priority:priority, source:sourceAddressPrefix, dPort:destinationPortPrefix, protocol:protocol, access:access}\" -o table\npriority  source           dPort  protocol  access\n100       168.63.129.16    443    TCP       Allow\n110       VirtualNetwork    443    TCP       Allow\n120       *                 *      *         Deny"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add an inbound network security group rule with a higher priority than the deny that allows TCP port 443 from the IPv6 source address fe80::1234:5678:9abc"
+					},
+					{
+						"id": "b",
+						"text": "Add an inbound network security group rule with a higher priority than the deny that allows TCP port 443 from the IPv4 source address 168.63.129.16"
+					},
+					{
+						"id": "c",
+						"text": "Change the health probe protocol from TCP to HTTP on port 443 and keep the current interval and threshold"
+					},
+					{
+						"id": "d",
+						"text": "Remove the IPv6 frontend IP configuration from the load balancer so that it stops advertising IPv6 to clients"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "IPv6 health probes are sent from a link-local source address, fe80::1234:5678:9abc, while every IPv4 probe comes from 168.63.129.16. In nsg-app-subnet the only allowances are for 168.63.129.16 and for VirtualNetwork traffic, so the IPv6 probe source matches neither and falls through to the catch-all deny at priority 120. The probe never reaches the machines, their IPv6 endpoints are reported as unhealthy by the Health Probe Status metric, and the load balancer stops sending new IPv6 connections to them while existing IPv6 sessions continue. A dual-stack load balancer needs a network security group rule configured for the IPv6 health probe, so adding an inbound rule with a higher priority than the deny that allows TCP port 443 from fe80::1234:5678:9abc restores the IPv6 probe, marks the IPv6 endpoints healthy, and lets new IPv6 client connections be delivered again.",
+				"perChoice": {
+					"b": "168.63.129.16 is the source address of IPv4 probes, and the network security group already permits it on port 443, which is why the IPv4 probe status reads 1. IPv6 probes originate from a different address, so another allowance for the IPv4 address leaves the IPv6 probe matched by the catch-all deny and the IPv6 endpoints unhealthy.",
+					"c": "The TCP probe already succeeds for IPv4, so the protocol is not what stops the IPv6 check; the traffic is dropped by the network security group before it reaches the machine, and changing the protocol does not change the source address. An HTTP probe would also fail here, because the application serves HTTPS on port 443 and an HTTP probe expects a 200 response.",
+					"d": "Removing the IPv6 frontend configuration stops the load balancer from serving IPv6 clients altogether, which contradicts the requirement that IPv6 clients can open new connections. It also hides the real fault instead of fixing it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-custom-probe-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-diagnostics"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-troubleshoot"
+				}
+			],
+			"subtopics": [
+				"health-probe-troubleshooting",
+				"dual-stack-load-balancer",
+				"network-security-group-rules"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HHP00VA67T7AQ0Z08SWGJZ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Standard internal Azure Load Balancer named lb-multi in the subscription contoso-prod. It fronts two Ubuntu servers, and each of those servers has two network interfaces. The single load balancing rule references the health probe listed below. Since the rule was created, the Health Probe Status metric has read 0 for both pool members, no new client connection has reached either server, and the client sessions that clients had already opened keep running. You need new client connections to reach the servers again. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Health probe : probe-app-tcp\n    Protocol            : TCP\n    Port                : 8443\n    Interval (seconds)  : 15\n    Threshold           : 2\n    Used by             : lb-rule-app (frontend TCP 443 to backend TCP 8443)\n\nBackend pool pool-app : nic2 IP configuration on app-01 (10.20.2.10) and app-02 (10.20.2.11)\n\napp-01  nic1 address    : 10.20.1.10\napp-01  listener        : 0.0.0.0:8443\napp-01  packet capture  : TCP SYN to 10.20.2.10:8443 from 168.63.129.16 observed; the SYN-ACK that followed was sent from 10.20.1.10, and no reply from 10.20.2.10 was observed\napp-02  packet capture  : same capture result as app-01"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Change the server configuration so each server answers the probe with the address of the interface that received it, applying per-interface source network address translation inside the machine."
+					},
+					{
+						"id": "b",
+						"text": "Change the health probe configuration on each server to use the HTTP protocol, so the probe gets a status code from the application."
+					},
+					{
+						"id": "c",
+						"text": "Add an inbound rule to the network security group of the backend subnet that permits the AzureLoadBalancer service tag to the probe port on the address of the second interface, so it can reach each server."
+					},
+					{
+						"id": "d",
+						"text": "Change the health probe threshold to 1 and the interval to 5 seconds on each server, so the instance is treated as healthy after a single successful check."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The capture shows the probe request arriving at the address of the second interface while the server's SYN-ACK carries the first interface's address, so the handshake with the probed address never completes and the probe fails on both pool members. When a virtual machine has more than one interface, the documented guidance is to make the instance respond on the same interface that received the probe, using per-interface source address translation inside the guest when the reply would otherwise leave carrying another interface's address. With the probe down, the load balancer sends no new connections to the pool, while connections clients had already established keep running, which matches the reported symptom.",
+				"perChoice": {
+					"b": "Switching the probe protocol does not repair the handshake. The request still arrives on the second interface and the reply still carries the first interface's address, so the probe connection never completes and the Health Probe Status metric stays at 0. The probe configuration only exposes protocol, port and interval, so no setting on it can change the address the server replies with.",
+					"c": "The capture shows the probe request already reaching the server, so the traffic is not being dropped by a network security group, and the AzureLoadBalancer service tag already permits probe traffic by default. Adding a rule leaves the address on which the server replies unchanged, so the probe keeps failing and no new connections flow.",
+					"d": "Threshold and interval only control how quickly a result changes the state of an instance; they cannot produce a valid reply. The capture shows the server replying with the first interface's address instead of the probed one, so no probe ever succeeds and lowering the threshold or shortening the interval leaves both endpoints out of rotation."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-custom-probe-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-diagnostics"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-troubleshoot"
+				}
+			],
+			"subtopics": [
+				"multi-nic-health-probe",
+				"health-probe-failures"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HHYZQZNKG7MK3HVA085TQK",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Standard internal Azure Load Balancer named lb-tls in the subscription contoso-prod. It fronts two Ubuntu virtual machines, web-01 and web-02, that serve an HTTPS application on port 8443, and its single load balancing rule maps frontend port 443 to backend port 8443 on those machines. That rule references the health probe described in the exhibit. Since the server certificate was replaced last week, the Health Probe Status metric has read 0 for both backend IP addresses, no new client connection reaches the servers, and the sessions clients had already opened keep running. The certificate now on the servers is still valid, but each server has to be given a replacement before it expires, and both servers in the pool must take new client connections again. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Load balancer              lb-tls, Standard SKU, internal, subscription contoso-prod\nBackend pool               web-01 (10.0.1.4), web-02 (10.0.1.5)\nLoad balancing rule        lbrule-https, frontend port 443 to backend port 8443\nHealth probe protocol      HTTPS\nHealth probe port          8443\nHealth probe path          /healthz\nHealth probe interval      10 seconds\nHealth probe threshold     2\nProbe referenced by        lbrule-https\nHealth Probe Status        0 for both backend IP addresses\nServer certificate         Issued 20 October 2026, expires 20 December 2026\n  on web-01 and web-02\nCertificate chain          SHA-1\n  signature algorithm\nClient sessions opened     Still running\n  before the certificate\n  change"
+				},
+				"statement": "To get new client connections flowing to both servers again, the team should {{fix}}.",
+				"slots": [
+					{
+						"id": "fix",
+						"options": [
+							{
+								"id": "a",
+								"text": "Reissue the certificate so that the entire chain, including the issuing CA, uses SHA-256."
+							},
+							{
+								"id": "b",
+								"text": "Reissue the certificate so that only the leaf certificate uses SHA-256 and the issuing CA in the chain keeps its SHA-1 signature."
+							},
+							{
+								"id": "c",
+								"text": "Reissue the certificate so that the entire chain keeps its SHA-1 signature."
+							},
+							{
+								"id": "d",
+								"text": "Reissue the certificate so that web-01 uses SHA-256 and web-02 keeps its SHA-1 signature."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"fix": "a"
+			},
+			"explanation": {
+				"correct": "An HTTPS health probe validates the certificate the server presents, and it succeeds only when the whole chain that presents it, the certificate of the issuing authority included, is signed with a signature hash of at least SHA-256. The certificate now deployed on web-01 and web-02 has an SHA-1 chain, so the probe fails on both instances. A failed probe only gates inbound traffic, which is why the load balancer stopped handing the servers new connections while sessions clients had already opened kept running. Reissuing the certificate so the full chain is signed with SHA-256 restores probe success on both servers without touching the load balancing rule, the frontend and backend ports, or the probe configuration.",
+				"perChoice": {
+					"fix:b": "Only the leaf certificate would be signed with SHA-256 while the authority that issued it keeps an SHA-1 signature inside the chain. The probe requires the whole chain to meet the SHA-256 minimum, so the probe would stay failed on both instances and the load balancer would keep sending the servers no new connections.",
+					"fix:c": "Keeping an SHA-1 chain in place leaves the probe unable to accept the certificate, so the probe keeps failing on both instances and the servers continue to receive no new client connections.",
+					"fix:d": "Signing only web-01 with SHA-256 leaves web-02 presenting an SHA-1 chain, so that instance's probe keeps failing. The goal is that both servers in the pool take new client connections again, and this change does not deliver it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-custom-probe-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-diagnostics"
+				}
+			],
+			"subtopics": [
+				"health-probe-configuration",
+				"probe-certificate-requirements",
+				"inbound-traffic-failures"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HJ0RV06MNE0F1QES9NRPEX",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Standard internal Azure Load Balancer named lb-portal in the subscription contoso-prod. It fronts two Ubuntu virtual machines that run a web service on TCP port 8080, and its single load balancing rule sends frontend port 80 to backend port 8080 on those machines. That rule references the health probe described in the exhibit. Since the probe was created, the Health Probe Status metric has read 0 for both backend IP addresses, no new client connection reaches the servers, and the sessions clients had already opened keep running. The service answers with HTTP 200 on the probed path when it is called from another machine in the same virtual network, the network security group on the backend subnet still carries its default rules, and outbound calls from the servers succeed normally. You need new client connections to reach the two servers again, and every check must keep using HTTP against the same path and port. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Health probe property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Name",
+							"probe-http-8080"
+						],
+						[
+							"Protocol",
+							"HTTP"
+						],
+						[
+							"Port",
+							"8080"
+						],
+						[
+							"Path",
+							"/health"
+						],
+						[
+							"Interval (seconds)",
+							"120"
+						],
+						[
+							"Used by",
+							"lb-portal-rule-80"
+						]
+					]
+				},
+				"statement": "The change you should make is {{fix}}.",
+				"slots": [
+					{
+						"id": "fix",
+						"options": [
+							{
+								"id": "a",
+								"text": "Set the probe interval to 15 seconds"
+							},
+							{
+								"id": "b",
+								"text": "Set the probe interval to 60 seconds"
+							},
+							{
+								"id": "c",
+								"text": "Set the probe interval to 240 seconds"
+							},
+							{
+								"id": "d",
+								"text": "Set the probe threshold to 10"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"fix": "a"
+			},
+			"explanation": {
+				"correct": "HTTP and HTTPS probes carry a built-in 30-second timeout, so a probe whose interval is longer than that (here 120 seconds) is abandoned before the service can reply and is recorded as failed. That is why Health Probe Status stays at 0 for both backends and the load balancer sends no new connections, while sessions that clients already opened keep running. Bringing the interval down to 15 seconds lets each check finish inside the built-in timeout, so a healthy service is marked healthy and the two servers start receiving new client connections again. The threshold is irrelevant here: it only decides how many consecutive results are needed to flip an instance's state, and it applies to silence, not to checks that already return an explicit status.",
+				"perChoice": {
+					"fix:b": "At 60 seconds the interval is still longer than the 30-second timeout that HTTP and HTTPS probes are subject to, so every check is still given up on before the service replies and the instances keep being reported as down.",
+					"fix:c": "Widening the interval to 240 seconds moves it further beyond the 30-second timeout built into HTTP and HTTPS probes, so no check can ever complete successfully and the backends remain out of rotation.",
+					"fix:d": "The threshold only governs how many consecutive results are needed before an instance changes state, and it mainly matters when a check times out in silence. Because every check here already fails because it runs past the probe timeout, raising the threshold to 10 merely delays recovery and never makes the checks succeed."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-custom-probe-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-diagnostics"
+				}
+			],
+			"subtopics": [
+				"health-probe-interval",
+				"probe-timeout-behaviour",
+				"load-balancer-troubleshooting"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HJ43ZYJRSB78Y2XNK7JVP0",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Standard internal Azure Load Balancer named lb-egress in the subscription contoso-prod. It sits in front of three Ubuntu virtual machines that call a partner order API over the internet, and the outbound rule on its load balancing rule carries those calls out of the virtual network. Inbound requests from inside the virtual network still reach the three machines, but since Monday a large share of the calls to the partner API fail to connect, and the failures are concentrated on the two machines that carry most of the outbound volume. The Azure Monitor readings for the load balancer are listed below. Every machine must reach the partner API reliably, the backend pool must keep its current three members, and the machines themselves must not be reconfigured. The operations team also has to see, machine by machine, how close each one is to its outbound limit. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Measurement",
+						"Backend instance",
+						"Value"
+					],
+					"rows": [
+						[
+							"Allocated SNAT Ports",
+							"app-01 (10.0.2.4)",
+							"1024"
+						],
+						[
+							"Used SNAT Ports",
+							"app-01 (10.0.2.4)",
+							"1008"
+						],
+						[
+							"Allocated SNAT Ports",
+							"app-02 (10.0.2.5)",
+							"1024"
+						],
+						[
+							"Used SNAT Ports",
+							"app-02 (10.0.2.5)",
+							"1019"
+						],
+						[
+							"Allocated SNAT Ports",
+							"app-03 (10.0.2.6)",
+							"1024"
+						],
+						[
+							"Used SNAT Ports",
+							"app-03 (10.0.2.6)",
+							"19"
+						],
+						[
+							"SNAT Connection Count, Connection State = Failed",
+							"app-01 (10.0.2.4)",
+							"1,208 over the last 5 minutes"
+						],
+						[
+							"SNAT Connection Count, Connection State = Failed",
+							"app-02 (10.0.2.5)",
+							"1,341 over the last 5 minutes"
+						],
+						[
+							"SNAT Connection Count, Connection State = Failed",
+							"app-03 (10.0.2.6)",
+							"4 over the last 5 minutes"
+						],
+						[
+							"Health Probe Status",
+							"app-01, app-02, app-03",
+							"1"
+						]
+					]
+				},
+				"statement": "You should deploy {{outboundFix}} for the backend subnet and read the per-instance outbound port usage with the {{aggregation}} aggregation.",
+				"slots": [
+					{
+						"id": "outboundFix",
+						"options": [
+							{
+								"id": "a",
+								"text": "Azure NAT Gateway"
+							},
+							{
+								"id": "b",
+								"text": "Azure Application Gateway"
+							},
+							{
+								"id": "c",
+								"text": "Azure Bastion"
+							},
+							{
+								"id": "d",
+								"text": "Azure Virtual Network Gateway"
+							}
+						]
+					},
+					{
+						"id": "aggregation",
+						"options": [
+							{
+								"id": "a",
+								"text": "Average"
+							},
+							{
+								"id": "b",
+								"text": "Sum"
+							},
+							{
+								"id": "c",
+								"text": "Count"
+							},
+							{
+								"id": "d",
+								"text": "Total"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"outboundFix": "a",
+				"aggregation": "a"
+			},
+			"explanation": {
+				"correct": "Used SNAT Ports on app-01 and app-02 sit at roughly 98% and 99% of the 1,024 outbound ports each instance holds, while app-03 has barely used any, and the failed SNAT connection counts follow exactly those two instances. The per-instance outbound port pool of the backend members is therefore exhausted, which is why the calls to the partner API fail while the machines stay reachable for inbound traffic. A NAT Gateway adds outbound connection capacity for the subnet and takes the outbound calls away from the load balancer's per-instance port pool, and it lets the pool keep its current three members without touching the machines. To see the exhaustion per machine, the Used SNAT Ports metric is read with the Average aggregation, which returns the per-instance value, while Sum returns the load balancer total.",
+				"perChoice": {
+					"outboundFix:b": "An Application Gateway is a layer 7 reverse proxy that fronts inbound HTTP and HTTPS traffic; it hands out no outbound connection capacity to the backend machines, so it does nothing for the exhausted outbound ports.",
+					"outboundFix:c": "Bastion brokers administrator RDP and SSH sessions to virtual machines; it does not carry application traffic and supplies no outbound connection capacity for the backend subnet.",
+					"outboundFix:d": "A virtual network gateway connects the virtual network to other networks over VPN or ExpressRoute; it does not provide the extra outbound connection capacity that the outbound calls to the partner API need.",
+					"aggregation:b": "Summing the metric returns one figure for the whole load balancer instead of a value for each backend instance, so the instance that is nearly out of ports cannot be singled out.",
+					"aggregation:c": "Count reports how many samples were collected rather than how much of the port allowance each instance has consumed, so it does not show how close a machine is to its limit.",
+					"aggregation:d": "Total collapses the samples of the metric into a single number for the series, which also hides the per-instance figure needed to identify the exhausted machine."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-diagnostics"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-troubleshoot"
+				}
+			],
+			"subtopics": [
+				"outbound-snat",
+				"monitor-metric-aggregation",
+				"load-balancer-troubleshooting"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HJ7NCNEPR78PHW9RTXWDZT",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Standard internal Azure Load Balancer named lb-relay in the subscription contoso-prod. It fronts two Ubuntu virtual machines that run a mail-relay service which accepts SMTP on TCP port 25 and never answers HTTP requests, and its single load balancing rule sends frontend port 25 to backend port 25 on those machines. That rule references the health probe shown below, and the probe was deployed from an ARM template. Since the rule was created, the Health Probe Status metric has read 0 for both backend IP addresses, no new client connection reaches the relay, and the sessions clients had already opened keep running. The relay accepts SMTP connections normally when it is contacted from another machine in the same virtual network, and outbound calls from the servers succeed normally. You need new client connections to reach the relay again. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Probe property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Name",
+							"probe-relay"
+						],
+						[
+							"Protocol",
+							"HTTP"
+						],
+						[
+							"Port",
+							"25"
+						],
+						[
+							"Path",
+							"/health"
+						],
+						[
+							"Interval (seconds)",
+							"5"
+						],
+						[
+							"Threshold",
+							"2"
+						],
+						[
+							"Used by",
+							"lb-rule-relay (frontend 25, backend 25)"
+						]
+					]
+				},
+				"statement": "{{action}} The load balancing rule keeps its current frontend and backend ports, and the health probe keeps checking the same port on the backend machines.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Change the probe protocol to TCP on port 25"
+							},
+							{
+								"id": "b",
+								"text": "Change the probe protocol to TCP on port 443"
+							},
+							{
+								"id": "c",
+								"text": "Change the probe port to 8080 and keep the HTTP protocol"
+							},
+							{
+								"id": "d",
+								"text": "Change the probe path to / and keep the HTTP protocol on port 25"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "The probe shown in the exhibit is an HTTP probe aimed at port 25, and that combination can never succeed here. Azure does not allow HTTP probes to target a set of well-known service ports because of security concerns, and port 25 is one of them; in addition, the relay is a plain SMTP listener that never returns an HTTP response, so an HTTP GET on /health can never produce the HTTP 200 that marks an instance healthy. Probe definitions created through ARM templates are not validated by Azure, so the invalid combination was accepted and the probe fails on both machines, which is why the load balancer sends no new connections while already established sessions continue. A TCP probe aimed at the same port 25 is the right shape for this service: it checks that the listener accepts a connection, which is exactly what an SMTP relay can answer, and it is not affected by the HTTP probe port restriction. Once the TCP probe succeeds, the instances are marked healthy and new client connections reach the relay again. The load balancing rule's frontend and backend ports and the port the probe targets do not need to change, and the interval and threshold in the exhibit are already usable.",
+				"perChoice": {
+					"action:b": "The relay listens on port 25 and on no other port, and the check has to stay on that port; a TCP probe against port 443 would find no listener on the machines, so the instances would remain marked down.",
+					"action:c": "Nothing listens on port 8080 on these machines, and a probe port has to be one the instance really listens on, so moving the check to 8080 leaves it failing exactly as before.",
+					"action:d": "Changing the path cannot repair this probe: the relay never answers an HTTP GET at all, and HTTP probes are not allowed on port 25. Only a different probe type aimed at the same port can succeed."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-custom-probe-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-troubleshoot"
+				}
+			],
+			"subtopics": [
+				"http-health-probe",
+				"probe-port-limits",
+				"tcp-health-probe"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HJCPWR3EBV5VF4JFVN5TV2",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Standard internal Azure Load Balancer named lb-feed in the subscription contoso-prod. It fronts two Ubuntu virtual machines, feed-01 and feed-02, that publish a real-time price feed to internal clients. The clients send UDP packets to frontend port 8125, and the single load balancing rule forwards those packets to backend port 8125 on the two machines. On that same port each machine also accepts an incoming connection for its own keep-alive socket, but it never answers a web request, and the machines listen on no other port. That rule references the health probe shown below. Since the rule was created, the Health Probe Status metric has read 0 for both backend IP addresses, no client packet has reached either machine, and outbound calls from the machines succeed normally. You need new client traffic to reach the two machines again, and the probe must keep using the same port, the same schedule, and the same number of consecutive results before an instance changes state. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Object",
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Health probe",
+							"Name",
+							"probe-feed-8125"
+						],
+						[
+							"Health probe",
+							"Protocol",
+							"HTTP"
+						],
+						[
+							"Health probe",
+							"Port",
+							"8125"
+						],
+						[
+							"Health probe",
+							"Interval (seconds)",
+							"10"
+						],
+						[
+							"Health probe",
+							"Threshold",
+							"2"
+						],
+						[
+							"Health probe",
+							"Used by",
+							"lb-rule-feed"
+						],
+						[
+							"Load balancing rule",
+							"Frontend port",
+							"8125 (UDP)"
+						],
+						[
+							"Load balancing rule",
+							"Backend port",
+							"8125 (UDP)"
+						]
+					]
+				},
+				"statement": "To restore new client traffic to the two machines, {{fix}}, and while you are watching, the operations team should chart the {{metric}} metric to see whether Azure's infrastructure is delivering traffic to the front end rather than whether the two machines themselves are healthy.",
+				"slots": [
+					{
+						"id": "fix",
+						"options": [
+							{
+								"id": "a",
+								"text": "change the probe protocol to TCP, keeping the same port, interval, and threshold"
+							},
+							{
+								"id": "b",
+								"text": "change the probe protocol to HTTPS, keeping the same port, interval, and threshold"
+							},
+							{
+								"id": "c",
+								"text": "change the probe protocol to TCP and the probe port to 8443, keeping the same interval and threshold"
+							},
+							{
+								"id": "d",
+								"text": "change the probe protocol to HTTPS and the probe port to 8443, keeping the same interval and threshold"
+							}
+						]
+					},
+					{
+						"id": "metric",
+						"options": [
+							{
+								"id": "a",
+								"text": "Data Path Availability"
+							},
+							{
+								"id": "b",
+								"text": "Health Probe Status"
+							},
+							{
+								"id": "c",
+								"text": "Allocated SNAT Ports"
+							},
+							{
+								"id": "d",
+								"text": "Used SNAT Ports"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"fix": "a",
+				"metric": "a"
+			},
+			"explanation": {
+				"correct": "The probe is configured for HTTP on port 8125, and the price-feed agent on each machine accepts a connection on that port but never returns a web response. An HTTP probe sends an HTTP GET and only counts the endpoint as healthy when it answers with status 200 inside the timeout, so every probe attempt goes unanswered, the Health Probe Status metric stays at 0 for both machines, and the load balancer stops sending new flows to them — which matches the symptom that inbound client traffic disappeared while outbound calls from the machines still succeed, because probe state gates inbound traffic only. For a UDP-forwarded application the probe has to match a listener the backend really exposes, and here that listener is the connection-oriented keep-alive socket on 8125: a connection-level probe completes its three-way handshake and marks the machines healthy, so new client traffic is delivered again. Keeping port 8125, the 10-second interval, and the threshold of 2 also satisfies the stated requirements.",
+				"perChoice": {
+					"fix:b": "The agent on port 8125 never answers a web request and speaks no TLS there, so an HTTPS probe (an HTTP GET over TLS) fails in exactly the same way the current HTTP probe does. Only a check that matches the listener the agent actually exposes can succeed.",
+					"fix:c": "The protocol change is right but the port is not: the machines listen on no port other than 8125, so a probe aimed at 8443 gets no connection at all, and the probe port has to be one the virtual machine really listens on.",
+					"fix:d": "This changes both of the things that are already wrong — the agent answers no web request on 8125 and speaks no TLS, and nothing listens on 8443 — so the probe would fail on both counts.",
+					"metric:b": "This metric reports the health of the backends as the probe configuration defines it, that is, whether the application answered the probe; it says nothing about whether Azure's own infrastructure is delivering traffic to the front end.",
+					"metric:c": "This metric reports the outbound connection capacity reserved for the load balancer. It is unrelated to whether inbound traffic reaches the frontend.",
+					"metric:d": "This metric reports how much of that outbound capacity is in use, so it is also unrelated to inbound delivery to the frontend."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-custom-probe-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-diagnostics"
+				}
+			],
+			"subtopics": [
+				"health-probe-configuration",
+				"load-balancer-troubleshooting",
+				"azure-monitor-metrics"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HJHA4EP4WWZCW66ZBZJRPS",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Standard internal Azure Load Balancer named lb-checkout in the subscription contoso-prod. It fronts three Ubuntu virtual machines that run a checkout service, and each machine accepts incoming TCP connections on port 8443. The single load balancing rule, the health probe it uses, and the rules of the network security group that covers the backend subnet are listed below. Last week the network team added a rule to that network security group, and since then the Health Probe Status metric has read 0 for every backend IP address, no new client connection reaches the servers, and the sessions that clients had already opened keep running. The machines respond normally when they are contacted from another machine in the same virtual network, and their outbound calls succeed as well. You need new client connections to reach the servers again, and the checkout service must keep listening on TCP port 8443. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Object",
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Health probe probe-checkout",
+							"Protocol",
+							"TCP"
+						],
+						[
+							"Health probe probe-checkout",
+							"Port",
+							"8443"
+						],
+						[
+							"Health probe probe-checkout",
+							"Interval (seconds)",
+							"5"
+						],
+						[
+							"Health probe probe-checkout",
+							"Threshold",
+							"2"
+						],
+						[
+							"Health probe probe-checkout",
+							"Used by",
+							"lb-checkout-rule"
+						],
+						[
+							"Load balancing rule lb-checkout-rule",
+							"Frontend IP and port",
+							"10.0.0.10:80"
+						],
+						[
+							"Load balancing rule lb-checkout-rule",
+							"Backend port",
+							"8443"
+						],
+						[
+							"Network security group nsg-backend",
+							"Custom rule, priority 100",
+							"Source 168.63.129.16/32, destination port 8443, protocol TCP, action Deny"
+						],
+						[
+							"Network security group nsg-backend",
+							"Default rule, priority 65000",
+							"Source VirtualNetwork, action Allow"
+						],
+						[
+							"Network security group nsg-backend",
+							"Default rule, priority 65001",
+							"Source AzureLoadBalancer, action Allow"
+						]
+					]
+				},
+				"statement": "The change you should make is {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Change the network security group rule that denies probe traffic so it allows the probe port"
+							},
+							{
+								"id": "b",
+								"text": "Change the network security group rule that denies probe traffic so it allows the frontend port"
+							},
+							{
+								"id": "c",
+								"text": "Change the health probe so it checks the frontend port instead of the probe port"
+							},
+							{
+								"id": "d",
+								"text": "Change the health probe protocol from TCP to HTTPS while the network security group rule that denies probe traffic stays in place"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "All IPv4 health probes sent by Azure Load Balancer originate from 168.63.129.16, and that source address is normally permitted in a network security group through the AzureLoadBalancer service tag. The custom rule with priority 100 denies exactly that source address on TCP 8443, so it takes precedence over the default rule that allows the service tag and the probe never reaches the machines. The load balancer therefore marks every pool member down and sends no new connections, while the sessions clients had already opened keep running because a failed probe only gates new inbound flows. Blocking the probe address or probe port with an NSG rule is an unsupported configuration that also makes probe results stop reflecting real backend availability, so the change to make is to stop denying probe traffic on the probe port - either change that rule to allow it or remove it so the default service-tag allow applies.",
+				"perChoice": {
+					"action:b": "The probe is delivered to the backend port 8443, never to the frontend port, so allowing only the frontend port leaves the deny rule in force for 8443. The probe keeps failing, every instance stays out of rotation, and no new client connection is accepted.",
+					"action:c": "The checkout service accepts connections only on TCP 8443, and a probe must target a port the machines really listen on. Pointing the probe at the frontend port would fail as well, so the pool would still receive no new traffic.",
+					"action:d": "The rule drops the probe at the network layer regardless of which protocol carries it, so switching the probe to HTTPS does not let it through. The deny rule on the probe source address has to be changed for the probe to succeed."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-custom-probe-overview"
+				}
+			],
+			"subtopics": [
+				"health-probe-troubleshooting",
+				"network-security-group",
+				"inbound-connectivity"
+			],
+			"reviewed": false
+		}
+	]
+}

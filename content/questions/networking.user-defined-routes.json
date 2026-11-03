@@ -1,0 +1,1968 @@
+{
+	"skill": "networking.user-defined-routes",
+	"questions": [
+		{
+			"id": "q_01M6FM9TPRJCBXFV9792QZMC9S",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You run the virtual network hub-prod. The route table rt-app is associated to the subnet app-subnet, where a virtual appliance and the web VMs sit in the same subnet. The appliance is meant to filter every outbound request from the web VMs, but since the route table was associated, requests to external sites hang until they time out: packet counters show traffic handed to 10.1.0.4 again and again and nothing ever leaves the virtual network. Which change resolves the symptom?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting or object",
+						"Value"
+					],
+					"rows": [
+						[
+							"Virtual network",
+							"hub-prod"
+						],
+						[
+							"Route table",
+							"rt-app, associated to app-subnet"
+						],
+						[
+							"Route in rt-app",
+							"0.0.0.0/0, next hop type Virtual appliance, next hop IP address 10.1.0.4"
+						],
+						[
+							"Virtual appliance fw-vm-01",
+							"Subnet: app-subnet, private IP 10.1.0.4, Enable IP forwarding: On"
+						],
+						[
+							"Web VM web-vm-01",
+							"Subnet: app-subnet, private IP 10.1.0.10, Enable IP forwarding: Off"
+						],
+						[
+							"Web VM web-vm-02",
+							"Subnet: app-subnet, private IP 10.1.0.11, Enable IP forwarding: Off"
+						],
+						[
+							"VPN gateway",
+							"vgw-hub in hub-prod"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Host the virtual appliance in a subnet other than app-subnet, away from the web VMs"
+					},
+					{
+						"id": "b",
+						"text": "Turn on Enable IP forwarding on the network interfaces of the web VMs web-vm-01 and web-vm-02 in app-subnet"
+					},
+					{
+						"id": "c",
+						"text": "Change the next hop type of the 0.0.0.0/0 route in the route table rt-app to Virtual network gateway so that app-subnet traffic bypasses the virtual appliance"
+					},
+					{
+						"id": "d",
+						"text": "Associate the route table rt-app with the GatewaySubnet of hub-prod"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The 0.0.0.0/0 route in rt-app points every default-bound packet in app-subnet, including the appliance's own outbound packets, at 10.1.0.4, which sits in that same subnet. Because the appliance's own traffic is handed straight back to itself, packets circulate inside the subnet and never leave the virtual network. Placing the virtual appliance in a different subnet from the resources whose traffic it should inspect removes this self-reference, so relayed traffic can leave the virtual network while still passing through the appliance.",
+				"perChoice": {
+					"b": "IP forwarding is already turned on for the appliance's interface, and it is the appliance, not the web VMs, that relays packets toward other destinations. Switching it on for the web VMs does not alter which next hop their traffic uses and does not remove the loop, so the symptom would persist.",
+					"c": "Repointing the 0.0.0.0/0 route at the VPN gateway sends the subnet's default traffic out through the gateway and stops the appliance from filtering anything. It also leaves the appliance's own outbound traffic pointed back at itself inside the subnet, so the loop is unchanged.",
+					"d": "A route table that contains a 0.0.0.0/0 route should not be attached to the GatewaySubnet, because doing so can stop the gateway from functioning. It also has no effect on how packets are routed between NICs inside app-subnet, so the loop would continue."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-udr-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-route-table"
+				}
+			],
+			"subtopics": [
+				"virtual-appliance-routing",
+				"route-table-design",
+				"next-hop-selection"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FME1G35KMZXKDDJZN96NTS",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You operate the hub virtual network hub-vnet in subscription sub-contoso (East US). It reaches the branch office through a VPN gateway that exchanges routes with the branch router. The route table rt-orders is associated with the subnet sn-orders, where the orders application VMs run. The branch network 10.20.0.0/16 is advertised over the tunnel, and the application must keep reaching the branch through whatever prefix the branch advertises, so a branch renumbering must not require an edit in Azure. Right now, connections from sn-orders to the branch server 10.20.5.5 time out. The table below lists the routes Azure currently applies to the network interface of the orders VM. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Source",
+						"State",
+						"Address prefixes",
+						"Next hop type",
+						"Next hop IP address",
+						"UDR name"
+					],
+					"rows": [
+						[
+							"Default",
+							"Active",
+							"10.0.0.0/16",
+							"Virtual network",
+							"",
+							""
+						],
+						[
+							"Default",
+							"Active",
+							"0.0.0.0/0",
+							"Internet",
+							"",
+							""
+						],
+						[
+							"User",
+							"Active",
+							"10.20.0.0/16",
+							"Virtual appliance",
+							"10.1.0.4",
+							"branch-via-inspector"
+						],
+						[
+							"Virtual network gateway",
+							"Active",
+							"10.20.0.0/16",
+							"Virtual network gateway",
+							"10.0.1.68",
+							""
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Delete the 10.20.0.0/16 route whose source is User from rt-orders"
+					},
+					{
+						"id": "b",
+						"text": "Delete the 10.20.0.0/16 route whose source is Virtual network gateway from rt-orders"
+					},
+					{
+						"id": "c",
+						"text": "Change the 10.20.0.0/16 route whose source is User to next hop type VNetLocal"
+					},
+					{
+						"id": "d",
+						"text": "Set Virtual network gateway route propagation to Disabled on rt-orders"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Two entries in the exhibit carry the prefix 10.20.0.0/16: one with source User whose next hop is the inspection address 10.1.0.4, and one pushed by the gateway (source Virtual network gateway) whose next hop is 10.0.1.68. When several routes have the identical prefix, Azure applies the priority order user-defined route, then BGP route, then system route, so the User entry wins and packets for 10.20.5.5 are handed to 10.1.0.4, which never forwards them into the branch — that is why the connections time out. Removing the User entry from rt-orders leaves the prefix to the route the gateway learned from the branch router over the tunnel, which satisfies the requirement that the branch path follows the advertised prefix and needs no manual edit in Azure when the branch renumbers.",
+				"perChoice": {
+					"b": "The entry with source Virtual network gateway is not a route object stored in the route table; it is pushed into the subnet by the gateway from the prefixes it learned over the tunnel, so it can't be deleted from rt-orders. Even if it could be removed, the User entry with the same prefix would still outrank it and the timeouts would continue.",
+					"c": "Pointing the static route at VNetLocal keeps that traffic inside the hub's own address space, so it still never reaches the branch server, and the static entry keeps outranking the prefix the gateway learned, so the advertised path is still not used.",
+					"d": "Turning off Virtual network gateway route propagation stops the gateway-learned on-premises prefixes from being pushed to subnets that use this route table, so sn-orders would end up with no path to the branch at all instead of following the advertised prefix."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-udr-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-route-table"
+				}
+			],
+			"subtopics": [
+				"route-precedence",
+				"bgp-route-propagation",
+				"user-defined-routes"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FMJ0KRWPPKJQPMAR9G72Q3",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You run the retail virtual network vnet-shop in subscription sub-contoso (East US). The subnet sn-web hosts the shop web application and has the route table rt-web associated with it. Every outbound request from that subnet is currently handed to the inspection appliance at 10.0.2.10, requests to Azure Storage included, and since the change the bulk storage transfers fail or crawl. The security team requires that requests addressed to Azure Storage keep travelling on Microsoft's network and never traverse the appliance, while every other outbound request must still be inspected by it. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Resource",
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Route table rt-web",
+							"Associated subnet",
+							"sn-web (10.0.1.0/24)"
+						],
+						[
+							"Route table rt-web",
+							"Route address prefix",
+							"0.0.0.0/0"
+						],
+						[
+							"Route table rt-web",
+							"Route next hop type",
+							"Virtual appliance"
+						],
+						[
+							"Route table rt-web",
+							"Route next hop IP address",
+							"10.0.2.10"
+						],
+						[
+							"Subnet sn-web",
+							"Service endpoints",
+							"None configured"
+						],
+						[
+							"Subnet sn-web",
+							"Virtual machines",
+							"shop-app01 (10.0.1.10)"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Enable the Microsoft.Storage service endpoint on sn-web so that Azure adds the Storage service tag route with next hop type VirtualNetworkServiceEndpoint."
+					},
+					{
+						"id": "b",
+						"text": "Create a user-defined route in rt-web with the Storage service tag as address prefix and next hop type VirtualNetworkServiceEndpoint instead of enabling the Microsoft.Storage service endpoint on sn-web."
+					},
+					{
+						"id": "c",
+						"text": "Change the next hop type of the existing 0.0.0.0/0 route from Virtual appliance to Internet so that traffic to Azure Storage is no longer captured by the appliance."
+					},
+					{
+						"id": "d",
+						"text": "Add a user-defined route in rt-web with the Storage service tag as address prefix and next hop type Virtual network, and leave the Microsoft.Storage service endpoint disabled on sn-web."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A route of 0.0.0.0/0 with next hop type Virtual appliance also captures traffic aimed at the public IPs of Azure services, so the storage transfers are pushed through the inspection appliance instead of staying on Microsoft's network. Enabling the Microsoft.Storage service endpoint on sn-web makes Azure add a route for the Storage service tag with next hop type VirtualNetworkServiceEndpoint. Because the service tag prefix is more specific than 0.0.0.0/0, longest prefix match sends the storage traffic along that route onto the Azure backbone, while all remaining outbound traffic still matches the default route and continues through the appliance at 10.0.2.10. The service tag also means the address range does not have to be tracked when Microsoft changes it.",
+				"perChoice": {
+					"b": "This next hop type is not one you can pick yourself when you create a route in a route table: Azure adds the VirtualNetworkServiceEndpoint route itself when a service endpoint is configured on the subnet. A hand-written route with that next hop type therefore does not give the storage traffic the backbone path.",
+					"c": "Pointing the default route at Internet does stop the storage traffic from being captured by the appliance, but it also removes the appliance from the path of every other outbound request, so nothing is inspected any more and the security requirement is broken.",
+					"d": "The Virtual network next hop keeps the tagged traffic inside the virtual network's own address space instead of delivering it to the storage endpoint over the Azure backbone, so the storage transfers still do not follow the path the requirement asks for. The endpoint itself is the mechanism that provides that path."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-udr-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-route-table"
+				}
+			],
+			"subtopics": [
+				"service-endpoints",
+				"service-tags",
+				"next-hop-types"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FMMWQHTFC90YQ7084AARDB",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have the virtual network vnet-hr in subscription sub-contoso (East US), connected to the corporate data centre through a VPN gateway that exchanges routes with the on-premises router. The subnet sn-hr holds the HR application servers and has the route table rt-hr associated with it. A firewall appliance runs in the separate subnet sn-appliance at 10.1.0.4, and IP forwarding is enabled on its network interface. You need every connection from sn-hr to the file server 10.20.5.5 to be inspected by that appliance, while connections to the remaining corporate addresses must keep travelling over the tunnel exactly as they do today. Which change to rt-hr should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "$ az network nic show-effective-route-table --resource-group rg-hr --name nic-hr-01\nSource   AddressPrefix    NextHopType              NextHopIpAddress   State\nSystem   0.0.0.0/0        Internet                                     Active\nSystem   10.10.0.0/24    VNetLocal                                  Active\nBGP      10.20.0.0/16    VirtualNetworkGateway     10.1.0.1          Active\n\n$ az network route-table show --resource-group rg-hr --name rt-hr\n{\n  \"name\": \"rt-hr\",\n  \"location\": \"eastus\",\n  \"properties\": {\n    \"virtualNetworkGatewayRoutePropagation\": \"Enabled\",\n    \"routes\": [\n      {\n        \"name\": \"hr-subnet-local\",\n        \"addressPrefix\": \"10.10.0.0/16\",\n        \"nextHopType\": \"VNetLocal\"\n      }\n    ]\n  }\n}\n\n$ az network vnet subnet show --resource-group rg-hr --vnet-name vnet-hr --name sn-hr --query \"{name:name, addressPrefix:addressPrefix, routeTable:routeTable.id}\"\n{\n  \"name\": \"sn-hr\",\n  \"addressPrefix\": \"10.10.0.0/24\",\n  \"routeTable\": \"/subscriptions/xxxx/resourceGroups/rg-hr/providers/Microsoft.Network/routeTables/rt-hr\"\n}\n"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add a user-defined route for 10.20.5.5/32 with next hop type Virtual appliance and next hop IP address 10.1.0.4"
+					},
+					{
+						"id": "b",
+						"text": "Add a user-defined route for 10.20.0.0/16 with next hop type Virtual appliance and next hop IP address 10.1.0.4"
+					},
+					{
+						"id": "c",
+						"text": "Add a user-defined route for 10.20.5.5/32 with next hop type Virtual network gateway"
+					},
+					{
+						"id": "d",
+						"text": "Add a user-defined route for 10.20.0.0/16 with next hop type Virtual network gateway"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Azure picks the route whose prefix is the longest match for the destination address. A user-defined route for the single host 10.20.5.5/32 is more specific than the propagated 10.20.0.0/16 prefix, so only traffic to the file server follows the new entry, while every other corporate address still matches the route learned from the on-premises router and continues over the tunnel. Pointing the next hop at the appliance's private IP with the next hop type Virtual appliance sends that traffic through the firewall for inspection; the appliance sits in another subnet of the same virtual network with IP forwarding enabled and direct connectivity, so the configuration is valid.",
+				"perChoice": {
+					"b": "This entry covers the whole corporate prefix, so every connection to any corporate address would be handed to the appliance rather than continuing over the tunnel as the requirement demands. It also does not single out the file server for inspection.",
+					"c": "A host route whose next hop type is Virtual network gateway sends the file server traffic straight to the VPN gateway, so that connection never reaches the inspection appliance.",
+					"d": "This entry applies to the entire corporate prefix and points at the gateway, which is the same path the propagated route already provides; the file server traffic is therefore still not inspected and the requirement is not met."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-udr-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-route-table"
+				}
+			],
+			"subtopics": [
+				"user-defined-routes",
+				"route-selection",
+				"virtual-appliance-next-hop"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FMS7B3HVWB2NXHVZVBQSC1",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You operate the virtual network vnet-sales in subscription sub-contoso (North Europe), which reaches the corporate datacenter over a VPN gateway. The subnet sn-orders hosts the order-processing VMs and has the route table rt-orders associated with it; gateway route propagation on rt-orders is Enabled. A firewall appliance at 10.0.9.4, running in the separate subnet sn-fw, must inspect every connection the order VMs open towards the corporate range 10.20.0.0/16. One legacy database server in that range, 10.20.9.15, is being migrated, and the appliance in front of it is switched off for a week: during that week connections to that server still have to arrive in the datacenter over the tunnel instead of being handed to the appliance. The table below lists the routes that currently apply to the order VMs. Which route should you add to rt-orders?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Address prefix",
+						"Origin",
+						"Next hop type",
+						"Next hop address"
+					],
+					"rows": [
+						[
+							"0.0.0.0/0",
+							"System route",
+							"Internet",
+							"–"
+						],
+						[
+							"10.0.0.0/16",
+							"System route",
+							"Virtual network",
+							"–"
+						],
+						[
+							"10.20.0.0/16",
+							"User-defined route",
+							"Virtual appliance",
+							"10.0.9.4"
+						],
+						[
+							"10.20.0.0/16",
+							"BGP route",
+							"Virtual network gateway",
+							"–"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add a route to rt-orders with address prefix 10.20.9.0/24 and next hop type Virtual network gateway"
+					},
+					{
+						"id": "b",
+						"text": "Add a route to rt-orders with address prefix 10.20.9.0/24 and next hop type Virtual appliance with next hop address 10.0.9.4"
+					},
+					{
+						"id": "c",
+						"text": "Add a route to rt-orders with address prefix 10.20.9.0/24 and next hop type None"
+					},
+					{
+						"id": "d",
+						"text": "Add a route to rt-orders with address prefix 10.20.0.0/16 and next hop type Virtual network gateway"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The new user-defined route for 10.20.9.0/24 with next hop type Virtual network gateway is more specific than the existing 10.20.0.0/16 user-defined route that points at the appliance, and Azure picks the route with the longest prefix match. Traffic to 10.20.9.15 therefore leaves through the VPN gateway and crosses the tunnel to the datacenter, while every other destination in 10.20.0.0/16 keeps matching the less specific /16 route and is still inspected by the appliance at 10.0.9.4. The next hop type Virtual network gateway is valid here because the gateway of this virtual network is a VPN gateway, and no next hop address is required for that next hop type.",
+				"perChoice": {
+					"b": "This keeps 10.20.9.15 matched by a route whose next hop is the appliance, so the connection is still handed to the device that is switched off and it never reaches the datacenter; the appliance cannot relay that server's traffic in any case.",
+					"c": "A route whose next hop type is None drops the matching traffic instead of forwarding it, so the session to the database server would be discarded rather than delivered over the tunnel.",
+					"d": "The prefix 10.20.0.0/16 already exists in rt-orders and a prefix cannot be duplicated inside one table, so the route cannot be added. Even if it could, it would send every corporate destination over the tunnel and the appliance would stop inspecting the remaining hosts of 10.20.0.0/16."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-udr-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-route-table"
+				}
+			],
+			"subtopics": [
+				"next-hop-types",
+				"longest-prefix-match",
+				"route-precedence"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FN07AJ6XRDJ2XBN3S8KP63",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You operate the hub virtual network vnet-hub in subscription sub-contoso (East US). The VPN gateway vpn-hub-01 links this hub to the corporate datacenter, but since this morning the tunnel no longer comes up and the gateway connection status stays at Disconnected. Reviewing the recent changes, you find that the route table rt-edge is attached to the subnet GatewaySubnet. The table below lists the routes inside rt-edge and the subnets that reference it. You need the VPN connection to the datacenter to work again, and the outbound traffic of the remaining subnets must still be inspected by the network appliance at 10.1.0.4. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Resource",
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"rt-edge",
+							"Route default-out",
+							"Address prefix 0.0.0.0/0 -> next hop type Virtual appliance -> next hop address 10.1.0.4"
+						],
+						[
+							"rt-edge",
+							"Route corp-onprem",
+							"Address prefix 10.20.0.0/16 -> next hop type Virtual network gateway -> no next hop address"
+						],
+						[
+							"GatewaySubnet",
+							"Route table",
+							"rt-edge"
+						],
+						[
+							"sn-app",
+							"Route table",
+							"rt-edge"
+						],
+						[
+							"vpn-hub-01",
+							"Connection status",
+							"Disconnected"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set the Route table of GatewaySubnet to None."
+					},
+					{
+						"id": "b",
+						"text": "Set the Propagate gateway routes option of rt-edge to Disabled and keep the Route table of GatewaySubnet set to rt-edge."
+					},
+					{
+						"id": "c",
+						"text": "Set the next hop type of the 0.0.0.0/0 route of rt-edge to Internet and keep the Route table of GatewaySubnet set to rt-edge."
+					},
+					{
+						"id": "d",
+						"text": "Set the next hop type of the 0.0.0.0/0 route of rt-edge to None and keep the Route table of GatewaySubnet set to rt-edge."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "rt-edge contains a 0.0.0.0/0 route, and a route table holding a 0.0.0.0/0 route must not be associated with the GatewaySubnet of a VPN-connected virtual network, because that association can stop the gateway from working — which matches the observed tunnel failure. Setting the Route table of GatewaySubnet to None removes that association and restores the gateway, while rt-edge stays attached to sn-app, so the appliance at 10.1.0.4 continues to inspect the outbound traffic of the remaining subnets.",
+				"perChoice": {
+					"b": "Turning the Propagate gateway routes option off on rt-edge leaves the route table, and with it the 0.0.0.0/0 route, attached to GatewaySubnet, so the condition that prevents the gateway from working is still in place. Route propagation on the subnet that hosts the gateway must never be switched off either, because the gateway then cannot function at all.",
+					"c": "The 0.0.0.0/0 route stays inside rt-edge and rt-edge stays attached to GatewaySubnet, so the association that breaks the gateway is not removed. Changing that next hop type to Internet also removes the hand-off to the appliance at 10.1.0.4, whereas the outbound traffic of the remaining subnets must still be inspected by it.",
+					"d": "Setting the next hop type to None blackholes the outbound traffic of every subnet that uses rt-edge instead of sending it to the appliance at 10.1.0.4, and rt-edge remains attached to GatewaySubnet, so the gateway stays broken as well."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-udr-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-route-table"
+				}
+			],
+			"subtopics": [
+				"route-table-association",
+				"gateway-subnet",
+				"next-hop-type"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FN8BDF46R3VKA9Q25RKMTM",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You operate the virtual network vnet-branch in subscription sub-contoso (East US). Its address space is 10.0.0.0/16 and the site-to-site VPN gateway vpn-branch-01 links it to the corporate datacentre. The subnet sn-app (10.0.5.0/24) hosts the reporting VMs and uses the route table rt-app, whose virtual network gateway route propagation is Disabled and which currently holds no routes. The datacentre segment the application must reach is 172.20.0.0/16, where the file host 172.20.5.5 lives, yet every connection from the reporting VMs to that host times out. The output below lists the routes Azure currently applies to the network interface of a reporting VM.\n\nYou need the reporting VMs to reach 172.20.5.5 over the tunnel. Traffic to 172.21.0.0/16, which the datacentre decommissioned, and traffic to 192.168.0.0/16 and 100.64.0.0/10 must keep being discarded, and traffic between the resources inside the virtual network must keep flowing directly between them.\n\nWhich change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "$ az network nic show-effective-route-table -g rg-branch -n nic-app01\n\nAddressPrefix      NextHopType     NextHopIpAddress   State\n0.0.0.0/0           Internet                          Active\n10.0.0.0/16         VirtualNetwork   10.0.0.1           Active\n172.16.0.0/12       None                              Active\n192.168.0.0/16      None                              Active\n100.64.0.0/10       None                              Active\n"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add a route to rt-app with the address prefix 172.20.0.0/16 and the next hop type Virtual network gateway"
+					},
+					{
+						"id": "b",
+						"text": "Add a route to rt-app with the address prefix 172.16.0.0/12 and the next hop type Virtual network gateway"
+					},
+					{
+						"id": "c",
+						"text": "Add a route to rt-app with the address prefix 172.20.0.0/16 and the next hop type Virtual network"
+					},
+					{
+						"id": "d",
+						"text": "Add a route to rt-app with the address prefix 0.0.0.0/0 and the next hop type Virtual network gateway"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The only route that covers 172.20.0.0/16 in the effective table is the default system route 172.16.0.0/12, whose next hop type is None; traffic with that next hop is dropped instead of being sent outside the subnet, which is why connections to 172.20.5.5 time out. Because gateway route propagation is Disabled on rt-app, no route for the datacentre segment is contributed by the VPN gateway. Adding a user-defined route with the more specific prefix 172.20.0.0/16 and the next hop type Virtual network gateway makes Azure pick it by longest prefix match and hand that traffic to the VPN gateway, and the Virtual network gateway next hop type is supported for a virtual network whose gateway is a VPN gateway. Because the new prefix is not 0.0.0.0/0, the default system routes whose next hop type is None stay in place, so traffic to 172.21.0.0/16, 192.168.0.0/16 and 100.64.0.0/10 keeps being discarded and traffic between resources of the virtual network keeps using the Virtual network next hop type.",
+				"perChoice": {
+					"b": "The prefix 172.16.0.0/12 covers far more than the datacentre segment the application needs. With this route the whole /12 is handed to the VPN gateway, so the traffic for 172.21.0.0/16, which has to keep being discarded, would leave through the tunnel instead. The route must match only the range that has to reach the datacentre.",
+					"c": "The Virtual network next hop type delivers traffic inside the virtual network. No address range of vnet-branch covers 172.20.0.0/16, so the packets are discarded exactly as they are today and the reporting VMs still cannot reach 172.20.5.5.",
+					"d": "A 0.0.0.0/0 route with the Virtual network gateway next hop type captures every outbound flow of the subnet, so internet-bound traffic and traffic to the public IP addresses of Azure services would leave through the tunnel and the resources in sn-app would lose direct internet reachability. It also makes Azure remove the default system routes whose next hop type is None, so traffic to 192.168.0.0/16 and 100.64.0.0/10 would stop being discarded. The requirement concerns only the datacentre segment."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-udr-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-route-table"
+				}
+			],
+			"subtopics": [
+				"system-routes",
+				"user-defined-routes",
+				"next-hop-types"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FND0QJ361ZZC8QC9N75K86",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have the virtual network vnet-ins in subscription sub-contoso (West Europe). It reaches the corporate datacentre over an ExpressRoute circuit through the ExpressRoute gateway er-gw, whose private IP address is 10.20.9.4. The subnet sn-apps (10.20.1.0/24) runs the application servers and has the route table rt-apps associated with it, whose Virtual network gateway route propagation setting is Enabled. A firewall appliance runs in the separate subnet sn-fw (10.20.2.0/24) at 10.20.2.4, and Enable IP forwarding is turned on for its network interface.\n\nYou need every connection from sn-apps to the datacentre segment 10.90.0.0/16 to be inspected by that appliance, while connections to the other datacentre prefixes and to the internet must keep leaving the virtual network exactly as they do today.\n\nThe output below lists the routes that currently apply to the network interface of an application server.\n\nWhich route should you add to rt-apps?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "[\n  {\n    \"source\": \"System\",\n    \"addressPrefix\": \"10.20.0.0/16\",\n    \"nextHopType\": \"Virtual network\",\n    \"nextHopIpAddress\": null\n  },\n  {\n    \"source\": \"System\",\n    \"addressPrefix\": \"0.0.0.0/0\",\n    \"nextHopType\": \"Internet\",\n    \"nextHopIpAddress\": null\n  },\n  {\n    \"source\": \"BGP\",\n    \"addressPrefix\": \"10.90.0.0/16\",\n    \"nextHopType\": \"Virtual network gateway\",\n    \"nextHopIpAddress\": \"10.20.9.4\"\n  },\n  {\n    \"source\": \"BGP\",\n    \"addressPrefix\": \"10.91.0.0/16\",\n    \"nextHopType\": \"Virtual network gateway\",\n    \"nextHopIpAddress\": \"10.20.9.4\"\n  }\n]"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Address prefix 10.90.0.0/16, next hop type Virtual appliance, next hop IP address 10.20.2.4"
+					},
+					{
+						"id": "b",
+						"text": "Address prefix 10.90.0.0/16, next hop type Virtual network gateway, next hop IP address 10.20.9.4"
+					},
+					{
+						"id": "c",
+						"text": "Address prefix 0.0.0.0/0, next hop type Virtual network gateway, next hop IP address 10.20.9.4"
+					},
+					{
+						"id": "d",
+						"text": "Address prefix 10.90.0.0/16, next hop type Virtual appliance, next hop IP address 10.20.9.4"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Adding a user-defined route with address prefix 10.90.0.0/16, next hop type Virtual appliance and next hop IP address 10.20.2.4 replaces the propagated route that currently carries that prefix. When several routes carry an identical prefix, the user-defined route is selected first, then the BGP route, then the system route, so the datacentre segment is now handed to the appliance instead of travelling straight over the ExpressRoute circuit. The appliance runs in a different subnet (10.20.2.0/24) than the servers whose traffic it inspects, and Enable IP forwarding is turned on for its network interface, so the traffic reaches it and no routing loop occurs. The more specific propagated prefix 10.91.0.0/16 and the 0.0.0.0/0 system route keep their current next hops, so all remaining traffic leaves the virtual network exactly as before.",
+				"perChoice": {
+					"b": "A user-defined route whose next hop type is Virtual network gateway is only supported when the virtual network's gateway is a VPN gateway, not an ExpressRoute gateway, and you can't create a user-defined route that forces traffic to an ExpressRoute gateway. Even if such a route were accepted, the datacentre segment would go straight to the ExpressRoute circuit and would never reach the appliance, so the inspection requirement would not be met.",
+					"c": "The same restriction applies here: with an ExpressRoute gateway you can't create a user-defined route that forces traffic to the gateway itself. In addition, a 0.0.0.0/0 route would pull every destination, including internet traffic and the other datacentre prefixes, away from their current path, which contradicts the requirement that the remaining traffic keeps leaving the virtual network as it does today.",
+					"d": "The next hop IP address of a Virtual appliance route must be the private IP address of the appliance itself, and that address must have direct connectivity without traversing an ExpressRoute gateway. 10.20.9.4 is the ExpressRoute gateway address, not the appliance address, so this route would not hand the datacentre segment to the appliance at 10.20.2.4 and the traffic would still not be inspected."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-udr-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-route-table"
+				}
+			],
+			"subtopics": [
+				"user-defined-route-priority",
+				"virtual-appliance-next-hop",
+				"expressroute-next-hop-restriction"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FNNGBWTV6VMNM3K0E12XP2",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have the virtual network vnet-logistics in subscription sub-contoso (East US), whose address space is 10.10.0.0/16. A site-to-site VPN connection named vpn-log-01 links it to the corporate datacenter. The subnet sn-fleet (10.10.2.0/24) runs the fleet-tracking VMs and uses the route table rt-fleet, which applies only the routes you define in it; routes learned from the on-premises router are not added to the subnet automatically. A firewall runs in the separate subnet sn-fw at the private IP address 10.10.5.4, and IP forwarding is enabled on its network interface.\n\nThe exhibit lists the current configuration. You plan to add routes to rt-fleet so that the fleet-tracking VMs behave as described in the four targets below.\n\nDrag the next hop type that the new route must use onto the matching target.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Object",
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"vnet-logistics",
+							"Address space",
+							"10.10.0.0/16"
+						],
+						[
+							"vpn-log-01",
+							"Connection type",
+							"Site-to-site VPN"
+						],
+						[
+							"sn-fleet",
+							"Address prefix",
+							"10.10.2.0/24"
+						],
+						[
+							"sn-fleet",
+							"Route table",
+							"rt-fleet"
+						],
+						[
+							"rt-fleet",
+							"Routes currently defined",
+							"0"
+						],
+						[
+							"sn-fw",
+							"Address prefix",
+							"10.10.5.0/24"
+						],
+						[
+							"Firewall in sn-fw",
+							"Private IP address",
+							"10.10.5.4"
+						],
+						[
+							"Firewall network interface",
+							"Enable IP forwarding",
+							"Enabled"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Virtual appliance"
+					},
+					{
+						"id": "i2",
+						"text": "None"
+					},
+					{
+						"id": "i3",
+						"text": "Virtual network gateway"
+					},
+					{
+						"id": "i4",
+						"text": "Internet"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Connections to 10.30.0.0/16 that must pass through the firewall at 10.10.5.4"
+					},
+					{
+						"id": "s2",
+						"label": "Connections to 10.40.0.0/16 that must be discarded instead of being forwarded anywhere"
+					},
+					{
+						"id": "s3",
+						"label": "Connections to 10.60.0.0/16 that must travel over the site-to-site tunnel"
+					},
+					{
+						"id": "s4",
+						"label": "Connections to 198.51.100.0/24, hosted outside the corporate site, that must be delivered straight to the provider rather than through the firewall or the tunnel"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Each requirement is implemented by a user-defined route whose next hop type states where the traffic must go. Traffic that has to be inspected by the firewall uses the next hop type that points at a network appliance, with the appliance's private IP 10.10.5.4 supplied as the next hop address; the firewall sits in a different subnet than the fleet VMs and its interface already has IP forwarding enabled, so the hop is valid. Traffic to the retired segment uses the next hop type that drops packets instead of forwarding them, so those connections are discarded on purpose. Traffic that has to reach the corporate site over the site-to-site connection uses the next hop type that points at that VPN connection, which is supported for VPN connections. Finally, the public range that must be delivered straight to its provider uses the next hop type that sends the traffic out to the internet rather than through the firewall or the tunnel. Because the route table only applies the routes it defines, each of these prefixes needs its own route, and the more specific prefixes win over the default route for all other traffic.",
+				"perChoice": {
+					"i1": "This belongs to the target for connections to 10.30.0.0/16: a route whose next hop type points at a network appliance, carrying the appliance's private IP 10.10.5.4 as the next hop address, hands that traffic to the firewall for inspection.",
+					"i2": "This belongs to the target for connections to 10.40.0.0/16: a route with this next hop type drops the packets instead of forwarding them to any destination, so the retired segment is blackholed on purpose.",
+					"i3": "This belongs to the target for connections to 10.60.0.0/16: with a site-to-site VPN connection, this next hop type points at that connection so the traffic is carried over the tunnel to the corporate site.",
+					"i4": "This belongs to the target for connections to 198.51.100.0/24: this next hop type sends the traffic out over the internet path, which delivers it straight to the public provider instead of handing it to the firewall or the tunnel."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-udr-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-route-table"
+				}
+			],
+			"subtopics": [
+				"next-hop-types",
+				"user-defined-routes",
+				"route-tables"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FNXXV122ZWXNM1K9V8HSJP",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You operate the virtual network vnet-billing in subscription sub-contoso (South Central US), whose address space is 10.160.0.0/16. The subnet sn-payments runs the payment-processing VMs and uses the route table rt-billing, whose Virtual network gateway route propagation setting is Disabled. A firewall appliance runs in the separate subnet sn-fw at the private address 10.160.9.4, and Enable IP forwarding is turned on for its network interface. A site-to-site VPN connection named vpn-bill-01 links the virtual network to the corporate datacenter, where the file server 10.170.5.5 sits, and a service endpoint for Azure Storage is enabled on sn-payments.\n\nThe output below was produced by az network nic show-effective-route-table for the network interface of a payment VM.\n\nYou need to know which of those routes decides where each connection is sent. For each connection below, drag the address prefix of the route that governs it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Address prefix",
+						"Next hop type",
+						"Next hop IP address",
+						"Route source",
+						"State"
+					],
+					"rows": [
+						[
+							"10.160.0.0/16",
+							"Virtual network",
+							"—",
+							"System",
+							"Invalid"
+						],
+						[
+							"10.160.0.0/16",
+							"Virtual appliance",
+							"10.160.9.4",
+							"User-defined",
+							"Active"
+						],
+						[
+							"10.160.4.0/24",
+							"Virtual network",
+							"—",
+							"User-defined",
+							"Active"
+						],
+						[
+							"10.160.9.0/24",
+							"Virtual network",
+							"—",
+							"User-defined",
+							"Active"
+						],
+						[
+							"10.170.0.0/16",
+							"Virtual network gateway",
+							"—",
+							"User-defined",
+							"Active"
+						],
+						[
+							"0.0.0.0/0",
+							"Internet",
+							"—",
+							"System",
+							"Active"
+						],
+						[
+							"172.16.0.0/12",
+							"None",
+							"—",
+							"System",
+							"Active"
+						],
+						[
+							"Storage",
+							"VirtualNetworkServiceEndpoint",
+							"—",
+							"System",
+							"Active"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "p-default",
+						"text": "0.0.0.0/0"
+					},
+					{
+						"id": "p-vnetspace",
+						"text": "10.160.0.0/16"
+					},
+					{
+						"id": "p-paymentsubnet",
+						"text": "10.160.4.0/24"
+					},
+					{
+						"id": "p-applsubnet",
+						"text": "10.160.9.0/24"
+					},
+					{
+						"id": "p-datacenter",
+						"text": "10.170.0.0/16"
+					},
+					{
+						"id": "p-reserved",
+						"text": "172.16.0.0/12"
+					},
+					{
+						"id": "p-storage",
+						"text": "Storage"
+					}
+				],
+				"slots": [
+					{
+						"id": "s-tunnel",
+						"label": "Connection to the corporate file server that the payment application must reach over the tunnel."
+					},
+					{
+						"id": "s-appliance",
+						"label": "Connection to the address of the inspection appliance itself, which must not be handed back to the appliance."
+					},
+					{
+						"id": "s-internet",
+						"label": "Connection to a website hosted on the public internet."
+					},
+					{
+						"id": "s-peervm",
+						"label": "Connection to another payment VM running in the same subnet."
+					},
+					{
+						"id": "s-discarded",
+						"label": "Connection to an address that belongs to a range which must be discarded instead of delivered."
+					},
+					{
+						"id": "s-cloudsvc",
+						"label": "Connection to a blob container in the cloud platform's file service, which must keep using the Microsoft backbone."
+					}
+				]
+			},
+			"key": {
+				"s-tunnel": "p-datacenter",
+				"s-appliance": "p-applsubnet",
+				"s-internet": "p-default",
+				"s-peervm": "p-paymentsubnet",
+				"s-discarded": "p-reserved",
+				"s-cloudsvc": "p-storage"
+			},
+			"explanation": {
+				"correct": "Azure picks the route with the longest prefix match, so for each connection the most specific prefix in the effective route table wins. Traffic to the corporate file server matches 10.170.0.0/16, the user-defined route whose next hop type is Virtual network gateway, so it travels into the site-to-site VPN connection. Traffic to the appliance address 10.160.9.4 matches 10.160.9.0/24 (next hop type Virtual network), which is longer than the 10.160.0.0/16 route that points at the appliance, so the packet is delivered to the appliance instead of being sent back to it. Traffic to a public website matches only 0.0.0.0/0, the default route with next hop type Internet. Traffic to a VM in the same subnet matches 10.160.4.0/24, longer than the 10.160.0.0/16 user-defined route, so it stays on the local route instead of going to the appliance. Traffic to a range that must be dropped matches 172.16.0.0/12, which Azure gives the next hop type None. Traffic to the cloud file service matches the Storage service tag, whose route Azure adds when the service endpoint is enabled, so it keeps using the Microsoft backbone.",
+				"perChoice": {
+					"p-default": "This prefix belongs with the target about a website hosted on the public internet: 0.0.0.0/0 is the default route with next hop type Internet, and no more specific prefix in the table covers a public internet address.",
+					"p-vnetspace": "This prefix fits none of the targets. 10.160.0.0/16 covers the whole virtual network address space but is less specific than the per-subnet prefixes, so it governs only addresses in the virtual network that no /24 route covers, and those are handed to the inspection appliance.",
+					"p-paymentsubnet": "This prefix belongs with the target about another payment VM in the same subnet: 10.160.4.0/24 is the longest prefix that matches an address of that VM, so the more general 10.160.0.0/16 user-defined route that points at the appliance does not apply.",
+					"p-applsubnet": "This prefix belongs with the target about the address of the inspection appliance itself: 10.160.9.0/24 is longer than 10.160.0.0/16 and its next hop type is Virtual network, so the packet reaches the appliance directly instead of being handed back to the appliance.",
+					"p-datacenter": "This prefix belongs with the target about the corporate file server reached over the tunnel: 10.170.0.0/16 is the user-defined route with next hop type Virtual network gateway, which carries the packet into the site-to-site VPN connection.",
+					"p-reserved": "This prefix belongs with the target about a range that must be discarded: Azure gives 172.16.0.0/12 the next hop type None, so traffic to that range is dropped instead of being delivered to any destination.",
+					"p-storage": "This prefix belongs with the target about a blob container in the cloud platform's file service: with the service endpoint enabled, Azure adds a route for the Storage service tag whose next hop type is VirtualNetworkServiceEndpoint, and that route keeps the traffic on the Microsoft backbone."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-udr-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-route-table"
+				}
+			],
+			"subtopics": [
+				"route-selection",
+				"longest-prefix-match",
+				"service-tag-prefixes"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FPDVCFRKWJG0TPTVA6C64P",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have the virtual network vnet-ops in subscription sub-contoso (East US 2), whose address space is 10.9.0.0/16. It hosts the application subnet sn-app (10.9.1.0/24), the inspection subnet sn-fw (10.9.2.0/24) where a network virtual appliance at 10.9.2.4 inspects outbound traffic, and the gateway subnet that terminates the site-to-site connection vpn-ops-01 to the corporate datacentre. The route table rt-ops carries the routes listed in the exhibit and is associated with the subnets listed there.\n\nYou need to resolve the five issues the team has listed below. Drag the change that resolves each issue onto it.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Route table rt-ops  (East US 2)\n  Propagate gateway routes : Enabled\n  Associated subnets       : GatewaySubnet, sn-app\n  Route default-route      : 0.0.0.0/0        -> next hop Virtual appliance at 10.9.2.4\n  Route partner            : 203.0.113.0/24   -> next hop Virtual appliance, no IP given\n  Route corp               : 10.20.0.0/16     -> next hop Virtual network gateway\n\nSite-to-site connection vpn-ops-01 : range advertised to the virtual network 10.20.0.0/16\nCorporate datacentre               : range decommissioned last month 10.30.0.0/16\nPartner network                    : public address range 203.0.113.0/24"
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Set the next hop type of a route to None"
+					},
+					{
+						"id": "i2",
+						"text": "Remove the route table from GatewaySubnet"
+					},
+					{
+						"id": "i3",
+						"text": "Turn on Enable IP forwarding for the network virtual appliance's interface"
+					},
+					{
+						"id": "i4",
+						"text": "Turn off virtual network gateway route propagation on the route table"
+					},
+					{
+						"id": "i5",
+						"text": "Set the next hop IP of the route to the private IP of the network virtual appliance"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Connections to the decommissioned datacentre range 10.30.0.0/16 must be discarded rather than delivered."
+					},
+					{
+						"id": "s2",
+						"label": "Since yesterday's change, the site-to-site link to the corporate datacentre refuses to come up, while the application VMs still talk to each other normally."
+					},
+					{
+						"id": "s3",
+						"label": "Packets reach the network virtual appliance but are never delivered to the destination, whose counters stay empty."
+					},
+					{
+						"id": "s4",
+						"label": "The application must reach the datacentre over the prefix 10.20.0.0/16 that the team owns; if the corporate router advertises a different prefix after a renumbering, the traffic must not follow it."
+					},
+					{
+						"id": "s5",
+						"label": "Traffic to the partner range 203.0.113.0/24 never reaches the network virtual appliance, even though the table already has a route covering that range."
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "Each issue points at a different part of the route configuration. The decommissioned range 10.30.0.0/16 currently matches the catch-all route and must be discarded, which is what a route whose next hop type is None does. The site-to-site link refuses to come up because rt-ops, which contains a 0.0.0.0/0 route, is associated with the gateway subnet of a VPN-connected virtual network; the association has to go, not the propagation setting, because propagation must never be switched off on that subnet. Packets that reach the appliance but are never delivered onward point at the NIC setting of a virtual machine that forwards traffic to an address other than its own, Enable IP forwarding. The requirement to ignore whatever the corporate router advertises means the prefixes learned from the gateway must stay out of the subnet, so virtual network gateway route propagation has to be switched off. Finally, a route with next hop type Virtual appliance only works when the appliance's private IP address is supplied, and the partner route in the table has no next hop IP, so that traffic never reaches the appliance.",
+				"perChoice": {
+					"i1": "This is the change that matches the requirement to discard connections to the decommissioned range 10.30.0.0/16: a route whose next hop type is None drops traffic for that prefix instead of forwarding it anywhere, and the longer prefix wins over the catch-all route that currently hands it to the appliance.",
+					"i2": "This is the change that matches the link that refuses to come up. A route table that holds a 0.0.0.0/0 route and is associated with the gateway subnet of a VPN-connected virtual network can stop the gateway from working, and the tunnel is built on that subnet. Removing the association from that subnet restores the connection while the table stays in place for the other subnet.",
+					"i3": "This is the change that matches packets arriving at the appliance but never reaching the destination. A virtual machine that forwards traffic to an address other than its own needs Enable IP forwarding turned on for its network interface, otherwise the traffic stops there.",
+					"i4": "This is the change that matches the requirement to keep using the prefix 10.20.0.0/16 that the team owns. Switching virtual network gateway route propagation off keeps the prefixes learned from the on-premises router out of the subnet, so a renumbering on the router side cannot change where the traffic goes.",
+					"i5": "This is the change that matches the partner traffic never reaching the appliance. A route with next hop type Virtual appliance requires the appliance's private IP address as its next hop, and the partner route in the table carries no such IP, so nothing is handed to the appliance for that range."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-route-table"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-udr-overview"
+				}
+			],
+			"subtopics": [
+				"route-table-configuration",
+				"gateway-route-propagation",
+				"next-hop-settings"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GXBGR9TPX0KSPEV6AY10TR",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have two virtual networks in subscription sub-contoso: vnet-commerce in East US 2 with address space 10.40.0.0/16, and vnet-labs in West Europe with address space 10.60.0.0/16. The exhibit lists the subnets inside them, the hosts that run in them, and the route tables you can draw on.\n\nThe platform team has defined the behaviour that each group of VMs must end up with, and each group has to end up with exactly that behaviour. Drag the item that delivers it onto the matching target.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Virtual networks\n\nvnet-commerce   subscription: sub-contoso   location: East US 2   address space: 10.40.0.0/16\n  sn-orders     10.40.1.0/24   order processing VMs                                                    route table: none\n  sn-payments   10.40.2.0/24   payment VMs                                                             route table: none\n  sn-inspect    10.40.9.0/24   inspection firewall at 10.40.9.4 (Enable IP forwarding: Enabled)      route table: none\n\nvnet-labs       subscription: sub-contoso   location: West Europe   address space: 10.60.0.0/16\n  sn-dev        10.60.1.0/24   developer VMs                                                          route table: none\n  sn-guest      10.60.5.0/24   partner guest VMs                                                      route table: rt-beta\n  sn-labfw      10.60.9.0/24   lab firewall at 10.60.9.4 (Enable IP forwarding: Enabled)              route table: none\n\nRoute tables\n\nrt-alpha    location: East US 2      subscription: sub-contoso\n            10.90.0.0/16 -> Virtual appliance, 10.40.9.4\n\nrt-beta     location: West Europe    subscription: sub-contoso\n            10.90.0.0/16 -> Virtual appliance, 10.60.9.4\n\nrt-gamma    location: East US 2      subscription: sub-platform\n            10.90.0.0/16 -> Virtual appliance, 10.40.9.4\n\nrt-delta    location: East US 2      subscription: sub-contoso\n            10.91.0.0/16 -> None"
+				},
+				"items": [
+					{
+						"id": "rt-alpha",
+						"text": "rt-alpha"
+					},
+					{
+						"id": "rt-beta",
+						"text": "rt-beta"
+					},
+					{
+						"id": "rt-gamma",
+						"text": "rt-gamma"
+					},
+					{
+						"id": "rt-delta",
+						"text": "rt-delta"
+					},
+					{
+						"id": "clear-association",
+						"text": "Set the subnet's Route table field to None"
+					}
+				],
+				"slots": [
+					{
+						"id": "orders",
+						"label": "The order processing VMs in sn-orders (vnet-commerce, East US 2, sub-contoso) must send every connection to the corporate range 10.90.0.0/16 through the inspection firewall at 10.40.9.4."
+					},
+					{
+						"id": "dev",
+						"label": "The developer VMs in sn-dev (vnet-labs, West Europe, sub-contoso) must send every connection to the corporate range 10.90.0.0/16 through the lab firewall at 10.60.9.4."
+					},
+					{
+						"id": "payments",
+						"label": "The payment VMs in sn-payments (vnet-commerce, East US 2, sub-contoso) must stop all traffic to the retired range 10.91.0.0/16 instead of letting it leave the virtual network, and their other connections must keep behaving as they do today."
+					},
+					{
+						"id": "guest",
+						"label": "The partner guest VMs in sn-guest (vnet-labs, West Europe, sub-contoso) must fall back to the default system behaviour; the lab's custom configuration must not apply to them."
+					}
+				]
+			},
+			"key": {
+				"orders": "rt-alpha",
+				"dev": "rt-beta",
+				"payments": "rt-delta",
+				"guest": "clear-association"
+			},
+			"explanation": {
+				"correct": "A route table can only be associated with the subnets of a virtual network that lives in the same location and in the same subscription as the table, and the routes it carries decide what happens to the matching traffic. For sn-orders (vnet-commerce, East US 2, sub-contoso) the table must carry 10.90.0.0/16 with next hop type Virtual appliance pointing at 10.40.9.4 and must live in East US 2 and sub-contoso: rt-alpha fits, while rt-gamma has exactly the same routes but sits in subscription sub-platform, and rt-beta is in West Europe and points at the lab firewall. For sn-dev (vnet-labs, West Europe, sub-contoso) the only table that lives in West Europe in sub-contoso and sends 10.90.0.0/16 to the lab firewall at 10.60.9.4 is rt-beta. For sn-payments the requirement is to drop traffic to the retired range, and rt-delta is the only table that carries a 10.91.0.0/16 entry whose next hop type is None, which discards the traffic instead of forwarding it, and it too is in East US 2 in sub-contoso. For sn-guest, where rt-beta is currently associated, the association has to be removed so that only the default system routes apply, and that is done by setting the subnet's Route table field to None.",
+				"perChoice": {
+					"rt-alpha": "Belongs with the sn-orders target: it carries 10.90.0.0/16 with next hop type Virtual appliance and next hop address 10.40.9.4, and it is in East US 2 in subscription sub-contoso, the same location and subscription as vnet-commerce, so it may be associated with that subnet.",
+					"rt-beta": "Belongs with the sn-dev target: it is the only table located in West Europe in subscription sub-contoso, and its route sends 10.90.0.0/16 to the lab firewall at 10.60.9.4 that serves vnet-labs.",
+					"rt-gamma": "Fits no target: its route content is identical to rt-alpha's, but it belongs to subscription sub-platform, and a route table can only be associated with subnets of a virtual network that lives in the same subscription, so it cannot serve the subnets in sub-contoso.",
+					"rt-delta": "Belongs with the sn-payments target: it is the only table whose 10.91.0.0/16 entry uses next hop type None, which drops that traffic instead of sending it to any destination, and it is in East US 2 in subscription sub-contoso, so it can be associated with that subnet.",
+					"clear-association": "Belongs with the sn-guest target: those VMs must be governed by the default system routes alone, and an existing association is removed by setting the subnet's Route table field to None, which clears the reference to rt-beta."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-route-table"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-udr-overview"
+				}
+			],
+			"subtopics": [
+				"route-table-association",
+				"next-hop-types",
+				"route-table-scope"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GXKA53XHE8NY5DE411QHMC",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You operate the virtual network vnet-pay in subscription sub-contoso (East US 2), whose address space is 10.40.0.0/16. The subnet sn-pay (10.40.1.0/24) runs the payment application servers and uses the route table rt-pay, whose Virtual network gateway route propagation setting is Enabled. The site-to-site VPN connection vpn-pay-01 links the virtual network to the corporate datacentre, and the corporate network advertises the ranges 10.60.0.0/16 and 10.70.0.0/16 across the tunnel.\n\nThe output below lists the routes that apply to the network interface of a payment server.\n\nYou need to know which entry decides the outcome in each of the situations listed below. Drag each item onto the matching slot.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "AddressPrefix     NextHopType             NextHopIPAddress  Source\n0.0.0.0/0         Internet                -                 Default\n10.40.0.0/16      VNetLocal               -                 Default\n10.40.5.0/24      None                    -                 UserDefinedRoute\n10.60.0.0/16      VirtualNetworkGateway   10.99.0.1         UserDefinedRoute\n10.60.0.0/16      VirtualNetworkGateway   10.99.0.1         BGP\n10.70.0.0/16      VirtualNetworkGateway   10.99.0.1         BGP\n172.16.0.0/12     None                    -                 Default"
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "A route you defined yourself"
+					},
+					{
+						"id": "i2",
+						"text": "A route learned from the on-premises router"
+					},
+					{
+						"id": "i3",
+						"text": "A route Azure created for you"
+					},
+					{
+						"id": "i4",
+						"text": "The most specific route for the destination"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "First in line when several entries carry an identical address range"
+					},
+					{
+						"id": "s2",
+						"label": "Second in line when several entries carry an identical address range"
+					},
+					{
+						"id": "s3",
+						"label": "Last in line when several entries carry an identical address range"
+					},
+					{
+						"id": "s4",
+						"label": "Decides where a connection goes when applicable entries cover ranges of different sizes"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Azure resolves competing entries in a fixed order. When several entries carry an identical address range, an entry you defined yourself is consulted first, an entry learned from the on-premises router through BGP is consulted second, and an entry the platform generates automatically for the subnet is consulted last. When the entries that cover a destination have different prefix lengths, the most specific route for the destination decides where the traffic goes: traffic to 10.40.5.5 follows the 10.40.5.0/24 entry rather than the broader 10.40.0.0/16 entry.",
+				"perChoice": {
+					"i1": "This is the user-defined route you configured in rt-pay. For the prefix 10.60.0.0/16 it takes precedence over the route advertised over the tunnel and over the entry the platform builds automatically, so it is consulted first.",
+					"i2": "This is the BGP route exchanged with the on-premises network gateway, present in the output because gateway route propagation is Enabled on rt-pay. It outranks the entry the platform generates automatically but is outranked by a route you defined yourself, so it is consulted second.",
+					"i3": "This is a system route, built by the platform for every subnet and covering the address space of the virtual network or the default internet path. It is the last entry consulted when several entries carry the same address range.",
+					"i4": "This is the longest prefix match rule. It decides between entries of different sizes, for example the 10.40.5.0/24 entry for traffic to 10.40.5.5 instead of the 10.40.0.0/16 entry, and it applies independently of the order used for identical prefixes."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-udr-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-route-table"
+				}
+			],
+			"subtopics": [
+				"route-precedence",
+				"longest-prefix-match",
+				"effective-route-table"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GXTKKHKPAS2S4MBQ5EJQ2J",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have the virtual network vnet-claims in subscription sub-contoso (West US 3), whose address space is 10.60.0.0/16. The site-to-site VPN connection vpn-claims-01 terminates in GatewaySubnet and links the virtual network to the head office, which advertises the range 40.20.0.0/16 across the tunnel. Inside that range, the finance file servers sit in 40.20.30.0/24, and the segment the head office decommissioned last quarter is 40.20.40.0/24.\n\nThe subnet sn-archive (10.60.2.0/24) runs the archive servers and uses the route table rt-archive, whose Virtual network gateway route propagation setting is Disabled, so the range advertised by the tunnel never reaches those servers. The subnet sn-policy (10.60.1.0/24) runs the claims-processing servers and uses rt-policy, whose propagation setting is Enabled.\n\nAn inspection appliance runs in the separate subnet sn-appl (10.60.9.0/24) at 10.60.9.4, with Enable IP forwarding turned on for its network interface and a static route that points the head office range at the VPN connection, so it can forward over the tunnel whatever it accepts. The claims servers upload documents to a blob container in Azure, and no service endpoint is enabled for that container on sn-policy.\n\nThe exhibit lists the current configuration.\n\nYou have to complete the two route tables so that the behaviour below is obtained. Drag the route entry that belongs onto each target.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Object",
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Virtual network vnet-claims",
+							"Address space",
+							"10.60.0.0/16"
+						],
+						[
+							"Subnet sn-policy",
+							"Address range",
+							"10.60.1.0/24"
+						],
+						[
+							"Route table rt-policy",
+							"Associated subnet",
+							"sn-policy"
+						],
+						[
+							"Route table rt-policy",
+							"Virtual network gateway route propagation",
+							"Enabled"
+						],
+						[
+							"Route table rt-policy",
+							"Routes",
+							"0.0.0.0/0 to Virtual appliance, next hop IP 10.60.9.4"
+						],
+						[
+							"Subnet sn-archive",
+							"Address range",
+							"10.60.2.0/24"
+						],
+						[
+							"Route table rt-archive",
+							"Associated subnet",
+							"sn-archive"
+						],
+						[
+							"Route table rt-archive",
+							"Virtual network gateway route propagation",
+							"Disabled"
+						],
+						[
+							"Route table rt-archive",
+							"Routes",
+							"empty"
+						],
+						[
+							"Subnet sn-appl",
+							"Address range",
+							"10.60.9.0/24"
+						],
+						[
+							"Subnet sn-appl",
+							"Route table",
+							"none"
+						],
+						[
+							"Subnet GatewaySubnet",
+							"Address range",
+							"10.60.0.0/24"
+						],
+						[
+							"Subnet GatewaySubnet",
+							"Route table",
+							"none"
+						],
+						[
+							"VPN connection vpn-claims-01",
+							"Type",
+							"Site-to-site"
+						],
+						[
+							"Inspection appliance in sn-appl",
+							"Private IP address",
+							"10.60.9.4"
+						],
+						[
+							"Inspection appliance in sn-appl",
+							"Enable IP forwarding",
+							"On"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Address prefix 0.0.0.0/0, next hop type Virtual appliance, next hop IP address 10.60.9.4"
+					},
+					{
+						"id": "i2",
+						"text": "Address prefix 40.20.0.0/16, next hop type Virtual network gateway"
+					},
+					{
+						"id": "i3",
+						"text": "Address prefix 40.20.30.0/24, next hop type Virtual appliance, next hop IP address 10.60.9.4"
+					},
+					{
+						"id": "i4",
+						"text": "Address prefix 40.20.40.0/24, next hop type None"
+					},
+					{
+						"id": "i5",
+						"text": "Address prefix Storage, next hop type Internet"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Outbound connections from the archive servers to public websites must be inspected by the appliance before they leave Azure"
+					},
+					{
+						"id": "s2",
+						"label": "The archive servers must reach the remaining head office addresses over the tunnel even though their table does not pick up the routes learned from the tunnel"
+					},
+					{
+						"id": "s3",
+						"label": "Connections from the archive servers to the head office segment that hosts the finance file servers must be inspected by the appliance"
+					},
+					{
+						"id": "s4",
+						"label": "Connections to the head office segment that was decommissioned must be discarded instead of being delivered anywhere"
+					},
+					{
+						"id": "s5",
+						"label": "Document uploads from the claims servers to their blob container must travel inside Microsoft's backbone instead of being handed to the appliance"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "Each target is met by one entry, and the entries for rt-archive cover three different needs that only longest prefix match can keep apart. Because rt-archive has Virtual network gateway route propagation set to Disabled, the range learned from the tunnel is never added to the archive servers, so the whole head office range has to be written down with the VPN gateway as the next hop; the VPN gateway is a supported next hop type for this connection. The catch-all 0.0.0.0/0 entry with the appliance's private IP as next hop forces every unmatched destination from that subnet through the inspection appliance, overriding the default route out to the internet, and the appliance has IP forwarding on so it can accept and forward the traffic. The /24 entry for the finance segment is more specific than the /16 entry for the whole head office range, so only that segment is inspected while the remaining head office addresses keep travelling over the tunnel. The /24 entry with a next hop of None discards the decommissioned segment instead of forwarding it, which also stops the catch-all entry from handing it to the appliance. In rt-policy, whose catch-all entry already points at the appliance, a service tag as the address prefix with the Internet next hop keeps the blob uploads to Azure services with public IPs on Microsoft's backbone rather than sending them through the appliance, and the service tag avoids having to track address changes.",
+				"perChoice": {
+					"i1": "Belongs on the target about outbound connections from the archive servers to public websites. A 0.0.0.0/0 entry with next hop type Virtual appliance and the appliance's private IP sends every destination not matched by a more specific prefix from sn-archive through the inspection appliance instead of following the default route out to the internet.",
+					"i2": "Belongs on the target about the remaining head office addresses. Because the archive table does not receive the routes learned from the tunnel, that range must be listed explicitly with next hop type Virtual network gateway, which is valid here because the virtual network terminates a VPN connection.",
+					"i3": "Belongs on the target about the head office segment that hosts the finance file servers. This /24 prefix is more specific than the /16 prefix that covers the whole head office range, so longest prefix match sends that segment to the inspection appliance while the rest of the head office range keeps using the tunnel.",
+					"i4": "Belongs on the target about the decommissioned head office segment. A next hop type of None discards traffic for that prefix instead of forwarding it to any destination, and being a /24 it also wins over the catch-all entry that would otherwise hand this traffic to the appliance.",
+					"i5": "Belongs on the target about the blob uploads from the claims servers. A service tag used as the address prefix saves tracking IP range changes, and the Internet next hop keeps traffic to Azure services with public IPs on Microsoft's backbone rather than letting it be captured by the appliance route in rt-policy."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-udr-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-route-table"
+				}
+			],
+			"subtopics": [
+				"user-defined-routes",
+				"route-table-next-hop-types",
+				"service-tags-and-prefix-matching"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GY745ABP8NMZBV37ENF1Y6",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You operate the virtual network vnet-media in subscription sub-contoso (East US 2). The subnet sn-encode (10.120.3.0/24) hosts the media encoding VMs and is the only subnet that uses the route table rt-encode. A network inspection device runs on a virtual machine in the separate subnet sn-fw at 10.120.9.4, and the site-to-site connection vpn-media-01 links the virtual network to the corporate datacenter.\n\nThe security team requires that every request the encoding VMs send out to the internet is handed to the inspection device in sn-fw before it leaves the virtual network, while connections to the corporate range 10.130.0.0/16 must keep travelling over the tunnel exactly as they do today.\n\nWhich address prefix and next hop type should the new route in rt-encode use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Virtual network",
+							"vnet-media, subscription sub-contoso, East US 2, address space 10.120.0.0/16"
+						],
+						[
+							"Subnet sn-encode",
+							"10.120.3.0/24, route table rt-encode"
+						],
+						[
+							"rt-encode contents",
+							"no route entries"
+						],
+						[
+							"rt-encode gateway route propagation",
+							"Enabled"
+						],
+						[
+							"Subnet sn-fw",
+							"10.120.9.0/24, no route table"
+						],
+						[
+							"Inspection device",
+							"10.120.9.4, Enable IP forwarding On"
+						],
+						[
+							"Site-to-site connection",
+							"vpn-media-01, corporate datacenter advertises 10.130.0.0/16"
+						]
+					]
+				},
+				"statement": "The route added to rt-encode should use address prefix {{prefix}} and next hop type {{nhtype}}.",
+				"slots": [
+					{
+						"id": "prefix",
+						"options": [
+							{
+								"id": "a",
+								"text": "0.0.0.0/0"
+							},
+							{
+								"id": "b",
+								"text": "10.120.0.0/16"
+							},
+							{
+								"id": "c",
+								"text": "10.130.0.0/16"
+							},
+							{
+								"id": "d",
+								"text": "10.120.9.0/24"
+							}
+						]
+					},
+					{
+						"id": "nhtype",
+						"options": [
+							{
+								"id": "a",
+								"text": "Virtual appliance"
+							},
+							{
+								"id": "b",
+								"text": "Virtual network"
+							},
+							{
+								"id": "c",
+								"text": "Virtual network gateway"
+							},
+							{
+								"id": "d",
+								"text": "None"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"prefix": "a",
+				"nhtype": "a"
+			},
+			"explanation": {
+				"correct": "A route with address prefix 0.0.0.0/0 matches every destination, so adding it to rt-encode makes all outbound traffic from sn-encode follow that route instead of the platform's default internet path. Choosing the next hop type Virtual appliance, with the inspection device's private IP 10.120.9.4 supplied as the next hop address, hands the traffic to the device in sn-fw, which then forwards it out; the device is directly reachable from the subnet and its network interface already has Enable IP forwarding turned on. Because gateway route propagation is Enabled and the tunnel advertises 10.130.0.0/16, the longer prefix for the corporate range still wins by longest prefix match, so corporate connections keep travelling over the tunnel unchanged.",
+				"perChoice": {
+					"prefix:b": "The prefix 10.120.0.0/16 only matches destinations inside the virtual network's own address space, so internet-bound requests would keep following the platform's default path and would never reach the inspection device.",
+					"prefix:c": "The prefix 10.130.0.0/16 matches only the corporate range, so requests leaving for the internet would continue on their existing path instead of being inspected.",
+					"prefix:d": "The prefix 10.120.9.0/24 matches only the subnet that hosts the inspection device, so it does not cover the internet destinations that must be inspected.",
+					"nhtype:b": "The next hop type Virtual network keeps traffic inside the virtual network and never hands it to the inspection device's private IP address.",
+					"nhtype:c": "The next hop type Virtual network gateway sends the traffic to the VPN gateway and over the tunnel instead of to the inspection device in sn-fw.",
+					"nhtype:d": "The next hop type None discards the matching traffic, so the encoding requests would be dropped and would never reach the internet or the inspection device."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-udr-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-route-table"
+				}
+			],
+			"subtopics": [
+				"user-defined-routes",
+				"route-next-hop-types",
+				"longest-prefix-match"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GYHR7DV8EY9YQR669QA6WW",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have the virtual network vnet-pipe in subscription sub-contoso (West Europe). The subnet sn-pipe runs the workers that upload the nightly pipeline artifacts to a container in Azure Storage, and the route table rt-pipe is associated with it. A firewall runs in the separate subnet sn-fw and inspects the traffic that Azure hands over to it.\n\nThe security team requires that every request the workers send to the Azure Storage service is inspected by that firewall before it leaves the virtual network. The platform team does not want to maintain the address ranges of the storage service by hand, because Microsoft extends and changes them regularly, and the traffic addressed to the other Azure services and to the internet has to keep the path it uses today.\n\nWhich definition describes the route that has to be added to rt-pipe?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Details"
+					],
+					"rows": [
+						[
+							"Virtual network",
+							"vnet-pipe — subscription sub-contoso — West Europe — address space 10.20.0.0/16"
+						],
+						[
+							"Subnet sn-pipe",
+							"10.20.5.0/24 — pipeline workers — route table rt-pipe"
+						],
+						[
+							"Subnet sn-fw",
+							"10.20.9.0/24 — firewall at 10.20.9.4 — Enable IP forwarding turned on for its network interface"
+						],
+						[
+							"Routes in rt-pipe",
+							"10.30.0.0/16 — Virtual network gateway (on-premises range)"
+						],
+						[
+							"Default route of sn-pipe",
+							"0.0.0.0/0 — Internet"
+						],
+						[
+							"Route for the address space of the virtual network",
+							"10.20.0.0/16 — Virtual network"
+						],
+						[
+							"Service endpoints on sn-pipe",
+							"none enabled"
+						]
+					]
+				},
+				"statement": "The route that has to be added to rt-pipe is the one with {{route}}.",
+				"slots": [
+					{
+						"id": "route",
+						"options": [
+							{
+								"id": "a",
+								"text": "Address prefix Storage, next hop type Virtual appliance, next hop address 10.20.9.4"
+							},
+							{
+								"id": "b",
+								"text": "Address prefix Storage, next hop type Virtual network gateway"
+							},
+							{
+								"id": "c",
+								"text": "Address prefix 13.66.0.0/16, next hop type Virtual appliance, next hop address 10.20.9.4"
+							},
+							{
+								"id": "d",
+								"text": "Address prefix AzureCloud, next hop type Virtual appliance, next hop address 10.20.9.4"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"route": "a"
+			},
+			"explanation": {
+				"correct": "A route in a route table can use a service tag as its address prefix, and Microsoft keeps that tag updated as the addresses of the service change, so the route keeps matching the storage addresses without any manual maintenance. The tag that covers the Azure Storage service is Storage. Because the security team wants this traffic inspected by the firewall before it leaves the virtual network, the next hop type has to be Virtual appliance and the next hop address has to be the private IP address of the firewall, 10.20.9.4, which sits in the same virtual network with Enable IP forwarding turned on. Adding this route to rt-pipe therefore hands the storage traffic to the firewall, while the traffic of the other Azure services and of the internet keeps following the routes it uses today.",
+				"perChoice": {
+					"route:b": "The address prefix is the right one, but the next hop type is not: with a next hop type of Virtual network gateway the storage traffic is sent to the gateway instead of to the firewall, so the firewall never sees it and the inspection requirement is not met.",
+					"route:c": "This route uses an explicit IP range, so it only matches that range and has to be updated by hand every time Microsoft changes the address ranges of the Azure Storage service. That is exactly the maintenance the platform team wants to avoid, and storage traffic to the other ranges would keep its current path.",
+					"route:d": "The AzureCloud tag covers every Azure service, so this route would also hand the traffic addressed to the other Azure services to the firewall and change the path that traffic uses today. The route has to single out the storage service alone."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-udr-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-route-table"
+				}
+			],
+			"subtopics": [
+				"service-tag-routes",
+				"user-defined-routes",
+				"next-hop-types"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GZ1GZSDSCMD13QGGR7APN3",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have the virtual network vnet-tickets in subscription sub-contoso (East US). The subnet sn-tickets holds the protected virtual machines of the ticketing application, and the route table rt-tickets is associated with it. The virtual network reaches the corporate datacentre over an ExpressRoute circuit, and the ticketing server the application talks to sits in that datacentre. The filtering software runs today as a virtual machine in the corporate datacentre, and an engineer tried to point a new route in rt-tickets at the address of that instance so that the traffic to the ticketing server would be inspected; the platform rejected the route, and the protected virtual machines still cannot reach the ticketing server.\n\nThe exhibit lists the objects and addresses you can work with. You need every packet that the protected virtual machines send to the ticketing server to be inspected by the filtering VM before it continues to the datacentre, the path of all other traffic leaving sn-tickets has to stay exactly as it is today, and traffic between the resources inside vnet-tickets has to keep flowing directly between them. The team can deploy another instance of the filtering software as a virtual machine wherever it decides, and Enable IP forwarding will be turned on for the network interface of that instance.\n\nWhich next hop type must the route in rt-tickets use, and where must the filtering VM be deployed for the route to be accepted and the traffic to be inspected?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Object",
+						"Details"
+					],
+					"rows": [
+						[
+							"Virtual network vnet-tickets",
+							"Subscription sub-contoso; East US; address space 10.85.0.0/16"
+						],
+						[
+							"Subnet sn-tickets",
+							"Range 10.85.1.0/24; holds the protected virtual machines; route table rt-tickets; Virtual network gateway route propagation Enabled"
+						],
+						[
+							"Route table rt-tickets",
+							"Holds no routes today"
+						],
+						[
+							"ExpressRoute gateway er-tickets",
+							"Private address 10.85.9.4; the circuit advertises the corporate datacentre segment 10.65.0.0/16"
+						],
+						[
+							"Filtering VM in the corporate datacentre",
+							"Private address 10.65.9.10; reachable only through the ExpressRoute circuit"
+						],
+						[
+							"Ticketing server",
+							"10.65.5.5, inside the corporate datacentre segment 10.65.0.0/16"
+						]
+					]
+				},
+				"statement": "The route in rt-tickets must use the next hop type {{nhType}}, and the filtering VM must be deployed {{placement}}.",
+				"slots": [
+					{
+						"id": "nhType",
+						"options": [
+							{
+								"id": "a",
+								"text": "Virtual appliance"
+							},
+							{
+								"id": "b",
+								"text": "Virtual network gateway"
+							},
+							{
+								"id": "c",
+								"text": "Virtual network"
+							},
+							{
+								"id": "d",
+								"text": "None"
+							}
+						]
+					},
+					{
+						"id": "placement",
+						"options": [
+							{
+								"id": "a",
+								"text": "in a subnet of the same virtual network that does not host the protected virtual machines"
+							},
+							{
+								"id": "b",
+								"text": "in a subnet of the corporate datacentre that does not host the protected virtual machines"
+							},
+							{
+								"id": "c",
+								"text": "in the subnet of the same virtual network that hosts the protected virtual machines"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"nhType": "a",
+				"placement": "a"
+			},
+			"explanation": {
+				"correct": "The route must use the next hop type Virtual appliance, because that is the hop type used when the traffic has to be handed to a filtering device that inspects it, and it is the only hop type for which a next hop address is supplied. The filtering VM has to run inside vnet-tickets, in a subnet of its own: a next hop that can only be reached by routing through the ExpressRoute gateway has no direct connectivity, and a next hop without direct connectivity makes the user-defined route configuration invalid, which is exactly why the route pointing at the datacentre instance at 10.65.9.10 was rejected. The device also must not sit in the subnet that holds the protected virtual machines, because a device deployed in the same subnet as the sources whose traffic it inspects can create routing loops where the traffic never leaves the subnet. With the filtering VM in its own subnet of vnet-tickets, the route for the corporate datacentre segment 10.65.0.0/16 hands the packets to the device, which forwards them onwards over the ExpressRoute circuit, while every other prefix keeps the path it has today; the user-defined route also overrides the route the circuit advertises for the same segment, because a user-defined route wins over a route propagated from on-premises.",
+				"perChoice": {
+					"nhType:b": "This hop type hands the traffic to the gateway of the virtual network instead of to the filtering VM, so the packets are never inspected. It is also only supported when the gateway of the virtual network is a VPN gateway, and here the gateway is the ExpressRoute gateway, which user-defined routes cannot force traffic to.",
+					"nhType:c": "This hop type keeps the traffic inside the address space of the virtual network, so the packets would reach neither the filtering VM nor the ticketing server in the datacentre.",
+					"nhType:d": "This hop type drops the traffic instead of forwarding it, so the protected virtual machines would not reach the ticketing server at all.",
+					"placement:b": "A next hop that can only be reached by routing through the ExpressRoute gateway has no direct connectivity, and a next hop without direct connectivity makes the route configuration invalid, which is why the route pointing at the datacentre instance was rejected.",
+					"placement:c": "A filtering device deployed in the same subnet as the virtual machines whose traffic it inspects can create routing loops where the traffic never leaves the subnet; the device needs a subnet of its own inside the virtual network."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-udr-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-route-table"
+				}
+			],
+			"subtopics": [
+				"user-defined-routes",
+				"next-hop-types",
+				"routing-troubleshooting"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GZ75TKDGN7C3BHAKEAM2Q3",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You operate the virtual network vnet-retail in subscription sub-contoso (East US), whose address space is 10.140.0.0/16. The subnet sn-kiosk (10.140.3.0/24) runs the store kiosks and uses the route table rt-retail. A firewall appliance runs in the separate subnet sn-fw (10.140.9.0/24) at 10.140.9.4, and the site-to-site connection vpn-retail-01 links the virtual network to the corporate datacentre, where the backend host 10.200.5.5 lives.\n\nThe exhibit lists the current configuration.\n\nSince the route table was attached to the subnet, the kiosks no longer reach the backend host: their packets arrive at the appliance and stop there. The corporate side retired the host 10.200.30.5 last month but keeps advertising that segment across the tunnel, so connections from the kiosks to it are still answered. The security team requires that the kiosks reach 10.200.5.5 over the tunnel with every connection inspected by the firewall first, and that no packet from the kiosks is delivered to the retired segment.\n\nWhich next hop type must the new route in rt-retail use for the retired segment, and which change must be made to the appliance's network interface so that the inspected traffic reaches the datacentre?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Object",
+						"Value"
+					],
+					"rows": [
+						[
+							"Virtual network vnet-retail",
+							"Subscription sub-contoso; East US; address space 10.140.0.0/16"
+						],
+						[
+							"Subnet sn-kiosk",
+							"10.140.3.0/24; route table rt-retail"
+						],
+						[
+							"Route table rt-retail",
+							"Virtual network gateway route propagation: Enabled"
+						],
+						[
+							"Route route-to-corporate in rt-retail",
+							"Address prefix 10.200.0.0/16; next hop type Virtual appliance; next hop IP 10.140.9.4"
+						],
+						[
+							"Firewall appliance",
+							"Subnet sn-fw (10.140.9.0/24); private IP 10.140.9.4; static route for 10.200.0.0/16 towards vpn-retail-01"
+						],
+						[
+							"VPN connection vpn-retail-01",
+							"Prefixes advertised by the corporate router: 10.200.0.0/16 and 10.200.30.0/24"
+						]
+					]
+				},
+				"statement": "To obtain the required behaviour, the team must add a route for 10.200.30.0/24 to rt-retail whose next hop type is {{nextHopType}}, and {{nicSetting}}.",
+				"slots": [
+					{
+						"id": "nextHopType",
+						"options": [
+							{
+								"id": "a",
+								"text": "None"
+							},
+							{
+								"id": "b",
+								"text": "Internet"
+							},
+							{
+								"id": "c",
+								"text": "Virtual appliance"
+							},
+							{
+								"id": "d",
+								"text": "Virtual network gateway"
+							}
+						]
+					},
+					{
+						"id": "nicSetting",
+						"options": [
+							{
+								"id": "a",
+								"text": "Enable IP forwarding on the appliance network interface"
+							},
+							{
+								"id": "b",
+								"text": "Disable IP forwarding on the appliance network interface"
+							},
+							{
+								"id": "c",
+								"text": "Enable IP forwarding on the kiosk network interfaces"
+							},
+							{
+								"id": "d",
+								"text": "Enable accelerated networking on the appliance network interface"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"nextHopType": "a",
+				"nicSetting": "a"
+			},
+			"explanation": {
+				"correct": "A route whose next hop type is None discards the traffic addressed to its prefix instead of sending it to any destination, so a user-defined route for 10.200.30.0/24 with that next hop type stops the packets to the retired segment inside Azure. The new user-defined route carries the same prefix as the route learned from the gateway for that segment, and a user-defined route wins over a route learned through BGP when the prefixes are identical; it is also more specific than 10.200.0.0/16, so it wins over the route that hands the corporate range to the firewall. For the inspected traffic to continue to the datacentre, the appliance must be allowed to forward packets that are addressed elsewhere, which requires Enable IP forwarding to be turned on for its network interface; that is why the packets currently stop at the appliance. The kiosks keep reaching 10.200.5.5 through the appliance, which then forwards it over the tunnel using its own static route.",
+				"perChoice": {
+					"nextHopType:b": "A route with next hop type Internet hands the traffic to the internet instead of discarding it, so the packets to the retired segment would be sent out rather than stopped, and the requirement that nothing is delivered to that segment would not be met.",
+					"nextHopType:c": "A route with next hop type Virtual appliance sends the traffic to the firewall at 10.140.9.4, which forwards the corporate range over the tunnel through its own static route, so the retired host would still answer the kiosks.",
+					"nextHopType:d": "A route with next hop type Virtual network gateway sends the traffic over the site-to-site connection, so the retired host in the datacentre would again receive and answer the packets.",
+					"nicSetting:b": "Disabling IP forwarding on the appliance network interface removes the ability of the virtual machine to forward the traffic it receives towards the datacentre, so the inspected connections to 10.200.5.5 would never be completed.",
+					"nicSetting:c": "The kiosk network interfaces only send their own traffic, and no packet addressed to the corporate range is routed through them, so this setting has no effect on the traffic handed to the appliance.",
+					"nicSetting:d": "Accelerated networking improves the performance of the virtual machine network interface but does not let the guest operating system forward packets that are addressed to another destination, so the packets would still stop at the appliance."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-udr-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-route-table"
+				}
+			],
+			"subtopics": [
+				"user-defined-routes",
+				"route-next-hop-types",
+				"ip-forwarding"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GZCM43ATAQYE3P8N0PR2KB",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You administer the virtual network vnet-corp in subscription sub-contoso (West Europe), whose address space is 10.10.0.0/16. The subnet sn-app (10.10.1.0/24) runs the application servers and uses the route table rt-app, whose virtual network gateway route propagation is Enabled. The site-to-site connection vpn-corp-01 links the virtual network to the corporate datacenter, which advertises 10.90.0.0/16 across the tunnel.\n\nThe output below lists the routes that currently apply to the network interface of an application server.\n\nBecause of a recent change in rt-app, connections from the application servers to 192.168.10.5 now leave the virtual network through the tunnel. That address belongs to a lab segment the corporate side decommissioned, and traffic addressed to it has to be dropped inside Azure. The 0.0.0.0/0 entry in rt-app has to stay, because every outbound request from the subnet must leave over the tunnel.\n\nWhich route governs the traffic to 192.168.10.5 today, and which next hop type must the route added to rt-app for 192.168.0.0/16 use?",
+				"exhibit": {
+					"kind": "code",
+					"language": "powershell",
+					"text": "PS> az network nic show-effective-route-table -g rg-net -n nic-app-01\n\nAddressPrefix    Next hop type           Next hop IP   Source              State\n10.10.1.0/24      Virtual network         -             System              Active\n10.10.0.0/16      Virtual network         -             System              Active\n10.90.0.0/16      Virtual network gateway -             BGP                 Active\n0.0.0.0/0         Virtual network gateway -             User-defined route  Active\n0.0.0.0/0         Internet                -             System              Invalid"
+				},
+				"statement": "Today the traffic to 192.168.10.5 follows the {{governing}} route, and the route you add to rt-app for 192.168.0.0/16 must use the next hop type {{nxt}}.",
+				"slots": [
+					{
+						"id": "governing",
+						"options": [
+							{
+								"id": "a",
+								"text": "0.0.0.0/0 with next hop type Virtual network gateway"
+							},
+							{
+								"id": "b",
+								"text": "192.168.0.0/16 with next hop type Virtual network gateway"
+							},
+							{
+								"id": "c",
+								"text": "0.0.0.0/0 with next hop type Internet"
+							},
+							{
+								"id": "d",
+								"text": "192.168.0.0/16 with next hop type Virtual network"
+							}
+						]
+					},
+					{
+						"id": "nxt",
+						"options": [
+							{
+								"id": "a",
+								"text": "None"
+							},
+							{
+								"id": "b",
+								"text": "Virtual appliance"
+							},
+							{
+								"id": "c",
+								"text": "Virtual network"
+							},
+							{
+								"id": "d",
+								"text": "Virtual network gateway"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"governing": "a",
+				"nxt": "a"
+			},
+			"explanation": {
+				"correct": "The traffic to 192.168.10.5 today follows the user-defined route for 0.0.0.0/0 with next hop type Virtual network gateway, because adding a 0.0.0.0/0 route with that next hop type causes the default system routes that use None to be removed, and those were the entries that discarded traffic to the reserved range 192.168.0.0/16. With that entry gone, the longest prefix that matches 192.168.10.5 is the default route, so the packets leave over the tunnel. To drop the lab segment again while keeping the default route, add a route for 192.168.0.0/16 whose next hop type is None: the more specific prefix then wins and the traffic is discarded instead of being forwarded to any destination.",
+				"perChoice": {
+					"governing:b": "There is no route for 192.168.0.0/16 in the effective route table at all, so no traffic can be governed by that prefix. The entry that used to discard traffic to that range was one of the default system routes that were removed when the 0.0.0.0/0 route with next hop type Virtual network gateway was added.",
+					"governing:c": "The system default route to the internet is still listed, but it is marked Invalid because the user-defined route with the same prefix takes precedence, so traffic does not follow it.",
+					"governing:d": "No route for 192.168.0.0/16 with next hop type Virtual network applies to this subnet. That range is not part of the address space of vnet-corp, so Azure creates no local route for it.",
+					"nxt:b": "A next hop type of Virtual appliance hands the packets to a network appliance instead of dropping them, so the lab segment would still be reachable.",
+					"nxt:c": "A next hop type of Virtual network keeps delivering the traffic inside the virtual network rather than discarding it.",
+					"nxt:d": "A next hop type of Virtual network gateway sends the traffic over the tunnel instead of discarding it, which is the opposite of what the decommissioned lab segment requires."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-udr-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-route-table"
+				}
+			],
+			"subtopics": [
+				"user-defined-routes",
+				"route-next-hop-types",
+				"system-route-precedence"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GZTZAB0MQKXKTM0YPVDD3V",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You operate the virtual network vnet-lab in subscription sub-contoso (North Europe), whose address space is 40.60.0.0/16. The subnet sn-lab (40.60.1.0/24) runs the lab virtual machines and uses the route table rt-force, whose Virtual network gateway route propagation setting is Disabled. The virtual network is linked to the corporate datacentre by the site-to-site connection s2s-lab-01, and the corporate datacentre hosts the lab controller at 172.20.5.10. The lab virtual machines open sessions to that controller without any problem.\n\nThe exhibit lists the objects and their settings.\n\nYou need to document which route carries that traffic and what the platform reports for the default system route for 0.0.0.0/0.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Object",
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"vnet-lab",
+							"Address space",
+							"40.60.0.0/16"
+						],
+						[
+							"sn-lab",
+							"Address prefix",
+							"40.60.1.0/24"
+						],
+						[
+							"sn-lab",
+							"Route table",
+							"rt-force"
+						],
+						[
+							"rt-force",
+							"Virtual network gateway route propagation",
+							"Disabled"
+						],
+						[
+							"rt-force",
+							"Route address prefix",
+							"0.0.0.0/0"
+						],
+						[
+							"rt-force",
+							"Route next hop type",
+							"Virtual network gateway"
+						],
+						[
+							"s2s-lab-01",
+							"Connection type",
+							"Site-to-site"
+						],
+						[
+							"Corporate datacentre",
+							"Lab controller address",
+							"172.20.5.10"
+						]
+					]
+				},
+				"statement": "The traffic to 172.20.5.10 {{route}}, and in the subnet that uses rt-force the default system route for 0.0.0.0/0 shows the state {{state}}.",
+				"slots": [
+					{
+						"id": "route",
+						"options": [
+							{
+								"id": "a",
+								"text": "is routed by the 0.0.0.0/0 route in rt-force, whose next hop type is Virtual network gateway"
+							},
+							{
+								"id": "b",
+								"text": "is routed by the default system route for 172.16.0.0/12, whose next hop type is None, and not by the gateway route in rt-force"
+							},
+							{
+								"id": "c",
+								"text": "is routed by the default system route for 0.0.0.0/0, whose next hop type is Internet, and not by the gateway route in rt-force"
+							},
+							{
+								"id": "d",
+								"text": "is routed by the default system route for 40.60.0.0/16, whose next hop type is Virtual network, and not by the gateway route in rt-force"
+							}
+						]
+					},
+					{
+						"id": "state",
+						"options": [
+							{
+								"id": "a",
+								"text": "Invalid"
+							},
+							{
+								"id": "b",
+								"text": "Active"
+							},
+							{
+								"id": "c",
+								"text": "Removed from the route table"
+							},
+							{
+								"id": "d",
+								"text": "Not reported, because a custom route took its place"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"route": "a",
+				"state": "a"
+			},
+			"explanation": {
+				"correct": "Azure creates a default system route for 172.16.0.0/12 with next hop type None, which would drop traffic to 172.20.5.10 instead of sending it out of the subnet. However, when a route with the 0.0.0.0/0 prefix and the next hop type Virtual network gateway exists, Azure removes those default system routes that use None as the next hop type, so the 172.16.0.0/12 entry no longer applies. The only route that matches 172.20.5.10 is then the 0.0.0.0/0 route in rt-force, whose next hop type is Virtual network gateway, so the packets are handed to the site-to-site connection and travel to the corporate datacentre. Because that user-defined route uses the same 0.0.0.0/0 prefix as the default system route for 0.0.0.0/0, that system route switches to the Invalid state while the user-defined route stays Active; this is the expected outcome and not an error.",
+				"perChoice": {
+					"route:b": "The default system route for 172.16.0.0/12 uses next hop type None and would discard this traffic, but it is removed as soon as a 0.0.0.0/0 route with next hop type Virtual network gateway is present, so it never decides where the packets go.",
+					"route:c": "The default system route for 0.0.0.0/0 uses next hop type Internet, but it only applies while no custom route uses the same prefix. The user-defined route in rt-force takes precedence over it, which is why the system route no longer carries this traffic.",
+					"route:d": "The default system route for 40.60.0.0/16 keeps traffic between resources of the virtual network address space inside the virtual network. The controller address 172.20.5.10 lies outside 40.60.0.0/16, so this route never matches it.",
+					"state:b": "A system route that shares its prefix with a user-defined route is overridden and shows the Invalid state, so the default route for 0.0.0.0/0 is no longer Active while the user-defined route is.",
+					"state:c": "System routes cannot be removed by a route table; the default route for 0.0.0.0/0 stays listed for the subnet and merely changes state to Invalid. Only the default system routes whose next hop type is None are removed, and that is not the case for this one.",
+					"state:d": "The default system route is still reported for the subnet. Overriding it with a custom route changes its state to Invalid instead of hiding it from the route table."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-udr-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-route-table"
+				}
+			],
+			"subtopics": [
+				"user-defined-routes",
+				"system-routes",
+				"next-hop-types"
+			],
+			"reviewed": false
+		}
+	]
+}

@@ -1,0 +1,2245 @@
+{
+	"skill": "networking.nsg-asg",
+	"questions": [
+		{
+			"id": "q_01M6FM8483ZKFJCGS4F4V61TTT",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a three-tier application running in the virtual network vnet-prod. The network security group nsg-tier is associated with subnet app-subnet, which holds every virtual machine of the application: vm-web (its network interface is a member of asg-web), vm-api (member of asg-api), vm-db (member of asg-db), and vm-tools, whose network interface belongs to no application security group. The rules currently configured in nsg-tier are listed in the exhibit.\n\nYou need internet clients to reach vm-web on TCP 443, and you need vm-api to call vm-web on TCP 8443, while no other source - including virtual machines inside vnet-prod that are not members of an application security group - may open TCP 8443 to vm-web. Today vm-tools can still open TCP 8443 to vm-web.\n\nWhich single change to nsg-tier meets all of these requirements?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Rule set",
+						"Priority",
+						"Direction",
+						"Source",
+						"Destination",
+						"Destination port",
+						"Action"
+					],
+					"rows": [
+						[
+							"Custom",
+							"100",
+							"Inbound",
+							"Internet",
+							"asg-web",
+							"443",
+							"Allow"
+						],
+						[
+							"Custom",
+							"110",
+							"Inbound",
+							"asg-api",
+							"asg-web",
+							"8443",
+							"Allow"
+						],
+						[
+							"Built-in",
+							"65000",
+							"Inbound",
+							"VirtualNetwork",
+							"VirtualNetwork",
+							"*",
+							"Allow"
+						],
+						[
+							"Built-in",
+							"65500",
+							"Inbound",
+							"*",
+							"*",
+							"*",
+							"Deny"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add an inbound deny rule with source Any, destination asg-web, and destination port 8443, using a priority number greater than 110."
+					},
+					{
+						"id": "b",
+						"text": "Add an inbound deny rule with source Any, destination asg-web, and destination port 8443, using a priority number lower than 110."
+					},
+					{
+						"id": "c",
+						"text": "Add an outbound deny rule with source Any, destination asg-web, and destination port 8443, using a priority number greater than 110."
+					},
+					{
+						"id": "d",
+						"text": "Add an inbound deny rule with source Any, destination asg-web, and destination port 443, using a priority number greater than 110."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Custom rules are inspected in priority order and processing stops at the first rule that matches, while the platform defaults occupy 65000-65500 and are therefore always evaluated after custom rules. Placing a new inbound deny rule for source Any, destination asg-web and destination port 8443 at a priority above 110 (for example 120) keeps the required asg-api to asg-web path working, because that traffic still matches the allow rule at 110 first. Any other source, including vm-tools inside vnet-prod, no longer falls through to the built-in AllowVNetInBound rule at 65000 and is instead rejected by the new deny rule. The rule is scoped to port 8443, so the internet path to vm-web on 443 is unaffected, and scoping the destination to asg-web keeps the rule limited to the web tier's members.",
+				"perChoice": {
+					"b": "A deny rule at a priority below 110 is inspected before the allow rule at 110, so it would also reject the traffic from asg-api to asg-web on 8443 and break the required API-to-web path. The deny must be evaluated after that allow rule, not before it.",
+					"c": "Outbound rules govern traffic leaving the protected resources, so an outbound deny does not stop vm-tools from opening an inbound 8443 session to vm-web. Network security groups are stateful, so restricting the outbound side does not close the inbound connection either.",
+					"d": "The unprotected path is on TCP 8443, so scoping the deny to 443 leaves 8443 open; vm-tools still matches the built-in AllowVNetInBound rule at 65000 for that port and keeps reaching the web tier."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/application-security-groups"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-network-security-group"
+				}
+			],
+			"subtopics": [
+				"nsg-rule-priority",
+				"nsg-built-in-rules",
+				"application-security-groups"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FMFZ0EH6JQ4N1P349BE477",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a virtual network named vnet-app with a single subnet, app-subnet. The network security group nsg-app is associated with app-subnet, and the virtual machine vm-app1, which runs an order-processing application, has its network interface in that subnet. The custom and built-in rules that nsg-app currently contains are listed in the exhibit.\n\nThe partner that processes the orders exposes its API at 203.0.113.10, listening on TCP 8443. Every call from vm-app1 to that endpoint fails today, while the application's package downloads over TCP 443 keep working. Once the calls succeed, the partner's responses have to reach vm-app1, and traffic from this subnet to any other destination on TCP 8443 must stay blocked.\n\nWhich single rule should you add to nsg-app?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Rule",
+						"Priority",
+						"Direction",
+						"Source",
+						"Destination",
+						"Port",
+						"Protocol",
+						"Action"
+					],
+					"rows": [
+						[
+							"Allow-Frontend-Inbound",
+							"100",
+							"Inbound",
+							"Internet",
+							"Any",
+							"443",
+							"TCP",
+							"Allow"
+						],
+						[
+							"Allow-Package-Repo",
+							"110",
+							"Outbound",
+							"Any",
+							"Internet",
+							"443",
+							"TCP",
+							"Allow"
+						],
+						[
+							"Deny-Other-Outbound",
+							"200",
+							"Outbound",
+							"Any",
+							"Any",
+							"*",
+							"Any",
+							"Deny"
+						],
+						[
+							"AllowVNetInBound",
+							"65000",
+							"Inbound",
+							"VirtualNetwork",
+							"VirtualNetwork",
+							"*",
+							"Any",
+							"Allow"
+						],
+						[
+							"AllowAzureLoadBalancerInBound",
+							"65001",
+							"Inbound",
+							"AzureLoadBalancer",
+							"Any",
+							"*",
+							"Any",
+							"Allow"
+						],
+						[
+							"DenyAllInbound",
+							"65500",
+							"Inbound",
+							"Any",
+							"Any",
+							"*",
+							"Any",
+							"Deny"
+						],
+						[
+							"AllowVnetOutBound",
+							"65000",
+							"Outbound",
+							"VirtualNetwork",
+							"VirtualNetwork",
+							"*",
+							"Any",
+							"Allow"
+						],
+						[
+							"AllowInternetOutBound",
+							"65001",
+							"Outbound",
+							"Any",
+							"Internet",
+							"*",
+							"Any",
+							"Allow"
+						],
+						[
+							"DenyAllOutBound",
+							"65500",
+							"Outbound",
+							"Any",
+							"Any",
+							"*",
+							"Any",
+							"Deny"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "An outbound Allow rule with priority 120 that permits TCP 8443 to 203.0.113.10."
+					},
+					{
+						"id": "b",
+						"text": "An inbound Allow rule with priority 120 that permits TCP 8443 from 203.0.113.10."
+					},
+					{
+						"id": "c",
+						"text": "An outbound Allow rule with priority 500 that permits TCP 8443 to 203.0.113.10."
+					},
+					{
+						"id": "d",
+						"text": "An outbound Allow rule with priority 120 that permits TCP 443 to 203.0.113.10."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The call to the partner is blocked today because the request from vm-app1 to 203.0.113.10:8443 is evaluated against the outbound rules: Allow-Package-Repo (priority 110) only covers TCP 443, so evaluation continues and Deny-Other-Outbound (priority 200) matches and drops it, ahead of the built-in AllowInternetOutBound default. Adding an outbound Allow rule for TCP 8443 to 203.0.113.10 with priority 120 - a lower number, so it is evaluated before 200 - permits the call, and naming the partner address keeps other outbound traffic on 8443 blocked. Network security groups are stateful, so once the outbound flow is permitted the partner's responses on TCP 8443 are allowed back to vm-app1 automatically; no inbound rule and no change to the default inbound rules are required.",
+				"perChoice": {
+					"b": "This rule only governs traffic arriving at the resource. The request that vm-app1 sends to the partner is evaluated against the outbound rules, where Deny-Other-Outbound at priority 200 still matches and stops it, so the calls continue to fail.",
+					"c": "Rules are evaluated in priority order and evaluation stops at the first match. With priority 500 the new rule is evaluated after Deny-Other-Outbound at priority 200, so the deny rule matches first and the request is dropped before the new rule is considered.",
+					"d": "The partner API listens on TCP 8443, so a rule for TCP 443 never matches the request traffic and Deny-Other-Outbound at priority 200 still blocks it. This rule is also redundant, because Allow-Package-Repo at priority 110 already permits outbound TCP 443 to the Internet."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-network-security-group"
+				}
+			],
+			"subtopics": [
+				"nsg-rule-priority",
+				"nsg-stateful-traffic",
+				"nsg-rule-direction"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FMN3C29JR0HP1A40MY7STX",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a virtual network named vnet-hub with a single subnet named mgmt-subnet that holds the management virtual machines. The network security group nsg-mgmt is associated with mgmt-subnet, and the inbound rules that apply to that subnet are listed in the exhibit. Administrators on the corporate network connect to those machines over RDP and report that this works today. A recent audit found that a separate virtual machine inside vnet-hub, which has no connection to the corporate network, can also open RDP sessions to the management virtual machines. You need RDP over TCP 3389 to keep working for the corporate range, and you need all other sources, including virtual machines inside vnet-hub, to be unable to open TCP 3389 to the management virtual machines. Which single change to nsg-mgmt meets both requirements?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Inbound rules currently in effect on mgmt-subnet\n\nPriority | Rule name        | Source          | Destination port | Protocol | Action\n--------+-----------------+-----------------+------------------+----------+-------\n100     | Allow-RDP-Corp   | 203.0.113.0/24  | 3389             | TCP      | Allow\n65000   | AllowVNetInBound | VirtualNetwork  | *                | *        | Allow\n65500   | DenyAllInbound   | *               | *                | *        | Deny"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add a deny rule for TCP 3389 from all sources at priority 200, so the existing allow rule at priority 100 is evaluated first for the corporate range."
+					},
+					{
+						"id": "b",
+						"text": "Add a deny rule for TCP 3389 from all sources at priority 50, so the deny is evaluated before the existing allow rule at priority 100 for the corporate range."
+					},
+					{
+						"id": "c",
+						"text": "Change the existing allow rule at priority 100 so its source for TCP 3389 becomes * instead of the corporate range, which keeps RDP available to every source."
+					},
+					{
+						"id": "d",
+						"text": "Change the priority of the existing allow rule for TCP 3389 from 100 to 66000, so it is evaluated after the default rules for the corporate range."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Custom rules are always evaluated ahead of the platform's default rules, and processing stops at the first rule that matches. The existing allow rule at priority 100 matches traffic coming from the corporate range, so a new custom deny rule for TCP 3389 from all sources placed at priority 200 leaves that traffic permitted (it matches priority 100 first) while dropping traffic from the virtual machine inside vnet-hub and from any other source, which no longer reaches the default AllowVNetInBound rule at priority 65000. Priority 200 is unused in the NSG and falls inside the permitted 100 to 4096 range, and because default rules cannot be opened, edited, or removed, adding a custom rule is the only way to close the gap.",
+				"perChoice": {
+					"b": "A deny rule at priority 50 carries a lower priority number than the allow rule at priority 100, so it is evaluated first and drops the corporate traffic as well, breaking the administrator access that must keep working. The new rule needs a higher priority number than the existing allow rule so that the allow rule is the one that matches for the corporate range.",
+					"c": "Changing the source of the existing allow rule from the corporate range to * (Any) opens TCP 3389 to every source, which is the opposite of what is required. That rule already limits RDP to the corporate range; the extra access comes from the default rule permitting traffic between resources in the same virtual network, which is evaluated later and cannot be edited.",
+					"d": "Custom rule priorities must be unique and fall between 100 and 4096, so 66000 is not a usable value; the 65000 to 65500 range belongs to the platform's default rules, which cannot be edited or deleted. Any valid custom priority is still evaluated before those default rules, so moving the allow rule down would not stop the in-virtual-network traffic from matching the default allow rule."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-network-security-group"
+				}
+			],
+			"subtopics": [
+				"nsg-rule-priority",
+				"nsg-inbound-rules",
+				"nsg-default-rules"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FMTYHXACEMPWHT268VZZZD",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a network security group nsg-edge that is attached to the edge subnet of your virtual network. Partner systems must be able to reach the edge tier on TCP 443 and TCP 8443, and the team wants those partner allowances expressed in a single custom inbound rule instead of separate entries as the rule list grows. Which combination of values can that single custom rule contain?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Network security group",
+							"nsg-edge"
+						],
+						[
+							"Deployment model",
+							"Resource Manager"
+						],
+						[
+							"Association",
+							"edge-subnet in vnet-edge"
+						],
+						[
+							"Custom inbound rules defined today",
+							"4"
+						],
+						[
+							"Custom inbound rules wanted after the change",
+							"1"
+						],
+						[
+							"Ports the edge tier must accept from partners",
+							"443, 8443"
+						],
+						[
+							"Partner networks that must be admitted",
+							"2"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "One augmented rule containing several explicit source IP addresses and several destination ports"
+					},
+					{
+						"id": "b",
+						"text": "One augmented rule containing several source service tags and several destination ports"
+					},
+					{
+						"id": "c",
+						"text": "One augmented rule containing several source application security groups and several destination ports"
+					},
+					{
+						"id": "d",
+						"text": "One augmented rule containing several source service tags and several source application security groups"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "An augmented security rule can combine several explicit source addresses (or ranges) and several ports into a single custom rule, so nsg-edge can hold the two partner allowances for TCP 443 and TCP 8443 in one inbound rule. Augmented rules are available here because the exhibit shows nsg-edge was created with the Resource Manager deployment model. Service tags and application security groups cannot be multiplied within a single rule, which is what disqualifies the other combinations.",
+				"perChoice": {
+					"b": "This option asks for several service tags in the source of one rule. A single rule can't specify multiple service tags, so they can't be bundled together, augmented or otherwise.",
+					"c": "This option asks for several application security groups in the source of one rule. The same restriction applies to application security groups: one rule can't specify multiple of them, so they can't be packed into a single rule.",
+					"d": "This option asks for multiple service tags and multiple application security groups in the same rule. Neither multiple service tags nor multiple application security groups can be specified in a single rule, so no augmented rule can hold these values."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-network-security-group"
+				}
+			],
+			"subtopics": [
+				"nsg-augmented-rules",
+				"nsg-rule-design"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FN53JZMQJV0QFW7K8G7ZMW",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a virtual network vnet-shop that contains a single subnet, app-subnet. The network security group nsg-shop is associated with app-subnet. Two virtual machines run in app-subnet: vm-web, whose network interface is a member of the application security group asg-web, and vm-api, whose network interface is not a member of any application security group. The rules currently defined in nsg-shop are listed in the exhibit.\n\nThe team needs shoppers on the internet to reach the storefront that runs on vm-web over TCP 443, and vm-web has to be able to answer them.\n\nWhich statement about the traffic that nsg-shop permits is correct?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Direction",
+						"Rule name",
+						"Priority",
+						"Source",
+						"Destination",
+						"Service",
+						"Action"
+					],
+					"rows": [
+						[
+							"Inbound",
+							"Allow-Web-HTTPS",
+							"100",
+							"Internet",
+							"asg-web",
+							"TCP 443",
+							"Allow"
+						],
+						[
+							"Inbound",
+							"AllowVNetInBound",
+							"65000",
+							"VirtualNetwork",
+							"VirtualNetwork",
+							"Any",
+							"Allow"
+						],
+						[
+							"Inbound",
+							"AllowAzureLoadBalancerInBound",
+							"65001",
+							"AzureLoadBalancer",
+							"Any",
+							"Any",
+							"Allow"
+						],
+						[
+							"Inbound",
+							"DenyAllInbound",
+							"65500",
+							"Any",
+							"Any",
+							"Any",
+							"Deny"
+						],
+						[
+							"Outbound",
+							"AllowVnetOutBound",
+							"65000",
+							"VirtualNetwork",
+							"VirtualNetwork",
+							"Any",
+							"Allow"
+						],
+						[
+							"Outbound",
+							"AllowInternetOutBound",
+							"65001",
+							"Any",
+							"Internet",
+							"Any",
+							"Allow"
+						],
+						[
+							"Outbound",
+							"DenyAllOutBound",
+							"65500",
+							"Any",
+							"Any",
+							"Any",
+							"Deny"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "A shopper on the internet can open a TCP 443 session to vm-web, and vm-web can send the responses for that session."
+					},
+					{
+						"id": "b",
+						"text": "A shopper on the internet can open a TCP 443 session to vm-web, but vm-web cannot send the responses for that session."
+					},
+					{
+						"id": "c",
+						"text": "A shopper on the internet cannot open a TCP 443 session to vm-web, and vm-web cannot send the responses for that session."
+					},
+					{
+						"id": "d",
+						"text": "A shopper on the internet can open a TCP 443 session to vm-api, and vm-api can send the responses for that session."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The custom inbound rule at priority 100 uses the Internet service tag as source, asg-web as destination, and TCP 443 as the service, so it is evaluated before the default rules and permits a shopper to open a session to vm-web, whose network interface is a member of asg-web. The answers are not blocked afterwards: network security groups are stateful, so the reply to an allowed inbound connection is permitted without an extra rule, and the default AllowInternetOutBound rule at priority 65001 also allows outbound traffic to the Internet destination.",
+				"perChoice": {
+					"b": "The replies are not blocked. Because the group is stateful, once the inbound session has been allowed the reply traffic for that session is permitted without a separate outbound rule, and the default AllowInternetOutBound rule at priority 65001 permits outbound traffic to the Internet destination in any case.",
+					"c": "The custom allow rule at priority 100 is processed before the default DenyAllInbound rule at priority 65500, and its source, destination and service all match the shopper's request to vm-web, so the session is established and the responses are returned.",
+					"d": "The allow rule at priority 100 targets the asg-web destination, and vm-api's network interface is not a member of that group, so the rule does not apply to it. No other inbound rule allows the Internet source to reach vm-api on TCP 443, so the default DenyAllInbound rule blocks that traffic."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/application-security-groups"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-network-security-group"
+				}
+			],
+			"subtopics": [
+				"nsg-rule-priority",
+				"application-security-groups",
+				"stateful-traffic"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FNBWZV4A5MZ30EKN79SCM4",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You run an internal Azure Load Balancer named ilb-web that sends client traffic to the virtual machines vm-app1 and vm-app2, which live in subnet svc-subnet of the virtual network vnet-scale. The load balancer is configured with a health probe on TCP 8080, and the Azure portal currently reports both backend instances as unhealthy. The network security group nsg-web is associated with svc-subnet, and its inbound rules are listed in the exhibit.\n\nYou need the health probes to succeed so that the backends start receiving traffic, and clients outside the virtual network must not be able to open TCP 8080 directly to vm-app1 or vm-app2.\n\nWhich single change to nsg-web restores the health probes?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Priority",
+						"Rule name",
+						"Source",
+						"Destination",
+						"Destination port",
+						"Protocol",
+						"Action"
+					],
+					"rows": [
+						[
+							"100",
+							"Allow-Corp-HTTPS",
+							"203.0.113.0/24",
+							"Any",
+							"443",
+							"TCP",
+							"Allow"
+						],
+						[
+							"200",
+							"Deny-Backend-HTTP",
+							"Any",
+							"Any",
+							"8080",
+							"TCP",
+							"Deny"
+						],
+						[
+							"65000",
+							"AllowVNetInBound",
+							"VirtualNetwork",
+							"VirtualNetwork",
+							"*",
+							"Any",
+							"Allow"
+						],
+						[
+							"65001",
+							"AllowAzureLoadBalancerInBound",
+							"AzureLoadBalancer",
+							"Any",
+							"*",
+							"Any",
+							"Allow"
+						],
+						[
+							"65500",
+							"DenyAllInbound",
+							"Any",
+							"Any",
+							"*",
+							"Any",
+							"Deny"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add a custom inbound rule with a priority lower than 200 that allows TCP 8080 from the AzureLoadBalancer service tag."
+					},
+					{
+						"id": "b",
+						"text": "Edit the built-in rule AllowAzureLoadBalancerInBound at priority 65001 so that its destination port becomes 8080."
+					},
+					{
+						"id": "c",
+						"text": "Add a custom inbound rule with a priority of 4096 that allows TCP 8080 from the AzureLoadBalancer service tag."
+					},
+					{
+						"id": "d",
+						"text": "Add a custom inbound rule with a priority lower than 200 that allows TCP 8080 from Any source."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Rules are processed in priority order, and processing stops at the first rule whose attributes match the traffic. The custom deny for TCP 8080 at priority 200 is therefore evaluated before the built-in AllowAzureLoadBalancerInBound rule at 65001, so probe traffic is dropped before the built-in allowance is ever reached, which is why both backends are reported unhealthy. Adding a new custom inbound rule that allows TCP 8080 from the AzureLoadBalancer service tag, with a priority number lower than 200, makes that allowance the first match for probe traffic, so the probes succeed. Every other source on TCP 8080 still fails to match the new rule and continues to the deny at priority 200, so clients outside the virtual network remain unable to open that port directly to the backends.",
+				"perChoice": {
+					"b": "The built-in default rules cannot be opened, changed, or removed in the portal; only custom rules can be edited or deleted. In addition, a change made at priority 65001 would still be evaluated after the custom deny at priority 200, so probe traffic would be dropped before reaching that rule and the probes would stay unhealthy.",
+					"c": "A priority of 4096 is inside the permitted 100-4096 range, but the lower number is processed first, so evaluation reaches the deny rule at priority 200 and stops there. The new allowance at 4096 is never consulted for this traffic, so the probes remain blocked.",
+					"d": "Allowing TCP 8080 from Any source opens that port to every address, including clients outside the virtual network, so the requirement that only the load balancer's probe traffic may reach the backends on 8080 is broken. The source of the allowance has to be restricted to the load balancer."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-network-security-group"
+				}
+			],
+			"subtopics": [
+				"nsg-rule-priority",
+				"service-tags",
+				"load-balancer-health-probes"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FNHJK9T9KA1B2V333RSYE2",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You manage the virtual networks vnet-hub and vnet-spoke with Azure Virtual Network Manager. The subnet app-subnet in vnet-spoke is protected by the network security group nsg-spoke, and the exhibit lists the security admin rule configuration that applies to vnet-spoke together with the rules defined in nsg-spoke. A host on the internet tries to open a TCP 22 session to the virtual machine vm-app1, whose network interface is in app-subnet. The team needs to document which control decides the result of that attempt. Which statement correctly describes the outcome?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"virtualNetworkManager\": \"vnm-corp\",\n  \"deployment\": \"d-hub-spoke\",\n  \"managedVirtualNetworks\": [\"vnet-hub\", \"vnet-spoke\"],\n  \"securityAdminRuleConfiguration\": {\n    \"name\": \"sac-spoke\",\n    \"appliedTo\": \"vnet-spoke\",\n    \"rules\": [\n      {\n        \"name\": \"block-internet-ssh\",\n        \"direction\": \"Inbound\",\n        \"sourceAddressPrefixes\": [\"Internet\"],\n        \"destinationAddressPrefixes\": [\"vnet-spoke\"],\n        \"protocol\": \"TCP\",\n        \"ports\": [\"22\"],\n        \"action\": \"Deny\"\n      }\n    ]\n  },\n  \"networkSecurityGroup\": {\n    \"name\": \"nsg-spoke\",\n    \"associatedSubnet\": \"app-subnet (vnet-spoke)\",\n    \"rules\": [\n      { \"priority\": 100,   \"name\": \"Allow-SSH-From-Any\",          \"direction\": \"Inbound\", \"source\": \"Any\",              \"destination\": \"Any\",              \"protocol\": \"TCP\", \"port\": \"22\", \"action\": \"Allow\" },\n      { \"priority\": 65000, \"name\": \"AllowVNetInBound\",            \"direction\": \"Inbound\", \"source\": \"VirtualNetwork\",   \"destination\": \"VirtualNetwork\",   \"protocol\": \"Any\", \"port\": \"*\",   \"action\": \"Allow\" },\n      { \"priority\": 65001, \"name\": \"AllowAzureLoadBalancerInBound\",\"direction\": \"Inbound\", \"source\": \"AzureLoadBalancer\",\"destination\": \"Any\",              \"protocol\": \"Any\", \"port\": \"*\",   \"action\": \"Allow\" },\n      { \"priority\": 65500, \"name\": \"DenyAllInbound\",               \"direction\": \"Inbound\", \"source\": \"Any\",              \"destination\": \"Any\",              \"protocol\": \"Any\", \"port\": \"*\",   \"action\": \"Deny\" }\n    ]\n  }\n}\n"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "The security admin rule stops the traffic, so none of the rules in nsg-spoke are evaluated."
+					},
+					{
+						"id": "b",
+						"text": "The security admin rule hands the traffic to nsg-spoke, where Allow-SSH-From-Any at priority 100 permits the session."
+					},
+					{
+						"id": "c",
+						"text": "The security admin rule hands the traffic to nsg-spoke, where DenyAllInbound at priority 65500 blocks the session."
+					},
+					{
+						"id": "d",
+						"text": "The security admin rule is superseded by Allow-SSH-From-Any at priority 100, because custom rules in a network security group are evaluated ahead of built-in rules."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Security admin rules pushed down by Azure Virtual Network Manager are evaluated ahead of network security group rules. When the matching admin rule carries the Deny action, evaluation of that connection ends at the admin rule and the packets are discarded without ever being handed to the NSG on the subnet. The custom allow rule at priority 100 in nsg-spoke therefore has no bearing on this attempt. Handing a connection on to NSG evaluation is the behavior of an admin rule whose action is Allow, and Always allow bypasses the NSG altogether by delivering the traffic straight to the destination.",
+				"perChoice": {
+					"b": "Passing a connection on to the NSG is what an admin rule with the Allow action does. The rule in the exhibit uses the Deny action, so evaluation ends at the security admin rule and nsg-spoke is never consulted, which means Allow-SSH-From-Any at priority 100 plays no part in the result.",
+					"c": "The built-in DenyAllInbound rule at priority 65500 can only decide the outcome if the NSG is evaluated, and the security admin rule with the Deny action ends evaluation before that happens. Even if the NSG were evaluated, the custom rule at priority 100 would match first and permit TCP 22 from any source.",
+					"d": "Custom rules being evaluated ahead of built-in rules is correct within an NSG, but it does not apply here: the security admin rule ends the evaluation before the NSG is consulted, so the allow rule at priority 100 cannot influence this attempt and cannot supersede the admin rule."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-network-security-group"
+				}
+			],
+			"subtopics": [
+				"security-admin-rules",
+				"nsg-rule-priority",
+				"inbound-rule-evaluation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FNQSG5CHN6BHPG858T544F",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a virtual network vnet-corp with a single subnet, mail-subnet, that holds the virtual machine vm-biz. The network security group nsg-mail is associated with mail-subnet, and the configuration that is currently in place is shown in the exhibit. The application on vm-biz sends transactional email to customers, and company policy requires that every message be submitted through the authenticated SMTP relay at 198.51.100.45, which accepts submissions on TCP 587; direct submission to outside mail servers is not permitted. Today vm-biz downloads packages over TCP 443 without trouble, but every attempt to reach 198.51.100.45 on TCP 587 times out, and the team does not want outbound traffic to the rest of the internet opened up along the way.\n\nWhich change to nsg-mail should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Subscription type: Pay-as-you-go\nResource group: rg-corp\nNetwork security group: nsg-mail - associated with subnet mail-subnet of vnet-corp\nVirtual machine: vm-biz - network interface in mail-subnet\n\nINBOUND SECURITY RULES - nsg-mail\nPriority  Name                          Source             Destination      Service  Action  Type\n65000     AllowVNetInBound              VirtualNetwork    VirtualNetwork   *        Allow   Built-in\n65001     AllowAzureLoadBalancerInBound AzureLoadBalancer *               *        Allow   Built-in\n65500     DenyAllInbound                *                 *                *        Deny    Built-in\n\nOUTBOUND SECURITY RULES - nsg-mail\nPriority  Name                          Source           Destination      Service      Action  Type\n200       Allow-HTTPS-Out               *                Internet         HTTPS (443)  Allow   Custom\n210       Deny-Other-Internet-Outbound  *                Internet         *            Deny    Custom\n65000     AllowVnetOutBound             VirtualNetwork  VirtualNetwork   *            Allow   Built-in\n65001     AllowInternetOutBound         *                Internet         *            Allow   Built-in\n65500     DenyAllOutBound               *                *                *            Deny    Built-in"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add an inbound security rule with source 198.51.100.45, destination Any, service Custom, destination port 587, protocol TCP, action Allow, priority 100."
+					},
+					{
+						"id": "b",
+						"text": "Add an outbound security rule with source Any, destination 198.51.100.45, service Custom, destination port 587, protocol TCP, action Allow, priority 100."
+					},
+					{
+						"id": "c",
+						"text": "Add an outbound security rule with source Any, destination 198.51.100.45, service Custom, destination port 587, protocol TCP, action Allow, priority 250."
+					},
+					{
+						"id": "d",
+						"text": "Add an outbound security rule with source Any, destination Any, service Custom, destination port 25, protocol TCP, action Allow, priority 100."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "The mail submission is a connection that vm-biz itself opens, so the new rule has to be an outbound rule whose destination is the relay address and whose destination port is the port the relay listens on. The custom rule at priority 210 denies all other internet-bound outbound traffic, and rules are processed in ascending priority order with evaluation stopping at the first match, so the new allowance must sit at a lower priority number than 210 - priority 100 is unused and is evaluated first, while every other internet destination stays denied by the rule at 210. Because network security groups are stateful, the relay's replies are permitted automatically once the outbound flow is allowed, so no inbound rule is needed for the response traffic.",
+				"perChoice": {
+					"a": "This grants permission to traffic arriving at vm-biz, but the session towards the relay is started by vm-biz. An inbound allowance does not permit the outbound request, so every submission to the relay keeps timing out.",
+					"c": "Priority 250 is evaluated after the custom deny on all other internet-bound outbound traffic at priority 210, and processing stops at the first matching rule, so this allowance is never reached for traffic on TCP 587. The submissions keep failing, and 100 (or any other unused number below 210) is what has to be used.",
+					"d": "This opens outbound TCP 25 to every internet destination instead of limiting traffic to the relay on TCP 587, which breaks the company requirement to submit only through the relay. It also would not deliver mail anyway, because Azure blocks direct outbound SMTP on TCP 25 for Pay-as-you-go subscriptions, and a network security group rule cannot lift that platform restriction."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-network-security-group"
+				}
+			],
+			"subtopics": [
+				"nsg-rule-priority",
+				"nsg-outbound-traffic",
+				"nsg-statefulness"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FP6N0PC9CKB1J1XKAY8JB1",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a virtual network named lab-network with one subnet, lab-subnet, that holds three virtual machines. The network security group nsg-lab is associated with lab-subnet, and the team has not added any custom rules to it yet, so the standard default rules are all that nsg-lab contains today. The research portal runs on vm-portal, the machine that ships telemetry results runs on vm-ingest, and the staff workstation runs on vm-console.\n\nThe exhibit lists the three virtual machines with their roles, their network interface addresses, and their application security group memberships, together with the two endpoints the laboratory works with.\n\nYou need external clients to reach the research portal, the telemetry tier to keep delivering results to that portal while every other source stays away from the results port, and the laboratory's current connections to keep working as they do today. For each requirement below, drag the rule or configuration that satisfies it into the matching box; some of the entries are rules nsg-lab already contains.",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"virtualNetwork\": \"lab-network\",\n  \"subnet\": {\n    \"name\": \"lab-subnet\",\n    \"addressPrefix\": \"10.20.0.0/24\",\n    \"networkSecurityGroup\": \"nsg-lab\",\n    \"customRules\": []\n  },\n  \"virtualMachines\": [\n    { \"name\": \"vm-portal\", \"role\": \"research portal\", \"privateIpAddress\": \"10.20.0.11\", \"applicationSecurityGroup\": \"asg-portal\" },\n    { \"name\": \"vm-ingest\", \"role\": \"ships telemetry results\", \"privateIpAddress\": \"10.20.0.12\", \"applicationSecurityGroup\": \"asg-ingest\" },\n    { \"name\": \"vm-console\", \"role\": \"staff workstation\", \"privateIpAddress\": \"10.20.0.13\", \"applicationSecurityGroup\": null }\n  ],\n  \"otherEndpoints\": [\n    { \"name\": \"public package mirror\", \"address\": \"198.51.100.20\", \"port\": 443, \"reachableFrom\": \"outside lab-network\" },\n    { \"name\": \"shared file server\", \"address\": \"10.20.0.20\", \"port\": 445, \"reachableFrom\": \"inside lab-network\" }\n  ]\n}"
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Inbound allow, priority 100: source Internet service tag, destination asg-portal, TCP port 443"
+					},
+					{
+						"id": "i2",
+						"text": "Inbound deny, priority 100: source Any, destination asg-portal, TCP port 443"
+					},
+					{
+						"id": "i3",
+						"text": "Inbound allow, priority 100: source Any, destination 10.20.0.11, TCP port 443"
+					},
+					{
+						"id": "i4",
+						"text": "Inbound allow, priority 110: source asg-ingest, destination asg-portal, TCP port 9090"
+					},
+					{
+						"id": "i5",
+						"text": "Inbound deny, priority 120: source Any, destination asg-portal, TCP port 9090"
+					},
+					{
+						"id": "i6",
+						"text": "Nothing further is required: the portal's reply traffic is already permitted once the inbound connection is allowed"
+					},
+					{
+						"id": "i7",
+						"text": "Default rule AllowInternetOutBound, priority 65001"
+					},
+					{
+						"id": "i8",
+						"text": "Default rule AllowVNetInBound, priority 65000"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "External clients must be able to open TCP 443 to the portal, and that access must keep working after the portal's virtual machine gets replaced with an instance on a different address."
+					},
+					{
+						"id": "s2",
+						"label": "The telemetry tier must be allowed to send results to the portal over TCP 9090 through a custom rule that gets evaluated before the exclusion that applies to the same port."
+					},
+					{
+						"id": "s3",
+						"label": "Every source other than the telemetry tier must be kept away from the portal on TCP 9090, including the workstation whose network interface sits outside every application security group."
+					},
+					{
+						"id": "s4",
+						"label": "The portal must be able to return data to those external clients."
+					},
+					{
+						"id": "s5",
+						"label": "The laboratory's machines must keep downloading packages from the public mirror on TCP 443."
+					},
+					{
+						"id": "s6",
+						"label": "The shared file server in the same network must keep being able to send file data back to the laboratory's machines on TCP 445."
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i4",
+				"s3": "i5",
+				"s4": "i6",
+				"s5": "i7",
+				"s6": "i8"
+			},
+			"explanation": {
+				"correct": "The custom rules must be written so that the first matching rule wins: the allowance for the telemetry tier (priority 110) is evaluated before the blanket block on the results port (priority 120), and both are evaluated before the built-in defaults that sit at priority 65000 and above. For the portal's public face, the source is the Internet service tag and the destination is the application security group, so the rule follows the portal's interfaces instead of a single address; with DenyAllInbound at 65500 blocking unsolicited inbound traffic, that custom allow at priority 100 is what opens TCP 443. The return path to those clients needs no new entry because a network security group is stateful and an inbound allow already permits the outbound reply. The package downloads and the file server's answers are already covered by the default rules: AllowInternetOutBound at 65001 permits all outbound traffic addressed to the Internet service tag, and AllowVNetInBound at 65000 permits traffic from the VirtualNetwork service tag to any address inside the same virtual network.",
+				"perChoice": {
+					"i1": "Belongs with the requirement about external clients opening TCP 443 to the portal: the Internet service tag limits the source to public clients, and addressing the destination to asg-portal keeps working when the portal's virtual machine is replaced on a new address, unlike a rule pinned to one address. Priority 100 places it ahead of the built-in defaults.",
+					"i2": "Fits no requirement: it denies TCP 443 from every source to the portal, which shuts off exactly the public access the portal needs.",
+					"i3": "Fits no requirement: the rule names the portal's current address, so the access stops working once the portal's virtual machine is replaced on a different address; the application security group is the durable reference for those interfaces.",
+					"i4": "Belongs with the requirement about the telemetry tier delivering results on TCP 9090: the source is the application security group whose members ship the results, and priority 110 is evaluated before the block on that port at priority 120, so the tier keeps its own path.",
+					"i5": "Belongs with the requirement that every source other than the telemetry tier stays away from the portal on TCP 9090: the deny covers all sources including the workstation that belongs to no application security group, and priority 120 places it after the tier's own allowance at 110.",
+					"i6": "Belongs with the requirement that the portal can return data to those external clients: a network security group is stateful, so once the inbound connection is allowed the reply on that connection is already permitted and no further entry is needed.",
+					"i7": "Belongs with the requirement about downloading packages from the public mirror on TCP 443: AllowInternetOutBound is a built-in outbound rule at priority 65001 that allows all outbound traffic to the Internet service tag, which is what the mirror needs.",
+					"i8": "Belongs with the requirement that the file server inside the same network can send file data back on TCP 445: AllowVNetInBound is a built-in inbound rule at priority 65000 that allows traffic from the VirtualNetwork service tag to any address in the virtual network."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/application-security-groups"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-network-security-group"
+				}
+			],
+			"subtopics": [
+				"nsg-rule-priorities",
+				"application-security-groups",
+				"nsg-default-rules"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GWZ97X2E45PZQ601Z0V665",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a virtual network named vnet-retail with a single subnet, app-subnet, and the network security group nsg-retail associated with that subnet. The exhibit lists the machines in that subnet and the rules that nsg-retail contains today. A colleague has drafted the six additional rules shown below, and you need to sort out three traffic situations. Today vm-report opens sessions to the partner integration endpoint on TCP 8443 without trouble, but the team wants that route closed while the internal processing service is left working. Drag the rule that has to be in place for each situation into its matching box.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Virtual network vnet-retail\nSubnet app-subnet  ->  network security group nsg-retail\n\nMachines in app-subnet\nName       Private IP   Application security group   Workload\nvm-web     10.0.1.4     asg-edge                     Customer-facing web service on TCP 443; partner integration endpoint on TCP 8443\nvm-proc    10.0.1.5     asg-core                     Internal processing service; calls the partner integration endpoint on TCP 8443\nvm-report  10.0.1.6     (none)                       Legacy reporting job; no application security group membership\n\nRules that nsg-retail contains today\nName                          Direction   Priority   Source             Destination        Service   Action\nAllowVNetInBound              Inbound     65000      VirtualNetwork     VirtualNetwork     Any       Allow\nAllowAzureLoadBalancerInBound Inbound     65001      AzureLoadBalancer  Any                Any       Allow\nDenyAllInbound                Inbound     65500      Any                Any                Any       Deny\nAllowVnetOutBound             Outbound    65000      VirtualNetwork     VirtualNetwork     Any       Allow\nAllowInternetOutBound         Outbound    65001      Any                Internet           Any       Allow\nDenyAllOutBound               Outbound    65500      Any                Any                Any       Deny"
+				},
+				"items": [
+					{
+						"id": "r1",
+						"text": "Inbound, priority 100, source Internet, destination asg-edge, service TCP 443, action Allow"
+					},
+					{
+						"id": "r2",
+						"text": "Inbound, priority 150, source asg-core, destination asg-edge, service TCP 8443, action Allow"
+					},
+					{
+						"id": "r3",
+						"text": "Inbound, priority 200, source VirtualNetwork, destination asg-edge, service TCP 8443, action Deny"
+					},
+					{
+						"id": "r4",
+						"text": "Outbound, priority 100, source asg-edge, destination Internet, service TCP 443, action Allow"
+					},
+					{
+						"id": "r5",
+						"text": "Inbound, priority 250, source asg-core, destination asg-edge, service TCP 443, action Allow"
+					},
+					{
+						"id": "r6",
+						"text": "Inbound, priority 300, source VirtualNetwork, destination VirtualNetwork, service TCP 8443, action Allow"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Internet clients must have access to the customer-facing web service on TCP 443."
+					},
+					{
+						"id": "s2",
+						"label": "The internal processing tier must have access to the partner integration endpoint on TCP 8443."
+					},
+					{
+						"id": "s3",
+						"label": "The reporting machine, whose network interface belongs to no application security group, must have no access to the partner integration endpoint on TCP 8443."
+					}
+				]
+			},
+			"key": {
+				"s1": "r1",
+				"s2": "r2",
+				"s3": "r3"
+			},
+			"explanation": {
+				"correct": "Rules are processed in priority order, lower numbers first, and evaluation stops at the first rule that matches, so the rule with the lowest matching priority number decides each situation; custom rules also always run before the built-in defaults, which sit at priorities 65000-65500. For Internet clients reaching the customer-facing web service on TCP 443, the custom inbound rule from Internet to asg-edge on TCP 443 at priority 100 is the first match, and it is needed because no default rule accepts a source of Internet (DenyAllInbound at 65500 would block the traffic). For the internal processing tier, the custom rule from asg-core to asg-edge on TCP 8443 at priority 150 is the first match, because vm-proc's network interface is a member of asg-core, and priority 150 places it ahead of the rule at 200 and of the blanket allow at 300. For the reporting machine, the rule from VirtualNetwork to asg-edge on TCP 8443 at priority 200 is the first one that matches: vm-report sits in the virtual network but its network interface is in no application security group, so the allow at 150 does not match it, while priority 200 puts this rule ahead of the blanket allow at 300 and ahead of the default AllowVNetInBound, which would otherwise let same-virtual-network traffic reach the endpoint.",
+				"perChoice": {
+					"r1": "Fits the box for Internet clients on TCP 443: the Internet source matches those clients and the asg-edge destination matches vm-web's network interface, and priority 100 places it ahead of every default rule, including the default rule that blocks unsolicited inbound traffic.",
+					"r2": "Fits the box for the internal processing tier on TCP 8443: vm-proc's network interface is a member of asg-core, so this source matches only that tier, and priority 150 puts it ahead of the rule at 200 and the blanket allow at 300, so the legitimate call is not blocked by the change that closes the reporting machine's route.",
+					"r3": "Fits the box for the reporting machine on TCP 8443: the VirtualNetwork source matches vm-report because it is inside the virtual network, the asg-edge destination matches vm-web, and priority 200 places this rule ahead of the blanket allow at 300 and ahead of the default rule that permits traffic within the virtual network.",
+					"r4": "Fits none of the boxes: it governs traffic leaving asg-edge toward the Internet, while all three situations concern traffic arriving at the web service in app-subnet.",
+					"r5": "Fits none of the boxes: it opens TCP 443 for members of asg-core, but the processing tier's call goes to the partner integration endpoint on TCP 8443, and Internet clients are not members of asg-core, so it matches none of the three situations.",
+					"r6": "Fits none of the boxes: it would let any address in the virtual network reach any address in the virtual network on TCP 8443, including the reporting machine, and its priority of 300 places it after the rules that decide the three situations, so it cannot be the deciding rule in any of them."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-network-security-group"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/application-security-groups"
+				}
+			],
+			"subtopics": [
+				"nsg-rule-priority",
+				"application-security-groups",
+				"nsg-inbound-rules"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GXS0BZW6CKSZB5KJB57QEM",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a virtual network named vnet-insight that holds one subnet, ops-subnet, and the network security group nsg-ops is associated with that subnet. Five virtual machines run in it: vm-jump and vm-observer, whose network interfaces are in no application security group, vm-edge in asg-front, vm-api in asg-core, and vm-store in asg-data. Administrators connect to the environment from a jump host at 203.0.113.25 that sits outside the virtual network, and the branch office network it belongs to uses the address range 203.0.113.0/24. The exhibit lists every rule that nsg-ops contains, the custom ones together with the built-in defaults.\n\nFor each connection attempt below, drag the rule whose evaluation settles the outcome into the matching box.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Priority",
+						"Direction",
+						"Source",
+						"Destination",
+						"Port",
+						"Action"
+					],
+					"rows": [
+						[
+							"100",
+							"Inbound",
+							"203.0.113.0/24",
+							"Any",
+							"TCP 22",
+							"Allow"
+						],
+						[
+							"200",
+							"Inbound",
+							"Any",
+							"Any",
+							"TCP 22",
+							"Deny"
+						],
+						[
+							"300",
+							"Inbound",
+							"Internet",
+							"asg-front",
+							"TCP 443",
+							"Allow"
+						],
+						[
+							"400",
+							"Inbound",
+							"asg-core",
+							"asg-data",
+							"TCP 1433",
+							"Allow"
+						],
+						[
+							"500",
+							"Inbound",
+							"Any",
+							"asg-data",
+							"TCP 1433",
+							"Deny"
+						],
+						[
+							"65000",
+							"Inbound",
+							"VirtualNetwork",
+							"VirtualNetwork",
+							"Any",
+							"Allow"
+						],
+						[
+							"65001",
+							"Inbound",
+							"AzureLoadBalancer",
+							"Any",
+							"Any",
+							"Allow"
+						],
+						[
+							"65500",
+							"Inbound",
+							"Any",
+							"Any",
+							"Any",
+							"Deny"
+						],
+						[
+							"65000",
+							"Outbound",
+							"VirtualNetwork",
+							"VirtualNetwork",
+							"Any",
+							"Allow"
+						],
+						[
+							"65001",
+							"Outbound",
+							"Any",
+							"Internet",
+							"Any",
+							"Allow"
+						],
+						[
+							"65500",
+							"Outbound",
+							"Any",
+							"Any",
+							"Any",
+							"Deny"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i100",
+						"text": "Custom inbound rule, priority 100: source 203.0.113.0/24, destination Any, action Allow"
+					},
+					{
+						"id": "i200",
+						"text": "Custom inbound rule, priority 200: source Any, destination Any, action Deny"
+					},
+					{
+						"id": "i300",
+						"text": "Custom inbound rule, priority 300: source Internet, destination asg-front, action Allow"
+					},
+					{
+						"id": "i400",
+						"text": "Custom inbound rule, priority 400: source asg-core, destination asg-data, action Allow"
+					},
+					{
+						"id": "i500",
+						"text": "Custom inbound rule, priority 500: source Any, destination asg-data, action Deny"
+					},
+					{
+						"id": "i65000in",
+						"text": "Built-in inbound rule, priority 65000: source VirtualNetwork, destination VirtualNetwork, action Allow"
+					},
+					{
+						"id": "i65500in",
+						"text": "Built-in inbound rule, priority 65500: source Any, destination Any, action Deny"
+					},
+					{
+						"id": "i65001out",
+						"text": "Built-in outbound rule, priority 65001: source Any, destination Internet, action Allow"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "The branch office jump host opens a TCP 22 session to vm-jump."
+					},
+					{
+						"id": "s2",
+						"label": "vm-observer opens a TCP 22 session to vm-jump."
+					},
+					{
+						"id": "s3",
+						"label": "vm-api opens a TCP 1433 session to vm-store."
+					},
+					{
+						"id": "s4",
+						"label": "vm-observer opens a TCP 1433 session to vm-store."
+					},
+					{
+						"id": "s5",
+						"label": "A customer on the internet opens a TCP 443 session to vm-edge."
+					},
+					{
+						"id": "s6",
+						"label": "vm-store opens a TCP 5432 session to the public endpoint 192.0.2.70."
+					}
+				]
+			},
+			"key": {
+				"s1": "i100",
+				"s2": "i200",
+				"s3": "i400",
+				"s4": "i500",
+				"s5": "i300",
+				"s6": "i65001out"
+			},
+			"explanation": {
+				"correct": "Every attempt is settled by the rule with the lowest priority number whose source, destination, port and protocol all match, because evaluation stops at the first match and the custom rules at 100 to 500 are always considered before the built-in defaults at 65000 and above. The branch office jump host sits inside 203.0.113.0/24, so the rule at priority 100 permits its TCP 22 session. The session from vm-observer to vm-jump matches the rule at priority 200 and is refused, even though both machines sit in the same virtual network, because that custom rule is evaluated before the built-in default that would otherwise permit same-virtual-network traffic. vm-api is a member of asg-core and vm-store a member of asg-data, so the rule at priority 400 matches first for that database session and permits it, while vm-observer matches the rule at priority 500 and is refused. The customer from the internet reaches vm-edge through the rule at priority 300, since vm-edge's interface belongs to asg-front. Finally, nsg-ops has no custom outbound rules and 192.0.2.70 lies outside the virtual network, so the built-in outbound rule at priority 65001 that permits traffic to the Internet service tag is the one that applies to the report session.",
+				"perChoice": {
+					"i100": "This rule belongs with the branch office jump host: that host's address falls inside 203.0.113.0/24, the port and protocol match, and no rule with a lower priority number applies, so the session to vm-jump is permitted.",
+					"i200": "This rule belongs with vm-observer opening TCP 22 to vm-jump: it matches any source on that port, and being a custom rule at priority 200 it is evaluated before the built-in default that permits traffic between resources of the same virtual network, so the attempt is refused.",
+					"i300": "This rule belongs with the internet customer opening TCP 443 to vm-edge: the source service tag matches and vm-edge's interface is a member of asg-front, so the rule at priority 300 is the first match and the session is permitted.",
+					"i400": "This rule belongs with vm-api opening TCP 1433 to vm-store: vm-api's interface is a member of asg-core and vm-store's a member of asg-data, so the rule at priority 400 matches first and the session is permitted.",
+					"i500": "This rule belongs with vm-observer opening TCP 1433 to vm-store: vm-observer's interface is in no application security group, so the earlier rule that names asg-core as its source does not match, and this rule at priority 500 refuses the traffic.",
+					"i65000in": "This rule fits no box: it is the built-in default that permits traffic between resources of the same virtual network, and in every inbound attempt listed a custom rule with a lower priority number matches first, so it never settles the outcome.",
+					"i65500in": "This rule fits no box: it is the built-in default that refuses inbound traffic that no earlier rule allowed, yet each inbound attempt here is matched by a custom rule, so it never settles the outcome.",
+					"i65001out": "This rule belongs with vm-store opening TCP 5432 to the public endpoint 192.0.2.70: nsg-ops holds no custom outbound rules, the destination lies outside the virtual network, so the built-in outbound rule at priority 65001 that permits traffic to the Internet service tag is the one that applies."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-network-security-group"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/application-security-groups"
+				}
+			],
+			"subtopics": [
+				"rule-priority-evaluation",
+				"service-tags",
+				"asg-traffic-filtering"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GY55DKWV4GGP4F49WX7ZXQ",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a virtual network vnet-media that contains two subnets. The subnet publish-subnet holds one virtual machine, vm-publish, whose network interface is a member of the application security group asg-publish. The subnet edge-subnet holds two virtual machines: vm-edge, whose network interface is a member of asg-edge, and vm-monitor, whose network interface belongs to no application security group. The network security group nsg-publish is associated with publish-subnet and the network security group nsg-edge is associated with edge-subnet. The exhibit lists the resources and the rules that both groups hold today.\n\nA distributor outside the virtual network accepts finished programmes at 198.51.100.77 on TCP 22. The publishing application on vm-publish has to be able to send its programmes there, and the distributor's acknowledgements have to be able to reach vm-publish. The workloads on edge-subnet must not be able to reach that address over that port, while updates fetched over TCP 443 from the vendor's update servers have to keep working for the workloads on both subnets.\n\nDrag the change that has to be in place for each requirement into its matching box.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Virtual network vnet-media\n\nSubnet publish-subnet                Network security group: nsg-publish\n  vm-publish    private IP 10.0.1.10    network interface in asg-publish\n\nSubnet edge-subnet                   Network security group: nsg-edge\n  vm-edge       private IP 10.0.2.20    network interface in asg-edge\n  vm-monitor    private IP 10.0.2.21    network interface in no application security group\n\nCustom rules in nsg-publish: none\nCustom rules in nsg-edge:    none\n\nBoth groups carry the rule set that comes with every new group."
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "nsg-publish: allow outbound TCP 22 from asg-publish to 198.51.100.77, priority 100"
+					},
+					{
+						"id": "i2",
+						"text": "nsg-edge: deny outbound TCP 22 from any source to 198.51.100.77, priority 200"
+					},
+					{
+						"id": "i3",
+						"text": "nsg-publish: allow inbound TCP 22 from 198.51.100.77 to asg-publish, priority 150"
+					},
+					{
+						"id": "i4",
+						"text": "nsg-edge: allow outbound TCP 22 from asg-edge to 198.51.100.77, priority 100"
+					},
+					{
+						"id": "i5",
+						"text": "No additional rule is required: the reply to an allowed outbound request comes back automatically"
+					},
+					{
+						"id": "i6",
+						"text": "No additional rule is required: the standard rules already permit outbound sessions to public services"
+					},
+					{
+						"id": "i7",
+						"text": "nsg-publish: deny outbound TCP 22 from any source to 198.51.100.77, priority 200"
+					}
+				],
+				"slots": [
+					{
+						"id": "uploads",
+						"label": "Programmes sent by the publishing machine must reach the distributor on TCP 22"
+					},
+					{
+						"id": "acknowledgements",
+						"label": "The distributor's acknowledgements must be able to reach the publishing machine"
+					},
+					{
+						"id": "edge-block",
+						"label": "The workloads on edge-subnet must not be able to reach that address over that port"
+					},
+					{
+						"id": "updates",
+						"label": "Updates fetched over TCP 443 must keep working on both subnets"
+					}
+				]
+			},
+			"key": {
+				"uploads": "i1",
+				"acknowledgements": "i5",
+				"edge-block": "i2",
+				"updates": "i6"
+			},
+			"explanation": {
+				"correct": "The publishing machine's outbound sessions are evaluated by nsg-publish, so the allowance for the programmes has to live in that group and name asg-publish as the source, with the distributor's address and TCP 22 as the destination. The workloads on edge-subnet are evaluated by nsg-edge, and the rule set that comes with a new group would let them reach that address, so the block against that address and port belongs in nsg-edge; because custom rules are evaluated before the standard ones, it takes effect there. The group keeps state for every connection, so the distributor's acknowledgement of an allowed outbound session returns on its own and no inbound rule is needed. The standard outbound rules still permit sessions to public services, and the new block covers only that one address on that one port, so the update sessions over TCP 443 keep working with no extra rule.",
+				"perChoice": {
+					"i1": "This is the change for the uploads box: nsg-publish filters vm-publish's outbound sessions, and naming asg-publish as the source means the allowance applies to the publishing machine only, with the distributor's address and TCP 22 as the destination.",
+					"i2": "This is the change for the edge box: vm-edge and vm-monitor are filtered by nsg-edge, and a custom rule is evaluated ahead of the standard rules, so a block on that address and port in this group keeps those workloads away from the distributor.",
+					"i3": "This fits no box: the acknowledgement of an allowed outbound session is permitted automatically because the group keeps state, so an inbound allowance is not required, and it would also let the distributor start new sessions towards the publishing machine.",
+					"i4": "This fits no box: it would allow the workloads on edge-subnet to reach the distributor on that port, which the requirements forbid, and it does nothing for the uploads from the publishing machine.",
+					"i5": "This is the change for the acknowledgements box: the group keeps state for each connection, so the reply to a session that was allowed outbound comes back without any further rule.",
+					"i6": "This is the change for the updates box: the standard rules still permit outbound sessions to public services, and the new block only covers that one address on that one port, so the update sessions over TCP 443 need no extra rule.",
+					"i7": "This fits no box: nsg-publish filters only the traffic of publish-subnet, so a block placed there is never evaluated for vm-edge or vm-monitor, and their sessions to that address would still be permitted by the standard rules in nsg-edge."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-network-security-group"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/application-security-groups"
+				}
+			],
+			"subtopics": [
+				"nsg-outbound-rules",
+				"asg-source-targeting",
+				"nsg-rule-priority"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GYGFW4E9PJK6ZY7V0PH1BS",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a virtual network vnet-main in region East US that holds two subnets, svc-subnet and old-subnet. The network security group nsg-svc is associated with svc-subnet, where the web workload vm-web runs on network interface nic-web, a member of the application security group asg-web. The network security group nsg-archive is associated with old-subnet, where the retired workload vm-old runs on network interface nic-old, a member of the application security group asg-archive. A second copy of the web workload, vm-partner, runs in region West US on network interface nic-partner, whose interface belongs to no application security group. The branch office reaches vnet-main over a site-to-site IPsec tunnel that terminates in svc-subnet.\n\nFour tasks are still on the backlog. For each one, drag the change that completes it into its matching box.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Resource",
+						"Configuration"
+					],
+					"rows": [
+						[
+							"Virtual network",
+							"vnet-main, region East US, address space 10.60.0.0/16"
+						],
+						[
+							"Subnet",
+							"svc-subnet, 10.60.0.0/24, in vnet-main"
+						],
+						[
+							"Subnet",
+							"old-subnet, 10.60.1.0/24, in vnet-main"
+						],
+						[
+							"Network security group",
+							"nsg-svc, associated with svc-subnet"
+						],
+						[
+							"Network security group",
+							"nsg-archive, associated with old-subnet"
+						],
+						[
+							"Virtual machine",
+							"vm-web, network interface nic-web (10.60.0.4), member of asg-web"
+						],
+						[
+							"Virtual machine",
+							"vm-old (retired), network interface nic-old (10.60.1.9), member of asg-archive"
+						],
+						[
+							"Application security group",
+							"asg-web, region East US, member interfaces: nic-web"
+						],
+						[
+							"Application security group",
+							"asg-archive, region East US, member interfaces: nic-old"
+						],
+						[
+							"Virtual network",
+							"vnet-west, region West US"
+						],
+						[
+							"Subnet",
+							"partner-subnet, 10.70.0.0/24, in vnet-west"
+						],
+						[
+							"Network security group",
+							"nsg-west, associated with partner-subnet"
+						],
+						[
+							"Virtual machine",
+							"vm-partner, network interface nic-partner (10.70.0.6), member interfaces: none"
+						],
+						[
+							"Branch office link",
+							"Site-to-site IPsec tunnel between the branch office and vnet-main, terminating in svc-subnet; the encapsulated packets use protocol ESP"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Remove nic-old from asg-archive, then delete asg-archive."
+					},
+					{
+						"id": "i2",
+						"text": "Dissociate nsg-archive from its subnet, then delete nsg-archive."
+					},
+					{
+						"id": "i3",
+						"text": "Create asg-partner in the West US region, add nic-partner to it, and reference it from the nsg-west rules."
+					},
+					{
+						"id": "i4",
+						"text": "Author the rule in an ARM template, because the portal offers only Any, TCP, UDP, and ICMP as protocols."
+					},
+					{
+						"id": "i5",
+						"text": "Write one augmented rule that lists two address ranges together with ports 443 and 8443."
+					},
+					{
+						"id": "i6",
+						"text": "Give the new rule a priority that an existing custom rule already uses so both are evaluated together."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "The application security group that holds the retired interface must no longer exist, so the name can be reused."
+					},
+					{
+						"id": "s2",
+						"label": "The network security group that still governs the retired virtual machines must no longer exist."
+					},
+					{
+						"id": "s3",
+						"label": "The copy of the web workload that runs outside vnet-main must be protected by an application security group of its own, the same way the copy in vnet-main is."
+					},
+					{
+						"id": "s4",
+						"label": "Traffic that arrives over the encrypted link must be filtered before it reaches the machines on the other end."
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Each box takes the change the configuration forces. asg-archive still contains nic-old, and an application security group that contains network interfaces cannot be deleted, so the interface has to leave the group before the group is removed. nsg-archive is associated with a subnet, and a network security group attached to a subnet or to a network interface cannot be deleted until that association is removed, which the portal calls Dissociate. nic-partner sits in region West US, where the location of an existing application security group cannot be changed and where a group used in a rule has to exist in the same region as the interface, so a group created in West US holds that interface and the nsg-west rules reference it. The tunnel traffic uses protocol ESP, and the portal's protocol list offers only Any, TCP, UDP, and ICMP, so that rule has to be authored as an ARM template.",
+				"perChoice": {
+					"i1": "This belongs in the box about the application security group that holds the retired interface: asg-archive still contains nic-old, and a group that contains network interfaces cannot be deleted, so the interface has to leave the group first.",
+					"i2": "This belongs in the box about the network security group that governs the retired virtual machines: nsg-archive is associated with a subnet, and a group attached to a subnet or to a network interface cannot be deleted until that association is removed.",
+					"i3": "This belongs in the box about the web workload outside vnet-main: the location of an application security group is fixed and a group used in a rule has to exist in the same region as the network interface, so nic-partner needs a group of its own in the West US region that the nsg-west rules reference.",
+					"i4": "This belongs in the box about the traffic on the encrypted link: the portal's protocol list offers only Any, TCP, UDP, and ICMP, and ESP is a valid rule protocol only through ARM templates, so that rule cannot be created from the portal.",
+					"i5": "This fits no box: augmented rules can pack several address ranges and several ports into one rule, but none of the four tasks asks for several ranges and ports in a single entry.",
+					"i6": "This fits no box: two rules in the same direction cannot share a priority, because that would make traffic handling ambiguous, and no task on the list is about priorities."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-network-security-group"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/application-security-groups"
+				}
+			],
+			"subtopics": [
+				"nsg-management",
+				"application-security-groups",
+				"nsg-rule-creation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GYYZGKQD2YS3JCFFFMVDQP",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a virtual network vnet-monitor in region East US with one subnet, ops-subnet, and the network security group nsg-monitor is associated with ops-subnet. The virtual machine vm-metrics runs in that subnet on network interface nic-metrics, which is a member of the application security group asg-metrics. A monitoring collector runs on the corporate network and has to open sessions to the metrics endpoint that vm-metrics exposes on TCP port 9090, but those sessions fail today, because a hardening exercise added a rule that blocks every source on that port for the monitoring tier.\n\nYou are going to add one rule to nsg-monitor in the Azure portal. That rule has to match only the corporate range, it has to keep covering the monitoring tier as more network interfaces join that group, it has to take effect ahead of the rule that currently blocks the traffic, and it must not restrict the source port that the collector uses.\n\nWhich value should you enter for each setting below?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Resource or setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Virtual network",
+							"vnet-monitor (East US)"
+						],
+						[
+							"Subnet",
+							"ops-subnet; nsg-monitor is associated with it"
+						],
+						[
+							"Virtual machine",
+							"vm-metrics; network interface nic-metrics"
+						],
+						[
+							"Application security group",
+							"asg-metrics (East US); member interfaces: nic-metrics"
+						],
+						[
+							"Collector",
+							"Corporate network 10.20.30.0/24; source port differs on each session"
+						],
+						[
+							"Metrics endpoint",
+							"TCP port 9090 on vm-metrics"
+						],
+						[
+							"Rule in nsg-monitor",
+							"Deny-Metrics-Unapproved; priority 200; source Any; destination asg-metrics; service TCP port 9090; action deny"
+						],
+						[
+							"Rule in nsg-monitor",
+							"Allow-Http-Public; priority 300; source Internet; destination Any; service TCP port 80; action allow"
+						],
+						[
+							"Other entries in nsg-monitor",
+							"AllowVNetInBound (65000), AllowAzureLoadBalancerInBound (65001), DenyAllInbound (65500)"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "IP Addresses"
+					},
+					{
+						"id": "i2",
+						"text": "asg-metrics"
+					},
+					{
+						"id": "i3",
+						"text": "Custom"
+					},
+					{
+						"id": "i4",
+						"text": "100"
+					},
+					{
+						"id": "i5",
+						"text": "*"
+					},
+					{
+						"id": "i6",
+						"text": "Any"
+					},
+					{
+						"id": "i7",
+						"text": "My IP address"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Source"
+					},
+					{
+						"id": "s2",
+						"label": "Destination"
+					},
+					{
+						"id": "s3",
+						"label": "Service"
+					},
+					{
+						"id": "s4",
+						"label": "Priority"
+					},
+					{
+						"id": "s5",
+						"label": "Source port ranges"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "The collector sits in a specific corporate address range, so the Source field takes the address-range option and 10.20.30.0/24 is typed into the address field that appears; only the corporate range then matches the new rule, while every other source on port 9090 keeps falling through to the deny rule at priority 200. The rule has to follow the monitoring tier as new network interfaces join it, so the Destination field takes asg-metrics rather than a single address. Port 9090 is not one of the predefined services, so the Service field takes Custom, which lets the rule name the protocol and the single port directly. Custom priorities start at 100, must be unique within the group, and are evaluated from the lowest number upward, so 100 places the new rule ahead of the deny at priority 200. The collector's source port changes between sessions, so the source port range field takes *, which stands for every port. Because network security groups are stateful, the collector's replies are permitted without a second rule.",
+				"perChoice": {
+					"i1": "Belongs in the Source field: the corporate range 10.20.30.0/24 is entered as an explicit address range. It is not the Destination value, because one address range would not follow the group as it grows.",
+					"i2": "Belongs in the Destination field: it selects the group that holds the monitoring tier's network interfaces, so the rule keeps applying to interfaces that join the group later.",
+					"i3": "Belongs in the Service field: the metrics port 9090 is not covered by a predefined service, so the protocol and the port are supplied directly.",
+					"i4": "Belongs in the Priority field: it is the lowest priority available for a new rule, it is not already used in the group, and lower numbers are evaluated first, so the rule takes effect before the deny at priority 200.",
+					"i5": "Belongs in the source port range field: it stands for every port, which suits a collector whose source port changes from session to session.",
+					"i6": "Fits no field here: in the Source field it would match every source, including the addresses that must stay blocked on port 9090.",
+					"i7": "Fits no field here: it captures the address of the client that signed in to the portal rather than the collector's corporate range."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-network-security-group"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/application-security-groups"
+				}
+			],
+			"subtopics": [
+				"nsg-rule-fields",
+				"application-security-groups",
+				"rule-evaluation-order"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GZ8SACPWCCSF1E184JFARQ",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are adding the first rule for a new web tier in the Azure portal. The virtual network vnet-web holds one subnet, web-subnet, and the NSG nsg-web is associated with that subnet. The tier runs on two virtual machines in web-subnet whose network interfaces, nic-web-1 and nic-web-2, are registered in asg-web, and the rule has to apply to those two interfaces by membership. The rule must let the corporate office range 203.0.113.0/24 reach the tier's listener on port 8443, and 8443 is not one of the ports that the portal's predefined service entries cover.\n\nWhich value do you choose for each field below?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Virtual network                       : vnet-web\nSubnet                                : web-subnet\nNSG attached to that subnet           : nsg-web\nInterfaces registered in asg-web      : nic-web-1, nic-web-2\nSubnet those interfaces live in       : web-subnet\nRange that must be allowed            : 203.0.113.0/24\nPort of the tier's listener           : 8443"
+				},
+				"statement": "The rule's Source field is set to {{sourcePick}}, its Destination field is set to {{destinationPick}}, and its Service field is set to {{servicePick}}.",
+				"slots": [
+					{
+						"id": "sourcePick",
+						"options": [
+							{
+								"id": "a",
+								"text": "IP Addresses"
+							},
+							{
+								"id": "b",
+								"text": "My IP address"
+							},
+							{
+								"id": "c",
+								"text": "Service Tag"
+							},
+							{
+								"id": "d",
+								"text": "Any"
+							}
+						]
+					},
+					{
+						"id": "destinationPick",
+						"options": [
+							{
+								"id": "a",
+								"text": "Application security group"
+							},
+							{
+								"id": "b",
+								"text": "My IP address"
+							},
+							{
+								"id": "c",
+								"text": "Service Tag"
+							},
+							{
+								"id": "d",
+								"text": "Any"
+							}
+						]
+					},
+					{
+						"id": "servicePick",
+						"options": [
+							{
+								"id": "a",
+								"text": "Custom, and the destination port ranges filled in"
+							},
+							{
+								"id": "b",
+								"text": "Any, and the destination port ranges filled in"
+							},
+							{
+								"id": "c",
+								"text": "Custom, and the destination port ranges left empty"
+							},
+							{
+								"id": "d",
+								"text": "RDP, and the destination port ranges filled in"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"destinationPick": "a",
+				"servicePick": "a",
+				"sourcePick": "a"
+			},
+			"explanation": {
+				"correct": "The corporate range is an explicit CIDR that is not one of the platform-maintained prefix groups, so the Source field takes IP Addresses and 203.0.113.0/24 is typed into the source range field. The rule has to reach the tier's interfaces by membership, so the Destination field takes Application security group and asg-web is then selected; a rule that names that group affects only member interfaces, so it keeps covering the tier as interfaces are added or removed, and the group must exist in the same region as nic-web-1 and nic-web-2. Because 8443 is not covered by a predefined service entry, the Service field takes Custom, and Custom only works when destination port ranges are supplied, so 8443 is entered there. With that inbound rule in place the replies from the tier back to the corporate range are permitted automatically, since network security groups are stateful.",
+				"perChoice": {
+					"destinationPick:b": "My IP address is not among the values the Destination field offers; the portal lists it only for the Source field. It would in any case point at a single public address rather than at the tier's interfaces.",
+					"destinationPick:c": "Service Tag selects a platform-maintained prefix group such as VirtualNetwork, AzureLoadBalancer, or Internet. Those groups list addresses that Azure maintains and cannot represent the interfaces registered in asg-web.",
+					"destinationPick:d": "Any expands to every destination address, so the rule would cover traffic to every resource protected by nsg-web, not only nic-web-1 and nic-web-2.",
+					"servicePick:b": "Any is one of the values of the Protocol field (Any, TCP, UDP, ICMP); the Service drop-down holds the predefined service entries plus Custom, so this value cannot be chosen there and the rule would not be tied to the listener's protocol.",
+					"servicePick:c": "Custom only works together with destination port ranges. Leaving them empty leaves the rule with no port to match, so the traffic on 8443 would not be selected.",
+					"servicePick:d": "RDP is one of the predefined service entries in the drop-down and stands for the RDP port, not for 8443. Because the tier's listener uses a port that no predefined service entry covers, this choice does not match the traffic.",
+					"sourcePick:b": "My IP address makes the portal fill in the public address of the computer the administrator is working from, not the corporate office range, so the rule would not accept the intended traffic.",
+					"sourcePick:c": "Service Tag selects one of the platform-maintained prefix groups such as VirtualNetwork, AzureLoadBalancer, or Internet. The corporate office range is not one of those groups, so the traffic would not match.",
+					"sourcePick:d": "Any expands to every source address, so the rule would accept traffic from any host on that port instead of limiting it to the corporate office range."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-network-security-group"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/application-security-groups"
+				}
+			],
+			"subtopics": [
+				"nsg-rule-settings",
+				"application-security-groups",
+				"portal-rule-creation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GZFQWFAVZK9Q37BNMG3EFY",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a platform team that has to create and update network security groups in the resource group rg-network and to add and change the rules inside them. The team was given the custom role shown in the exhibit, and that role is assigned only at the scope of rg-network. In the portal, the members can open an existing network security group and the rule editor and read the rules that are already there, but every attempt to save a change is rejected with an authorization error. They have also noticed that the service tag choices offered in the Source list of the rule editor are incomplete compared with what colleagues who hold a wider role assignment can see, and the two read actions for the service tag list, Microsoft.Network/locations/serviceTags/read and Microsoft.Network/locations/serviceTagDetails/read, are missing from their role.\n\nWhich actions must the role include, and at which scope must the service tag read actions be granted?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item in the custom role definition",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Role name",
+							"Network Ops"
+						],
+						[
+							"Role type",
+							"Custom role"
+						],
+						[
+							"Scope the role is assigned at",
+							"rg-network"
+						],
+						[
+							"Actions on network security groups",
+							"Microsoft.Network/networkSecurityGroups/read"
+						],
+						[
+							"Actions on the rules inside those groups",
+							"Microsoft.Network/networkSecurityGroups/securityRules/read"
+						],
+						[
+							"Actions on application security groups",
+							"Microsoft.Network/applicationSecurityGroups/read"
+						],
+						[
+							"Service tag list actions",
+							"None"
+						]
+					]
+				},
+				"statement": "The team needs {{nsgAction}} to create and update the network security groups and {{ruleAction}} to add and change the rules inside them, and the service tag read actions must be granted at {{tagScope}} scope.",
+				"slots": [
+					{
+						"id": "nsgAction",
+						"options": [
+							{
+								"id": "a",
+								"text": "Microsoft.Network/networkSecurityGroups/write"
+							},
+							{
+								"id": "b",
+								"text": "Microsoft.Network/networkSecurityGroups/read"
+							},
+							{
+								"id": "c",
+								"text": "Microsoft.Network/networkSecurityGroups/delete"
+							},
+							{
+								"id": "d",
+								"text": "Microsoft.Network/networkSecurityGroups/join/action"
+							}
+						]
+					},
+					{
+						"id": "ruleAction",
+						"options": [
+							{
+								"id": "a",
+								"text": "Microsoft.Network/networkSecurityGroups/securityRules/write"
+							},
+							{
+								"id": "b",
+								"text": "Microsoft.Network/networkSecurityGroups/securityRules/read"
+							},
+							{
+								"id": "c",
+								"text": "Microsoft.Network/networkSecurityGroups/securityRules/delete"
+							}
+						]
+					},
+					{
+						"id": "tagScope",
+						"options": [
+							{
+								"id": "a",
+								"text": "Subscription"
+							},
+							{
+								"id": "b",
+								"text": "Resource group"
+							},
+							{
+								"id": "c",
+								"text": "Network security group"
+							},
+							{
+								"id": "d",
+								"text": "Application security group"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"nsgAction": "a",
+				"ruleAction": "a",
+				"tagScope": "a"
+			},
+			"explanation": {
+				"correct": "Creating or updating a network security group is governed by the create-or-update action for the group itself, Microsoft.Network/networkSecurityGroups/write, and creating or updating a rule inside it is governed by the separate rule action, Microsoft.Network/networkSecurityGroups/securityRules/write. The role in the exhibit carries only the read actions for both, which is why the portal displays the group and its rules but rejects every attempt to save; in addition, the account performing the change needs read access on the resource group. The service tag choices in the rule editor come from the service tag list, so the read actions Microsoft.Network/locations/serviceTags/read and Microsoft.Network/locations/serviceTagDetails/read must be granted at subscription scope, alongside the group-level assignment, for the portal to show the complete list of service tags.",
+				"perChoice": {
+					"nsgAction:b": "The read action only lets the team open the group and look at its rules; it never authorizes a change, so every save in the portal still fails with an authorization error.",
+					"nsgAction:c": "This action removes an existing group. It does not authorize creating one or changing one, so the team would still be unable to save the groups it is asked to manage.",
+					"nsgAction:d": "This action associates an existing group with a subnet or a network interface. It does not authorize creating or updating the group itself, so it does not fix the rejected saves.",
+					"ruleAction:b": "This action only displays the rules already in the group. The team must be able to add and change rules, which reading alone does not permit.",
+					"ruleAction:c": "This action removes rules from a group. Removing rules is not what the team has to do, and it does not allow a rule to be added or changed.",
+					"tagScope:b": "A resource group assignment is what the team already has, and it is exactly the arrangement under which the service tag list in the rule editor stays incomplete; the service tag read actions are granted at subscription scope.",
+					"tagScope:c": "Assigning at the scope of a single group cannot supply the service tag data that the rule editor needs; the scope for the service tag read actions is the subscription.",
+					"tagScope:d": "Assigning at the scope of a single application security group likewise cannot populate the service tag list; the scope for the service tag read actions is the subscription."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-network-security-group"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview"
+				}
+			],
+			"subtopics": [
+				"nsg-permissions",
+				"service-tags",
+				"custom-roles"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GZREPT7Z14EV0GYHJPNY2R",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a virtual network vnet-lab with one subnet, lab-subnet, that holds the virtual machines vm-a and vm-b. The network security group nsg-lab is associated with lab-subnet, and the exhibit lists what nsg-lab contains today. A corporate policy states that the workloads in this subnet must not use the name resolution service that the platform provides. The team tried to enforce this with a custom outbound rule that denies UDP port 53 to every destination, but vm-a still resolves host names, and its package downloads over TCP 443 keep working.\n\nThe team now wants to add one more rule that stops those lookups. That rule has to block them whatever transport they travel on, because the resolver also answers over TCP when a reply does not fit into a single datagram, and it must leave the way package downloads are handled exactly as it is today.\n\nWhich values should the new rule use?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Item                           Value\nNetwork security group         nsg-lab, associated with subnet lab-subnet of virtual network vnet-lab\nMachines in lab-subnet         vm-a, vm-b\nCustom outbound rule in nsg-lab  Block-Lookups: source *, destination *, protocol UDP, destination port 53, priority 200\nObserved today                 vm-a resolves host names for its partner API; package downloads over TCP 443 succeed"
+				},
+				"statement": "The new rule's destination should be {{destination}} and its protocol should be {{protocol}}.",
+				"slots": [
+					{
+						"id": "destination",
+						"options": [
+							{
+								"id": "a",
+								"text": "AzurePlatformDNS"
+							},
+							{
+								"id": "b",
+								"text": "AzurePlatformIMDS"
+							},
+							{
+								"id": "c",
+								"text": "AzurePlatformLKM"
+							},
+							{
+								"id": "d",
+								"text": "VirtualNetwork"
+							}
+						]
+					},
+					{
+						"id": "protocol",
+						"options": [
+							{
+								"id": "a",
+								"text": "Any"
+							},
+							{
+								"id": "b",
+								"text": "TCP"
+							},
+							{
+								"id": "c",
+								"text": "UDP"
+							},
+							{
+								"id": "d",
+								"text": "ICMP"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"destination": "a",
+				"protocol": "a"
+			},
+			"explanation": {
+				"correct": "Traffic that the platform itself uses, including the name resolution traffic the workloads send to the platform's resolver, is not evaluated by the rules of the network security group unless one of the platform service tags is named. That is why the existing Block-Lookups rule, which denies UDP 53 to every destination, never touches those queries and vm-a keeps resolving host names. Naming AzurePlatformDNS as the destination is what brings that resolver traffic into scope for evaluation, and choosing the Any protocol makes the rule match the lookups over UDP as well as over the TCP fallback, so no lookup path stays open. Because the destination is limited to the name resolution service tag, the rule does not affect the TCP 443 package downloads.",
+				"perChoice": {
+					"destination:b": "That tag covers the instance metadata address 169.254.169.254, so a rule naming it would only pull the metadata traffic into scope for evaluation. The lookups that vm-a sends to the platform's resolver would keep being delivered, because that address is not part of this tag.",
+					"destination:c": "That tag names a different platform address, so a rule that uses it would not put the name resolution traffic in scope either. The resolver would continue to answer vm-a and the policy would stay unmet.",
+					"destination:d": "That service tag collects the addresses that belong to the virtual network, and the platform's resolver address is outside the virtual network, so the lookups are not part of that group. A rule built on it neither reaches nor filters the resolver traffic.",
+					"protocol:b": "This matches only the TCP transport. The lookups the workload sends are carried over UDP, so those queries would still be delivered and vm-a would still resolve host names.",
+					"protocol:c": "This matches only the UDP transport. The TCP path the resolver falls back to when a reply does not fit into a single datagram would remain available, so the requirement to block the lookups on every transport would not be met.",
+					"protocol:d": "This matches a completely different protocol, so none of the lookup traffic is matched by the rule and vm-a keeps resolving host names."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-network-security-group"
+				}
+			],
+			"subtopics": [
+				"nsg-platform-service-tags",
+				"nsg-rule-protocol"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6H04314P7HK4DEVVASZ1S1G",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a virtual network named vnet-shop in region East US with a single subnet, shop-subnet, and the network security group nsg-shop is associated with that subnet. The subnet holds two virtual machines: vm-front, which carries the storefront and has a public address, and vm-admin, which handles administration only. Corporate users on 203.0.113.0/24 report that they cannot open sessions to the storefront on TCP 443. The team wants that range to reach the storefront, while vm-admin must stay unreachable on TCP 443 from the same range, and the new rule has to be evaluated ahead of the default rules without reusing a priority number that is already taken in the same direction.\n\nThe exhibit lists the resources and the rules that nsg-shop contains today.\n\nWhich values should the new rule use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Resource",
+						"Detail"
+					],
+					"rows": [
+						[
+							"Virtual network",
+							"vnet-shop, region East US"
+						],
+						[
+							"Subnet shop-subnet",
+							"Address range 10.4.0.0/24"
+						],
+						[
+							"Virtual machine vm-front",
+							"Network interface nic-front; private IP address 10.4.0.6; public IP address 20.55.4.19; storefront listener on TCP 443"
+						],
+						[
+							"Virtual machine vm-admin",
+							"Network interface nic-admin; private IP address 10.4.0.9; no public IP address"
+						],
+						[
+							"Network security group nsg-shop",
+							"Associated with subnet shop-subnet"
+						],
+						[
+							"Custom inbound rule Allow-Ssh-From-Corp",
+							"Priority 100; source 203.0.113.0/24; destination Any; destination port 22; protocol TCP; action Allow"
+						],
+						[
+							"Default inbound rules",
+							"AllowVNetInBound priority 65000; AllowAzureLoadBalancerInBound priority 65001; DenyAllInbound priority 65500"
+						]
+					]
+				},
+				"statement": "Set the Source to 203.0.113.0/24, the Destination to {{destination}}, the Destination port ranges to 443, the Protocol to TCP, the Action to Allow, and the Priority to {{priority}}.",
+				"slots": [
+					{
+						"id": "destination",
+						"options": [
+							{
+								"id": "d1",
+								"text": "the private IP address of vm-front"
+							},
+							{
+								"id": "d2",
+								"text": "the public IP address of vm-front"
+							},
+							{
+								"id": "d3",
+								"text": "the private address range of the subnet that holds vm-front and vm-admin"
+							},
+							{
+								"id": "d4",
+								"text": "the service tag Internet"
+							}
+						]
+					},
+					{
+						"id": "priority",
+						"options": [
+							{
+								"id": "p1",
+								"text": "200"
+							},
+							{
+								"id": "p2",
+								"text": "100"
+							},
+							{
+								"id": "p3",
+								"text": "65000"
+							},
+							{
+								"id": "p4",
+								"text": "65500"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"destination": "d1",
+				"priority": "p1"
+			},
+			"explanation": {
+				"correct": "The destination has to be the private IP address of vm-front, 10.4.0.6. Inbound rules are evaluated only after Azure translates a public IP address to the private address assigned to the resource, and the guidance for the rule editor says that when the address belongs to an Azure virtual machine you enter its private address rather than its public one, so a rule that names the public address never matches the arriving traffic and the storefront stays unreachable. A subnet range would also open TCP 443 to vm-admin, which the requirement forbids, and the Internet service tag stands for public address space and does not match the translated destination. The priority has to satisfy three conditions at once: it must fall in the 100 to 4096 range that custom rules accept, it must not collide with a priority already used by another rule in the same direction, and it must be lower than the 65000 to 65500 band in which the default rules sit, because the defaults are given the lowest priority so custom rules are processed first. 200 is the only offered value that meets all three. Because a network security group is stateful, the replies from vm-front back to the corporate clients are permitted automatically, so no extra outbound rule is required.",
+				"perChoice": {
+					"destination:d2": "The public address is translated to the address assigned inside the virtual network before inbound rules are evaluated, so a rule whose destination is the public address never matches the arriving traffic and the storefront stays unreachable.",
+					"destination:d3": "That range covers 10.4.0.9 as well, so the rule would open TCP 443 to vm-admin, which the requirement rules out. The destination has to name only vm-front.",
+					"destination:d4": "The Internet service tag stands for public address space. Once the public address is translated, the destination of the inbound traffic is the address assigned inside the virtual network, so the tag does not match, and it would in any case be much wider than the requirement.",
+					"priority:p2": "100 is already taken by the custom inbound rule Allow-Ssh-From-Corp. Priorities must be unique within the group, and two rules cannot share a priority in the same direction, so the portal rejects the save.",
+					"priority:p3": "Custom rules accept a priority from 100 to 4096, and 65000 is the number of the default rule AllowVNetInBound in this direction. A rule placed there would also be processed after the defaults, which is the opposite of what the new rule needs.",
+					"priority:p4": "Custom rules accept a priority from 100 to 4096, and 65500 belongs to the default rule DenyAllInbound, the rule that blocks the very traffic the new rule has to permit."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-network-security-group"
+				}
+			],
+			"subtopics": [
+				"nsg-rule-destination",
+				"nsg-rule-priority"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6H0D0NYH5J4Q4ETEZSZ2MJ3",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a virtual network vnet-ops in region East US with one subnet, ops-subnet, and the network security group nsg-ops is associated with that subnet. The virtual machine vm-ops1 runs in that subnet. Earlier today an engineer opened an SSH session to vm-ops1 from a laptop with an address on the corporate range 203.0.113.0/24, and the exhibit lists the inbound rules that nsg-ops contains today.\n\nSecurity now requires that only the jump host at 203.0.113.25 may open SSH sessions to vm-ops1; every other source, including the rest of that corporate range, has to be refused. The engineer's session is still open, and it must be closed before the laptop is returned, because that laptop may not keep a path into the machine.\n\nWhich changes should the team make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Rule name",
+						"Priority",
+						"Source",
+						"Destination",
+						"Port",
+						"Action"
+					],
+					"rows": [
+						[
+							"Allow-SSH-Corp",
+							"120",
+							"203.0.113.0/24",
+							"*",
+							"TCP 22",
+							"Allow"
+						],
+						[
+							"Deny-SSH-All",
+							"130",
+							"*",
+							"*",
+							"TCP 22",
+							"Deny"
+						],
+						[
+							"Allow-HTTPS-VNet",
+							"150",
+							"VirtualNetwork",
+							"*",
+							"TCP 443",
+							"Allow"
+						],
+						[
+							"AllowVNetInBound",
+							"65000",
+							"VirtualNetwork",
+							"VirtualNetwork",
+							"*",
+							"Allow"
+						],
+						[
+							"AllowAzureLoadBalancerInBound",
+							"65001",
+							"AzureLoadBalancer",
+							"*",
+							"*",
+							"Allow"
+						],
+						[
+							"DenyAllInbound",
+							"65500",
+							"*",
+							"*",
+							"*",
+							"Deny"
+						]
+					]
+				},
+				"statement": "Deleting the rule that permits SSH from 203.0.113.0/24 means that {{effect}}; the replacement rule that allows SSH only from the approved jump host at 203.0.113.25 should use priority {{priority}}; and to close the session that is already open, the team must {{close}}.",
+				"slots": [
+					{
+						"id": "effect",
+						"options": [
+							{
+								"id": "a",
+								"text": "new connections from that range are refused while the session that is already open keeps running"
+							},
+							{
+								"id": "b",
+								"text": "new connections from that range are refused and the session that is already open is dropped"
+							},
+							{
+								"id": "c",
+								"text": "new connections from that range are still accepted while the session that is already open keeps running"
+							},
+							{
+								"id": "d",
+								"text": "new connections from that range are still accepted and the session that is already open is dropped"
+							}
+						]
+					},
+					{
+						"id": "priority",
+						"options": [
+							{
+								"id": "a",
+								"text": "100"
+							},
+							{
+								"id": "b",
+								"text": "130"
+							},
+							{
+								"id": "c",
+								"text": "4097"
+							},
+							{
+								"id": "d",
+								"text": "65000"
+							}
+						]
+					},
+					{
+						"id": "close",
+						"options": [
+							{
+								"id": "a",
+								"text": "close the open session by signing the user out"
+							},
+							{
+								"id": "b",
+								"text": "close the open session by deleting the rule that permits SSH from 203.0.113.0/24"
+							},
+							{
+								"id": "c",
+								"text": "close the open session by changing the action of the rule that permits SSH from 203.0.113.0/24"
+							},
+							{
+								"id": "d",
+								"text": "close the open session by lowering the priority of the rule that denies SSH from every source"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"effect": "a",
+				"priority": "a",
+				"close": "a"
+			},
+			"explanation": {
+				"correct": "Once the rule at priority 120 that allows SSH from 203.0.113.0/24 is deleted, nothing in nsg-ops matches that range for TCP 22 any more, so new sessions from the corporate range fall through to the blanket deny at priority 130 and are refused. An edit to a rule, however, only shapes sessions that are started after the change, so the session the engineer already holds keeps running and has to be closed from the machine itself, for example by signing the user out. The replacement rule that permits SSH from the approved jump host 203.0.113.25 to vm-ops1 must be evaluated before the blanket deny at priority 130, so it needs a lower number; 100 is the only offered value that is unused, sits inside the 100-4096 range allowed for custom rules, and comes before 130.",
+				"perChoice": {
+					"effect:b": "The second half is wrong: an edit to a rule never terminates a connection that is already established, so the open session stays up.",
+					"effect:c": "The first half is wrong: after the allow rule at priority 120 is gone, new sessions from the corporate range no longer match any allow rule and are refused by the deny at priority 130.",
+					"effect:d": "Both halves are wrong: new sessions from that range are refused once rule 120 is deleted, and the established session is not dropped by a rule change.",
+					"priority:b": "That number is already taken by the blanket deny rule for TCP 22, and two rules cannot share a priority in the same direction; a rule placed there would also be evaluated after that blanket deny instead of before it.",
+					"priority:c": "Custom rules accept priority values from 100 to 4096, so 4097 is rejected by the portal.",
+					"priority:d": "The 65000-65500 band belongs to the built-in default rules, which cannot be edited or replaced, and a new custom rule cannot be created in that band.",
+					"close:b": "Deleting an allow rule only affects what happens to sessions started afterwards; the connection that is already open keeps running.",
+					"close:c": "Switching the action of a rule applies to new connections only and leaves the established session untouched.",
+					"close:d": "Lowering the priority of the blanket deny rule changes the order in which rules are evaluated, but it still leaves an already open connection in place."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-network-security-group"
+				}
+			],
+			"subtopics": [
+				"nsg-rule-priority",
+				"nsg-existing-connections",
+				"nsg-rule-editing"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6H0JXAQ79DKNVHPCD4C21RD",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an internal load balancer named ilb-api in the virtual network vnet-svc. It listens on TCP 443 on the address 10.0.1.10 and passes connections on to the virtual machines vm-api1 and vm-api2, which run in subnet svc-subnet. The network security group nsg-svc is associated with svc-subnet, and the exhibit lists the resources and the inbound rules that nsg-svc holds today.\n\nA member of the corporate network opens a session to 10.0.1.10 on TCP 443, and the load balancer passes it on to one of the two machines; this traffic is not a health probe. The team added the rule at priority 120 expecting it to let corporate sessions through, yet those sessions are still refused, and the team needs to work out which addresses Azure weighs against the inbound rules. It plans to correct the rule that is already in place rather than add another one.\n\nWhich pair of addresses does Azure evaluate, and which change to the rule at priority 120 should the team make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "RESOURCE OR RULE                    DETAIL\n---------------------------------  --------------------------------------------------\nVirtual network                     vnet-svc\nSubnet                              svc-subnet, associated with nsg-svc\nLoad balancer                       ilb-api, internal, frontend address 10.0.1.10, TCP 443\nMachines behind ilb-api             vm-api1 (10.0.1.21) and vm-api2 (10.0.1.22)\nHealth probe                        ilb-api-probe, TCP 8080, sent by ilb-api to the machines behind it\nCorporate network range             203.0.113.0/24\nInbound rule Allow-Probe-8080       Priority 110, source AzureLoadBalancer, destination Any, service Custom, port 8080, action Allow\nInbound rule Allow-Lb-Source-443    Priority 120, source 10.0.1.10, destination Any, service Custom, port 443, action Allow\nInbound rule DenyAllInbound         Priority 65500, source Any, destination Any, action Deny (built-in default)"
+				},
+				"statement": "Azure weighs the inbound rules of nsg-svc against {{addresses}}, and the team should {{remedy}}.",
+				"slots": [
+					{
+						"id": "addresses",
+						"options": [
+							{
+								"id": "a",
+								"text": "the address of the party that opened the session and the private address of the machine that receives the forwarded traffic"
+							},
+							{
+								"id": "b",
+								"text": "the private address of ilb-api and the private address of the machine that receives the forwarded traffic"
+							},
+							{
+								"id": "c",
+								"text": "the frontend address of ilb-api and the address of the party that opened the session"
+							},
+							{
+								"id": "d",
+								"text": "the addresses covered by the AzureLoadBalancer service tag and the frontend address of ilb-api"
+							}
+						]
+					},
+					{
+						"id": "remedy",
+						"options": [
+							{
+								"id": "a",
+								"text": "set the source of the rule at priority 120 to 203.0.113.0/24 and leave the rest of that rule untouched"
+							},
+							{
+								"id": "b",
+								"text": "set the source of the rule at priority 120 to the private address of ilb-api and leave the rest of that rule untouched"
+							},
+							{
+								"id": "c",
+								"text": "set the source of the rule at priority 120 to the AzureLoadBalancer service tag and leave the rest of that rule untouched"
+							},
+							{
+								"id": "d",
+								"text": "set the source of the rule at priority 120 to 203.0.113.0/24 and set its destination to the private address of ilb-api"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"addresses": "a",
+				"remedy": "a"
+			},
+			"explanation": {
+				"correct": "For traffic that arrives through a load balancer, the network security group compares the rules against the address of the machine that started the connection as the source and the address of the machine that ultimately receives it as the destination; the load balancer's own addresses are not what the rules are matched on. That is why the rule whose source is 10.0.1.10 never matches the corporate session, and why the source of that rule has to become the corporate range 203.0.113.0/24 while its existing destination and port settings can stay as they are. The AzureLoadBalancer service tag in the rule at priority 110 only covers the health probes that the load balancer sends to the backends, which are a different flow from the session in this scenario, and the built-in deny of all inbound traffic at priority 65500 is what refuses the session today.",
+				"perChoice": {
+					"addresses:b": "This option puts the load balancer's private address on the source side of the comparison. Traffic forwarded by a load balancer keeps the address of the machine that started the session as its source, so a rule written with the load balancer's address can never match the corporate user.",
+					"addresses:c": "This option puts the load balancer's frontend address on the destination side. The destination address and port that Azure matches for forwarded traffic belong to the machine that receives the connection, not to the frontend address of the load balancer.",
+					"addresses:d": "This option describes the flow of the health probes, which are sent by the load balancer service itself and therefore match the AzureLoadBalancer service tag. The corporate session does not come from the probe.",
+					"remedy:b": "The source of the forwarded session is the corporate address, not the private address of ilb-api, so the rule would still not match; this repeats the mistake the rule at priority 120 already contains.",
+					"remedy:c": "The AzureLoadBalancer service tag only covers the health probes the load balancer sends to the backends. Sessions from the corporate network arrive with the user's address as the source, so this change would not admit them.",
+					"remedy:d": "Setting the destination to the private address of ilb-api makes the rule describe traffic addressed to the load balancer's frontend address. The session is delivered to the machine behind the load balancer, so the destination should stay as it is."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-network-security-group"
+				}
+			],
+			"subtopics": [
+				"nsg-load-balancer-traffic",
+				"nsg-rule-source-destination"
+			],
+			"reviewed": false
+		}
+	]
+}

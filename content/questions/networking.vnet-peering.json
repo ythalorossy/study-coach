@@ -1,0 +1,1823 @@
+{
+	"skill": "networking.vnet-peering",
+	"questions": [
+		{
+			"id": "q_01M6FMA3N1MXXCR7B26CAGMRWN",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "A hub-and-spoke design in Azure uses hub-vnet (10.1.0.0/16), which holds the only VPN gateway and the Site-to-Site tunnel to the corporate network. spoke-vnet (10.2.0.0/16) has no gateway subnet, and the application servers in it must reach the corporate network through the VPN gateway that sits in hub-vnet. The two networks are already peered and each side reports Connected. The table shows the options currently configured for this pair. Which option do you select on the spoke-vnet peering so that spoke-vnet can reach the corporate network?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Peering option (as shown in the portal)",
+						"Configured on",
+						"State"
+					],
+					"rows": [
+						[
+							"Allow 'hub-vnet' to access the peered virtual network",
+							"hub-vnet peering",
+							"Selected"
+						],
+						[
+							"Allow the peered virtual network to access 'hub-vnet'",
+							"hub-vnet peering",
+							"Selected"
+						],
+						[
+							"Allow gateway or route server in 'hub-vnet' to forward traffic to the peered virtual network",
+							"hub-vnet peering",
+							"Selected"
+						],
+						[
+							"Enable 'spoke-vnet' to use the peered virtual network's remote gateway or route server",
+							"spoke-vnet peering",
+							"Not selected"
+						],
+						[
+							"Allow gateway or route server in 'spoke-vnet' to forward traffic to the peered virtual network",
+							"spoke-vnet peering",
+							"Not selected"
+						],
+						[
+							"Allow 'spoke-vnet' to receive forwarded traffic from the peered virtual network",
+							"spoke-vnet peering",
+							"Not selected"
+						],
+						[
+							"Enable the peered virtual network to use 'spoke-vnet's' remote gateway or route server",
+							"spoke-vnet peering",
+							"Not selected"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Allow gateway or route server in 'spoke-vnet' to forward traffic to the peered virtual network"
+					},
+					{
+						"id": "b",
+						"text": "Allow 'spoke-vnet' to receive forwarded traffic from the peered virtual network"
+					},
+					{
+						"id": "c",
+						"text": "Enable the peered virtual network to use 'spoke-vnet's' remote gateway or route server"
+					},
+					{
+						"id": "d",
+						"text": "Enable 'spoke-vnet' to use the peered virtual network's remote gateway or route server"
+					}
+				]
+			},
+			"key": {
+				"optionId": "d"
+			},
+			"explanation": {
+				"correct": "The spoke has no gateway of its own, so it can only reach the corporate network through gateway transit, using the VPN gateway that lives in hub-vnet. Selecting the option that lets 'spoke-vnet' use the remote gateway or route server of the peered virtual network makes the spoke send its traffic to the hub's gateway. The other precondition is already met in the exhibit: hub-vnet contains a gateway and its peering already allows that gateway to forward traffic to the peered virtual network. Only one of the two peerings may use a remote gateway, and a virtual network that uses a peer's remote gateway cannot own a gateway itself, which fits spoke-vnet having no gateway subnet.",
+				"perChoice": {
+					"a": "This option governs traffic that a gateway or route server located in 'spoke-vnet' forwards into the peered virtual network. spoke-vnet contains no gateway or route server, so the option cannot even be turned on, and it controls traffic entering the spoke rather than traffic the spoke sends out through the hub's gateway.",
+					"b": "This option lets traffic forwarded by an NVA in a third virtual network cross into 'spoke-vnet'. It only permits that forwarded traffic to pass; it does not create user-defined routes or appliances and it does not let the spoke send its own traffic out through the hub's VPN gateway.",
+					"c": "This option points the wrong way: it would let the hub use a gateway located in 'spoke-vnet'. Because spoke-vnet has no gateway or route server, this option is not available on that peering. The setting that makes the spoke use the hub's gateway is the opposite-direction option on the spoke's peering."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-peering"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview"
+				}
+			],
+			"subtopics": [
+				"gateway-transit",
+				"peering-settings",
+				"hub-and-spoke"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FMDFXFN0KMQGGP7HP79VYT",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You support a hub-and-spoke topology in Azure: spoke-vnet (10.2.0.0/16) runs the application servers and hub-vnet (10.1.0.0/16) runs the shared services, and the two virtual networks are peered. Every packet that app-subnet sends to the hub must be inspected by the firewall VM that lives in spoke-vnet, but the firewall's logs stay empty and the application reaches hub-vnet directly. The route table in the exhibit is attached to app-subnet and already holds a summarized route that points at the firewall. You need the app-subnet traffic destined for hub-vnet to traverse the firewall. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Route table name   : rt-spoke\nAttached subnet    : app-subnet in spoke-vnet (10.2.0.0/16)\nUser-defined route : 10.0.0.0/8 -> next hop 10.2.0.10 (firewall VM in spoke-vnet)\ndisablePeeringRoute: None\nPeered virtual net : hub-vnet (10.1.0.0/16), peering state Connected"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set disablePeeringRoute to All on the route table associated with app-subnet"
+					},
+					{
+						"id": "b",
+						"text": "Set disablePeeringRoute to None on the route table associated with app-subnet"
+					},
+					{
+						"id": "c",
+						"text": "Set disablePeeringRoute to All on the route table associated with the subnet in hub-vnet"
+					},
+					{
+						"id": "d",
+						"text": "Set disablePeeringRoute to All on the network security group associated with app-subnet"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "disablePeeringRoute is a route table property, and the value All suppresses the IPv4 and IPv6 system-generated peering routes for workloads in the subnets that use that route table. Azure picks routes by longest prefix match, so the automatic route for the peered 10.1.0.0/16 range is more specific than the summarized 10.0.0.0/8 user-defined route in rt-spoke and app traffic bypasses the firewall. Applying All on the route table attached to app-subnet removes those automatic peering routes, so the existing summarized route to the firewall VM (10.2.0.10, in the same virtual network as the workload's NIC) becomes the selected path and the hub traffic is inspected. Suppression alone builds no replacement path, so the user-defined route and a usable next hop must already exist, which they do here.",
+				"perChoice": {
+					"b": "None is the default value and means Azure keeps adding the system-generated peering routes. Because the peering route for the peered 10.1.0.0/16 range is more specific than the summarized 10.0.0.0/8 user-defined route, Azure would still select the peering route and traffic would keep bypassing the firewall.",
+					"c": "The route table attached to a subnet in hub-vnet governs traffic leaving that hub subnet. The traffic that needs inspecting originates in app-subnet in spoke-vnet, so suppressing peering routes on the hub side leaves the spoke's forwarding path unchanged and the firewall is still bypassed.",
+					"d": "disablePeeringRoute is a property of a route table, not of a network security group. Network security group rules filter traffic that is already routed but do not influence which route Azure selects, so the automatic peering route to hub-vnet would still win over the summarized user-defined route."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-peering"
+				}
+			],
+			"subtopics": [
+				"disable-peering-route",
+				"vnet-peering-routing",
+				"hub-and-spoke-peering"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FMFQTGSBXBDNQ75FXSQKF3",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an application virtual network (app-vnet, 10.2.0.0/16) in contoso-app-subscription, and you must peer it with a virtual network (partner-vnet, 10.3.0.0/16) that a partner team runs in a different subscription that you cannot read. You have opened the Add peering blade for app-vnet, and the exhibit shows what is currently entered there plus what the partner team sent you. You need the two address spaces to exchange traffic over the peering once it is established. Which change should you make on the blade?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "ADD PEERING BLAZE - app-vnet\nPeering link name:       app-vnet-to-partner\nVirtual network deployment model: Resource Manager\nSubscription:            contoso-app-subscription\nVirtual network:         <empty>\nI know my resource ID:   Unchecked\nResource ID:             <empty>\n\nHANDOFF RECEIVED FROM THE PARTNER TEAM\nRemote subscription id:  9a4b1c77-2f6e-4d18-bc31-77e0ac52e02d\nRemote resource group:   rg-partner-net\nRemote virtual network:  partner-vnet\nRemote address space:    10.3.0.0/16\nRemote region:           East US 2\n"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Select 'I know my resource ID' and type the name of the remote resource group into the Resource ID field"
+					},
+					{
+						"id": "b",
+						"text": "Clear 'I know my resource ID', then choose the remote subscription in the Subscription list and choose the remote network in the Virtual network list"
+					},
+					{
+						"id": "c",
+						"text": "Select 'I know my resource ID' and enter the complete resource ID of the remote virtual network into the Resource ID field"
+					},
+					{
+						"id": "d",
+						"text": "Clear 'I know my resource ID' and enter the remote network's name and region into the Subscription and Virtual network fields"
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "You have no read access to the remote subscription or to partner-vnet, so the portal's Subscription and Virtual network controls can never be populated with that network — they only offer resources you are able to read. The documented way to reference a virtual network in that situation is to tick 'I know my resource ID' and supply the remote network's resource path in the Resource ID field: /subscriptions/9a4b1c77-2f6e-4d18-bc31-77e0ac52e02d/resourceGroups/rg-partner-net/providers/Microsoft.Network/virtualNetworks/partner-vnet. Because the two address spaces (10.2.0.0/16 and 10.3.0.0/16) do not overlap and both networks use the Resource Manager deployment model, the peering can be created. The blade then shows the link as Initiated until the partner team creates the matching peering from their side, and traffic flows once both sides report Connected.",
+				"perChoice": {
+					"a": "The Resource ID field expects the complete resource path of the remote virtual network, including its subscription id, resource group, provider and network name. A bare resource group name does not identify a virtual network, so the peering cannot be created this way.",
+					"b": "The Subscription and Virtual network controls are pickers populated from the resources you can read. With no read access to the remote subscription, partner-vnet never appears in those lists, so browsing for it cannot produce a working peering.",
+					"d": "Typing a network name and a region into the Subscription and Virtual network fields does nothing useful; those fields accept only a chosen subscription and a chosen network taken from a list, and the remote network is not on any list you can reach."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-peering"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview"
+				}
+			],
+			"subtopics": [
+				"vnet-peering-configuration",
+				"cross-subscription-peering",
+				"portal-resource-id"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FMJ63NDH15E00SFER6X8MZ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have sales-vnet in East US (10.1.0.0/16) and report-vnet in West US (10.3.0.0/16), joined by Global virtual network peering. The sales application calls the internal load balancer frontend in report-vnet, but every call times out even though direct connections to individual virtual machines in report-vnet succeed. You need the frontend endpoint to answer the application over the peering. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Resource",
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Peering sales-vnet to report-vnet",
+							"Type",
+							"Global virtual network peering"
+						],
+						[
+							"Peering sales-vnet to report-vnet",
+							"Status on both sides",
+							"Connected"
+						],
+						[
+							"ilb-report",
+							"SKU",
+							"Basic"
+						],
+						[
+							"ilb-report",
+							"Frontend IP configuration",
+							"Internal, 10.3.1.10"
+						],
+						[
+							"ilb-report",
+							"Backend pool",
+							"vm-report-01 (10.3.0.4)"
+						],
+						[
+							"nsg-report-lb",
+							"Inbound rule",
+							"Allow TCP 443 from sales-vnet"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Replace the Basic load balancer with a Standard load balancer so its frontend IP is reachable over the peering"
+					},
+					{
+						"id": "b",
+						"text": "Keep the Basic load balancer and enable gateway transit so its frontend IP is reachable over the peering"
+					},
+					{
+						"id": "c",
+						"text": "Keep the Basic load balancer and switch the pairing to virtual network peering so its frontend IP is reachable"
+					},
+					{
+						"id": "d",
+						"text": "Keep the Basic load balancer and enable Allow forwarded traffic so its frontend IP is reachable"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Basic load balancer frontend IP addresses, whether internal or public, cannot be reached over Global virtual network peering, and services built on a Basic load balancer fail across regions. Standard load balancers work with both same-region and global peering, so the frontend endpoint becomes reachable once the Basic load balancer in report-vnet is replaced with a Standard one. The peering itself is already healthy and the network security group already permits the traffic, so neither is the cause of the timeouts.",
+				"perChoice": {
+					"a": "Not applicable.",
+					"b": "Gateway transit lets a spoke use a VPN or ExpressRoute gateway that lives in the peer VNet; it has no effect on how load balancer frontend IP addresses are reachable, and report-vnet hosts no gateway in this scenario. The Basic frontend would still be unreachable.",
+					"c": "Virtual network peering is the same-region option, while these VNets sit in two different regions, so the pairing cannot simply be switched to that type. In addition, the Basic load balancer frontend would remain the obstacle even for a same-region pair.",
+					"d": "The Allow forwarded traffic settings only permit traffic that a third VNet's network virtual appliance forwards; they neither create routes nor appliances and they do not make a Basic load balancer frontend reachable."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-peering"
+				}
+			],
+			"subtopics": [
+				"global-peering",
+				"load-balancer-compatibility"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FMR5SZJJ7Q72DSZ43NX4S8",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You support the Contoso remote-engineering access path: engineers on the road connect to Azure with the Point-to-Site VPN client on their laptops, and that client pool is served by the VPN gateway gw-hub-01 in hub-vnet, which also carries the Site-to-Site tunnel to the corporate network. Two weeks ago you added the peering between hub-vnet and orders-vnet (10.5.0.0/16) so the engineers can reach a new order service. The engineers still reach hub-vnet virtual machines and the corporate network over the tunnel, but every attempt to open a session to the order service VMs in orders-vnet times out. The exhibit shows the current state of the environment and of one engineer workstation. You need the engineers to reach the order service over the tunnel without changing anything in orders-vnet. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"VPN gateway",
+							"gw-hub-01 in hub-vnet (East US), Site-to-Site and Point-to-Site enabled"
+						],
+						[
+							"Point-to-Site client pool",
+							"10.70.0.0/24"
+						],
+						[
+							"Peering added on 12 June",
+							"hub-vnet and orders-vnet (10.5.0.0/16); both sides report Connected"
+						],
+						[
+							"Contents of orders-vnet",
+							"No gateway subnet, no route server; hosts the order service VMs"
+						],
+						[
+							"Engineer workstation ENG-LT-07",
+							"Windows 11 laptop, tunnel to gw-hub-01 is up, client profile issued on 3 May"
+						],
+						[
+							"Routes present on the ENG-LT-07 tunnel adapter",
+							"10.1.0.0/16 (hub-vnet), 10.70.0.0/24 (Point-to-Site pool), 172.16.0.0/12 (corporate network)"
+						],
+						[
+							"Reachability from ENG-LT-07",
+							"hub-vnet virtual machines: OK; corporate network: OK; order service VMs in orders-vnet: connection timeouts"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Re-issue the Point-to-Site client files from gw-hub-01 in hub-vnet and install them on the engineer laptops so the clients receive the routes for the peered network"
+					},
+					{
+						"id": "b",
+						"text": "Reset the Point-to-Site client on each engineer laptop so the workstation renegotiates its tunnel with gw-hub-01 in hub-vnet and picks up the routes for the peered network"
+					},
+					{
+						"id": "c",
+						"text": "Add a user-defined route on the GatewaySubnet of hub-vnet that sends 10.5.0.0/16 to the orders-vnet peering next hop so traffic for the order service leaves through the peering"
+					},
+					{
+						"id": "d",
+						"text": "Enable the \"Allow gateway or route server in the peered virtual network to forward traffic to hub-vnet\" option on the hub-vnet to orders-vnet peering so gw-hub-01 hands the orders-vnet prefix to the connected Point-to-Site clients"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The engineers' laptops were issued their Point-to-Site client profile on 3 May, before hub-vnet was peered with orders-vnet on 12 June, so the route table on the tunnel adapter has no entry for 10.5.0.0/16 and the sessions to the order service time out even though the peering reports Connected on both sides. The routes a Point-to-Site client uses come from the client files it was issued, so those files must be issued again from gw-hub-01 and installed on the laptops; only then do the clients pick up the new route for the peered network and reach the order service over the tunnel.",
+				"perChoice": {
+					"b": "Resetting the client only renegotiates the tunnel with gw-hub-01. The route for the peered network is carried in the Point-to-Site client files the workstation was issued, so reconnecting with the same files leaves ENG-LT-07 without a route to 10.5.0.0/16 and the timeouts continue.",
+					"c": "A user-defined route on the GatewaySubnet of hub-vnet steers traffic that the gateway itself sends or forwards. It does not add the orders-vnet prefix to the routes installed on the Point-to-Site clients, so the engineer laptops keep sending that traffic to their default route.",
+					"d": "This peering option only allows hub-vnet to receive traffic forwarded by a gateway or route server that lives in orders-vnet, and orders-vnet contains neither. It also has no effect on the routes installed on the Point-to-Site clients, so it cannot supply the missing route to the laptops."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-peering"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview"
+				}
+			],
+			"subtopics": [
+				"point-to-site-vpn",
+				"virtual-network-peering",
+				"hub-and-spoke"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FMVT9VVKA7XPWT60518JTZ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You support three virtual networks in the same subscription and region: orders-vnet (10.1.0.0/16) hosts the ordering application, inventory-vnet (10.2.0.0/16) hosts a shared inventory service, and reporting-vnet (10.3.0.0/16) hosts the reporting service. The application servers in orders-app-subnet call the inventory service over TCP 443 without any problem, but every attempt to call the reporting service in reporting-vnet times out. The exhibit shows the current state of the environment. You need the ordering application in orders-vnet to reach the reporting service in reporting-vnet. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"peerings\": [\n    { \"local\": \"orders-vnet\", \"remote\": \"inventory-vnet\", \"status\": \"Connected\" },\n    { \"local\": \"inventory-vnet\", \"remote\": \"reporting-vnet\", \"status\": \"Connected\" },\n    { \"local\": \"orders-vnet\", \"remote\": \"reporting-vnet\", \"status\": \"not created\" }\n  ],\n  \"addressSpaces\": {\n    \"orders-vnet\": \"10.1.0.0/16\",\n    \"inventory-vnet\": \"10.2.0.0/16\",\n    \"reporting-vnet\": \"10.3.0.0/16\"\n  },\n  \"inventoryVnetContents\": \"Inventory service virtual machines only; no virtual appliance and no gateway subnet\",\n  \"ordersAppSubnetNsg\": \"Inbound allow rule from the VirtualNetwork service tag on TCP 443\",\n  \"myRole\": \"Network Contributor on all three virtual networks\"\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add a virtual network peering between orders-vnet and reporting-vnet."
+					},
+					{
+						"id": "b",
+						"text": "Enable forwarded traffic on the virtual network peerings that involve inventory-vnet so inventory-vnet relays calls between orders-vnet and reporting-vnet."
+					},
+					{
+						"id": "c",
+						"text": "Enable use of a remote gateway on the virtual network peering with inventory-vnet so both sides share routes."
+					},
+					{
+						"id": "d",
+						"text": "Enable gateway or route server forwarding on the virtual network peerings that involve inventory-vnet so calls can continue toward reporting-vnet."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Peerings are not transitive. The exhibit shows a connected peering from orders-vnet to inventory-vnet and a connected peering from inventory-vnet to reporting-vnet, but that pair of links gives orders-vnet no route to the reporting-vnet address space; connectivity is not inherited through the middle virtual network. The address spaces 10.1.0.0/16 and 10.3.0.0/16 do not overlap, so they can be joined. Create the virtual network peering between orders-vnet and reporting-vnet, with the matching peering configured on the other side, and confirm both sides report Connected, because a peering is configured per side and the link carries traffic only once both sides are Connected.",
+				"perChoice": {
+					"b": "The forwarded-traffic options only permit traffic that a third network's virtual appliance already forwards to cross the peering; they never create user-defined routes or network virtual appliances, and the exhibit shows inventory-vnet holds only the inventory service with no appliance to relay calls. Enabling them also does not make peerings transitive, so orders-vnet still has no path to reporting-vnet.",
+					"c": "Using a peer's remote gateway requires that peer to actually contain a gateway or route server and to allow gateway forwarding, and a virtual network may use only one remote gateway. inventory-vnet has no gateway subnet, so nothing there can be shared and no path to reporting-vnet is created.",
+					"d": "Allowing gateway or route server forwarding requires that side of the pair to contain a real gateway or route server, and none of these three virtual networks hosts one. The setting only permits traffic to flow; it creates neither routes nor appliances and does not carry traffic from orders-vnet onward to reporting-vnet."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-peering"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview"
+				}
+			],
+			"subtopics": [
+				"vnet-peering-transitivity",
+				"peering-traffic-flow"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FN0DZ8PQ6Z2XQ5XHRDBJQS",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You manage payments-vnet (10.7.0.0/16), which today sits in resource group rg-network-prod and is peered with ledger-vnet (10.8.0.0/16) in rg-ledger; both sides of that link report Connected. Finance has asked that payments-vnet be relocated into rg-finance so that the platform team keeps ownership only of the shared network components, and the two virtual networks must keep exchanging traffic afterwards. The exhibit shows the current configuration. Which sequence of steps should you carry out?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Item                            Current value\n------------------------------  --------------------------------------\nVirtual network                payments-vnet (10.7.0.0/16)\nCurrent resource group         rg-network-prod\nSubscription                   sub-prod\nRequested resource group       rg-finance (same subscription)\nPeering link name              payments-to-ledger\nPeering status (payments-vnet) Connected\nPeering status (ledger-vnet)   Connected\nOther virtual network          ledger-vnet (10.8.0.0/16) in rg-ledger\nGateway subnet                 None"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Delete the peering that links payments-vnet to ledger-vnet, move payments-vnet into rg-finance, and then create the peering again."
+					},
+					{
+						"id": "b",
+						"text": "Move payments-vnet into rg-finance while the peering is in place, and then delete the peering that links it to ledger-vnet."
+					},
+					{
+						"id": "c",
+						"text": "Delete the peering that links payments-vnet to ledger-vnet, move payments-vnet into rg-finance, and then create the peering on the payments-vnet side only."
+					},
+					{
+						"id": "d",
+						"text": "Move payments-vnet into rg-finance and create a second peering to ledger-vnet, keeping the existing peering in place so traffic keeps flowing."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A virtual network that is part of a peering cannot be moved to another resource group or subscription while that peering still exists; the supported sequence is to delete the peering, move the virtual network, and then recreate the peering. Deleting the peering on payments-vnet also removes the matching peering on ledger-vnet, so after the resource group change both sides have to be recreated before the link reports Connected and carries traffic again.",
+				"perChoice": {
+					"b": "The move itself is blocked while the virtual network is part of a peering, so relocating first and removing the link afterwards is not a workable sequence; the peering has to be removed before the resource group change and put back afterwards.",
+					"c": "Recreating the link on one side only leaves it in the Initiated state. A peering must be configured for each of the two virtual networks, and traffic flows only when both peerings report Connected, so this sequence would leave payments-vnet and ledger-vnet unable to exchange traffic.",
+					"d": "The virtual network cannot be relocated while it is still part of a peering, and adding a second peering to the same pair while keeping the original is not how connectivity is preserved; the existing peering has to be removed before the move and rebuilt afterwards."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-peering"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview"
+				}
+			],
+			"subtopics": [
+				"move-peered-virtual-network",
+				"delete-and-recreate-peering",
+				"peering-status-connected"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FN65YBTCK5MXPGJ3DP9YQV",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You operate hub-vnet (10.1.0.0/16) in East US and partner-vnet (10.6.0.0/16) in East US for a partner integration. These two virtual networks are joined at the same time by two separate paths: a gateway-to-gateway VPN connection between their VPN gateways (IPsec, customer terminated), and a virtual network peering that is Connected on both sides. The application sessions between the two environments are travelling across the Azure network rather than through the IPsec tunnel, and the compliance team requires every session between these virtual networks to be carried inside the customer's own encrypted tunnel. The exhibit lists the current state for this pair. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Current value"
+					],
+					"rows": [
+						[
+							"hub-vnet",
+							"10.1.0.0/16, East US, holds VPN gateway gw-hub-01"
+						],
+						[
+							"partner-vnet",
+							"10.6.0.0/16, East US, holds VPN gateway gw-partner-01"
+						],
+						[
+							"Peering name on hub-vnet",
+							"hub-to-partner"
+						],
+						[
+							"Peering name on partner-vnet",
+							"partner-to-hub"
+						],
+						[
+							"Peering status on each side",
+							"Connected"
+						],
+						[
+							"Allow traffic to remote virtual network (each side)",
+							"Enabled"
+						],
+						[
+							"Allow the peered virtual network to receive forwarded traffic (each side)",
+							"Disabled"
+						],
+						[
+							"Allow gateway or route server in the peered virtual network to forward traffic (each side)",
+							"Disabled"
+						],
+						[
+							"Gateway-to-gateway VPN connection",
+							"gw-hub-01 ↔ gw-partner-01, IPsec, Connected"
+						],
+						[
+							"Bytes moved over the peering, last 30 days",
+							"812 GB inbound / 806 GB outbound"
+						],
+						[
+							"Bytes moved over the VPN tunnel, last 30 days",
+							"0 B inbound / 0 B outbound"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Enable gateway transit on the hub-vnet side of the virtual network peering so that the partner virtual network reaches the VPN gateway through the peering rather than the gateway-to-gateway VPN connection"
+					},
+					{
+						"id": "b",
+						"text": "Enable the setting that lets the peered virtual network receive forwarded traffic from hub-vnet on both peerings so that traffic between the virtual networks is permitted to cross the peering"
+					},
+					{
+						"id": "c",
+						"text": "Delete the virtual network peering on hub-vnet so that traffic between the virtual networks uses the gateway-to-gateway VPN connection"
+					},
+					{
+						"id": "d",
+						"text": "Enable the option that lets the peered virtual network use the remote gateway on both peerings so that each of the two virtual networks reaches the VPN gateway in the other one"
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "When the same two virtual networks are linked both by a virtual network peering and by a gateway-based connection, Azure always carries the traffic between them over the peering, which is why the counters show all of the session volume on the peering and none on the IPsec tunnel. The peering therefore has to go for the tunnel path to become the path in use. Removing the peering from hub-vnet also removes the matching peering on partner-vnet, and the gateway-to-gateway VPN connection remains as the only link, so sessions between the two networks travel inside the customer's encrypted tunnel.",
+				"perChoice": {
+					"a": "Gateway transit lets a virtual network that has no gateway of its own send traffic to a VPN or ExpressRoute gateway that sits in the peered network. It does not decide which path is selected for traffic exchanged between the two peered networks themselves, so the direct peering link keeps carrying the sessions and the tunnel stays idle.",
+					"b": "The forwarded-traffic setting only permits traffic that an appliance in another network forwards to cross the peering. It creates no routes and no appliances, and it does not change which of the two existing paths carries the traffic between these two networks, so the sessions still bypass the IPsec tunnel.",
+					"d": "The remote gateway option lets a virtual network reach a gateway or route server located in the peered network, and only one side of a peering pair may rely on it. It has no effect on how traffic exchanged between the two networks is routed, so it will not move the sessions into the customer's tunnel."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-peering"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview"
+				}
+			],
+			"subtopics": [
+				"peering-vs-gateway",
+				"peering-deletion",
+				"gateway-transit"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FNNTSQP2XVCX0R1K7N4JP3",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have peered corp-vnet with partner-vnet across two Microsoft Entra tenants, and the link reports Connected on both sides. You are writing the design note for the peering that the corp-vnet team owns, and the security team has approved four traffic behaviors that the link must support. Which setting on the corp-vnet side of the peering covers each behavior?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Object",
+						"Detail"
+					],
+					"rows": [
+						[
+							"corp-vnet",
+							"Address space 10.4.0.0/16, subscription contoso-platform, tenant contoso.onmicrosoft.com. Hosts VPN gateway gw-corp-01, route server rs-corp-01, and network appliance fw-vm in inspection-subnet, which relays traffic that is not addressed to corp-vnet onward to other networks."
+						],
+						[
+							"partner-vnet",
+							"Address space 10.9.0.0/16, subscription fabrikam-prod, tenant fabrikam.onmicrosoft.com. No gateway and no route server. Hosts network appliance relay-vm in relay-subnet, which relays traffic that is not addressed to partner-vnet onward to other networks."
+						],
+						[
+							"Peering",
+							"corp-vnet to partner-vnet, both sides report Connected. It was configured from the corp-vnet blade, where corp-vnet is the local network, partner-vnet is the peer, and the blade shows the settings for both sides of the link."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Allow the peered virtual network to access 'corp-vnet'"
+					},
+					{
+						"id": "i2",
+						"text": "Allow 'corp-vnet' to access the peered virtual network"
+					},
+					{
+						"id": "i3",
+						"text": "Allow 'corp-vnet' to receive forwarded traffic from the peered virtual network"
+					},
+					{
+						"id": "i4",
+						"text": "Enable the peered virtual network to use 'corp-vnet's' remote gateway or route server"
+					},
+					{
+						"id": "i5",
+						"text": "Allow gateway or route server in 'corp-vnet' to forward traffic to the peered virtual network"
+					},
+					{
+						"id": "i6",
+						"text": "Enable 'corp-vnet' to use the peered virtual networks' remote gateway or route server"
+					},
+					{
+						"id": "i7",
+						"text": "Allow the peered virtual network to receive forwarded traffic from 'corp-vnet'"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Partner network hosts reach corp-vnet hosts, and corp-vnet network security group rules that use the VirtualNetwork service tag also cover the partner network"
+					},
+					{
+						"id": "s2",
+						"label": "Corp-vnet hosts reach partner network hosts"
+					},
+					{
+						"id": "s3",
+						"label": "Traffic relayed by the partner network's appliance continues onward to corp-vnet"
+					},
+					{
+						"id": "s4",
+						"label": "Traffic relayed by corp-vnet's appliance continues onward to the partner network"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i7"
+			},
+			"explanation": {
+				"correct": "Each approved behavior is covered by exactly one setting on the corp-vnet side of the peering. Partner hosts reaching corp-vnet, together with the VirtualNetwork service tag in corp-vnet network security group rules covering the peer, is covered by \"Allow the peered virtual network to access 'corp-vnet'\". The reverse direction is covered by \"Allow 'corp-vnet' to access the peered virtual network\". Traffic that relay-vm relays onward inside partner-vnet continuing into corp-vnet is covered by \"Allow 'corp-vnet' to receive forwarded traffic from the peered virtual network\". Traffic that fw-vm relays onward inside corp-vnet continuing into the partner network is covered by \"Allow the peered virtual network to receive forwarded traffic from 'corp-vnet'\". The three remaining settings all concern a gateway or route server located in one of the two networks and match none of the four behaviors.",
+				"perChoice": {
+					"i1": "This is the setting that lets hosts in the peer reach hosts in corp-vnet. It is selected by default, and while it is selected the VirtualNetwork service tag in network security group rules also covers the peered network.",
+					"i2": "This setting covers the opposite direction, letting hosts in corp-vnet reach hosts in the peer network. It is selected by default and carries the traffic that flows from corp-vnet out to the peer.",
+					"i3": "This setting lets corp-vnet receive traffic that is relayed onward inside the peer network, for example by relay-vm. It is not selected by default, and it only permits that traffic to pass; it creates neither user-defined routes nor appliances.",
+					"i7": "This setting lets the peer network receive traffic that is relayed onward inside corp-vnet, for example by fw-vm. It is not selected by default, and it only permits that traffic to pass; it creates neither user-defined routes nor appliances.",
+					"i4": "This is gateway transit: it lets hosts in the peer network use the gateway or route server that lives in corp-vnet for their own outbound path. None of the four behaviors needs that, and the option also depends on corp-vnet allowing its gateway to forward traffic toward the peer.",
+					"i5": "This setting governs what the gateway or route server inside corp-vnet may send toward the peer, so it covers traffic sent by gw-corp-01 or rs-corp-01 reaching the partner network. None of the four approved behaviors is about that direction, although it can be applied here because corp-vnet contains a gateway and a route server.",
+					"i6": "This would make corp-vnet use a gateway or route server that lives in the peer network, which none of the four behaviors requires. It cannot be applied in this environment either: partner-vnet holds neither a gateway nor a route server, and corp-vnet already owns gw-corp-01."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-peering"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview"
+				}
+			],
+			"subtopics": [
+				"peering-options",
+				"forwarded-traffic",
+				"access-directions"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FNX9CVF5Z1CT6E7123EKMR",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have the four environments listed in the exhibit. You need each of the four requirements below to be satisfied, and each one calls for a different approach. Drag each requirement onto the approach that delivers it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Environment",
+						"Region",
+						"Address range",
+						"Contents"
+					],
+					"rows": [
+						[
+							"edge-vnet",
+							"East US",
+							"10.1.0.0/16",
+							"public web front end and a partner file-transfer service"
+						],
+						[
+							"core-vnet",
+							"East US",
+							"10.2.0.0/16",
+							"application tier and database tier"
+						],
+						[
+							"eu-reporting-vnet",
+							"West Europe",
+							"10.3.0.0/16",
+							"regulatory reporting application"
+						],
+						[
+							"branch-vnet",
+							"East US",
+							"10.4.0.0/16 in each copy",
+							"branch office workloads; 600 copies are deployed"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Virtual network peering"
+					},
+					{
+						"id": "i2",
+						"text": "Global virtual network peering"
+					},
+					{
+						"id": "i3",
+						"text": "Subnet peering"
+					},
+					{
+						"id": "i4",
+						"text": "Azure Virtual Network Manager connectivity configuration"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "edge-vnet and core-vnet exchange all traffic across their complete address ranges"
+					},
+					{
+						"id": "s2",
+						"label": "core-vnet and eu-reporting-vnet exchange all traffic across their complete address ranges"
+					},
+					{
+						"id": "s3",
+						"label": "the link to the partner systems carries only the address range that holds the file-transfer service in edge-vnet"
+					},
+					{
+						"id": "s4",
+						"label": "600 spoke environments attach to core-vnet without administering every peer individually"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Each requirement matches a different Azure connectivity design. edge-vnet and core-vnet both sit in East US and must exchange their whole address ranges, which is the same-region virtual network peering. core-vnet and eu-reporting-vnet sit in different regions (East US and West Europe) and need their complete address ranges exchanged, which is the cross-region global virtual network peering. The partner link must carry only the address range that holds the file-transfer service in edge-vnet, which is the added flexibility of subnet peering, where a chosen list of subnets is peered instead of the entire address space. Finally, 600 spoke environments attached to core-vnet without administering each peer one by one calls for the Azure Virtual Network Manager connectivity configuration, which scales to a hub-and-spoke topology with up to 1,000 spokes on one hub.",
+				"perChoice": {
+					"i1": "Fits the requirement for edge-vnet and core-vnet: both environments are in East US, and virtual network peering joins two virtual networks within the same region, carrying their whole address spaces over the Microsoft private backbone.",
+					"i2": "Fits the requirement for core-vnet and eu-reporting-vnet: those environments are in East US and West Europe, and global virtual network peering connects virtual networks across regions while still carrying their complete address spaces. Remember that a basic load balancer front-end IP is not reachable across such a link, while a standard load balancer is.",
+					"i3": "Fits the requirement for the partner link: subnet peering is an option on top of virtual network peering that peers only a chosen list of subnets, so only the address range holding the file-transfer service in edge-vnet is carried. Plain virtual network peering would carry the entire address space of edge-vnet.",
+					"i4": "Fits the requirement for 600 spoke environments on core-vnet: Azure Virtual Network Manager connectivity configurations scale beyond a few hand-built links, supporting a hub-and-spoke topology with up to 1,000 spokes on one hub, so each peer does not have to be administered individually."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-peering"
+				}
+			],
+			"subtopics": [
+				"peering-types",
+				"subnet-peering",
+				"virtual-network-manager"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GWYAK01573SW2S1HCT4EXK",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are designing the links between the virtual networks of a new multi-site platform. Each of the five requirements below calls for a different networking approach. Drag each approach onto the requirement it satisfies.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Environment",
+						"Location",
+						"Details"
+					],
+					"rows": [
+						[
+							"orders-vnet",
+							"East US",
+							"10.1.0.0/16, ordering application"
+						],
+						[
+							"shared-vnet",
+							"East US",
+							"10.2.0.0/16, shared services"
+						],
+						[
+							"partner-vnet",
+							"West US",
+							"10.3.0.0/16, partner-facing workloads"
+						],
+						[
+							"Branch networks",
+							"40 regions",
+							"400 address spaces, one per office site"
+						],
+						[
+							"hub-vnet",
+							"East US",
+							"10.9.0.0/16, hosts the only device that reaches the on-premises network"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Virtual network peering"
+					},
+					{
+						"id": "i2",
+						"text": "Global virtual network peering"
+					},
+					{
+						"id": "i3",
+						"text": "Subnet peering"
+					},
+					{
+						"id": "i4",
+						"text": "Azure Virtual Network Manager connectivity configuration"
+					},
+					{
+						"id": "i5",
+						"text": "Gateway transit"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "orders-vnet and shared-vnet, both in East US, exchange private traffic"
+					},
+					{
+						"id": "s2",
+						"label": "orders-vnet in East US reaches partner-vnet in West US over private addresses"
+					},
+					{
+						"id": "s3",
+						"label": "A supplier organization reaches only two named address ranges inside shared-vnet and nothing else in it"
+					},
+					{
+						"id": "s4",
+						"label": "400 branch networks attach to one hub with the same settings applied centrally"
+					},
+					{
+						"id": "s5",
+						"label": "A spoke that owns no device of its own must reach on-premises resources through the hub"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "Each requirement is satisfied by exactly one approach: the same-region link between orders-vnet and shared-vnet uses the regional form of peering; the East US to West US link uses the cross-region form; limiting a supplier to two named address ranges uses the option that peers only a chosen list of subnets; 400 branch networks attached to one hub with centrally applied settings needs the scale that connectivity configurations provide; and a spoke with no on-premises device of its own reaching corporate resources through the hub needs the peering property that lets it borrow the hub's gateway.",
+				"perChoice": {
+					"i1": "This approach links two virtual networks that sit in one region. Traffic rides the provider's private backbone, so no public IP, extra gateway or additional encryption is involved, which is what the East US requirement asks for.",
+					"i2": "This is the cross-region form of the link: it connects virtual networks in different regions on the same private backbone, so it covers the requirement where a workload in East US calls a workload in West US over private addresses.",
+					"i3": "This option sits on top of normal peering and lets you name only the address ranges that are linked, whereas regular peering links the entire address space of both sides. That matches the requirement that a supplier sees two named ranges inside shared-vnet and nothing else.",
+					"i4": "This service scales the topology past what individual peerings can cover, supporting a hub with up to 1,000 spokes or a mesh of up to 3,000 virtual networks, and the connectivity is applied centrally instead of one peering per branch. It fits the requirement covering 400 branch networks with one centrally applied set of settings.",
+					"i5": "This is the peering property that lets a virtual network with no gateway of its own use the VPN or ExpressRoute gateway located in the peered hub for on-premises reachability. The hub side must allow its gateway to forward traffic, and the spoke is not allowed to own a gateway of its own, which matches the requirement about a spoke reaching on-premises resources through the hub."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-peering"
+				}
+			],
+			"subtopics": [
+				"peering-types",
+				"subnet-peering",
+				"gateway-transit"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GXBYR80GV2QPA1DQGCEGG8",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are reviewing five proposed virtual network peering designs for the new Contoso platform on Azure, and the exhibit lists the networks involved, their address spaces, their subnets, and the cloud each one runs in. Each design below needs one specific configuration or one specific answer, and no two designs call for the same one. Drag each configuration or answer onto the design that needs it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Virtual network",
+						"Address space",
+						"Region",
+						"Cloud",
+						"Microsoft Entra tenant",
+						"Notes"
+					],
+					"rows": [
+						[
+							"hub-vnet",
+							"10.1.0.0/16",
+							"East US",
+							"Public",
+							"contoso.onmicrosoft.com",
+							"Acts as the hub for the branch networks; subnets GatewaySubnet and AppSubnet; hosts the site-to-site VPN gateway to the corporate site"
+						],
+						[
+							"branch-vnet",
+							"10.2.0.0/16",
+							"East US",
+							"Public",
+							"contoso.onmicrosoft.com",
+							"One of 240 branch networks; subnet AppSubnet; no gateway of its own"
+						],
+						[
+							"prod-vnet",
+							"10.3.0.0/16",
+							"East US",
+							"Public",
+							"contoso.onmicrosoft.com",
+							"Production network; subnets AppSubnet and DataSubnet; linked to the partner network"
+						],
+						[
+							"partner-vnet",
+							"10.6.0.0/16",
+							"West Europe",
+							"Public",
+							"fabrikam.onmicrosoft.com",
+							"Partner network; subnet AppSubnet"
+						],
+						[
+							"edge-cn-vnet",
+							"10.9.0.0/16",
+							"China North 3",
+							"21Vianet",
+							"fabrikam.cn",
+							"Operated by an overseas service provider for a consumer offering"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Refuse the request: a peering never joins networks that run in separate clouds."
+					},
+					{
+						"id": "i2",
+						"text": "Configure summarizedGatewayPrefixes on the network that holds the gateway, so its VPN and ExpressRoute gateways advertise summarized prefixes instead of the address space of that network and of the networks peered to it."
+					},
+					{
+						"id": "i3",
+						"text": "Add a guest user from each tenant as an administrator in the opposite tenant."
+					},
+					{
+						"id": "i4",
+						"text": "Use subnet peering so that only the listed subnets are peered, instead of the whole address space."
+					},
+					{
+						"id": "i5",
+						"text": "Move the design to Azure Virtual Network Manager connectivity configurations."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "An overseas service provider operates its network in the 21Vianet environment and asks you to link it to the network in your East US subscription."
+					},
+					{
+						"id": "s2",
+						"label": "The routers at the corporate site must learn a single aggregated range rather than one range for hub-vnet and one for every branch network."
+					},
+					{
+						"id": "s3",
+						"label": "partner-vnet belongs to another organization, and both sides must be able to choose and manage the other side's networks in the portal."
+					},
+					{
+						"id": "s4",
+						"label": "The security team will not allow the entire production address space to be reachable from the partner network; only the application server network may be exposed."
+					},
+					{
+						"id": "s5",
+						"label": "Your team must attach several hundred branch networks to one shared hub, all keeping their own address space, and setting up every link by hand no longer scales."
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "Each design maps to one capability of virtual network peering and its surroundings. The request from the 21Vianet-operated network cannot be met, because a peering never joins networks that run in separate clouds. The corporate routers can be given a single aggregated range by populating summarizedGatewayPrefixes on the network that holds the gateway, so the VPN and ExpressRoute gateways there advertise summarized prefixes rather than the address space of the hub and of the networks peered to it. The cross-organization link to partner-vnet needs a user from each tenant added as a guest user in the opposite tenant, which is what allows both sides to choose and manage the other side's networks. Keeping the partner's reach limited to the application server network calls for subnet peering, since ordinary virtual network peering connects the whole address space and all subnets. Attaching several hundred branch networks to one shared hub calls for Azure Virtual Network Manager connectivity configurations, which scale beyond hand-built peerings.",
+				"perChoice": {
+					"i1": "Belongs with the 21Vianet request. A global peering can span public, China, and Government cloud regions, but a virtual network in the public cloud can never be connected by peering to a virtual network in the 21Vianet cloud, so this request has to be declined rather than configured.",
+					"i2": "Belongs with the corporate routers. By default the VPN and ExpressRoute gateways in a gateway network advertise the address space of the hub plus the address spaces of the networks peered to it; populating summarizedGatewayPrefixes on the network that holds the gateway makes them advertise summarized prefixes and suppress the covered spoke address spaces. The property only affects virtual networks that contain a gateway subnet, which hub-vnet has.",
+					"i3": "Belongs with the cross-organization link to partner-vnet. When the two subscriptions are associated with different Microsoft Entra tenants, a user from each tenant must be added as a guest user in the opposite tenant, which is what gives both sides the ability to select and manage the other side's virtual networks.",
+					"i4": "Belongs with the exposure limit on prod-vnet. Subnet peering is added on top of normal virtual network peering and lets you list the subnets that are actually peered, whereas regular peering connects the entire address space and all subnets of both networks.",
+					"i5": "Belongs with the several-hundred-branch design. Azure Virtual Network Manager connectivity configurations scale past manually created peerings, supporting a hub-and-spoke topology with up to 1,000 spoke virtual networks on one hub, or a mesh of up to 3,000 virtual networks."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-peering"
+				}
+			],
+			"subtopics": [
+				"peering-design-constraints",
+				"subnet-peering",
+				"cross-tenant-peering"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GXH2AJ926FCWRQ2PSJE7WR",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have five open tickets in the Contoso virtual network estate, listed in the exhibit, and each one describes a problem with a virtual network peering. You need every ticket closed by one specific change, and no two tickets are closed by the same change. Which change should you make for each ticket? Drag each ticket reference onto the change that resolves it.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "TC-01  ops-vnet (10.10.0.0/16) and lab-vnet (10.10.0.0/16) are in the same subscription and region.\n        The portal refuses to create the peering and reports that both networks claim the same space.\nTC-02  core-vnet and branch-vnet are joined, and the portal lists the peering as Initiated from core-vnet only.\n        No traffic passes between the two networks in either direction.\nTC-03  A client in branch-a cannot resolve the name api.branch-b.internal; reaching the same service by its\n        numeric address works. The two networks are joined and traffic is allowed in both directions.\nTC-04  The partner network partner-vnet is run by another organization that uses its own identity directory.\n        Neither side can list the other's resources, and there is no shared subscription list.\nTC-05  The infrastructure pipeline sends one PUT request for each virtual network, and the request body includes\n        a peerings block. After the pipeline runs the networks exist, but the peering between them was never created."
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Assign one of the two virtual networks a prefix that does not overlap the other"
+					},
+					{
+						"id": "i2",
+						"text": "Create the corresponding link from the second virtual network so both sides report Connected"
+					},
+					{
+						"id": "i3",
+						"text": "Add an Azure Private DNS zone and link it to both virtual networks"
+					},
+					{
+						"id": "i4",
+						"text": "Add a guest user from each Microsoft Entra tenant as an administrator on the other tenant's virtual network"
+					},
+					{
+						"id": "i5",
+						"text": "Create the peering with a separate request once the virtual network deployment has completed"
+					}
+				],
+				"slots": [
+					{
+						"id": "tc01",
+						"label": "Ticket TC-01"
+					},
+					{
+						"id": "tc02",
+						"label": "Ticket TC-02"
+					},
+					{
+						"id": "tc03",
+						"label": "Ticket TC-03"
+					},
+					{
+						"id": "tc04",
+						"label": "Ticket TC-04"
+					},
+					{
+						"id": "tc05",
+						"label": "Ticket TC-05"
+					}
+				]
+			},
+			"key": {
+				"tc01": "i1",
+				"tc02": "i2",
+				"tc03": "i3",
+				"tc04": "i4",
+				"tc05": "i5"
+			},
+			"explanation": {
+				"correct": "Each ticket is fixed by the change that matches its symptom. TC-01 is blocked because the two virtual networks claim the same space, and a peering can only join virtual networks whose address spaces do not overlap, so one of them needs a non-overlapping prefix. TC-02 shows a peering that exists on one side only (Initiated), so the second side must be created from the other virtual network before the link carries traffic. TC-03 is a name-resolution failure while IP connectivity works, because a peering never resolves names between virtual networks; an Azure Private DNS zone (or a custom DNS server) linked to both virtual networks supplies the names. TC-04 involves a partner whose resources live in a separate identity directory with no shared subscription list, so cross-tenant access is granted by adding a guest user from each tenant with administrator rights on the other tenant's virtual network. TC-05 uses a single PUT that carries a peerings block, but a peering cannot be part of the virtual network operation itself; it has to be created in its own request after the deployment finishes.",
+				"perChoice": {
+					"i1": "Ticket TC-01 — ops-vnet and lab-vnet both claim 10.10.0.0/16, and peering requires the two address spaces to be distinct, so one virtual network must be given a prefix that does not overlap the other.",
+					"i2": "Ticket TC-02 — a peering listed as Initiated exists on core-vnet only, so the corresponding entry must be created from branch-vnet as well; only then do both sides report Connected and traffic flows.",
+					"i3": "Ticket TC-03 — the service is reachable by address but its name never resolves, because names are not resolved across a peering; an Azure Private DNS zone linked to both virtual networks (or a custom DNS server) is what resolves it.",
+					"i4": "Ticket TC-04 — the partner runs its own identity directory with no shared subscription list, so each side must add a guest user from the other tenant with administrator rights on the partner's virtual network to create the peering.",
+					"i5": "Ticket TC-05 — the pipeline's single PUT cannot carry the peering, because peerings are not created inside a virtual network PUT; the peering must be sent in a separate request once the deployment has completed."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-peering"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview"
+				}
+			],
+			"subtopics": [
+				"peering-requirements",
+				"cross-tenant-peering",
+				"cross-vnet-name-resolution"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GXX8VR4FGK4HKKZ3WDWFP6",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are finalising the design of the Contoso peering estate shown in the exhibit. Six proposals are still on the table, and each one needs exactly one additional fact or one adjustment before it can be delivered as written. Drag each item onto the proposal it belongs to.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "app-vnet              10.10.0.0/16   East US       current Azure tooling   hosts the ordering application\npartner-vnet          10.10.0.0/16   West Europe   current Azure tooling   hosts the partner application\nhub-vnet              10.20.0.0/16   East US       current Azure tooling   hosts the site-to-site appliance gw-hub-01\nspoke-vnet            10.40.0.0/16   East US       current Azure tooling   application servers that call services in hub-vnet\nlegacy-lab-vnet       10.30.0.0/16   East US       older Azure tooling     hosts the site-to-site appliance gw-lab-01\n\nPartner B estate      operated on 21Vianet in China\nNetwork template      applied in one PUT to the virtual network resource\nInfrastructure pipeline   written in Terraform; only the built-in Azure resource manager tooling is available to it today\nrt-hub                attached to hub-vnet subnets; its disablePeeringRoute property is currently set to None"
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Networks that are joined this way must be given separate, non-overlapping address ranges."
+					},
+					{
+						"id": "i2",
+						"text": "A cross-network connection cannot be created as part of a single update operation on a virtual network."
+					},
+					{
+						"id": "i3",
+						"text": "This kind of connection cannot be formed between separate cloud offerings."
+					},
+					{
+						"id": "i4",
+						"text": "Applying this behavior from code requires the AzAPI provider, because the standard AzureRM provider has no support for it."
+					},
+					{
+						"id": "i5",
+						"text": "In a mixed pair, transit for the on-premises routes must be served from the network built with the current Azure tooling rather than the older style."
+					},
+					{
+						"id": "i6",
+						"text": "Traffic between two virtual networks in the same location behaves like traffic inside a single network."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Connect app-vnet to partner-vnet so the workload in each can reach the other."
+					},
+					{
+						"id": "s2",
+						"label": "Have the network template bring up the peer links at the same time as the virtual network resource itself."
+					},
+					{
+						"id": "s3",
+						"label": "Extend the hub's reach to the Partner B estate."
+					},
+					{
+						"id": "s4",
+						"label": "Make the route table on hub-vnet suppress the automatic entries the platform adds for peer networks, using the team's pipeline."
+					},
+					{
+						"id": "s5",
+						"label": "Give spoke-vnet a path to the corporate network through legacy-lab-vnet."
+					},
+					{
+						"id": "s6",
+						"label": "Confirm that adding the extra network hop for the calls from spoke-vnet to hub-vnet does not slow the application down."
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5",
+				"s6": "i6"
+			},
+			"explanation": {
+				"correct": "Each proposal maps to one rule. The app-vnet/partner-vnet proposal is blocked because both networks carry 10.10.0.0/16, and joined networks need non-overlapping address ranges. The network template proposal is blocked because the template applies a single PUT to the virtual network resource, and a cross-network connection cannot be created inside a single update operation on a virtual network. The Partner B estate proposal is blocked because that estate runs on 21Vianet, and a global peering cannot be formed between separate cloud offerings. The route table proposal needs the AzAPI provider, because the standard AzureRM provider has no support for that property. The legacy-lab-vnet proposal is blocked because, in a mixed pair, transit for the on-premises routes must be served from the network built with the current tooling, not the older style. The spoke-vnet to hub-vnet proposal is confirmed because both networks sit in East US, where traffic between two virtual networks in the same location behaves like traffic inside a single network.",
+				"perChoice": {
+					"i1": "Belongs with the app-vnet/partner-vnet proposal: the exhibit gives both networks the address space 10.10.0.0/16, and networks that are joined this way must be given separate, non-overlapping address ranges, so one of the two address spaces has to change first.",
+					"i2": "Belongs with the network template proposal: the template applies a single PUT to the virtual network resource, and a cross-network connection cannot be created as part of a single update operation on a virtual network, so the peer links must be created separately from the virtual network.",
+					"i3": "Belongs with the Partner B estate proposal: 21Vianet is a separate cloud offering from Contoso's, and a global peering cannot be formed between separate cloud offerings, so that estate needs a gateway-based connection instead.",
+					"i4": "Belongs with the route table proposal: the behaviour the team wants is the disablePeeringRoute property, which the standard AzureRM provider cannot set in the Terraform pipeline, so applying it from code requires the AzAPI provider.",
+					"i5": "Belongs with the legacy-lab-vnet proposal: legacy-lab-vnet was built with the older tooling, and in a mixed pair transit for the on-premises routes must be served from the network built with the current tooling, so the appliance in legacy-lab-vnet cannot provide that path as drawn.",
+					"i6": "Belongs with the spoke-vnet to hub-vnet proposal: both networks are in East US, and traffic between two virtual networks in the same location behaves like traffic inside a single network, so the extra hop adds no delay and the proposal stands as written."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-peering"
+				}
+			],
+			"subtopics": [
+				"vnet-peering-constraints",
+				"peering-automation",
+				"peering-topology-rules"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GY8788G8HBBCBTX3B8SQ46",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You operate the Contoso storefront in app-vnet (10.1.0.0/16) in East US, where the web servers sit in the range 10.1.1.0/24. The shared orders service runs in services-vnet (10.2.0.0/16) in the same region behind an internal load balancer at 10.2.0.20, and the application team publishes it to callers as orders.contoso.internal. app-vnet and services-vnet are joined by a virtual network peering that reports Connected on each side. The storefront application opens TCP 443 sessions straight to 10.2.0.20 without any trouble, so the traffic path across the link is healthy. Naming is the only gap: every lookup the web servers send for orders.contoso.internal comes back as 'name does not exist', and the orders team sees the same failure when it looks up the storefront server names from inside services-vnet. You need the shared service name to resolve for the storefront application and the storefront server names to resolve for the orders team. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"app-vnet",
+							"10.1.0.0/16, East US; web servers in 10.1.1.0/24"
+						],
+						[
+							"services-vnet",
+							"10.2.0.0/16, East US; orders service behind internal load balancer 10.2.0.20"
+						],
+						[
+							"Published name of the orders service",
+							"orders.contoso.internal"
+						],
+						[
+							"Peering",
+							"app-vnet and services-vnet; state Connected on each side; link name app-to-services"
+						],
+						[
+							"Name resolution used by app-vnet",
+							"Azure DNS (default)"
+						],
+						[
+							"Name resolution used by services-vnet",
+							"Azure DNS (default)"
+						],
+						[
+							"Public zone hosted in Azure DNS",
+							"contoso.com (public-facing records only)"
+						],
+						[
+							"Connectivity test from a web server",
+							"TCP 443 to 10.2.0.20 succeeds"
+						],
+						[
+							"Lookup test from a web server",
+							"orders.contoso.internal returns 'name does not exist'"
+						],
+						[
+							"Lookup test from the orders service",
+							"storefront server names return 'name does not exist'"
+						]
+					]
+				},
+				"statement": "The change that gives both sides working name resolution across the peering is to {{dnsChange}}.",
+				"slots": [
+					{
+						"id": "dnsChange",
+						"options": [
+							{
+								"id": "a",
+								"text": "create an Azure Private DNS zone for contoso.internal and link it to app-vnet and to services-vnet"
+							},
+							{
+								"id": "b",
+								"text": "create an Azure Private DNS zone for contoso.internal and link it to only services-vnet"
+							},
+							{
+								"id": "c",
+								"text": "create a public DNS A record for orders.contoso.internal in the contoso.com zone hosted in Azure DNS"
+							},
+							{
+								"id": "d",
+								"text": "change the traffic settings on the peering so that app-vnet and services-vnet carry traffic in both directions"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"dnsChange": "a"
+			},
+			"explanation": {
+				"correct": "A peering carries traffic only; it never resolves host names across the linked networks, and default Azure name resolution cannot look up names in a peered network. The supported way to resolve names across a peering is Azure Private DNS or a custom DNS server. Creating a private zone for contoso.internal, publishing a record that points at the orders service address 10.2.0.20, and linking the zone to app-vnet and to services-vnet satisfies both requirements: a private zone is only consulted by the networks that are linked to it, so the storefront web servers resolve orders.contoso.internal and the orders team resolves the storefront server names.",
+				"perChoice": {
+					"dnsChange:b": "Linking the private zone only to services-vnet leaves the storefront web servers outside the zone, so their lookup for orders.contoso.internal still fails. A private zone must be linked to every network whose workloads have to resolve the names published in it.",
+					"dnsChange:c": "A public zone hosted in Azure DNS publishes the internal name and its private address to the internet and still leaves the reverse direction unresolved, because the storefront server names are not public records. Names across a peering are served by Azure Private DNS or a custom DNS server.",
+					"dnsChange:d": "The traffic settings on the peering only govern whether the link carries traffic, and that part already works: the web servers reach 10.2.0.20 over TCP 443. A peering never resolves names, so no traffic setting can repair the failed lookups."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-peering"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview"
+				}
+			],
+			"subtopics": [
+				"vnet-peering",
+				"private-dns",
+				"name-resolution"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GYESH49X2DP0HQCXNJSNZ1",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You support two environments that run in the same subscription and the same region: the production application runs in app-vnet and the release candidate runs in test-vnet. A colleague followed the documented path — Virtual networks, app-vnet, Peerings, + Add — picked test-vnet from the subscription list, typed app-vnet-to-test-vnet as the peering link name, and clicked Add. The blade refused the combination, so no peering exists on either network and the release manager needs the candidate environment to reach the production service over a virtual network peering. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"app-vnet",
+						"test-vnet"
+					],
+					"rows": [
+						[
+							"Subscription",
+							"contoso-prod",
+							"contoso-prod"
+						],
+						[
+							"Region",
+							"East US",
+							"East US"
+						],
+						[
+							"Address space",
+							"10.20.0.0/16",
+							"10.20.5.0/24"
+						],
+						[
+							"Subnet",
+							"app-subnet — 10.20.1.0/24",
+							"test-subnet — 10.20.5.0/24"
+						],
+						[
+							"Virtual network gateway",
+							"None",
+							"None"
+						],
+						[
+							"Outcome of the Add action",
+							"The blade rejected the configuration",
+							"No peering listed under Peerings"
+						]
+					]
+				},
+				"statement": "To let the two environments exchange traffic over the peering, you {{slot1}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "resize the address space of one of the networks"
+							},
+							{
+								"id": "b",
+								"text": "keep the address space of one of the networks and add a subnet peering link for the chosen subnets"
+							},
+							{
+								"id": "c",
+								"text": "keep the address space of one of the networks and enable gateway transit on the peering"
+							},
+							{
+								"id": "d",
+								"text": "keep the address space of one of the networks and connect them with a gateway-to-gateway VPN connection"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a"
+			},
+			"explanation": {
+				"correct": "The two networks share part of the same IP space: test-vnet's 10.20.5.0/24 sits inside app-vnet's 10.20.0.0/16. Azure only accepts a virtual network peering when the two networks use non-overlapping IP address spaces, so the blade refused the combination and no peering was created. Editing the address space of one of the networks removes the collision — for example, move test-vnet and its subnet to a range that sits outside 10.20.0.0/16, or shrink app-vnet's range so that it no longer covers 10.20.5.0/24 while app-subnet (10.20.1.0/24) stays inside it. A virtual network's address space can be edited by changing a prefix length, adding ranges or deleting ranges, and once the two plans no longer collide the peering can be created and then brought to Connected on both sides.",
+				"perChoice": {
+					"slot1:b": "Subnet peering is an extra option built on top of virtual network peering that lets you pick specific subnets to peer instead of the whole address space. It does not relax the rule that the two networks being peered must use non-overlapping IP address spaces, so the same conflict remains and the blade would refuse the combination again.",
+					"slot1:c": "Gateway transit is a routing option that lets one network use a gateway hosted in the other network. It has no bearing on the IP plan requirement that blocked the creation, and neither network hosts a gateway or route server, so the option could not be enabled here.",
+					"slot1:d": "A gateway-to-gateway VPN would carry traffic between the two networks over an IPsec tunnel instead of over an Azure virtual network peering, and it would need a gateway plus public IP in each network, which neither network has today. It therefore does not deliver the requested peering link."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-peering"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview"
+				}
+			],
+			"subtopics": [
+				"peerings",
+				"address-space",
+				"troubleshooting"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GYQRHQSZ7EKH2QGQX9TVNK",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You manage corp-vnet (10.1.0.0/16) in East US and have to link it to partner-vnet (10.2.0.0/16), which a partner organisation runs in West US. The two subscriptions belong to separate Microsoft Entra tenants. On the Add peering blade for corp-vnet, the Subscription list shows only subscriptions from your own tenant, and the partner team reports that creating their side of the peering returns an authorization error. The link has to carry traffic between both networks once it is in place. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Field on the Add peering blade",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Peering link name",
+							"corp-vnet-to-partner-vnet"
+						],
+						[
+							"Virtual network deployment model",
+							"Resource Manager"
+						],
+						[
+							"I know my resource ID",
+							"Unchecked"
+						],
+						[
+							"Subscription",
+							"Subscriptions from your own Microsoft Entra tenant only"
+						],
+						[
+							"Virtual network",
+							"No partner network listed"
+						]
+					]
+				},
+				"statement": "To establish this link, {{slot1}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "a guest user for each tenant must be added, with administrator rights in the opposite tenant's directory"
+							},
+							{
+								"id": "b",
+								"text": "the partner team must create the peering for their side only, and your side must stay in the Initiated state"
+							},
+							{
+								"id": "c",
+								"text": "the partner network must be added by entering its resource ID on the peering blade instead of choosing it from the subscription list"
+							},
+							{
+								"id": "d",
+								"text": "the partner network must be moved into a subscription that belongs to your own Microsoft Entra tenant"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a"
+			},
+			"explanation": {
+				"correct": "When the two subscriptions sit in different Microsoft Entra tenants, each side must be able to see and administer the other's virtual network before the peering can be created. The documented way to do that is to add a person from each tenant as a guest in the opposite tenant's directory and give that account administrator rights there. Only then can each team select the remote virtual network from the Subscription and Virtual network pickers and configure its own side of the peering, so that both entries reach Connected and traffic flows.",
+				"perChoice": {
+					"slot1:b": "A peering that is configured on one side only stays in the Initiated state and carries no traffic at all; the link only works when a matching peering exists on the remote virtual network as well.",
+					"slot1:c": "The resource ID field is the fallback for a remote virtual network you cannot read in your own tenant; it does not grant access across tenants. Permissions still have to be assigned in both directories before either side can create the peering, so supplying the ID alone leaves the authorization error in place.",
+					"slot1:d": "Resources cannot be relocated into a subscription that belongs to a different Microsoft Entra tenant, and the partner network is owned by the partner organisation in its own tenant. Changing subscription ownership would not create the cross-tenant connectivity that the link needs."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-peering"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview"
+				}
+			],
+			"subtopics": [
+				"cross-tenant-peering",
+				"entra-guest-access"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GZ5G0HDCVJGJNZMT6QMVH7",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You support the Contoso hub-and-spoke network in Azure: hub-vnet contains the only VPN gateway, gw-hub-01, which terminates the Site-to-Site tunnel to the corporate datacenter, and three spoke virtual networks send their on-premises-bound traffic through that gateway over their peering links. The corporate device at the datacenter can hold only two IPsec Phase 2 security associations, one tunnel for each prefix it is handed, and it fails to bring up tunnels for every spoke. The exhibit lists the address spaces, the peering arrangement and the prefixes gw-hub-01 advertises today. You need the corporate device to be handed a single prefix that covers the hub and all three spokes, so that it stays within its tunnel limit. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Hub virtual network",
+							"hub-vnet, 172.16.0.0/16, contains the gateway subnet GatewaySubnet (172.16.1.0/24) and the VPN gateway gw-hub-01"
+						],
+						[
+							"Spoke virtual networks",
+							"spoke-a-vnet 172.17.0.0/16, spoke-b-vnet 172.18.0.0/16, spoke-c-vnet 172.19.0.0/16 - none of them contains a gateway subnet"
+						],
+						[
+							"Peering arrangement",
+							"Each spoke is peered to hub-vnet, and the peering on each spoke uses the remote gateway in hub-vnet"
+						],
+						[
+							"Prefixes gw-hub-01 advertises to the corporate device",
+							"172.16.0.0/16, 172.17.0.0/16, 172.18.0.0/16, 172.19.0.0/16"
+						],
+						[
+							"Corporate device tunnel capacity",
+							"2 IPsec Phase 2 security associations, one tunnel per advertised prefix"
+						],
+						[
+							"Prefix reserved in the address plan for a summary",
+							"172.16.0.0/12"
+						]
+					]
+				},
+				"statement": "You should {{change}}.",
+				"slots": [
+					{
+						"id": "change",
+						"options": [
+							{
+								"id": "a",
+								"text": "set the summarizedGatewayPrefixes property on hub-vnet"
+							},
+							{
+								"id": "b",
+								"text": "set the summarizedGatewayPrefixes property on each spoke virtual network"
+							},
+							{
+								"id": "c",
+								"text": "set the summarizedGatewayPrefixes property on the VPN gateway resource gw-hub-01 in hub-vnet"
+							},
+							{
+								"id": "d",
+								"text": "add the spoke address spaces to the interesting-traffic list on the on-premises device"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"change": "a"
+			},
+			"explanation": {
+				"correct": "Advertised gateway prefixes are controlled by a property on the virtual network that hosts the gateway. Populating summarizedGatewayPrefixes on hub-vnet makes gw-hub-01 advertise the reserved summary prefix 172.16.0.0/12 instead of the hub address space plus each spoke address space, and the spoke prefixes that fall inside that summary stop being advertised separately. The corporate device is then handed one prefix, so a single IPsec Phase 2 security association covers the hub and all spokes and the tunnel limit is met, while the spokes keep using the same Site-to-Site tunnel through gateway transit.",
+				"perChoice": {
+					"change:b": "The property only affects virtual networks that contain a gateway subnet, and the prefixes in question are the ones gw-hub-01 advertises. The spoke virtual networks have no gateway subnet, so populating the property on them does not change what the hub gateway sends to the corporate device.",
+					"change:c": "summarizedGatewayPrefixes is a property of a virtual network, not of the VPN gateway resource. It has to be populated on the virtual network that contains the gateway, which is hub-vnet.",
+					"change:d": "The interesting-traffic list on the corporate device only decides which traffic the device treats as relevant; it does not change the prefixes the gateway sends. The number of advertised prefixes is reduced with summarizedGatewayPrefixes on hub-vnet, and listing the spoke prefixes on the device would raise the tunnel demand instead of lowering it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-peering"
+				}
+			],
+			"subtopics": [
+				"gateway-transit",
+				"advertised-gateway-prefixes"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GZG3PESEJETN9AKY5BPHR6",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You support a pair of environments that run in the same subscription and the same region: sales-vnet carries the ordering application and support-vnet carries the tooling that support staff use. Both networks were built from the same template, so today they claim the identical address range, and the platform team has been asked to link them so support staff can reach the sales service directly. The support team will add its side of the link only after the platform team has finished its own setup. When the platform engineer tries to create the link, the portal refuses it and no peering entry appears on either network. You need the sales and support networks to exchange traffic over a virtual network peering. Which change should you make on the networks, and what does the link report while only the platform team's side exists?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"sales-vnet",
+						"support-vnet"
+					],
+					"rows": [
+						[
+							"Resource group",
+							"rg-sales",
+							"rg-support"
+						],
+						[
+							"Region",
+							"East US",
+							"East US"
+						],
+						[
+							"Address space",
+							"10.5.0.0/16",
+							"10.5.0.0/16"
+						],
+						[
+							"Link attempt",
+							"Refused, no entry created",
+							"No entry created"
+						],
+						[
+							"Peering status",
+							"Not present",
+							"Not present"
+						]
+					]
+				},
+				"statement": "To get the link working, you need {{fix}}, and in the meantime the peering {{status}}.",
+				"slots": [
+					{
+						"id": "fix",
+						"options": [
+							{
+								"id": "a",
+								"text": "to modify the address prefix on one network so that the two address spaces no longer overlap"
+							},
+							{
+								"id": "b",
+								"text": "to add a second address prefix on one network so that the address space covers both ranges"
+							},
+							{
+								"id": "c",
+								"text": "to enable gateway transit on one network so that the traffic is carried by the gateway"
+							},
+							{
+								"id": "d",
+								"text": "to move one network to a different resource group so that the address ranges no longer clash"
+							}
+						]
+					},
+					{
+						"id": "status",
+						"options": [
+							{
+								"id": "a",
+								"text": "reports Initiated and carries no traffic"
+							},
+							{
+								"id": "b",
+								"text": "reports Connected and carries traffic in one direction"
+							},
+							{
+								"id": "c",
+								"text": "reports Disconnected and carries no traffic"
+							},
+							{
+								"id": "d",
+								"text": "reports Connected and carries traffic in both directions"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"fix": "a",
+				"status": "a"
+			},
+			"explanation": {
+				"correct": "Virtual networks can only be peered when their address ranges do not collide — the documentation states that the virtual networks you peer must have nonoverlapping IP address spaces. Here both networks claim 10.5.0.0/16, so the peering is refused and no entry is created on either side. The fix is to edit the address prefix of one network (the address space of a virtual network can be resized by editing a prefix such as 10.1.0.0/16, adding or deleting ranges) so that the two networks hold distinct ranges, and then create the peering again. A peering must be configured on each of the two virtual networks: when the first side is created its status is Initiated, and only when the second side is created does the status become Connected for both. A peering that exists on one side only carries no traffic, so until the support team adds its own side the link reports Initiated and passes nothing.",
+				"perChoice": {
+					"fix:b": "Adding a further address prefix leaves 10.5.0.0/16 claimed by both networks, so the two address ranges still collide and the peering is still refused.",
+					"fix:c": "Gateway transit only decides where traffic is sent once a peering exists and a gateway is present; it does not remove the requirement that the two networks hold nonoverlapping address ranges, so the peering still cannot be created.",
+					"fix:d": "The resource group a virtual network lives in has no bearing on its address range, so relocating one network does not resolve the duplicate range and the peering remains refused.",
+					"status:b": "A peering reaches Connected only after it has been configured on both virtual networks, and a one-sided peering never passes traffic one way only.",
+					"status:c": "Disconnected is not the state shown by a peering that exists on one side only; such a peering is reported as Initiated.",
+					"status:d": "The status does not become Connected before the second side of the link exists, and a peering configured on one side only carries no traffic in either direction."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-peering"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview"
+				}
+			],
+			"subtopics": [
+				"peering-address-space",
+				"peering-status"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6H0K76NMV3V6JX31Y0ZBEVY",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You support the Contoso platform in East US. hub-vnet (10.1.0.0/16) holds rs-hub-01, an Azure Route Server, and fwa-hub-01, a software-defined WAN appliance that has a BGP session with that route server. spoke-vnet (10.2.0.0/16) holds the application servers and has neither a gateway nor a route server of its own, and it is peered with hub-vnet. The exhibit lists the current state of the estate and of one application server. The application servers open sessions to the hub virtual machines without trouble, but every session to the corporate network times out. You need the corporate prefix to reach the application servers over the appliance in the hub, and the change must stay inside the two peerings. Which change do you make on each side of the link?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Item                                          Value\n--------------------------------------------  ---------------------------------------------------\nhub-vnet                                      10.1.0.0/16, East US, resource group rg-platform-hub\nContents of hub-vnet                          rs-hub-01 (Azure Route Server, ASN 65515) in RouteServerSubnet; fwa-hub-01 (software-defined WAN appliance) in 10.1.1.0/24\nBGP session between fwa-hub-01 and rs-hub-01   Established; rs-hub-01 holds 192.168.0.0/16 from that session\nspoke-vnet                                    10.2.0.0/16, East US, resource group rg-platform-app; no gateway and no route server\nPeering between hub-vnet and spoke-vnet        Created with the default settings only; status Connected on both sides\nEffective routes on app-server-01             10.1.0.0/16 next hop type virtual network peering; 0.0.0.0/0 next hop type Internet; no entry for 192.168.0.0/16\nSessions from app-server-01 to 192.168.0.10    SYN retransmissions only, no reply\nNetwork security groups                       Default rules on both sides; outbound traffic allowed in both directions"
+				},
+				"statement": "On the spoke-vnet peering you select {{a}}, and on the hub-vnet peering you select {{b}}.",
+				"slots": [
+					{
+						"id": "a",
+						"options": [
+							{
+								"id": "a1",
+								"text": "Enable 'spoke-vnet' to use the peered virtual networks' remote gateway or route server"
+							},
+							{
+								"id": "a2",
+								"text": "Allow gateway or route server in the peered virtual network to forward traffic to 'spoke-vnet'"
+							},
+							{
+								"id": "a3",
+								"text": "Allow 'spoke-vnet' to receive forwarded traffic from the peered virtual network"
+							},
+							{
+								"id": "a4",
+								"text": "Allow 'spoke-vnet' to access the peered virtual network"
+							}
+						]
+					},
+					{
+						"id": "b",
+						"options": [
+							{
+								"id": "b1",
+								"text": "Allow gateway or route server in 'hub-vnet' to forward traffic to the peered virtual network"
+							},
+							{
+								"id": "b2",
+								"text": "Allow gateway or route server in the peered virtual network to forward traffic to 'hub-vnet'"
+							},
+							{
+								"id": "b3",
+								"text": "Enable 'hub-vnet' to use the peered virtual networks' remote gateway or route server"
+							},
+							{
+								"id": "b4",
+								"text": "Allow 'hub-vnet' to receive forwarded traffic from the peered virtual network"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"a": "a1",
+				"b": "b1"
+			},
+			"explanation": {
+				"correct": "Two settings have to change. On spoke-vnet you turn on the option that lets the virtual network rely on the gateway or route server that lives in the peer: that option is what makes spoke-vnet exchange routes with the remote route server, so rs-hub-01 in hub-vnet hands over the prefixes it learned from fwa-hub-01, including 192.168.0.0/16, and the application servers finally get a route to the corporate network. The hub side has to grant the matching permission, 'Allow gateway or route server in 'hub-vnet' to forward traffic to the peered virtual network', because the spoke-side option can only be switched on when the peer allows its own gateway or route server to forward traffic across the link, and this permission is what lets the route server in the hub send anything to the spoke.",
+				"perChoice": {
+					"a:a2": "This setting only lets the gateway or route server in the peer forward traffic into spoke-vnet. It does not open a route exchange between rs-hub-01 and the spoke, so the application servers still have no entry for 192.168.0.0/16; it is the hub-side permission that must be granted for this.",
+					"a:a3": "This setting covers traffic that an appliance in another network forwards across the link. It does not hand the prefixes that rs-hub-01 learned from fwa-hub-01 to the spoke, so the missing route stays missing.",
+					"a:a4": "This setting decides whether the peer may reach spoke-vnet at all and it is on by default. It says nothing about route exchange between the two sides, so it cannot put the corporate prefix into the route tables of the spoke's virtual machines.",
+					"b:b2": "This is the same capability seen from the opposite side of the link. On the hub side the permission has to be granted by the hub's own gateway or route server so that it may forward into the spoke; this choice reverses the direction and lets the peer forward into the hub.",
+					"b:b3": "This setting makes hub-vnet rely on a gateway or route server that belongs to its peer. The hub already hosts rs-hub-01 and the peer hosts neither a gateway nor a route server, so this direction is not what the link needs.",
+					"b:b4": "This setting deals with traffic forwarded by appliances across the link. It does not let the route server in the hub pass its learned prefixes to the spoke, which is the gap in this scenario."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-peering"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview"
+				}
+			],
+			"subtopics": [
+				"vnet-peering-settings",
+				"route-server-peering"
+			],
+			"reviewed": false
+		}
+	]
+}

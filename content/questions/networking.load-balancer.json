@@ -1,0 +1,1456 @@
+{
+	"skill": "networking.load-balancer",
+	"questions": [
+		{
+			"id": "q_01M6H0NA5G5BFFTEHFKAC0CYFZ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You operate a Standard internal Azure Load Balancer named lb-app that fronts three Linux web VMs in the app VNet. An operations engineer must get a direct SSH session (TCP 22) into exactly one chosen VM, while HTTPS traffic on port 443 must keep being spread across the whole pool exactly as it is today. Which object should you add to the load balancer?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Load balancer: lb-app   SKU: Standard   scope: internal\n\nFrontend IP configuration\n  Name: app-frontend\n  IP address: 10.20.0.10 (private)\n  Protocols: TCP, UDP\n\nBackend pool\n  Name: app-pool (NIC based)\n  Members: vm-web-01, vm-web-02, vm-web-03\n\nHealth probe\n  Name: app-health\n  Protocol: HTTP, Port: 443\n  Interval: 15 s, Unhealthy threshold: 2\n\nLoad balancing rule\n  Name: https-443\n  Protocol: TCP, Frontend port: 443 -> Backend port: 443\n  Target: app-pool\n\nPort 22: no object on the load balancer currently serves TCP 22"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add an inbound NAT rule that maps the frontend IP and port 22 to one backend instance in the app-pool."
+					},
+					{
+						"id": "b",
+						"text": "Add a load balancing rule that maps frontend port 22 to backend port 22 across every instance in the app-pool."
+					},
+					{
+						"id": "c",
+						"text": "Add an outbound rule that maps the frontend IP and port 22 to one backend instance in the app-pool."
+					},
+					{
+						"id": "d",
+						"text": "Add a second load balancing rule for frontend port 22 and lower the health probe's unhealthy threshold until only the desired instance stays in rotation."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "An inbound NAT rule forwards a frontend IP and port to one named VM or scale set instance rather than to the whole pool. That matches the requirement: the SSH session reaches the chosen web VM on TCP 22 while the existing https-443 rule keeps distributing traffic across every instance in app-pool.",
+				"perChoice": {
+					"b": "A load balancing rule spreads traffic across every healthy instance of the target pool, so SSH connections would land on whichever VM answers the probe rather than on the chosen one.",
+					"c": "An outbound rule applies source network address translation to the instances a backend pool identifies so they can reach the internet; it does not forward a frontend port to one chosen instance.",
+					"d": "A second load balancing rule still distributes port 22 traffic across all healthy instances, and lowering the unhealthy threshold only removes instances from rotation; it never pins traffic to one instance."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/components"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-overview"
+				}
+			],
+			"subtopics": [
+				"inbound-nat-rule",
+				"load-balancing-rule",
+				"internal-load-balancer"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6H0TFX5F7DDKWETQGVVWPKR",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have deployed a Standard Azure Load Balancer named lb-web in the app VNet to front two Linux web VMs that serve an internet-facing portal. Since the deployment, external browsers hang on the HTTPS connection, even though the load balancer health probes report both VMs as healthy. You need external clients to reach the portal on port 443 again, without changing the application or the VMs. Which configuration change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Object",
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Load balancer lb-web",
+							"SKU",
+							"Standard"
+						],
+						[
+							"Load balancer lb-web",
+							"Frontend IP configuration",
+							"20.61.132.19 — public address, Standard static public IP"
+						],
+						[
+							"Load balancing rule",
+							"Protocol and ports",
+							"TCP, frontend 443 to backend 443"
+						],
+						[
+							"Backend pool",
+							"Members",
+							"vm-app-01 (10.12.0.6), vm-app-02 (10.12.0.7)"
+						],
+						[
+							"Backend virtual machines",
+							"Public IP address",
+							"None"
+						],
+						[
+							"Health probe",
+							"Protocol, port, path",
+							"HTTP, port 80, path /health — both instances report Healthy"
+						],
+						[
+							"NSG nsg-app-subnet (attached to the app subnet)",
+							"Inbound rules",
+							"AllowVnetInBound (source VirtualNetwork), AllowAzureLoadBalancerInBound (source AzureLoadBalancer), DenyAllInBound (source Any)"
+						],
+						[
+							"NSG nsg-app-subnet (attached to the app subnet)",
+							"Outbound rules",
+							"AllowInternetOutBound (destination Any), DenyAllOutBound (destination Any)"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add a network security group rule that allows inbound traffic from the internet to the load balancer's public IP address on port 443"
+					},
+					{
+						"id": "b",
+						"text": "Add a network security group rule that allows inbound traffic from the virtual network to the load balancer's public IP address on port 443"
+					},
+					{
+						"id": "c",
+						"text": "Add a network security group rule that allows outbound traffic from the backend virtual machines to the internet on port 443"
+					},
+					{
+						"id": "d",
+						"text": "Remove the network security group from the subnet so that traffic to the load balancer's public IP address on port 443 is no longer filtered"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The Standard SKU behaves differently from the retired Basic SKU: Standard load balancers and their public IP addresses reject inbound connections unless a network security group explicitly permits them, and inbound is still blocked when no NSG exists on the subnet or NIC. In this deployment the only inbound permissions on nsg-app-subnet are for traffic sourced from the virtual network and from the AzureLoadBalancer service tag, followed by a deny-all for every other source, so connections from internet clients to 20.61.132.19:443 are dropped while the health probes (which originate from the platform, not from a client) keep succeeding. Adding an explicit allow rule for internet-sourced inbound traffic to the load balancer's public IP address on port 443 opens the path from external browsers to the backend pool without touching the application or the VMs.",
+				"perChoice": {
+					"b": "This rule only opens the path for sources inside the virtual network. The subnet NSG already permits that traffic through AllowVnetInBound, and external browsers originate outside the virtual network, so they would still be stopped by the deny-all inbound rule. It therefore does not address the reported symptom.",
+					"c": "An outbound permission governs connections leaving the virtual machines. The reported problem is with inbound connections from external browsers, so allowing egress on port 443 changes nothing for those clients.",
+					"d": "Removing the NSG does not open the frontend. With the Standard SKU, inbound is closed unless an NSG permits it, and when no NSG exists at all on the subnet or NIC the traffic is still blocked, so detaching the NSG leaves external clients unable to connect."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/skus"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/components"
+				}
+			],
+			"subtopics": [
+				"standard-sku-security",
+				"network-security-group-rules",
+				"public-load-balancer"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6H0W0EM5CHMEHGD6A0DTRN0",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Standard public Azure Load Balancer named lb-edge in the vnet-app VNet. It already terminates HTTPS for internet clients on port 443, and the four Windows VMs in its backend pool have no public IP addresses and sit on a subnet with no NAT gateway. Those VMs now also need to call a partner's SaaS API over the internet, and the partner's firewall only accepts requests that originate from the load balancer's public IP address 20.60.30.40. Which object should you add to lb-edge so the pool members can reach the partner API with that source address?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Component or setting",
+						"Value in the deployment"
+					],
+					"rows": [
+						[
+							"Load balancer",
+							"lb-edge, Standard SKU, Public"
+						],
+						[
+							"Frontend IP configuration",
+							"pip-app, 20.60.30.40, Standard static public IP, TCP"
+						],
+						[
+							"Backend pool",
+							"pool-app, IP-based backend type, 4 Windows VMs"
+						],
+						[
+							"Load balancing rule",
+							"rule-https, frontend 20.60.30.40:443 to pool-app:443, TCP"
+						],
+						[
+							"Health probe",
+							"probe-tcp, TCP port 80"
+						],
+						[
+							"NAT gateway on the vnet-app subnet",
+							"None deployed"
+						],
+						[
+							"Public IP addresses on the pool VMs",
+							"None"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add an inbound NAT rule to lb-edge that maps frontend port 22 to one VM in pool-app"
+					},
+					{
+						"id": "b",
+						"text": "Add a load balancing rule to lb-edge that maps frontend port 443 to all VMs in pool-app"
+					},
+					{
+						"id": "c",
+						"text": "Add an HA ports rule to lb-edge with protocol All and port 0 for pool-app"
+					},
+					{
+						"id": "d",
+						"text": "Add an outbound rule to lb-edge that covers all VMs in pool-app"
+					}
+				]
+			},
+			"key": {
+				"optionId": "d"
+			},
+			"explanation": {
+				"correct": "An outbound rule on a Standard load balancer applies outbound network address translation (NAT) to every instance the backend pool identifies, so traffic the pool members send to the internet leaves with the load balancer's public IP address as its source. Here lb-edge is already Standard with a Standard static public IP (20.60.30.40), the pool is IP-based, and no NAT gateway exists on the subnet, so adding an outbound rule for pool-app gives the VMs a source address the partner's firewall will accept while the existing port 443 rule continues to serve inbound clients. Outbound rules are a Standard SKU capability, which this deployment already satisfies.",
+				"perChoice": {
+					"a": "An inbound NAT rule pins one frontend port to one specific instance and forwards incoming connections to that instance; it does not rewrite the source address of traffic the pool members originate, so the partner API would still see the VMs' private addresses.",
+					"b": "Load balancing rules apply to inbound traffic only, mapping a frontend IP and port to a backend port so connections are spread across the pool; they never translate the source address of traffic leaving the pool.",
+					"c": "HA ports (protocol All, port 0) balance every TCP and UDP port of an internal Standard load balancer for network virtual appliances, and HA ports are not supported on a public load balancer; they also provide no address translation for internet-bound traffic."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/components"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/skus"
+				}
+			],
+			"subtopics": [
+				"outbound-rules",
+				"public-load-balancer",
+				"standard-sku"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6H0YT581AMS60R747C56NDJ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You operate an internal Standard load balancer named lb-nva in the hub virtual network vnet-hub. It fronts two firewall appliances that run as an active-active pair; each one terminates encrypted tunnels to the on-premises network and forwards traffic to the workload virtual machines. Both appliances must keep receiving every TCP and UDP flow that arrives at the shared front end, so either one can carry the load and take over from the other, and the on-premises monitoring appliance sends ICMP echo requests to that front end and expects replies. Which component should you configure on lb-nva?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Configuration item",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Load balancer",
+							"lb-nva, Standard SKU, internal"
+						],
+						[
+							"Frontend IP configuration",
+							"Private address 10.20.5.10"
+						],
+						[
+							"Backend pool",
+							"vm-fw-01, vm-fw-02"
+						],
+						[
+							"Rule covering appliance failover",
+							"Not configured"
+						],
+						[
+							"Check expected by the on-premises monitor",
+							"ICMP echo request to 10.20.5.10"
+						],
+						[
+							"On-premises path",
+							"ExpressRoute circuit peered with vnet-hub"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "An HA ports rule, with protocol set to All and port set to 0"
+					},
+					{
+						"id": "b",
+						"text": "A load balancing rule, with protocol set to TCP and port set to 0"
+					},
+					{
+						"id": "c",
+						"text": "An inbound NAT rule, with protocol set to All and port set to 0"
+					},
+					{
+						"id": "d",
+						"text": "An outbound rule, with protocol set to All and port set to 0"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "An HA ports rule is the component built for this scenario. It is a load balancing rule configured with protocol set to All and port set to 0, and a single rule then balances every TCP and UDP flow arriving on every port of an internal Standard load balancer, distributing traffic per flow across the pool members that the health probe reports as healthy. It also carries ICMP, which is what the on-premises monitoring appliance expects from 10.20.5.10, and it is the recommended pattern for network virtual appliances such as firewalls, VPNs and SD-WAN devices where defining a separate rule for each port is impractical. Because lb-nva is an internal Standard load balancer, this configuration is supported; HA ports is not available on public load balancers or on the retired Basic SKU.",
+				"perChoice": {
+					"b": "A load balancing rule with protocol set to TCP and port set to 0 does not meet the requirement. A standard rule maps one frontend protocol and port to a backend pool and balances only traffic for that protocol and port; it would not distribute the appliance traffic on every TCP and UDP port, and load balancing rules do not carry ICMP except on an internal Standard load balancer with HA ports enabled.",
+					"c": "An inbound NAT rule forwards a frontend address and port to one specific virtual machine or scale set instance rather than spreading traffic across the pool, so it cannot give both appliances an equal share of the incoming flows. Inbound NAT rules also support only TCP and UDP, so they cannot carry the ICMP echo traffic the on-premises monitor relies on.",
+					"d": "An outbound rule configures outbound network address translation so that pool instances can reach the internet or other endpoints. It governs egress from the pool members and has no effect on how inbound flows are distributed or on ICMP handling, so it does not satisfy the failover behaviour required for the appliance pair."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/components"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/skus"
+				}
+			],
+			"subtopics": [
+				"ha-ports",
+				"internal-load-balancer",
+				"network-virtual-appliance"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HGNPEXDYC9ZY6DN7HBBCZA",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have three Linux VMs in the virtual network vnet-checkout that run a new checkout service, and none of them carries a public IP address. Shoppers on the public internet must reach the service over HTTPS, and the VMs must also call a fraud-scoring endpoint on the internet that accepts traffic only when the source address is 20.62.14.8; those outbound calls leave the subscription through this load balancer. You are creating the load balancer with the Standard SKU (the Basic SKU is retired), and the subscription contains the following unused address resources. Which resource should you attach to the load balancer's front end?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Resource",
+						"SKU",
+						"Allocation",
+						"Address",
+						"Status"
+					],
+					"rows": [
+						[
+							"pip-checkout-prod",
+							"Standard",
+							"Static",
+							"20.62.14.8",
+							"Not attached to any load balancer"
+						],
+						[
+							"pip-checkout-dr",
+							"Standard",
+							"Dynamic",
+							"Assigned when the resource starts",
+							"Not attached to any load balancer"
+						],
+						[
+							"pip-legacy-checkout",
+							"Basic",
+							"Static",
+							"20.60.99.4",
+							"Not attached to any load balancer"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "pip-checkout-prod, assigned to the load balancer's frontend IP configuration"
+					},
+					{
+						"id": "b",
+						"text": "pip-checkout-prod, assigned to the backend pool of the load balancer"
+					},
+					{
+						"id": "c",
+						"text": "pip-legacy-checkout, assigned to the load balancer's frontend IP configuration"
+					},
+					{
+						"id": "d",
+						"text": "pip-checkout-dr, assigned to the load balancer's frontend IP configuration"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "pip-checkout-prod is a Standard SKU public IP with the fixed address 20.62.14.8, which is the address the fraud-scoring provider allows, so it can be used as the frontend IP configuration of the Standard load balancer. Because the address you give the frontend IP configuration determines that the load balancer is internet-facing, this gives shoppers a public entry point for HTTPS; a public load balancer also translates the backend VMs' private addresses to the front end's public address for outbound flows, so the fraud-scoring endpoint sees 20.62.14.8 as the source.",
+				"perChoice": {
+					"b": "A public IP address is attached to the load balancer's frontend IP configuration, never to a backend pool. Backend pool membership is defined by the network interfaces or IP addresses of the instances that receive the traffic, so putting the public IP in the pool would neither create the internet-facing entry point nor provide the required source address for the outbound calls.",
+					"c": "A Basic SKU public IP cannot be attached to a Standard SKU load balancer — a Standard load balancer requires a Standard public IP, and Basic is retired anyway. In addition, its address 20.60.99.4 is not the one the fraud-scoring provider allows, so the outbound calls would be rejected.",
+					"d": "A dynamically allocated address is picked when the resource starts, so it cannot be the fixed address 20.62.14.8 that the provider's firewall allows. The front end would therefore not present the required source address for the outbound calls."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/components"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/skus"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-overview"
+				}
+			],
+			"subtopics": [
+				"public-load-balancer",
+				"frontend-ip-configuration",
+				"public-ip-sku"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HGQRGYKQG3YYHB1ZHT2F1W",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You operate a Standard internal Azure Load Balancer named lb-api in the virtual network vnet-app. It fronts six Linux VMs (vm-api-01 through vm-api-06) that serve an internal order API. After the last release, every backend instance is reported as unhealthy and no client traffic reaches the pool, even though the application team confirms that all six VMs are running normally. The only endpoint the application exposes on each VM is its encrypted listener on port 443; the plaintext listener was removed and you are not allowed to change the VMs or the application. You need the probe to exercise that encrypted endpoint itself and validate the application's health path, so that an instance whose application path is broken is pulled out of rotation while healthy instances stay in. Which change should you make to the health probe on lb-api?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Component",
+						"Setting",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Load balancer",
+							"SKU",
+							"Standard"
+						],
+						[
+							"Frontend IP configuration",
+							"Name / address",
+							"fe-api / 10.20.0.12 (vnet-app)"
+						],
+						[
+							"Backend pool",
+							"Members",
+							"vm-api-01 … vm-api-06 (NIC based)"
+						],
+						[
+							"Health probe",
+							"Name",
+							"probe-app"
+						],
+						[
+							"Health probe",
+							"Protocol",
+							"Http"
+						],
+						[
+							"Health probe",
+							"Port",
+							"80"
+						],
+						[
+							"Health probe",
+							"Path",
+							"/healthz"
+						],
+						[
+							"Load balancing rule",
+							"Frontend / backend port",
+							"TCP 443 / TCP 443"
+						],
+						[
+							"Backend VMs",
+							"Listening ports",
+							"443 only (encrypted)"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Change the probe protocol to HTTPS and set the probe port to 443"
+					},
+					{
+						"id": "b",
+						"text": "Change the probe protocol to TCP and set the probe port to 443"
+					},
+					{
+						"id": "c",
+						"text": "Keep the probe protocol as HTTP and set the probe port to 443"
+					},
+					{
+						"id": "d",
+						"text": "Keep the probe protocol as HTTP on port 80 and increase the unhealthy threshold"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "On the Standard SKU a health probe can use TCP, HTTP or HTTPS. Only an HTTP or HTTPS probe actually validates the application's health path, and because the VMs expose just one listener that speaks TLS on port 443, the probe has to speak the same encrypted protocol to reach the /healthz path. Setting the probe protocol to HTTPS with port 443 therefore exercises the same endpoint clients use, restores the pool, and still removes an instance whose application path is broken. A TCP probe would only confirm that the port accepts a connection, and an HTTP probe would fail against a TLS-only listener, so neither meets the requirement.",
+				"perChoice": {
+					"b": "A TCP probe is only a connectivity check: it proves that something is listening on 443 but never exercises the application's health path on the encrypted endpoint, so it would report the instances as healthy without giving the required path validation.",
+					"c": "An HTTP probe sends a plaintext request and expects a plaintext response. The VMs expose only a TLS listener on port 443, so the request never completes successfully and every instance would continue to be reported as unhealthy.",
+					"d": "Port 80 no longer has a listener on any of the backend VMs, so a probe to that port cannot succeed no matter how the threshold is set. Raising the unhealthy threshold only changes how quickly an instance is removed from rotation; it does not make the probe reach the application."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/skus"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/components"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-overview"
+				}
+			],
+			"subtopics": [
+				"health-probes",
+				"probe-protocol",
+				"internal-load-balancer"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HGTJKS03JTF0M7FHXCVSFJ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You operate an internal Standard load balancer named lb-apps in the virtual network vnet-shared. Two applications share it: the customer portal must be reachable on the private address 10.10.4.20 over TCP 443 and be served only by the web tier, while the reporting service must be reachable on the private address 10.10.4.21 over TCP 1433 and be served only by the reporting tier, with requests spread across every VM in that tier. Both private frontend addresses and both backend pools are already in place, and the portal address already serves traffic correctly. Which configuration should you apply to lb-apps so the reporting address starts working?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Object on lb-apps",
+						"Current configuration"
+					],
+					"rows": [
+						[
+							"Load balancer",
+							"lb-apps — Standard SKU, internal, virtual network vnet-shared"
+						],
+						[
+							"fe-portal",
+							"Private address 10.10.4.20, subnet snet-frontend"
+						],
+						[
+							"fe-reporting",
+							"Private address 10.10.4.21, subnet snet-frontend"
+						],
+						[
+							"pool-web",
+							"vm-web-01 (10.10.1.11), vm-web-02 (10.10.1.12)"
+						],
+						[
+							"pool-reporting",
+							"vm-rep-01 (10.10.2.21), vm-rep-02 (10.10.2.22)"
+						],
+						[
+							"rule-portal",
+							"Frontend 10.10.4.20, protocol TCP, frontend port 443 → backend pool pool-web, backend port 443"
+						],
+						[
+							"Health probes",
+							"probe-web: TCP port 8080 on pool-web; probe-reporting: TCP port 8081 on pool-reporting"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add a load balancing rule that maps the reporting frontend IP configuration and its port to the reporting backend pool"
+					},
+					{
+						"id": "b",
+						"text": "Add an inbound NAT rule that forwards the reporting frontend IP configuration and its port to a single VM in the reporting backend pool"
+					},
+					{
+						"id": "c",
+						"text": "Add an HA ports rule that balances every port arriving at the frontend across both backend pools"
+					},
+					{
+						"id": "d",
+						"text": "Add a load balancing rule that maps the reporting frontend IP configuration and its port to the web backend pool"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A single Standard load balancer can expose several frontend IP configurations and hold several backend pools, and separate load balancing rules then send different frontend ports and protocols to different groups of instances. Each rule maps one frontend IP configuration plus a frontend port to a backend port and spreads the traffic across every member of the target pool. Because lb-apps already has the reporting private address (fe-reporting) and the reporting pool in place, the missing piece is a second rule that points the reporting address and its port at pool-reporting, so reporting requests are distributed over all reporting VMs and never reach the web tier.",
+				"perChoice": {
+					"b": "An inbound NAT rule forwards a frontend address and port to one specific VM or scale set instance instead of the whole pool, so all reporting traffic would land on a single VM rather than being spread across the reporting tier; a load balancing rule is the object that distributes traffic pool-wide.",
+					"c": "An HA ports rule uses protocol All and port 0 and balances every TCP and UDP flow arriving at the load balancer across the backend instances; it provides no way to keep traffic that arrives on the reporting address away from the web tier, and it is intended for appliances rather than ordinary application traffic.",
+					"d": "This rule points the reporting address at the web tier, so reporting clients would reach the portal application instead of the reporting service, which contradicts the requirement that each address is served only by its own tier."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/components"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/skus"
+				}
+			],
+			"subtopics": [
+				"internal-load-balancer",
+				"load-balancing-rules",
+				"backend-pools"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HGZKYKRTQBRPA9DWKFNVYN",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You operate a Standard internal load balancer named lb-api in the virtual network vnet-app. It fronts four Windows VMs (vm-api-01 through vm-api-04) that run the order API. The published contract is fixed: callers inside the network connect to the private address 10.20.5.15 on TCP 443, and a request must be able to be answered by any of the four VMs. The application on each VM accepts connections only on TCP 8443. Health probes report all four pool members as healthy, yet callers get an empty reply and the connection is closed as soon as it is accepted. You may not change the application or the callers. Which change should you make to lb-api?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Object",
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Load balancer",
+							"SKU",
+							"Standard"
+						],
+						[
+							"Frontend IP configuration",
+							"Private IP address",
+							"10.20.5.15"
+						],
+						[
+							"Load-balancing rule",
+							"Protocol",
+							"TCP"
+						],
+						[
+							"Load-balancing rule",
+							"Frontend port",
+							"443"
+						],
+						[
+							"Load-balancing rule",
+							"Backend port",
+							"443"
+						],
+						[
+							"Health probe",
+							"Protocol",
+							"TCP"
+						],
+						[
+							"Health probe",
+							"Port",
+							"8443"
+						],
+						[
+							"Health probe",
+							"Interval",
+							"15 seconds"
+						],
+						[
+							"Health probe",
+							"Unhealthy threshold",
+							"3"
+						],
+						[
+							"Backend pool",
+							"Type",
+							"NIC-based"
+						],
+						[
+							"Backend pool",
+							"Members",
+							"vm-api-01, vm-api-02, vm-api-03, vm-api-04"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set the backend port of the load-balancing rule to 8443 so that traffic is sent to the application port on the backend instances"
+					},
+					{
+						"id": "b",
+						"text": "Set the frontend port of the load-balancing rule to 8443 so that the client traffic is sent to the application port on the backend instances"
+					},
+					{
+						"id": "c",
+						"text": "Set the backend port of the load-balancing rule to 443 and change the health probe to TCP 443 so that the probe traffic and the client traffic use the same port"
+					},
+					{
+						"id": "d",
+						"text": "Add an inbound NAT rule that forwards the frontend address and TCP 443 to one backend instance on port 8443"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A load-balancing rule maps a frontend IP configuration and frontend port to the backend addresses and ports of every instance in the target pool, so the rule's backend port has to be the port the application actually uses. Here the instances look healthy because the probe already queries TCP 8443, but the rule's backend port is still 443, so each flow is delivered to a port where nothing is listening and the connection is dropped. Changing only the backend port to 8443 keeps the published client contract on TCP 443, leaves the working probe untouched, and still spreads the requests across all four pool members.",
+				"perChoice": {
+					"b": "This changes the published entry point instead of the destination mapping. Callers are hard-wired to TCP 443 on 10.20.5.15, so a rule that only accepts 8443 would leave the service unreachable, and it would break the fixed client contract that must not change.",
+					"c": "Pointing both the rule's backend port and the probe at TCP 443 makes the probe query a port where the application has no listener. Every instance would then be reported unhealthy and pulled out of rotation, so no client traffic would be served at all — the opposite of what you need.",
+					"d": "An inbound NAT rule forwards one frontend address and port to one specific member of the pool instead of spreading the request across the pool. Only the instance you picked would answer, which breaks the requirement that any of the four VMs can serve the request."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/components"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/skus"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-overview"
+				}
+			],
+			"subtopics": [
+				"load-balancing-rules",
+				"frontend-backend-port-mapping",
+				"health-probes"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HH6GTV9ZQ551QGW017W72J",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You operate a Standard public Azure Load Balancer named lb-edge in the virtual network vnet-edge. It publishes the customer ordering portal to the internet and fronts three Linux servers (vm-web-01, vm-web-02 and vm-web-03) that belong to the same back-end pool. Three improvements have to be in place before the peak-season release; they are listed as requirements A, B and C in the exhibit below. Drag the action that satisfies each requirement into the matching slot. The other actions are not needed for any of these three improvements.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Load balancer       : lb-edge, Standard SKU, public front end 20.60.14.5\nVirtual network     : vnet-edge\nFront-end IP config : availability setting - zone 3 only\nBack-end servers    : vm-web-01, vm-web-02, vm-web-03 (Linux) in the same back-end pool\n\nRequirement A : The public portal must stay reachable during an outage of any single availability zone in the region.\nRequirement B : While vm-web-02 is being worked on it must not receive new connections, even though the application on it is still responding, and it must rejoin traffic when the work is done.\nRequirement C : After last night's incident the team must be able to show which servers the load balancer had taken out of rotation and keep that record for review."
+				},
+				"items": [
+					{
+						"id": "zoneSpan",
+						"text": "Change the front-end IP configuration from a single-zone setting to one that spans every availability zone."
+					},
+					{
+						"id": "adminState",
+						"text": "Set Admin State to Down for the server that is under repair, then switch it back to Up."
+					},
+					{
+						"id": "healthLogs",
+						"text": "Turn on diagnostics and health event logs for the load balancer."
+					},
+					{
+						"id": "tcpReset",
+						"text": "Enable TCP Reset on Idle on the load-balancing rule."
+					},
+					{
+						"id": "singleZone",
+						"text": "Set the front-end IP configuration to a single availability zone."
+					},
+					{
+						"id": "cpuAlerts",
+						"text": "Create Azure Monitor metric alerts on the average CPU usage of each server."
+					}
+				],
+				"slots": [
+					{
+						"id": "reqA",
+						"label": "A. Continuity of the public address"
+					},
+					{
+						"id": "reqB",
+						"label": "B. Behaviour during a maintenance window"
+					},
+					{
+						"id": "reqC",
+						"label": "C. Evidence for the incident review"
+					}
+				]
+			},
+			"key": {
+				"reqA": "zoneSpan",
+				"reqB": "adminState",
+				"reqC": "healthLogs"
+			},
+			"explanation": {
+				"correct": "Requirement A is met by making the front-end IP configuration span every availability zone: on the Standard SKU a front-end IP configuration can be zone-redundant for inbound and outbound traffic, so the public address keeps accepting connections while one zone in the region is unavailable; a front end pinned to a single zone gives no such guarantee. Requirement B is met with the Admin State setting: setting the Admin State of the individual back-end server to Down overrides probe behaviour during maintenance, so that server stops receiving new connections even though the application on it is still answering, and switching it back to Up returns it to the rotation. Requirement C is met by turning on diagnostics and health event logs, which capture the health events and status changes of the back-end instances; the service processes traffic in real time and keeps no traffic data, so this monitoring data is the evidence source after an incident.",
+				"perChoice": {
+					"adminState": "Belongs in requirement B. Admin State overrides health probe behaviour for an individual back-end instance, so the server being worked on stops taking new connections although its probe still succeeds; returning it to Up restores its traffic.",
+					"cpuAlerts": "Fits no slot. Azure Monitor metric alerts notify on numeric measurements such as average CPU usage; they do not record which servers the load balancer pulled out of rotation, so they cannot satisfy requirement C.",
+					"healthLogs": "Belongs in requirement C. Health event logs plus Standard diagnostics record health events and status changes of the back-end instances, which is the evidence the team needs after an incident.",
+					"singleZone": "Fits no slot. Pinning the front-end IP configuration to a single availability zone is the opposite of what requirement A needs, because the public address would be unavailable while that zone is down.",
+					"tcpReset": "Fits no slot. TCP Reset on Idle is available on any Standard rule and closes connections that stay idle too long; none of the three requirements is about idle connection timeouts.",
+					"zoneSpan": "Belongs in requirement A. On Standard, front-end IP configurations can be zone-redundant for inbound and outbound traffic, so the public portal stays reachable during an availability zone outage."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/skus"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/components"
+				}
+			],
+			"subtopics": [
+				"zone-redundant-frontend",
+				"admin-state-maintenance",
+				"health-event-logs"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HHB7RFGGH4F2EJKWMWAG6D",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are building the load balancing layer for the hybrid platform described in the exhibit. The new load balancer will be deployed in vnet-hub, and four operational needs must be met before go-live. Each need is stated in a slot below. Drag the configuration change that satisfies each need into the matching slot; the remaining two changes are not needed for any of these needs.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Component",
+						"Detail"
+					],
+					"rows": [
+						[
+							"Virtual network",
+							"vnet-hub, address space 10.50.0.0/16; subnet snet-app 10.50.1.0/24; subnet snet-nva 10.50.2.0/24"
+						],
+						[
+							"On-premises network",
+							"10.200.0.0/24, connected to vnet-hub through ExpressRoute circuit ER-hub-1"
+						],
+						[
+							"Appliances",
+							"fw-01 and fw-02, active-active firewall appliances built and operated in-house; each keeps its own tunnel to the on-premises network"
+						],
+						[
+							"Application servers",
+							"vm-app-01 and vm-app-02 (Linux) running the line-of-business application; vm-app-01 is the only server approved for remote access"
+						],
+						[
+							"Monitoring",
+							"An appliance on the on-premises network sends ICMP echo requests to the address both appliances present"
+						],
+						[
+							"Load balancer",
+							"Not yet provisioned; planned in vnet-hub on the Standard SKU"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Enable HA ports on the load balancer"
+					},
+					{
+						"id": "i2",
+						"text": "Create an inbound NAT rule that forwards the front end to one named instance"
+					},
+					{
+						"id": "i3",
+						"text": "Create an internal load balancer whose front end uses a private IP address"
+					},
+					{
+						"id": "i4",
+						"text": "Set Admin State to disabled on the backend instance during patching"
+					},
+					{
+						"id": "i5",
+						"text": "Use the Gateway SKU for the load balancer"
+					},
+					{
+						"id": "i6",
+						"text": "Attach a Standard SKU public IP address to the front end"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Every TCP and UDP flow arriving at the address both appliances present must reach both appliances of the active-active pair regardless of the service involved, and ICMP echo requests sent by the on-premises monitoring appliance must be answered."
+					},
+					{
+						"id": "s2",
+						"label": "Remote access over TCP 22 must land on a single designated server at a fixed address, and sessions arriving at the fixed address must not be spread across the remaining servers."
+					},
+					{
+						"id": "s3",
+						"label": "Staff at the corporate data center must reach the line-of-business application over the existing ExpressRoute circuit at an address inside the hub virtual network, and the address must never become visible on the internet."
+					},
+					{
+						"id": "s4",
+						"label": "While an instance is under maintenance, it must stop receiving new connections even though its probe still succeeds."
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Each need maps to one change. The active-active appliance need is met by HA ports: on an internal Standard load balancer an HA ports rule (protocol All, port 0) balances every TCP and UDP flow on every port and also carries ICMP, which is what the echo requests from the on-premises monitoring appliance require. The remote administration need is met by an inbound NAT rule, which forwards one front-end address and port to a single named instance instead of spreading sessions over the pool. The corporate reachability need is met by making the load balancer internal with a front end on a private IP address, so the ExpressRoute-connected site reaches it over an address inside the virtual network that can never accept traffic directly from the internet. The maintenance need is met by the Admin State setting, which overrides probe behaviour for an individual backend instance so it can be held out of rotation even while its probe still succeeds. The Gateway SKU and a Standard public IP address fit none of these needs.",
+				"perChoice": {
+					"i1": "Belongs in the slot about the active-active appliance pair. On an internal Standard load balancer an HA ports rule (protocol All, port 0) balances all TCP and UDP flows on every port and also carries ICMP, which is what the on-premises monitoring appliance's echo requests need.",
+					"i2": "Belongs in the slot about remote access over TCP 22. An inbound NAT rule forwards one front-end address and port to one specific instance, so sessions arriving at that address are not spread across the rest of the pool.",
+					"i3": "Belongs in the slot about the corporate data center reaching the application. A front end configured with a private IP address makes the load balancer internal, which balances traffic arriving over the ExpressRoute circuit and can never accept traffic directly from the internet.",
+					"i4": "Belongs in the slot about the maintenance window. Admin State overrides the health probe result for an individual backend instance, so an instance whose probe still succeeds can be kept out of rotation while it is being patched.",
+					"i5": "Fits no slot. The Gateway SKU is meant for third-party network virtual appliances that must be chained with a general-purpose Standard load balancer; these firewalls are built and operated in-house and none of the needs describes such a chain.",
+					"i6": "Fits no slot. A public address on the front end would publish the service to the internet, while every need here stays on an address inside the hub virtual network or on the private corporate circuit."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/components"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/skus"
+				}
+			],
+			"subtopics": [
+				"ha-ports",
+				"inbound-nat-rules",
+				"internal-public-load-balancer"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HHGAQCYPQZG98ANSPEGR4J",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have been hired to build the load balancing layer for a new commerce platform in the virtual network vnet-hub. Two load balancers are being prepared there: lb-web, which must serve the storefront that shoppers outside the organization reach, and lb-partner, which must serve a reporting service used only by systems inside the organization and by the branch office. The exhibit lists what already exists in the subscription. Four needs must be satisfied before the platform goes live, and each need is stated in a slot below. Drag the configuration change that satisfies each need into the matching slot; the remaining four changes are not needed for any of these needs.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Resource",
+						"Details"
+					],
+					"rows": [
+						[
+							"lb-web",
+							"Planned Standard SKU in vnet-hub; no frontend IP configuration yet; backend pool: vm-web-01, vm-web-02, vm-web-03, vm-admin-01"
+						],
+						[
+							"lb-partner",
+							"Planned Standard SKU in vnet-hub; no frontend IP configuration yet; backend pool: vm-report-01, vm-report-02"
+						],
+						[
+							"pip-store",
+							"Standard SKU, static, 20.61.9.15; public address resource, currently unused"
+						],
+						[
+							"pip-legacy",
+							"Basic SKU, static, 20.61.9.16; public address resource kept from an earlier deployment"
+						],
+						[
+							"vnet-hub",
+							"Address space 10.30.0.0/16; the address 10.30.4.40 is still unassigned"
+						],
+						[
+							"Branch connectivity",
+							"An ExpressRoute circuit gives the branch office access to vnet-hub"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "it-attach-store",
+						"text": "Attach the public IP address pip-store to the lb-web frontend IP configuration"
+					},
+					{
+						"id": "it-attach-legacy",
+						"text": "Attach the public IP address pip-legacy to the lb-web frontend IP configuration"
+					},
+					{
+						"id": "it-private-frontend",
+						"text": "Set the lb-partner frontend IP configuration to the private address 10.30.4.40"
+					},
+					{
+						"id": "it-pool-rdp",
+						"text": "Add a load-balancing rule for TCP 3389 to the lb-web backend pool"
+					},
+					{
+						"id": "it-nat-rdp",
+						"text": "Add an inbound NAT rule for TCP 3389 to vm-admin-01"
+					},
+					{
+						"id": "it-db-endpoint",
+						"text": "Add the private endpoint of the orders database to the lb-web backend pool"
+					},
+					{
+						"id": "it-outbound",
+						"text": "Add an outbound rule for the lb-web backend pool"
+					},
+					{
+						"id": "it-haports",
+						"text": "Enable HA ports on the lb-web frontend"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1-shoppers",
+						"label": "Shoppers on the internet must reach the storefront over HTTPS"
+					},
+					{
+						"id": "s2-branch",
+						"label": "Branch office staff and other vnet-hub applications must reach the reporting service over TCP 1433"
+					},
+					{
+						"id": "s3-admin",
+						"label": "An administrator needs remote desktop access to one designated host only"
+					},
+					{
+						"id": "s4-egress",
+						"label": "Backend instances must reach the internet using the load balancer's own address"
+					}
+				]
+			},
+			"key": {
+				"s1-shoppers": "it-attach-store",
+				"s2-branch": "it-private-frontend",
+				"s3-admin": "it-nat-rdp",
+				"s4-egress": "it-outbound"
+			},
+			"explanation": {
+				"correct": "Each need is satisfied by one configuration change. The storefront must be reachable from outside the organization, so lb-web's frontend is given a public address; pip-store is the unused address resource whose SKU matches the load balancer, and a frontend holding a public address is what makes the load balancer internet-facing. The branch office and in-network systems consume the reporting service, so lb-partner's frontend is given the unassigned private address from the VNet range, which keeps its traffic inside the VNet and reachable over the ExpressRoute circuit. The administrator's session must always land on the same host, which is the job of an inbound NAT rule that pins one frontend address and port to one named instance. The backend instances need to leave the VNet with the load balancer's own address, which an outbound rule delivers by translating the address of every instance identified by the backend pool.",
+				"perChoice": {
+					"it-attach-store": "Slot for the internet-facing storefront on lb-web: putting a public address on the frontend is what allows clients outside the VNet to connect, and pip-store carries the same SKU as the load balancer, so the pairing is valid.",
+					"it-attach-legacy": "Fits no slot. pip-legacy carries the Basic SKU, and a Basic public address cannot be attached to a Standard load balancer; the Basic SKU itself was retired on September 30, 2025.",
+					"it-private-frontend": "Slot for the branch and in-network reporting service: a frontend that uses a private address from the VNet range makes lb-partner an internal load balancer, which balances traffic inside the VNet and can also be reached over the hybrid connection.",
+					"it-pool-rdp": "Fits no slot. A load-balancing rule spreads the remote desktop connections over every instance of the target pool, so the session would not reliably reach the single host the administrator needs.",
+					"it-nat-rdp": "Slot for the administrator's remote desktop session: an inbound NAT rule forwards one frontend address and port to one named instance, so every session reaches the same host.",
+					"it-db-endpoint": "Fits no slot. Backend pool membership is by network interface or IP address, and a Private Endpoint can never become a pool member, so the orders database cannot be added this way.",
+					"it-outbound": "Slot for the backend instances' internet egress: an outbound rule applies address translation to every instance the backend pool identifies, so their outbound calls leave with the load balancer's address.",
+					"it-haports": "Fits no slot. HA ports is offered only on internal Standard load balancers for appliances that need all ports balanced, so it cannot be turned on for the internet-facing lb-web frontend."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/components"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/skus"
+				}
+			],
+			"subtopics": [
+				"public-and-internal-frontend",
+				"inbound-nat-rule",
+				"outbound-rule"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HHZ7HD9A7V7R706MXQZTNX",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have taken over the load balancing layer of Meridian Clinics, whose telehealth booking service is published through two Standard public Azure Load Balancers, and the exhibit lists how the service is arranged today. Four operational needs must be met before the next release, and each need is stated in a slot below. Drag the change that satisfies each need into the matching slot; the remaining four changes are not needed for any of these needs.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Load balancers",
+							"lb-book (public, eastus) and lb-book-we (public, westeurope), both Standard SKU"
+						],
+						[
+							"Front ends",
+							"20.61.4.10 in eastus and 20.62.4.10 in westeurope; each currently serves zone 1 only"
+						],
+						[
+							"Backend pools",
+							"pool-east holds vm-ea-01 and vm-ea-02; pool-we holds vm-we-01 and vm-we-02"
+						],
+						[
+							"Health probes",
+							"Each pool has one TCP health probe on the application port"
+						],
+						[
+							"Availability set",
+							"vm-ea-01, vm-ea-02, vm-legacy-01 and vm-legacy-02 are all members of as-core"
+						],
+						[
+							"Archived workload",
+							"vm-legacy-01 and vm-legacy-02 serve the retired record-lookup application and have no public IP addresses"
+						],
+						[
+							"Maintenance pattern",
+							"vm-ea-01 is rebooted for scheduled maintenance every second Tuesday"
+						],
+						[
+							"Client entry",
+							"Customers in each hosting region connect to the front end of that region today"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Create a load balancer in the Global tier that has lb-book and lb-book-we in the backend pool."
+					},
+					{
+						"id": "i2",
+						"text": "Set the frontend IP configurations of lb-book and lb-book-we to zone-redundant."
+					},
+					{
+						"id": "i3",
+						"text": "Set the Admin State of the backend pool instance vm-ea-01 to Down."
+					},
+					{
+						"id": "i4",
+						"text": "Create an IP-based public load balancer for the archived workload."
+					},
+					{
+						"id": "d1",
+						"text": "Add an HA ports rule to lb-book so that every port of the eastus and westeurope deployments is balanced."
+					},
+					{
+						"id": "d2",
+						"text": "Set the frontend IP configurations of lb-book to zonal and pin them to zone 1."
+					},
+					{
+						"id": "d3",
+						"text": "Take vm-ea-01 out of pool-east for the duration of the maintenance window so that the instance is skipped."
+					},
+					{
+						"id": "d4",
+						"text": "Create a second NIC-based public load balancer for the archived workload alongside lb-book."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Customers must keep reaching the booking service if one hosting region fails."
+					},
+					{
+						"id": "s2",
+						"label": "The address clients connect to must stay usable when one zone in a hosting region is taken offline for maintenance."
+					},
+					{
+						"id": "s3",
+						"label": "During the scheduled maintenance, vm-ea-01 must be excluded from new connections while it stays in the pool and its health probe stays as it is."
+					},
+					{
+						"id": "s4",
+						"label": "The archived workload needs its own public front end, but its virtual machines must remain in availability set as-core and cannot be moved."
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Each keyed change answers one need. For customers to keep reaching the booking service when a hosting region fails, the two regional load balancers are placed in the backend pool of a load balancer created in the Global tier, which is the Standard public option for cross-region load balancing and routes traffic to the surviving region. For the front end to stay usable when a single zone is offline, the frontend IP configurations of the regional load balancers are made zone-redundant, which Standard supports for inbound and outbound traffic. For the maintenance of vm-ea-01, Admin State is set to Down on that one backend pool instance, which overrides health probe behaviour per instance so the instance stays in the pool with unchanged probes. For the archived workload, the new public load balancer is IP-based: only one public NIC-based load balancer is permitted per availability set, as-core already has one through its pool members, and that limit does not apply to IP-based load balancers, so the archived machines can stay where they are.",
+				"perChoice": {
+					"i1": "This is the change for the need about customers still reaching the booking service after a hosting region fails. A load balancer created in the Global tier keeps the regional load balancers in its backend pool, and when one region is lost its traffic is routed to the next healthy regional deployment.",
+					"i2": "This is the change for the need about the address staying usable when a zone is taken offline. Standard supports zone-redundant frontend IP configurations, so making both regional front ends zone-redundant removes the dependency on a single zone.",
+					"i3": "This is the change for the need about vm-ea-01 during its scheduled maintenance. Admin State can be set to Up, Down or None per backend pool instance, and setting it to Down overrides the health probe behaviour for that instance alone, so it stops receiving new connections while remaining in the pool and the probe configuration is untouched.",
+					"i4": "This is the change for the need about the archived workload getting its own public front end while its machines stay in availability set as-core. The limit of one public NIC-based load balancer per availability set applies to as-core, but that limit does not apply to IP-based load balancers, so an IP-based one can serve the archived machines without moving them.",
+					"d1": "This change fits no need. HA ports balances all TCP and UDP flows on every port of a single internal Standard load balancer, public load balancers do not support it, and it does not move traffic between hosting regions, so it cannot keep the service reachable after a region fails.",
+					"d2": "This change fits no need. Front ends pinned to a single zone stay dependent on that zone, so taking a zone offline would still interrupt the address; this is also the arrangement the front ends already have today.",
+					"d3": "This change fits no need. Removing the instance from the pool and adding it back later changes pool membership, which contradicts the requirement that the instance stays in the pool and that its health probe configuration is left as it is.",
+					"d4": "This change fits no need. A second NIC-based public load balancer serving machines in availability set as-core would exceed the limit of one public NIC-based load balancer per availability set, and the archived machines may not be moved to another set."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/skus"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/components"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-overview"
+				}
+			],
+			"subtopics": [
+				"cross-region-global-tier",
+				"zone-redundant-frontend",
+				"admin-state-and-availability-set-limits"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HJ2ZGBB11501ATXJJ3N1B7",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are preparing the next release of Harborline Freight's logistics platform. The customer portal, the legacy partner portal and the shipment-tracking service all sit behind the Azure resources listed in the exhibit. Four needs must be met before the release goes live, and each need is stated in a slot below. Drag the change that satisfies each need into the matching slot; the remaining two changes are not needed for any of these needs.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Resource",
+						"Details"
+					],
+					"rows": [
+						[
+							"lb-shop",
+							"Standard SKU; public address 20.71.5.6; fronts pool-shop with 3 Linux servers in vnet-edge; rule maps TCP 443 to backend port 8443; TCP probe on port 8443"
+						],
+						[
+							"lb-legacy",
+							"Basic SKU; public address 20.71.9.9; fronts pool-legacy with 1 Windows server in vnet-edge; rule maps TCP 443 to backend port 443"
+						],
+						[
+							"pip-modern",
+							"Standard SKU; public address 20.71.9.12; not attached to any load balancer"
+						],
+						[
+							"pip-legacy",
+							"Basic SKU; public address 20.71.9.9; attached to lb-legacy"
+						],
+						[
+							"lb-track",
+							"Standard SKU; internal address 10.40.2.15; fronts pool-track with 4 Windows servers in vnet-ship; rule maps TCP 443 to backend port 8443; TCP probe on port 8443"
+						],
+						[
+							"pool-track",
+							"NIC-based pool; vm-track-01, vm-track-02, vm-track-03 and vm-track-04; all four report healthy"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Enable a zone-redundant frontend IP configuration"
+					},
+					{
+						"id": "i2",
+						"text": "Create a Standard load balancer with a Standard SKU public IP instead of the Basic public IP"
+					},
+					{
+						"id": "i3",
+						"text": "Set Admin State to disabled on the affected backend member"
+					},
+					{
+						"id": "i4",
+						"text": "Enable Private Link on the Standard internal load balancer"
+					},
+					{
+						"id": "i5",
+						"text": "Attach the existing Basic public IP to the Standard load balancer"
+					},
+					{
+						"id": "i6",
+						"text": "Create a Gateway SKU load balancer in front of the internal backend appliances"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Requirement A — the customer portal must stay reachable while one of the region's data centers is out of service"
+					},
+					{
+						"id": "s2",
+						"label": "Requirement B — the legacy portal must be moved onto a currently supported tier before its current address is decommissioned"
+					},
+					{
+						"id": "s3",
+						"label": "Requirement C — one server in the shipment-tracking group needs a planned outage without being removed from it"
+					},
+					{
+						"id": "s4",
+						"label": "Requirement D — the branch office must reach the shipment-tracking service over a connection that never crosses the public internet"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Requirement A is met by enabling a zone-redundant frontend IP configuration on the Standard public load balancer lb-shop: on the Standard tier a frontend IP configuration can be zone-redundant or zonal for inbound and outbound traffic, so the customer portal keeps serving traffic when one availability zone is lost, while the retired Basic tier offers no availability zone support. Requirement B is met by creating a Standard load balancer and pairing it with a Standard SKU public IP (pip-modern, 20.71.9.12): the Basic tier was retired on 30 September 2025 and a Basic public IP cannot be attached to a Standard load balancer, so the legacy deployment must be replaced rather than re-addressed. Requirement C is met by setting Admin State to disabled on the one server that needs maintenance: Admin State overrides health probe behaviour for an individual backend instance, so it stops taking new traffic while staying in the pool. Requirement D is met by enabling Private Link on the Standard internal load balancer lb-track: Private Link is a supported platform integration for Standard internal load balancers, which lets the branch office reach the internal service over a private connection instead of exposing it to the internet.",
+				"perChoice": {
+					"i1": "Requirement A — zone-redundant frontend IP configurations are supported on the Standard tier for both inbound and outbound traffic, so lb-shop's entry point can keep serving the portal when one availability zone is unavailable.",
+					"i2": "Requirement B — the Basic tier is retired, so a new Standard load balancer paired with a Standard SKU public IP (the unused pip-modern) replaces the legacy deployment.",
+					"i3": "Requirement C — Admin State overrides probe results for an individual backend instance, which stops new traffic to that server during a maintenance window without removing it from the pool.",
+					"i4": "Requirement D — Private Link is a supported integration for Standard internal load balancers and gives the branch office a private connection to the internal tracking service.",
+					"i5": "Fits no slot: a Basic public IP cannot be attached to a Standard load balancer, so this pairing is invalid and would leave the replacement deployment without a usable public address.",
+					"i6": "Fits no slot: the Gateway tier load balancer is for third-party network virtual appliances and is chained behind a Standard load balancer; none of the four needs calls for another load balancer tier."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/skus"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/components"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-overview"
+				}
+			],
+			"subtopics": [
+				"load-balancer-skus",
+				"zone-redundancy",
+				"private-link"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HJ6YFV5HKBDRC7RK9CK6GB",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are preparing the load balancing layer for Silverpine Retail's order platform, which runs in the virtual network vnet-silver. The exhibit lists the resources that exist today. Four needs must be met before the platform goes live, and each need is stated in a slot below. Drag the configuration change that satisfies each need into the matching slot; the remaining two changes are not needed for any of these needs.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Resource",
+						"Placement",
+						"Current configuration"
+					],
+					"rows": [
+						[
+							"lb-store",
+							"Standard, public, in vnet-silver",
+							"Frontend: public IP 20.60.14.7. Backend pool pool-web (IP based): vm-web-01, vm-web-02, vm-web-03. Traffic rule: frontend TCP 443 to backend TCP 8443. Probe: TCP 8443. Egress handling for the pool members: not configured."
+						],
+						[
+							"lb-ops",
+							"Standard, internal, in vnet-silver",
+							"Frontend: private IP 10.44.6.20. Backend pools: pool-ops (vm-ops-01, vm-ops-02) and pool-rpt (vm-rpt-01, vm-rpt-02). Traffic rules: none. Probes: TCP 3389 on pool-ops, TCP 1433 on pool-rpt."
+						],
+						[
+							"vm-web-01, vm-web-02, vm-web-03",
+							"Windows VMs in snet-web",
+							"Storefront application listens on TCP 8443. None of them has a public IP address, and snet-web has no NAT gateway."
+						],
+						[
+							"vm-ops-01 and vm-ops-02",
+							"Windows VMs in snet-ops",
+							"Remote desktop service on TCP 3389. vm-ops-01 is used as the administrator jump host."
+						],
+						[
+							"vm-rpt-01 and vm-rpt-02",
+							"Windows VMs in snet-rpt",
+							"Reporting application listens on TCP 1433."
+						],
+						[
+							"Public IP address 20.60.14.9",
+							"Standard, static, held in the subscription",
+							"Not attached to any load balancer. api.freightline.example accepts requests only when the source address is 20.60.14.9."
+						],
+						[
+							"nsg-web",
+							"Network security group on snet-web",
+							"Inbound rules: allow TCP 443 from any source. No other inbound rules."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Add an outbound rule to lb-store that translates traffic exiting the pool-web members to public IP 20.60.14.9."
+					},
+					{
+						"id": "i2",
+						"text": "Create an inbound NAT rule on lb-ops that forwards frontend TCP 3389 to vm-ops-01."
+					},
+					{
+						"id": "i3",
+						"text": "Create a load balancing rule on lb-ops that sends frontend TCP 1433 to backend TCP 1433 in the pool-rpt backend pool."
+					},
+					{
+						"id": "i4",
+						"text": "Enable TCP Reset on Idle on the load balancing rule of lb-store."
+					},
+					{
+						"id": "d1",
+						"text": "Create an inbound NAT rule on lb-store that sends frontend TCP 443 to vm-web-01."
+					},
+					{
+						"id": "d2",
+						"text": "Create a load balancing rule on lb-store that sends frontend TCP 443 to backend TCP 443."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "The web tier must reach the freight carrier's rate service on the internet, and the carrier accepts only requests that leave the platform through the spare entry that is held in the subscription for this purpose."
+					},
+					{
+						"id": "s2",
+						"label": "Administrators must be able to open a remote desktop session straight to one designated server through the internal address of the load balancer."
+					},
+					{
+						"id": "s3",
+						"label": "The reporting service must be reachable on the same internal address as the remote desktop service, but it must be answered only by the servers in the reporting pool, with each request spread across all of them."
+					},
+					{
+						"id": "s4",
+						"label": "Client connections to the web tier that go quiet for too long must be dropped automatically, so that a backend instance that has gone away does not keep sessions alive."
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "The four needs map to the four different load balancer objects: an outbound rule on the public balancer so the web members' internet calls leave with the carrier's accepted source address; an inbound NAT rule on the internal balancer so remote desktop sessions land on one named instance instead of being distributed; a load balancing rule that publishes the reporting pool on the internal frontend address and spreads requests over all of its instances; and TCP Reset on Idle on the storefront rule so quiet TCP flows are closed instead of lingering against an instance that has gone away.",
+				"perChoice": {
+					"i1": "Correct for the freight carrier need: the web members have neither public IP addresses nor a NAT gateway, so the load balancer is the only component that can send their internet-bound traffic out, and the outbound rule translates that traffic to the reserved public IP 20.60.14.9 that the carrier accepts. Outbound rules are a Standard capability.",
+					"i2": "Correct for the remote desktop need: an inbound NAT rule forwards one frontend IP and port to one specific instance (vm-ops-01) rather than to the whole pool, which is exactly what a jump-host session requires.",
+					"i3": "Correct for the reporting need: a load balancing rule maps a frontend IP configuration and frontend port to a backend port and spreads traffic across all instances of the target pool. pool-rpt currently has no traffic rule pointing at it, so the reporting service on TCP 1433 is unreachable on the internal frontend address.",
+					"i4": "Correct for the quiet-connection need: TCP Reset on Idle, a Standard-only capability, resets TCP flows that have been idle for the configured timeout, so client sessions to an instance that has gone away do not stay open. Probe state alone would not close established sessions.",
+					"d1": "Fits no need: it would pin all storefront HTTPS traffic to a single web server so that traffic stopped being distributed across pool-web, and the pinning that is required concerns the remote desktop path on lb-ops, not the storefront path.",
+					"d2": "Fits no need: the storefront application listens on TCP 8443 and the existing traffic rule already maps frontend TCP 443 to backend TCP 8443, so a rule aimed at backend TCP 443 would send traffic to a port where nothing listens. It also does nothing for internet egress, for pinning a session to one instance, for publishing the reporting pool or for closing quiet connections."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/components"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/skus"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-overview"
+				}
+			],
+			"subtopics": [
+				"load-balancing-rule",
+				"inbound-nat-rule",
+				"outbound-rule"
+			],
+			"reviewed": false
+		}
+	]
+}

@@ -1,0 +1,1873 @@
+{
+	"skill": "networking.azure-dns",
+	"questions": [
+		{
+			"id": "q_01M6H0JJTNRKWHJ233D6CH22VN",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You host contoso.com in Azure DNS and the domain is already delegated to the Azure name servers. Internet clients resolve api.contoso.com to the public address 52.142.18.7. Workloads inside vnet-app (10.1.0.0/16) need api.contoso.com to reach the internal address 10.1.0.20, and that internal address must not be handed out to internet resolvers. Which arrangement should you create?",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "$ az network dns zone show -g rg-dns -n contoso.com\n{\n  \"name\": \"contoso.com\",\n  \"type\": \"Microsoft.Network/dnszones\",\n  \"location\": \"global\",\n  \"properties\": {\n    \"maxNumberOfRecordSets\": 10000,\n    \"maxNumberOfRecordsPerRecordSet\": 20\n  }\n}\n\n$ az network dns record-set a list -g rg-dns -z contoso.com\n[\n  {\n    \"name\": \"@\",\n    \"type\": \"A\",\n    \"ttl\": 3600,\n    \"aRecords\": [ { \"ipv4Address\": \"52.142.18.7\" } ]\n  },\n  {\n    \"name\": \"api\",\n    \"type\": \"A\",\n    \"ttl\": 3600,\n    \"aRecords\": [ { \"ipv4Address\": \"52.142.18.7\" } ]\n  }\n]\n\n$ az network vnet show -g rg-net -n vnet-app --query \"{name:name,prefixes:addressSpace.addressPrefixes}\"\n{\n  \"name\": \"vnet-app\",\n  \"prefixes\": [ \"10.1.0.0/16\" ]\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Publish an A record for api with the internal address in the existing public zone, and keep the public address in the same record set."
+					},
+					{
+						"id": "b",
+						"text": "Create a private zone whose name matches the public zone, publish the api record with the internal address there, and link vnet-app to that private zone."
+					},
+					{
+						"id": "c",
+						"text": "Create a private zone whose name is api.contoso.com, publish the apex record with the internal address there, and link vnet-app to that private zone."
+					},
+					{
+						"id": "d",
+						"text": "Publish a CNAME record for api in the public zone that targets a host record holding the internal address."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "Two zones carrying the same domain name give one query two different answers depending on where it is sent, which is the split-horizon pattern. Creating a private zone with the same name as the public zone, adding an A record for api that holds 10.1.0.20, and linking vnet-app to that private zone makes members of vnet-app resolve api.contoso.com to the internal address, while everybody else keeps using the public zone and its 52.142.18.7 record. The link is required: a virtual network must be linked to a private zone for its members to resolve the records published in that zone, and a linked network can resolve every record in the zone.",
+				"perChoice": {
+					"a": "Everything published in the public zone is resolved by internet resolvers, so 10.1.0.20 would be handed out to the internet, which the requirement forbids. On top of that, the api record set already holds the public address, so both addresses would be returned to every client rather than clients in the virtual network receiving a different answer.",
+					"c": "The private zone has to carry the same name as the public zone for one query to produce different answers inside and outside the virtual network. A private zone called api.contoso.com is a different domain, so it does not give a split view of contoso.com, and the relative record name published inside it would resolve as api.api.contoso.com.",
+					"d": "Records placed in the public zone are returned to every resolver, so the internal address would be exposed on the internet. In addition, a CNAME record set cannot coexist with another record set of the same name, and the public zone already publishes an A record set named api, so the alias cannot be added alongside it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/private-dns-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-zones-records"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-overview"
+				}
+			],
+			"subtopics": [
+				"split-horizon-dns",
+				"private-dns-zone-linking",
+				"dns-record-sets"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6H0MV32MZT5V2NHWTQ5DHEM",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your company hosts contoso.com in Azure DNS for its public web properties. Since the domain was pointed at Azure, users report that lookups for contoso.com succeed for some internet resolvers but time out for others, depending on which resolver they use. You have not modified anything inside the zone itself; the registrar currently shows the following. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Contoso Registrar - Domain: contoso.com\nRecord type: NS\n  ns1-37.azure-dns.com.\n  ns2-37.azure-dns.net."
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Update the registrar's NS records so the domain is delegated to every name server listed for the zone in Azure DNS"
+					},
+					{
+						"id": "b",
+						"text": "Create the same zone name in a second Azure DNS resource group and delegate the domain to that zone's name servers"
+					},
+					{
+						"id": "c",
+						"text": "Point the registrar's NS records at the name servers of a different zone in the same Azure DNS subscription"
+					},
+					{
+						"id": "d",
+						"text": "Add an NS record set inside the zone for each name server that is absent and leave the registrar's NS records unchanged"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Azure DNS hands every new zone a set of four name servers drawn from a shared pool and writes the authoritative NS records into the zone automatically, but the domain only uses them once the registrar delegates to them. All of the zone's name servers should be delegated, no matter what the domain is called, and each address is entered with its trailing dot because that dot marks the end of a fully qualified name. The registrar above lists only two of them, so resolvers that query the other two cannot reach the authoritative servers for contoso.com, which explains why resolution succeeds for some clients and times out for others.",
+				"perChoice": {
+					"b": "A zone name may be reused in another resource group, but every instance is served by a different set of name servers and only one set can be configured at the registrar. Adding a second zone in a different resource group does nothing to repair the incomplete delegation of the zone you already have.",
+					"c": "The name servers that must be delegated are the ones assigned to the contoso.com zone, because only they hold its records. Pointing the registrar at another zone's name servers would break lookups for contoso.com entirely rather than make them succeed for a subset of resolvers.",
+					"d": "The apex NS record set is created and deleted automatically together with the zone, and the name servers Azure pre-populates in it cannot be removed or edited. Delegation of the domain happens at the registrar, so adding records inside the zone changes nothing about how resolvers locate it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-delegate-domain-azure-dns"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-zones-records"
+				}
+			],
+			"subtopics": [
+				"dns-delegation",
+				"name-servers"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6H0RDR2RN1GNPGRHT9T8HRW",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your company hosts contoso.com in a public Azure DNS zone that is already delegated to the Azure name servers, and the zone contains the record sets listed below. The app service behind www.contoso.com is being retired, and clients must now receive the two static front-door addresses 203.0.113.10 and 203.0.113.24 when they look up that name. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Record set name",
+						"Type",
+						"TTL (seconds)",
+						"Records"
+					],
+					"rows": [
+						[
+							"@",
+							"NS",
+							"3600",
+							"ns1-01.azure-dns.com, ns2-01.azure-dns.net, ns3-01.azure-dns.org, ns4-01.azure-dns.info"
+						],
+						[
+							"@",
+							"SOA",
+							"3600",
+							"azuredns-hostmaster.microsoft.com, serial 1"
+						],
+						[
+							"www",
+							"CNAME",
+							"3600",
+							"shop.contoso-app.io"
+						],
+						[
+							"mail",
+							"MX",
+							"3600",
+							"10 mail.contoso.com"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Keep the www CNAME record set and add a new A record set named www that contains 203.0.113.10 and 203.0.113.24."
+					},
+					{
+						"id": "b",
+						"text": "Remove the www CNAME record set and create two separate A record sets named www, one holding 203.0.113.10 and the other holding 203.0.113.24."
+					},
+					{
+						"id": "c",
+						"text": "Remove the www CNAME record set and create an A record set named www that contains 203.0.113.10 and 203.0.113.24."
+					},
+					{
+						"id": "d",
+						"text": "Add a second record to the existing www CNAME record set so that it holds both addresses and retire the app-service hostname."
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "Azure DNS groups records into record sets by name and type, and DNS standards don't permit a CNAME record set to coexist with any other record set of the same name. Because www currently holds a CNAME record set (pointing at the retired app-service hostname), that record set has to be removed before the name can publish address records. Once it is gone, one A record set named www can carry both 203.0.113.10 and 203.0.113.24 as two records inside the same record set, which is how Azure DNS serves a name from two addresses; the TTL of 3600 seconds then applies to both records in that set.",
+				"perChoice": {
+					"a": "This keeps the www CNAME record set in place while adding an address record set for the same name, which is exactly what DNS standards forbid: a CNAME record set can't coexist with another record set of the same name, so the A record set at www can't be created while the CNAME is still there.",
+					"b": "Removing the CNAME record set is the right starting point, but the two addresses belong in a single A record set. Azure DNS manages records as record sets, and to serve a second address you add the record to the existing record set instead of creating another record set with the same name and type.",
+					"d": "A CNAME record set can hold only a single record, and its value is a target hostname rather than an address, so it can't carry both addresses. The CNAME record set for www has to be removed and replaced by an A record set holding those addresses."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-zones-records"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-overview"
+				}
+			],
+			"subtopics": [
+				"public-dns-zones",
+				"dns-record-sets",
+				"cname-constraints"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6H0VTMP9M6ATCN0BRX1XGA2",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your organization runs platform workloads in vnet-hub (10.0.0.0/16) and application workloads in vnet-app (10.1.0.0/16). Each network is currently linked to an Azure private zone with autoregistration turned on, as shown below. You need every VM in vnet-app to have an A record created automatically in the internal.contoso.com zone and kept current whenever its private IP changes, and you need vnet-app to resolve the names published in that zone. The legacy.internal.contoso.com zone is being decommissioned and must end up with no virtual network links, while vnet-hub must keep resolving internal.contoso.com and keep its own VM registrations. Which configuration change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Private zone",
+						"Virtual network link",
+						"Autoregistration",
+						"Address space",
+						"Records published in zone"
+					],
+					"rows": [
+						[
+							"internal.contoso.com",
+							"vnet-hub",
+							"Enabled",
+							"10.0.0.0/16",
+							"shared-api (A to 10.0.0.5)"
+						],
+						[
+							"legacy.internal.contoso.com",
+							"vnet-app",
+							"Enabled",
+							"10.1.0.0/16",
+							"app01 (A to 10.1.0.20)"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Remove the vnet-app link to legacy.internal.contoso.com and add a vnet-app link to internal.contoso.com with autoregistration enabled."
+					},
+					{
+						"id": "b",
+						"text": "Add a vnet-app link to internal.contoso.com with autoregistration enabled and keep the existing vnet-app link to legacy.internal.contoso.com with autoregistration enabled."
+					},
+					{
+						"id": "c",
+						"text": "Add a vnet-app link to internal.contoso.com with autoregistration disabled and keep the existing vnet-app link to legacy.internal.contoso.com with autoregistration enabled."
+					},
+					{
+						"id": "d",
+						"text": "Add a vnet-app link to internal.contoso.com with autoregistration enabled and disable autoregistration on the vnet-hub link to internal.contoso.com."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A virtual network can be linked to only one private zone while autoregistration is turned on, so the existing vnet-app link to legacy.internal.contoso.com has to be detached before vnet-app can be linked to internal.contoso.com with autoregistration enabled. Detaching it also satisfies the requirement that the decommissioned legacy zone end up with no virtual network links. With autoregistration enabled on the new vnet-app link, Azure creates and maintains A records for the vnet-app VMs that point at their private IPs, and because a private zone can be linked by many virtual networks, vnet-hub keeps resolving the names published in internal.contoso.com and keeps its own VM registrations without any change.",
+				"perChoice": {
+					"b": "This keeps autoregistration turned on for two private zone links of the same virtual network. Azure allows a virtual network to link to only one private DNS zone when autoregistration is enabled, so the second autoregistration-enabled link cannot be created, and the legacy zone would still carry a virtual network link.",
+					"c": "With autoregistration disabled on the new vnet-app link to internal.contoso.com, Azure does not create or update A records for the vnet-app VMs in that zone, so the automatic registration requirement is not met, and the legacy zone also keeps its virtual network link with autoregistration enabled.",
+					"d": "Turning autoregistration off on the vnet-hub link stops Azure from creating and updating A records for the vnet-hub VMs, which breaks the requirement to keep those registrations. It also leaves the vnet-app link to legacy.internal.contoso.com with autoregistration enabled, so vnet-app would still be attached to two private zones with autoregistration turned on."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/private-dns-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-overview"
+				}
+			],
+			"subtopics": [
+				"private-dns",
+				"virtual-network-links",
+				"autoregistration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6H13087V1EB7PZV1KKF10P8",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your company hosts contoso.com in a public Azure DNS zone that is delegated to the Azure name servers. A partner operates a secondary DNS server that mirrors this zone for the benefit of its own users. Yesterday you added a TXT record set for a domain-verification challenge, and the partner's server keeps answering from the copy of the zone it already holds, so the new record is missing there. You need the partner's next scheduled refresh to pick up your change. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Zone: contoso.com (public, delegated at the registrar to the Azure name servers)\n\nRecord set @   type SOA   host ns1-37.azure-dns.com; serial 1; refresh 3600; retry 300;\n                       expire 604800; default TTL 300\nRecord set www type A     203.0.113.20\nRecord set verify type TXT \"challenge-token-4f2a91\"   (added yesterday)\n\nPartner secondary server: reloads the zone only when the serial value currently\npublished is higher than the serial it holds"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Edit the SOA record set and set the serial number to a higher value"
+					},
+					{
+						"id": "b",
+						"text": "Edit the SOA record set and set the host value to the primary name server"
+					},
+					{
+						"id": "c",
+						"text": "Edit the TXT record set you added yesterday and set its TTL to a lower value"
+					},
+					{
+						"id": "d",
+						"text": "Delete the SOA record set and create a new one that carries a higher serial number"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Azure DNS does not refresh the serial number of the zone's SOA record set when other records in the zone are added or changed, so the serial the partner's secondary server holds is still the one being published and the mirror looks untouched. Raising the serial number yourself by editing the SOA record set is what tells the secondary server that the zone has been updated, so its next refresh reloads the zone including the new TXT record. The apex SOA record set can be edited in place, and every one of its properties except the host value can be changed, so the rest of the zone stays intact.",
+				"perChoice": {
+					"b": "The host value of the apex SOA record set is preconfigured by Azure to the primary name server name and is the one property that cannot be edited. Even if it could be changed, the partner compares the serial value rather than the host value, so the zone would still appear unchanged to it.",
+					"c": "The TTL on a record set only controls how long resolvers cache that particular record. The partner decides whether to reload the zone by comparing the zone's SOA serial, so lowering the TTL on the TXT record set does not mark the zone as updated.",
+					"d": "The apex SOA record set is created and deleted automatically together with the zone and cannot be created or deleted on its own, so it cannot be swapped for a new one. The serial number has to be raised by editing the SOA record set that already exists."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-zones-records"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-delegate-domain-azure-dns"
+				}
+			],
+			"subtopics": [
+				"soa-record-set",
+				"dns-zone-records",
+				"public-dns-zones"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HGS2RC0DC7PH6ZAMC9W03J",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your company hosts contoso.com in a public Azure DNS zone that is already delegated to the Azure name servers, and the zone currently holds the record sets shown below. Your mail provider has sent you the string that defines which hosts are allowed to send mail on behalf of contoso.com, and it wants that string published for contoso.com itself rather than for any one of its hosts. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Record set",
+						"Type",
+						"Value"
+					],
+					"rows": [
+						[
+							"@",
+							"A",
+							"203.0.113.10"
+						],
+						[
+							"@",
+							"MX",
+							"10 mailgw.contoso.com"
+						],
+						[
+							"@",
+							"NS",
+							"ns1-37.azure-dns.com, ns2-37.azure-dns.net, ns3-37.azure-dns.org, ns4-37.azure-dns.info"
+						],
+						[
+							"@",
+							"SOA",
+							"azuredns-hostmaster.microsoft.com"
+						],
+						[
+							"mailgw",
+							"A",
+							"203.0.113.60"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add a record set of type TXT that holds the supplied string as a single value"
+					},
+					{
+						"id": "b",
+						"text": "Add a record set of type MX that holds the supplied string as a single value"
+					},
+					{
+						"id": "c",
+						"text": "Add a record set of type CNAME that holds the supplied string as a single value"
+					},
+					{
+						"id": "d",
+						"text": "Add a record set of type SPF that holds the supplied string as a single value"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The string that lists the hosts allowed to send mail on behalf of a domain is a sender policy framework (SPF) policy. RFC 7208 requires SPF to be published with the TXT record type and deprecated the dedicated SPF type, and Azure DNS does not support that obsolete type. TXT records map a name to arbitrary text and are the type used for this kind of mail configuration (SPF and DKIM alike), so the supplied string belongs in a TXT record set for contoso.com, added alongside the existing A and MX sets at the root of the zone.",
+				"perChoice": {
+					"b": "An MX record set maps a name to the mail servers that accept mail for it, so its values are server host names with priorities, not the text of a sending policy. The policy text is published as a TXT record.",
+					"c": "A CNAME record set only makes one name an alias for another name, so it cannot carry the policy text, and it cannot be created at the root of the zone in any case: the root already holds the NS and SOA record sets that Azure creates with the zone, so a CNAME there would conflict with them.",
+					"d": "The obsolete SPF record type was deprecated by RFC 7208 and is not supported by Azure DNS; policies of this kind are published with the TXT record type instead."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-zones-records"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-overview"
+				}
+			],
+			"subtopics": [
+				"record-types",
+				"txt-records",
+				"public-dns"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HGVYYGP891MMJDKHD4RJRR",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You host contoso.com in Azure DNS, and the zone currently holds the record sets listed below. Three more things have to be published in this domain: the name shop must take visitors to a separate website operated by a partner, using the host name that partner supplied; every host name placed directly under contoso.com that has no record of its own must resolve to 203.0.113.10; and mail servers must be told to deliver mail addressed to contoso.com itself to mail.contoso.com. Which set of record sets should you create?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Record set name",
+						"Type",
+						"Records",
+						"TTL"
+					],
+					"rows": [
+						[
+							"@",
+							"NS",
+							"ns1-37.azure-dns.com, ns2-37.azure-dns.net, ns3-37.azure-dns.org, ns4-37.azure-dns.info",
+							"3600"
+						],
+						[
+							"@",
+							"SOA",
+							"created automatically with the zone",
+							"3600"
+						],
+						[
+							"www",
+							"A",
+							"203.0.113.20",
+							"300"
+						],
+						[
+							"api",
+							"A",
+							"203.0.113.30, 203.0.113.31",
+							"300"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "A CNAME record set named shop pointing at the partner's host name; a wildcard record set named * of type A pointing at 203.0.113.10; and an MX record set named @ pointing at mail.contoso.com."
+					},
+					{
+						"id": "b",
+						"text": "A CNAME record set named @ pointing at the partner's host name; a wildcard record set named * of type A pointing at 203.0.113.10; and an MX record set named @ pointing at mail.contoso.com."
+					},
+					{
+						"id": "c",
+						"text": "A CNAME record set named shop pointing at the partner's host name; a wildcard record set named * of type SOA pointing at 203.0.113.10; and an MX record set named @ pointing at mail.contoso.com."
+					},
+					{
+						"id": "d",
+						"text": "A CNAME record set named shop pointing at the partner's host name, together with an A record set named shop pointing at 203.0.113.10; a wildcard record set named * of type A pointing at 203.0.113.10; and an MX record set named @ pointing at mail.contoso.com."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "All three additions can coexist in this zone. An alias record set for shop is fine because shop is not the zone root and no other set uses that name. A wildcard set is supported for A records, so unmatched names under contoso.com answer with 203.0.113.10 while names that own a closer set, such as www and api, keep their own addresses. A mail exchanger set at the zone root is also allowed, because the restriction on the root applies to CNAME sets only, since the root already holds the NS and SOA sets.",
+				"perChoice": {
+					"b": "A CNAME record set can't be created at the zone root: the root already carries the NS and SOA sets, and DNS rules stop a CNAME set from sharing a name with any other set, which also rules out the MX set at that same root name.",
+					"c": "Wildcard record sets are supported for every record type other than NS and SOA, so a wildcard SOA set can't be created. The catch-all for names that have no record of their own has to use a type that supports wildcards, such as A.",
+					"d": "A CNAME record set can't coexist with another record set that carries the same name, so adding an A set named shop alongside the alias for shop is not permitted. The extra set has to be removed or renamed."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-zones-records"
+				}
+			],
+			"subtopics": [
+				"record-set-constraints",
+				"wildcard-records",
+				"cname-records"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HGWZ2FVR2D6ZZQG29YWRK7",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You host contoso.com in a public Azure DNS zone that is already delegated to the Azure name servers. Your security team wants TLS certificates for names in this domain to be accepted only when they come from the single certificate authority named below, and that authority has sent the details of what it wants published in your zone. Which record set should you add to the zone?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Detail supplied by the certificate authority",
+						"Value"
+					],
+					"rows": [
+						[
+							"Authority to be trusted",
+							"ca.contoso-cert.example"
+						],
+						[
+							"Names covered by the request",
+							"Every host name in contoso.com, including names whose first label is an asterisk"
+						],
+						[
+							"Where the information should be published",
+							"For contoso.com itself, not separately for each host name beneath it"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "A CAA record set for contoso.com with Flags = 0, Tag = issue, Value = ca.contoso-cert.example"
+					},
+					{
+						"id": "b",
+						"text": "A CAA record set for contoso.com with Flags = 0, Tag = issuewild, Value = ca.contoso-cert.example"
+					},
+					{
+						"id": "c",
+						"text": "A CAA record set for contoso.com with Flags = 0, Tag = iodef, Value = ca.contoso-cert.example"
+					},
+					{
+						"id": "d",
+						"text": "A TXT record set for contoso.com whose value is ca.contoso-cert.example"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A CAA record is the mechanism for naming the certificate authorities that are allowed to provide certificates for a domain, and it carries exactly the three properties used here: Flags (0-255, carrying the critical flag), Tag, and Value. Because the request covers every host name in contoso.com, including names whose first label is an asterisk, the Tag must be the one that permits certificates of all types rather than only wildcard ones, and the record must sit at the zone apex so it applies to the whole domain. Flags = 0 with Tag = issue and Value = ca.contoso-cert.example at contoso.com therefore matches the request.",
+				"perChoice": {
+					"b": "This option uses the tag that restricts authorities only for wildcard certificates. It would leave certificates for ordinary host names in contoso.com unrestricted, so it does not satisfy a request that covers every name in the domain.",
+					"c": "This tag names a contact address that certificate authorities use to report unauthorized certificate requests. It tells nobody which authority may provide certificates, so the stated restriction would not be enforced.",
+					"d": "A TXT record simply publishes arbitrary text in the zone. Certificate authorities do not consult TXT records when deciding whether they may provide a certificate, so publishing the authority name this way cannot restrict anything."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-zones-records"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-overview"
+				}
+			],
+			"subtopics": [
+				"dns-record-types",
+				"caa-record"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HH14KQZDCTA4WJKJT5S8VZ",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Your organisation hosts the contoso.com domain publicly in Azure DNS and, separately, an internal zone corp.contoso.com that is linked to its virtual networks. The public zone is already delegated to the Azure name servers and currently holds only the record sets listed below. Six further publishing requirements have arrived, and for each one you must decide which kind of DNS record to create. Drag each record type into the requirement it satisfies.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Public zone: contoso.com (delegated to the Azure name servers)\n\n  Record set name    Type    TTL     Records\n  contoso.com        A       3600    203.0.113.5\n  www.contoso.com    A       3600    203.0.113.10\n  mail.contoso.com   A       3600    203.0.113.25\n  contoso.com        MX      3600    10 mail.contoso.com\n\nPrivate zone: corp.contoso.com (linked to the virtual networks)\n  no record sets published yet"
+				},
+				"items": [
+					{
+						"id": "i_aaaa",
+						"text": "AAAA record"
+					},
+					{
+						"id": "i_srv",
+						"text": "SRV record"
+					},
+					{
+						"id": "i_ptr",
+						"text": "PTR record"
+					},
+					{
+						"id": "i_ns",
+						"text": "NS record"
+					},
+					{
+						"id": "i_naptr",
+						"text": "NAPTR record"
+					},
+					{
+						"id": "i_ds",
+						"text": "DS record"
+					}
+				],
+				"slots": [
+					{
+						"id": "s_ipv6",
+						"label": "A new customer portal at www.contoso.com is reachable only over IPv6, so clients that look up its name must be handed an IPv6 address."
+					},
+					{
+						"id": "s_sip",
+						"label": "Clients of the company chat service must learn which host and port to connect to, and the priority and weight values there spread the traffic over two servers."
+					},
+					{
+						"id": "s_reverse",
+						"label": "Inside the virtual network, a query for the private address 10.1.0.20, which belongs to a firewall appliance rather than a virtual machine, must answer with the name of the host that owns it."
+					},
+					{
+						"id": "s_child",
+						"label": "A partner organisation runs its own name servers for the subdomain partner.contoso.com, and lookups for that part of the domain must be handed over to them."
+					},
+					{
+						"id": "s_rewrite",
+						"label": "When a caller dials a customer's number, that string must be rewritten into the destination to use, and the available rewrites are evaluated in a defined order and preference."
+					},
+					{
+						"id": "s_dnssec",
+						"label": "The security team has arranged for the zone to be signed and wants the digest of its signing key published so that validating resolvers can build a chain of trust."
+					}
+				]
+			},
+			"key": {
+				"s_child": "i_ns",
+				"s_dnssec": "i_ds",
+				"s_ipv6": "i_aaaa",
+				"s_reverse": "i_ptr",
+				"s_rewrite": "i_naptr",
+				"s_sip": "i_srv"
+			},
+			"explanation": {
+				"correct": "Each requirement is satisfied by the record type that carries exactly the data the requirement asks for: an AAAA record holds the IPv6 address handed to clients that look up the portal name; an SRV record set advertises the target host and port for the chat service, with per-record priority and weight to distribute traffic; a PTR record answers an address query with the owning host's name and must hold an address from the private space of the linked virtual network; an NS record set delegates the partner.contoso.com child zone to the partner's own name servers; a NAPTR record rewrites a caller-supplied string into the next destination, choosing among rewrites by order and preference; and a DS record publishes the digest of the zone's signing key and can only be created once the zone has been signed.",
+				"perChoice": {
+					"i_aaaa": "Belongs with the IPv6-only portal requirement, because this record type stores the IPv6 address that a client receives when it resolves the portal's name.",
+					"i_ds": "Belongs with the signed-zone requirement, because it carries the digest of the zone's signing key for resolvers that build a chain of trust, and it can only be added after the zone itself is signed.",
+					"i_naptr": "Belongs with the caller-number requirement, because it rewrites the supplied string into the destination to be used, with order and preference deciding which of the rewrites applies.",
+					"i_ns": "Belongs with the partner subdomain requirement, because such a record set delegates that portion of the namespace to the name servers the partner operates. The set at the zone root is a separate, automatically managed one.",
+					"i_ptr": "Belongs with the reverse lookup requirement, because it maps an address back to the host name that owns it; the address it points at must come from the private space of the linked virtual network, and an appliance address like the one in the scenario is not published automatically the way a virtual machine address is.",
+					"i_srv": "Belongs with the chat service requirement, because it names the host and port to contact and carries the priority and weight values that distribute sessions across servers; its name must include the service and protocol with leading underscores."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-zones-records"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/private-dns-overview"
+				}
+			],
+			"subtopics": [
+				"dns-record-types",
+				"reverse-dns-lookup",
+				"dnssec-records"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HH2HD7AMHTANDA8SPWHGB1",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have five separate naming and security needs across your Azure estate, and each slot below states one of them. Drag the Azure DNS service or feature that meets each requirement into its matching slot.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Current state"
+					],
+					"rows": [
+						[
+							"contoso.com",
+							"Purchased through an external registrar; no zone is hosted for it yet"
+						],
+						[
+							"fabrikam.internal",
+							"Used only by workloads in vnet-prod (10.20.0.0/16) and vnet-test (10.21.0.0/16)"
+						],
+						[
+							"corp.contoso.com",
+							"Answered today by on-premises DNS servers at 10.60.0.10"
+						],
+						[
+							"Customer-facing application",
+							"Front ends in East US, West Europe, and Southeast Asia"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "pub",
+						"text": "Azure Public DNS"
+					},
+					{
+						"id": "priv",
+						"text": "Azure Private DNS"
+					},
+					{
+						"id": "res",
+						"text": "Azure DNS Private Resolver"
+					},
+					{
+						"id": "tm",
+						"text": "Azure Traffic Manager"
+					},
+					{
+						"id": "policy",
+						"text": "DNS Resolver Policy"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Host the purchased domain contoso.com and publish its records for clients anywhere"
+					},
+					{
+						"id": "s2",
+						"label": "Answer queries for fabrikam.internal from the virtual networks linked to the zone"
+					},
+					{
+						"id": "s3",
+						"label": "Forward queries for corp.contoso.com to the on-premises DNS servers"
+					},
+					{
+						"id": "s4",
+						"label": "Distribute requests for the customer-facing application across its regions"
+					},
+					{
+						"id": "s5",
+						"label": "Block queries for known-malicious names and audit queries per virtual network"
+					}
+				]
+			},
+			"key": {
+				"s1": "pub",
+				"s2": "priv",
+				"s3": "res",
+				"s4": "tm",
+				"s5": "policy"
+			},
+			"explanation": {
+				"correct": "Each requirement calls for a different offering in the Azure DNS portfolio: hosting a domain zone that anyone can query, resolving names inside linked virtual networks, conditional forwarding between Azure and on-premises, DNS-based load balancing across regions, and filtering/logging queries at the virtual network level.",
+				"perChoice": {
+					"pub": "Fits the contoso.com requirement: Azure Public DNS is the hosting service for DNS domains, and once the purchased domain is delegated to the Azure name servers, its records are published to any client that queries them.",
+					"priv": "Fits the fabrikam.internal requirement: Azure Private DNS manages and resolves domain names inside virtual networks. A private zone must be linked to a virtual network, and linked networks can resolve every record published in the zone.",
+					"res": "Fits the corp.contoso.com requirement: conditional forwarding between Azure and on-premises networks is done with Azure DNS Private Resolver, which lets an on-premises environment query Azure private zones and vice versa without deploying VM-based DNS servers.",
+					"tm": "Fits the multi-region application requirement: Azure Traffic Manager is a DNS-based traffic load balancer that distributes traffic to public-facing applications across the global Azure regions.",
+					"policy": "Fits the security requirement: DNS Resolver Policy filters and logs DNS queries at the virtual network level, and its Threat Intelligence feed lets known malicious domains from MSRC be blocked from name resolution."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/private-dns-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-delegate-domain-azure-dns"
+				}
+			],
+			"subtopics": [
+				"dns-service-selection",
+				"private-dns",
+				"traffic-manager"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HH6WC7KMZCSFZVTGGP9A7P",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Your company hosts contoso.com in an Azure DNS public zone that is already delegated to the Azure name servers. A review of that zone has produced five outstanding requirements, and the zone currently holds the record sets shown below. Drag each configuration change into the slot that states the requirement it satisfies.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Record set name",
+						"Type",
+						"Current contents"
+					],
+					"rows": [
+						[
+							"www",
+							"A",
+							"203.0.113.24"
+						],
+						[
+							"shop",
+							"A",
+							"203.0.113.40"
+						],
+						[
+							"api",
+							"A",
+							"52.142.18.7"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "wildcard",
+						"text": "Add a record set whose name begins with an asterisk label, holding a fixed address"
+					},
+					{
+						"id": "ttl",
+						"text": "Set the TTL on the record set so every record in it shares the same value"
+					},
+					{
+						"id": "etag",
+						"text": "Send back the Etag returned with the resource when modifying it"
+					},
+					{
+						"id": "append",
+						"text": "Add the second address to the record set that serves the name www"
+					},
+					{
+						"id": "txt-split",
+						"text": "Supply the string once and let the service split it into 255-character pieces"
+					},
+					{
+						"id": "duplicate",
+						"text": "Create a second record set that duplicates the name and type of an existing set"
+					}
+				],
+				"slots": [
+					{
+						"id": "wildcard-req",
+						"label": "Any host name under the zone's shop subdomain that has no record of its own must answer with 203.0.113.40."
+					},
+					{
+						"id": "ttl-req",
+						"label": "Changing the caching period for one name should apply to all addresses listed for that name together, not to single records."
+					},
+					{
+						"id": "etag-req",
+						"label": "Two administrators editing one zone or record set concurrently must not silently lose a change; work based on outdated data should be refused."
+					},
+					{
+						"id": "append-req",
+						"label": "A name that already resolves to an address must be able to resolve to a second address without ending up with two separate sets for it."
+					},
+					{
+						"id": "txt-req",
+						"label": "A verification text that is too long for a single entry must still be storable in the zone."
+					}
+				]
+			},
+			"key": {
+				"wildcard-req": "wildcard",
+				"ttl-req": "ttl",
+				"etag-req": "etag",
+				"append-req": "append",
+				"txt-req": "txt-split"
+			},
+			"explanation": {
+				"correct": "The five changes map to the five requirements as follows. A record set whose left-most label is an asterisk answers queries for names under that subdomain that have no closer, non-wildcard record set, which covers the shop subdomain requirement; the TTL is a property of the record set rather than of individual records, so setting it on the set makes every address listed under that name change its caching period together; every zone and record set carries an Etag that is returned on retrieval, and passing it back on a change lets Azure DNS detect that the resource was changed in the meantime and reject the outdated write; records that share a name and type belong to one record set, so a second address for www is added to the existing set rather than published as a separate set; and for TXT records a single string of more than 255 characters is supplied once in the portal, PowerShell or CLI and Azure DNS divides it into 255-character segments, so a long verification text can still be stored.",
+				"perChoice": {
+					"wildcard": "A wildcard record set is created with the asterisk as the left-most label (for example *.shop) and answers any query with a matching name unless a closer non-wildcard record set exists, which is what the shop subdomain requirement asks for. Wildcard record sets are supported for every record type except NS and SOA.",
+					"ttl": "The TTL is specified on the record set, not on each record, so all records within that set use the same value. That is why one change to the caching period of a name affects all of the addresses listed for it together.",
+					"etag": "Each DNS resource (zone or record set) has an Etag that comes back with the resource when it is retrieved, and every update regenerates it. Sending the Etag back lets Azure DNS verify that nothing changed in the meantime and refuse a write based on stale data, which protects the work of a second administrator.",
+					"append": "To give www a second address, the new record is added to the existing record set for that name and type. Adding it to the set that already serves the name keeps a single set per name and type and avoids a duplicate set for the same name.",
+					"txt-split": "For a TXT record each string may be up to 255 characters, and in the portal, PowerShell and CLI you provide one string and Azure DNS divides it into 255-character segments automatically, so a verification text longer than 255 characters can still be stored. The REST API is the exception because it requires each string separately.",
+					"duplicate": "This change satisfies none of the stated requirements: it produces a second set for a name and type that should be represented by one set, and it does not add an address, change any caching period, or guard against concurrent edits."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-zones-records"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-overview"
+				}
+			],
+			"subtopics": [
+				"record-sets",
+				"wildcard-records",
+				"txt-records"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HHBNGKVNS93NWM9CV0RJ44",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a set of scripts that maintain the contoso.com public zone in Azure DNS, and two administrators frequently work on the same entry at the same time. The table below shows what each script touches and the tooling it runs under. You need every script to behave exactly as its slot describes. Which addition should you make to each script?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Script",
+						"Runs under",
+						"Entry it touches",
+						"What it does today"
+					],
+					"rows": [
+						[
+							"update-record.sh",
+							"bash, REST API",
+							"A record set named www",
+							"Rewrites the address list and the TTL"
+						],
+						[
+							"create-record.sh",
+							"bash, REST API",
+							"TXT record set named mail",
+							"Publishes the mail policy string"
+						],
+						[
+							"reset-record.sh",
+							"bash, REST API",
+							"A record set named www",
+							"Rewrites the address list"
+						],
+						[
+							"force-record.sh",
+							"bash, REST API",
+							"A record set named api",
+							"Rewrites the address list"
+						],
+						[
+							"publish-record.ps1",
+							"PowerShell",
+							"A record set named shop",
+							"Publishes a new address"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "If-Match: <etag>"
+					},
+					{
+						"id": "b",
+						"text": "If-None-Match: *"
+					},
+					{
+						"id": "c",
+						"text": "If-Match: *"
+					},
+					{
+						"id": "d",
+						"text": "No Etag header"
+					},
+					{
+						"id": "e",
+						"text": "-Overwrite switch"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "update-record.sh — the write must be refused when a colleague has saved a different version of the same entry since the script last looked at it"
+					},
+					{
+						"id": "s2",
+						"label": "create-record.sh — publishing must be refused when that name and type are already present in the zone"
+					},
+					{
+						"id": "s3",
+						"label": "reset-record.sh — the write must be refused when the entry it targets has been removed from the zone"
+					},
+					{
+						"id": "s4",
+						"label": "force-record.sh — the write must go ahead regardless of whether the entry it targets is present in the zone"
+					},
+					{
+						"id": "s5",
+						"label": "publish-record.ps1 (PowerShell) — the cmdlet must apply its changes even when a colleague is editing the same entry at the same time"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d",
+				"s5": "e"
+			},
+			"explanation": {
+				"correct": "The four bash scripts call the Azure DNS REST API, where Etag conditions travel as HTTP headers, and the last script uses Azure DNS PowerShell, where the same protection is a cmdlet switch. A write that must fail when somebody else saved a different version of the entry has to send back the Etag that came with the resource, because a mismatch is what reveals the concurrent change — that is If-Match with the Etag value. A write that must fail when the name and type are already published uses If-None-Match with a star, which only succeeds while the resource is absent. A write that must fail when the targeted entry is gone uses If-Match with a star, which succeeds only while the resource exists. A write that must always go through, present or not, carries no Etag header at all, because a request without one is always accepted. Finally, the PowerShell cmdlet must ignore concurrent edits, which is what the optional -Overwrite switch does by suppressing the Etag checks that PowerShell performs by default.",
+				"perChoice": {
+					"a": "Belongs in the update-record.sh slot. Every DNS resource (zone or record set) returns an Etag when it is retrieved, and that Etag must be sent back on update so Azure DNS can verify it; a mismatch means the resource was changed in the meantime, so the update is refused.",
+					"b": "Belongs in the create-record.sh slot. If-None-Match with a star only succeeds while the resource does not exist, so a run of the script that tries to publish a name and type already present in the zone is refused instead of replacing it.",
+					"c": "Belongs in the reset-record.sh slot. If-Match with a star only succeeds while the resource exists, so the write is refused once the targeted entry has been removed from the zone; it does not compare versions, so it cannot detect a colleague's edit.",
+					"d": "Belongs in the force-record.sh slot. A request sent without any Etag header is accepted every time, with no Etag comparison at all, so the write succeeds whether or not the targeted entry is present in the zone.",
+					"e": "Belongs in the publish-record.ps1 slot. Azure DNS PowerShell performs Etag checks by default and blocks concurrent changes to zones and record sets; the optional -Overwrite switch suppresses those checks, so the cmdlet applies its changes over whatever is stored."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-zones-records"
+				}
+			],
+			"subtopics": [
+				"etag-concurrency-control",
+				"dns-record-set-automation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HHM6QZK0AD7FKP2BFRV96M",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Your company runs its public names and its internal names in Azure DNS, and a review of the estate has produced six requirements. For each requirement below, drag the action that satisfies it into the matching slot.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Element",
+						"Present state"
+					],
+					"rows": [
+						[
+							"Public zone contoso.com",
+							"Answers internet queries; validators cannot confirm the zone's authenticity"
+						],
+						[
+							"Zone for contoso.net",
+							"Present in the portal; the name has not been obtained from a registrar"
+						],
+						[
+							"Private zone corp.contoso.local",
+							"Reachable only from the East US estate"
+						],
+						[
+							"Record set www.contoso.com in contoso.com",
+							"Carries no note explaining its business purpose"
+						],
+						[
+							"Subscription Contoso-Prod",
+							"All DNS costs appear as a single line on the monthly invoice"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Link the second location's virtual network to the private zone."
+					},
+					{
+						"id": "i2",
+						"text": "Rename the private zone to use a supported suffix."
+					},
+					{
+						"id": "i3",
+						"text": "Turn on DNSSEC signing and add a DS record set for the registrar."
+					},
+					{
+						"id": "i4",
+						"text": "Apply Azure Resource Manager tags to the zone."
+					},
+					{
+						"id": "i5",
+						"text": "Store the description in the record set's metadata."
+					},
+					{
+						"id": "i6",
+						"text": "Purchase the name through App Service domains or another registrar."
+					},
+					{
+						"id": "i7",
+						"text": "Add tags to the record sets so individual names can be charged separately."
+					},
+					{
+						"id": "i8",
+						"text": "Configure conditional forwarding with Azure DNS Private Resolver."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Internal names must resolve from each region of the estate, and the naming capability must keep working if one region has an outage."
+					},
+					{
+						"id": "s2",
+						"label": "Machines of any kind must be able to look up these internal names, regardless of what they are running."
+					},
+					{
+						"id": "s3",
+						"label": "Checkers of authenticity must be able to confirm that the published records were not tampered with, and whoever holds the name must be told which key to trust."
+					},
+					{
+						"id": "s4",
+						"label": "Costs must be reported against the department that pays for each zone, and the company rule about those values must be enforceable."
+					},
+					{
+						"id": "s5",
+						"label": "One published name needs a short note about its business purpose kept alongside it."
+					},
+					{
+						"id": "s6",
+						"label": "The team wants to begin publishing records for a new name, but that name is not yet registered anywhere."
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5",
+				"s6": "i6"
+			},
+			"explanation": {
+				"correct": "The six requirements are met by linking the second region's network to the existing private zone, renaming the private zone away from an unsupported suffix, turning on DNSSEC signing and publishing a DS record set for the registrar, tagging the zone resources with department and cost values, keeping the record set's description in its metadata, and buying the missing name from App Service domains or another registrar.",
+				"perChoice": {
+					"i1": "Private zone data is stored as a global resource, so the same private zone can be linked to virtual networks in different regions and stays available if the service is interrupted in one of them. Linking the second location's network gives every region the published internal names, which satisfies the requirement about internal names resolving from each region of the estate.",
+					"i2": "Not all operating systems support the .local suffix, so a private zone named that way must be renamed to a suffix every client can resolve. This satisfies the requirement that machines of any kind can look up the internal names.",
+					"i3": "DS and TLSA records only become available once the zone is signed with DNSSEC; the DNSKEY, RRSIG and NSEC3 record sets are then added automatically and cannot be created or modified afterwards, and the DS record set is what the registrar is given for delegation. This satisfies the requirement about authenticity checkers and the key they are told to trust.",
+					"i4": "Azure Resource Manager tags are supported on DNS zone resources, can filter the Azure bill and can be enforced by an Azure Resource Manager policy. This satisfies the requirement about reporting costs per paying department and enforcing the company rule.",
+					"i5": "Tags are not supported on record sets, so record set metadata is the alternative for keeping a description with a published name; unlike tags, metadata cannot filter the Azure bill or be enforced by policy. This satisfies the requirement to keep a short note about a published name's business purpose.",
+					"i6": "Azure DNS hosts zones but does not sell domain names, so a name that has not been obtained yet must be bought through App Service domains or a non-Microsoft registrar before the zone can be delegated and resolve for the world. This satisfies the requirement to begin publishing records for a name that is not yet registered.",
+					"i7": "Tags cannot be applied to record sets at all, and record set metadata cannot filter the Azure bill, so charging each published name separately is not achievable this way. It satisfies none of the listed requirements.",
+					"i8": "Conditional forwarding between on-premises networks and Azure is handled by Azure DNS Private Resolver, but none of the six requirements describes that need, so it belongs in no slot."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-zones-records"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/private-dns-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-overview"
+				}
+			],
+			"subtopics": [
+				"private-dns-zone-linking",
+				"dnssec-zone-signing",
+				"dns-zone-governance"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HHVWB2S5MXP0CPP61TXZH1",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You publish public names for contoso.com in Azure DNS and internal names in an Azure private zone. The facts below show the estate as it stands today together with the requests that have arrived. You need to satisfy six outstanding requirements. Drag each configuration change into the slot that states the requirement it satisfies.",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"publicZone\": \"contoso.com - delegated to the Azure name servers\",\n  \"internalZone\": \"corp.contoso.com - linked only to vnet-app (10.1.0.0/16) in West US\",\n  \"linkSettingsForVnetApp\": \"Automatic registration of virtual machines is turned off; the entry for app.contoso.com (10.1.0.25) was added by hand\",\n  \"secondInternalNetwork\": \"vnet-dr (10.20.0.0/16) in East US - not linked to any zone yet\",\n  \"sessionServiceForContoso\": \"sip-gw.contoso.com - sessions accepted over TCP 5060\",\n  \"thirdPartyVoiceProvider\": \"publishes a mapping for sip2.partner.net that rewrites the name into a contact URI\",\n  \"domainValidationData\": \"1,200 characters long, supplied for contoso.com and submitted through the portal\",\n  \"requestedZoneForAcquiredCompany\": \"fabrikam.local\"\n}"
+				},
+				"items": [
+					{
+						"id": "srv",
+						"text": "Add an SRV record set whose name starts with the service and protocol labels, and set Priority, Weight, Port and Target on each record."
+					},
+					{
+						"id": "naptr",
+						"text": "Add a NAPTR record set and fill in Order, Preference, Flags, Service, Regexp and Replacement."
+					},
+					{
+						"id": "txt",
+						"text": "Supply the value as a single entry and let Azure split it into 255-character segments; one record set can hold 4,096 characters in total."
+					},
+					{
+						"id": "ptr",
+						"text": "Add a PTR record set that covers the private address space of the linked network."
+					},
+					{
+						"id": "global",
+						"text": "Keep the zone as a global resource and link every network that must reach it."
+					},
+					{
+						"id": "local",
+						"text": "Choose a suffix for the zone other than .local so that every client can resolve it."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Clients must discover where the session server for contoso.com lives and how to reach it."
+					},
+					{
+						"id": "s2",
+						"label": "The third party's published mapping, which rewrites their name into a contact URI, must be storable in the public zone."
+					},
+					{
+						"id": "s3",
+						"label": "The vendor's domain-validation data for contoso.com must be publishable through the portal."
+					},
+					{
+						"id": "s4",
+						"label": "A lookup of 10.1.0.25 from inside the environment must return the machine's fully qualified name, made of its record name plus the zone name."
+					},
+					{
+						"id": "s5",
+						"label": "The same zone must serve networks in different regions and remain usable when any of them has an outage."
+					},
+					{
+						"id": "s6",
+						"label": "The requested zone for the acquired company must be usable by every supported operating system."
+					}
+				]
+			},
+			"key": {
+				"s1": "srv",
+				"s2": "naptr",
+				"s3": "txt",
+				"s4": "ptr",
+				"s5": "global",
+				"s6": "local"
+			},
+			"explanation": {
+				"correct": "Each slot maps to one Azure DNS capability. SRV records exist to point clients at service locations, so the SRV record set (with the service and transport encoded in the record set name and Priority, Weight, Port and Target set per record) satisfies the session-server discovery requirement. NAPTR records rewrite a name into a service URI and carry Order, Preference, Flags, Service, Regexp and Replacement, which matches the third party's published mapping. TXT records carry arbitrary text, each string may be up to 255 characters, the portal/PowerShell/CLI split a single string into 255-character segments automatically, and a TXT record set holds up to 4,096 characters in total, so the TXT handling satisfies the long validation-data requirement. PTR records provide reverse lookups in private DNS, which work only for the private IP space of the linked virtual network and return the host/record name with the zone name as the suffix, satisfying the 10.1.0.25 lookup. Private zone data is stored as a global resource, so one zone can be linked to virtual networks in different regions and stays available if service is interrupted in one of them, satisfying the multi-region and outage requirement. Finally, .local is not supported by all operating systems, so the requested fabrikam.local zone must use a different suffix.",
+				"perChoice": {
+					"global": "Belongs with the requirement that one zone serves networks in different regions and survives an outage in one of them: private zone data is stored as a global resource, so the zone is not tied to a single virtual network or region, can be linked to virtual networks in several regions, and stays available if service is interrupted in one virtual network.",
+					"local": "Belongs with the requirement that the requested zone for the acquired company must be usable on every supported operating system: .local is not supported by all operating systems, so the zone name should end with a different suffix. It satisfies none of the other slots, which are all about records or links in the zones that already exist.",
+					"naptr": "Belongs with the third party's published mapping that rewrites a name into a contact URI: this record type maps values from one naming space into another and is described by Order, Preference, Flags, Service, Regexp and Replacement.",
+					"ptr": "Belongs with the requirement that a lookup of 10.1.0.25 returns the machine's fully qualified name: reverse lookup in the internal zone is served by this record type, it works only for the private IP space of the linked virtual network, and it returns the host/record name with the zone name as the suffix.",
+					"srv": "Belongs with the requirement that clients discover where the session server lives and how to reach it: this record type is used to specify server locations, its record set name must carry the service and protocol with leading underscores, and Priority, Weight, Port and Target are set on each record in the set.",
+					"txt": "Belongs with the requirement to publish the vendor's long validation data: strings in this record type may be up to 255 characters each, the portal, PowerShell and CLI take one string and split it into 255-character segments automatically, and a single record set holds up to 4,096 characters in total."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-zones-records"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/private-dns-overview"
+				}
+			],
+			"subtopics": [
+				"dns-record-types",
+				"private-dns-reverse-lookup",
+				"private-zone-resiliency"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HHXPDF7FK7BHR2JG4XKFRH",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You operate an Azure virtual network vnet-app (10.1.0.0/16) and an on-premises network (10.10.0.0/16) whose DNS server runs at 10.10.0.10. Internal names are published in an Azure private zone named corp.contoso.com that is already linked to vnet-app, with automatic registration of virtual machine records turned on. The on-premises server has no copy of those names, and it is the only place where names such as legacy.contoso.com are published. You need each environment to answer queries for the names that live in the other one. Separately, the public web host keeps its address cached by clients for a full hour after you change it, and clients must pick up a replacement address within about a minute.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Azure virtual network",
+							"vnet-app, address space 10.1.0.0/16"
+						],
+						[
+							"On-premises network",
+							"10.10.0.0/16, DNS server 10.10.0.10"
+						],
+						[
+							"Zone holding internal names",
+							"corp.contoso.com, Azure private DNS zone, linked to vnet-app, automatic registration of virtual machine records: enabled"
+						],
+						[
+							"Names published only on premises",
+							"legacy.contoso.com and other host names held by 10.10.0.10"
+						],
+						[
+							"Public web host record set",
+							"host.contoso.com, type A, one record, address 203.0.113.10, time to live 3,600 seconds"
+						]
+					]
+				},
+				"statement": "To let each environment resolve the names published in the other one you should use {{resolverService}}, and to make clients stop using the cached address of the public web host within about a minute you should {{ttlSetting}}.",
+				"slots": [
+					{
+						"id": "resolverService",
+						"options": [
+							{
+								"id": "a",
+								"text": "Azure DNS Private Resolver"
+							},
+							{
+								"id": "b",
+								"text": "an additional virtual network link from the on-premises network to the corp.contoso.com Azure Private DNS zone"
+							},
+							{
+								"id": "c",
+								"text": "Azure Traffic Manager"
+							},
+							{
+								"id": "d",
+								"text": "DNS Resolver Policy"
+							}
+						]
+					},
+					{
+						"id": "ttlSetting",
+						"options": [
+							{
+								"id": "a",
+								"text": "set the time to live to 60 seconds on the record set that holds the public web host"
+							},
+							{
+								"id": "b",
+								"text": "set the time to live to 60 seconds on each individual record inside that record set"
+							},
+							{
+								"id": "c",
+								"text": "set the time to live to 60 seconds on the corp.contoso.com zone"
+							},
+							{
+								"id": "d",
+								"text": "set the time to live to 3,600 seconds on the record set that holds the public web host"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"resolverService": "a",
+				"ttlSetting": "a"
+			},
+			"explanation": {
+				"correct": "Resolving names between Azure and on-premises networks in both directions is conditional forwarding, and in Azure DNS that is provided by Azure DNS Private Resolver; a plain private zone only answers for the virtual networks linked to it, and an on-premises network cannot be linked to a zone that way, so an extra link cannot make the two environments resolve each other's names. The time to live is a property of a record set rather than of each individual record, so all records in the set share it; reducing it to 60 seconds on the record set that holds the public web host makes clients re-query within about a minute after the address is changed.",
+				"perChoice": {
+					"resolverService:b": "A private zone is resolved from a virtual network that is linked to it, and an on-premises network is not something you can link, so an additional link cannot make the on-premises server answer for the names published in Azure or make the Azure workloads answer for the names held on premises.",
+					"resolverService:c": "Azure Traffic Manager is a DNS-based traffic load balancer for public-facing applications spread across Azure regions; it distributes traffic for internet endpoints rather than relaying queries between Azure and on-premises networks.",
+					"resolverService:d": "DNS Resolver Policy filters and logs DNS queries at the virtual network level and can block names listed in the Threat Intelligence feed; it does not relay queries to an on-premises DNS server.",
+					"ttlSetting:b": "The time to live is specified for the record set, not for each record, so every record in the set uses the same value and a per-record setting is not how Azure DNS stores it.",
+					"ttlSetting:c": "The time to live belongs to a record set, not to the zone, so changing it at zone level would not alter how long clients cache the web host address.",
+					"ttlSetting:d": "3,600 seconds is one hour, which is the value already in place; clients would keep using the cached address for up to an hour, so a new address would not take effect within about a minute."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/private-dns-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-zones-records"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-overview"
+				}
+			],
+			"subtopics": [
+				"private-resolver",
+				"conditional-forwarding",
+				"record-set-ttl"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HJ2YC518P9TN8361EHHNH4",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "A domain-verification provider has emailed your team a token that has to be published for contoso.com so the provider's own lookup finds it. The tooling that publishes the token calls the Azure DNS REST API directly, and it currently offers the whole token as a single text value, which the service will not accept. What should the request contain, and which record set name should the token be published under?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Public zone:                 contoso.com - delegated to the Azure name servers\nVerification token:          600 characters\nPublishing tool:             Azure DNS REST API, creating one record set\nProvider's check:            a DNS query for contoso.com"
+				},
+				"statement": "The request should carry {{payload}}, and the record set should be named {{name}}.",
+				"slots": [
+					{
+						"id": "payload",
+						"options": [
+							{
+								"id": "a",
+								"text": "Three text values of 255 characters or fewer each in a single TXT record set"
+							},
+							{
+								"id": "b",
+								"text": "One text value of 600 characters in a single TXT record set"
+							},
+							{
+								"id": "c",
+								"text": "Three text values of 600 characters each in a single TXT record set"
+							},
+							{
+								"id": "d",
+								"text": "Three text values of 255 characters or fewer each in a single CNAME record set"
+							}
+						]
+					},
+					{
+						"id": "name",
+						"options": [
+							{
+								"id": "a",
+								"text": "@ - the name of the zone itself"
+							},
+							{
+								"id": "b",
+								"text": "www - a host name under the zone"
+							},
+							{
+								"id": "c",
+								"text": "mail - a host name under the zone"
+							},
+							{
+								"id": "d",
+								"text": "contoso.com - the fully qualified name of the zone"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"name": "a",
+				"payload": "a"
+			},
+			"explanation": {
+				"correct": "The token is 600 characters long, while a single DNS text value may be at most 255 characters. The portal, PowerShell and CLI accept one long string and divide it into shorter segments for you, but a direct REST API call requires every string to be supplied separately, so the tooling has to send three values, none longer than 255 characters, inside one TXT record set. The total of 600 characters is well inside the 4,096-character allowance for a single TXT record set. Because the provider queries the domain contoso.com rather than a host beneath it, the token belongs in the zone's root record set, written @; writing contoso.com as the relative name would produce contoso.com.contoso.com.",
+				"perChoice": {
+					"payload:b": "This offers the whole 600-character token as one value, which is above the 255-character maximum for a single text value. Only the portal, PowerShell and CLI divide a long string into shorter segments for you; a direct REST API call must supply each string separately.",
+					"payload:c": "Each of the three values would be 600 characters long, above the 255-character maximum allowed for one text value, so the token has to be divided so that every value stays within that limit.",
+					"payload:d": "A CNAME record set carries an alias target rather than the provider's verification text, and it cannot be created at the zone root, which already holds the NS and SOA record sets.",
+					"name:b": "A record set named www is published as www.contoso.com, so a query for the domain contoso.com would not return the token.",
+					"name:c": "A record set named mail is published as mail.contoso.com, which is a host beneath the zone rather than the domain name the provider queries.",
+					"name:d": "Writing contoso.com as the relative name inside the contoso.com zone would produce contoso.com.contoso.com. The root of the zone is written with the @ character."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-zones-records"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-overview"
+				}
+			],
+			"subtopics": [
+				"txt-records",
+				"record-set-naming",
+				"rest-api"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HJ8Q6KZPE5K15QJMZ6D827",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are responsible for public naming for fabrikam.com, which is hosted in Azure DNS. The current state of the zone is shown below.\n\nThree requests are outstanding. First, the resilience team wants a second hosted copy of fabrikam.com in subscription B, under resource group rg-dns-dr, so that the domain can be moved there if subscription A is lost; the copy must be usable, and the domain must keep resolving through whichever name servers are in place. Second, a partner has been given the part of the domain partners.fabrikam.com and wants it answered by name servers that they operate, and a colleague has suggested adding those servers to the zone's top-level name server entries. Third, your security team has enabled DNSSEC for the fabrikam.com zone, and extra entries have appeared in the zone that nobody on your team added.\n\nChoose the statement that correctly describes the outcome for each request, in the same order.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Current state"
+					],
+					"rows": [
+						[
+							"Hosted zone name",
+							"fabrikam.com"
+						],
+						[
+							"Subscription",
+							"A"
+						],
+						[
+							"Resource group",
+							"rg-dns-prod"
+						],
+						[
+							"Name servers serving the domain",
+							"ns1-37.azure-dns.com, ns2-37.azure-dns.net, ns3-37.azure-dns.org, ns4-37.azure-dns.info"
+						],
+						[
+							"Records published",
+							"www (A), mail (MX)"
+						],
+						[
+							"DNSSEC",
+							"Enabled on the zone"
+						]
+					]
+				},
+				"statement": "Choose the statement that correctly describes the outcome for each request, in the same order: {{s1}}; {{s2}}; {{s3}}.",
+				"slots": [
+					{
+						"id": "s1",
+						"options": [
+							{
+								"id": "s1a",
+								"text": "The second zone is created and receives its own name server addresses, so only one set can be pointed at the registrar."
+							},
+							{
+								"id": "s1b",
+								"text": "The second zone is created and receives the same name server addresses as the first, so either set can be pointed at the registrar."
+							},
+							{
+								"id": "s1c",
+								"text": "The second zone is created and receives its own name server addresses, so both sets can be pointed at the registrar at the same time."
+							},
+							{
+								"id": "s1d",
+								"text": "The second zone cannot be created because a zone name must be unique across the whole subscription."
+							}
+						]
+					},
+					{
+						"id": "s2",
+						"options": [
+							{
+								"id": "s2a",
+								"text": "A separate NS record set is created for the partner's subdomain, and the zone's own top-level NS entries are left unchanged."
+							},
+							{
+								"id": "s2b",
+								"text": "The zone's own top-level NS entries are edited for the partner's subdomain, and the Azure name servers are replaced with the partner's."
+							},
+							{
+								"id": "s2c",
+								"text": "A separate A record set is created for the partner's subdomain, and it points at the partner's name server addresses."
+							},
+							{
+								"id": "s2d",
+								"text": "A separate CNAME record set is created for the partner's subdomain, and it points at the partner's name server addresses."
+							}
+						]
+					},
+					{
+						"id": "s3",
+						"options": [
+							{
+								"id": "s3a",
+								"text": "Once DNSSEC is enabled on the zone, the zone gains DNSKEY, RRSIG and NSEC3 record sets that cannot be created or modified afterwards."
+							},
+							{
+								"id": "s3b",
+								"text": "Once DNSSEC is enabled on the zone, the zone gains DNSKEY, RRSIG and NSEC3 record sets that can be freely edited afterwards."
+							},
+							{
+								"id": "s3c",
+								"text": "Once DNSSEC is enabled on the zone, the zone gains A, AAAA and CNAME record sets that cannot be created or modified afterwards."
+							},
+							{
+								"id": "s3d",
+								"text": "Once DNSSEC is enabled on the zone, the zone gains NS and SOA record sets that cannot be created or modified afterwards."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"s1": "s1a",
+				"s2": "s2a",
+				"s3": "s3a"
+			},
+			"explanation": {
+				"correct": "For the duplicate hosted zone, a zone name only has to be unique within its resource group, and the same name may be reused in another resource group or in another subscription; each instance of the zone is handed its own four name servers, and only one set of them can be configured at the registrar. For the partner's subdomain, the delegation is done with a separate NS record set, because the zone's own top-level NS record set is created and deleted with the zone and the Azure name servers pre-populated inside it cannot be removed or edited — other NS record sets, used to delegate a subdomain, carry no such restriction. For the signed zone, the DNSSEC-managed types DNSKEY, RRSIG and NSEC3 appear automatically when the zone is signed, and they cannot be created or modified afterwards.",
+				"perChoice": {
+					"s1:s1b": "Each instance of a hosted zone is given its own four name server addresses, so the copy in subscription B does not reuse the addresses of the zone in subscription A. The registrar can also be configured with only one of the two sets, so the claim that either set may be used there is wrong as well.",
+					"s1:s1c": "The zone instances do each get their own name server addresses, but only one set can be configured at the registrar, so the two sets cannot both be pointed at it at the same time.",
+					"s1:s1d": "A zone name must be unique within its resource group, but the same name can be reused in another resource group or in another subscription, so the copy in subscription B under rg-dns-dr can be created.",
+					"s2:s2b": "The name servers pre-populated in the zone's own NS record set cannot be removed or edited; that set is created and deleted automatically with the zone. Other NS record sets, used to delegate a subdomain, have no such restriction.",
+					"s2:s2c": "Delegating a subdomain to another operator's name servers is done with NS records. An A record maps a host name to an IP address, so it cannot hand a subdomain over to the partner's servers.",
+					"s2:s2d": "A CNAME makes one name an alias for another host name and cannot be used to delegate a zone; it also cannot coexist with other record sets of the same name.",
+					"s3:s3b": "The DNSKEY, RRSIG and NSEC3 entries that appear when a zone is signed cannot be created or modified afterwards, so they are not freely editable.",
+					"s3:s3c": "Signing a zone adds the DNSSEC-managed types DNSKEY, RRSIG and NSEC3. A, AAAA and CNAME record sets are not added by signing a zone.",
+					"s3:s3d": "Signing a zone adds DNSKEY, RRSIG and NSEC3. The NS and SOA sets at the zone apex are created with the zone itself rather than by signing, and the apex NS set is deleted automatically together with the zone."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-zones-records"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-delegate-domain-azure-dns"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-overview"
+				}
+			],
+			"subtopics": [
+				"dns-zone-delegation",
+				"dns-record-sets",
+				"dnssec"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HJCNX8HD01WTQQHBY2FBG9",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your company publishes the domain contoso.com through a public DNS zone, and internet clients already resolve the domain through the four name servers shown in the exhibit. Your network team runs its own name servers inside the data centre and wants queries for this domain answered by those servers instead. The team intends to work inside the zone, adjusting the entries that sit at its top level, rather than moving the domain to a different hosting arrangement. You need to tell the team what is actually possible for the listed name servers and for the start-of-authority entry. Which statement describes that correctly?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Entry",
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Top-level name server entry",
+							"Nameservers",
+							"ns1-37.azure-dns.com, ns2-37.azure-dns.net, ns3-37.azure-dns.org, ns4-37.azure-dns.info"
+						],
+						[
+							"Start-of-authority entry",
+							"Server name",
+							"ns1-37.azure-dns.com"
+						],
+						[
+							"Start-of-authority entry",
+							"Responsible mailbox",
+							"azuredns-hostmaster.microsoft.com"
+						],
+						[
+							"Start-of-authority entry",
+							"Serial number",
+							"1"
+						],
+						[
+							"Start-of-authority entry",
+							"Refresh",
+							"3600"
+						],
+						[
+							"Start-of-authority entry",
+							"Retry",
+							"300"
+						],
+						[
+							"Start-of-authority entry",
+							"Expire",
+							"604800"
+						],
+						[
+							"Start-of-authority entry",
+							"Minimum TTL",
+							"300"
+						]
+					]
+				},
+				"statement": "The four Azure name servers listed in the top-level entry of the zone {{ns}}, and the start-of-authority entry of the same zone {{soa}}.",
+				"slots": [
+					{
+						"id": "ns",
+						"options": [
+							{
+								"id": "a",
+								"text": "cannot be edited or removed"
+							},
+							{
+								"id": "b",
+								"text": "can be edited in place by a zone administrator"
+							},
+							{
+								"id": "c",
+								"text": "can be removed, or replaced with an entry naming the in-house servers"
+							},
+							{
+								"id": "d",
+								"text": "can only be changed through the domain registrar"
+							}
+						]
+					},
+					{
+						"id": "soa",
+						"options": [
+							{
+								"id": "a",
+								"text": "cannot be deleted on its own, but its server name can be edited"
+							},
+							{
+								"id": "b",
+								"text": "cannot be deleted or created on its own; its server name cannot be edited"
+							},
+							{
+								"id": "c",
+								"text": "can be deleted, or created again at any time"
+							},
+							{
+								"id": "d",
+								"text": "can only be changed when the zone is signed"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"ns": "a",
+				"soa": "b"
+			},
+			"explanation": {
+				"correct": "Both of these entries live at the top of the zone and are managed by the platform. The name server entry at the top of the zone is created with the zone and disappears with it, and the Azure name servers that the platform prepopulates inside it cannot be removed or modified, so it is not the place where a team can hand the domain over to its own servers; only the entry's TTL and metadata can be changed, and extra name servers can be added for co-hosting. The start-of-authority entry follows the same pattern for its lifecycle: it is created with the zone and deleted with it and has no separate create or delete operation. Its properties are editable with exactly one exception, the host value, which the platform preconfigures to the primary name server name (ns1-37.azure-dns.com in the exhibit), so the server name shown there is fixed while other values, such as the responsible mailbox or the serial number, remain changeable.",
+				"perChoice": {
+					"ns:b": "Administrative permissions do not lift the restriction: the Azure name servers prepopulated in the top-level entry cannot be removed or modified. Only the entry's TTL and metadata can be changed, and additional name servers may be added.",
+					"ns:c": "The entry has no separate delete operation - it is removed only together with the zone - and the Azure name servers inside it cannot be removed or edited to name in-house servers instead.",
+					"ns:d": "Registrar settings decide which servers are authoritative for the domain, but they do not change what this zone permits: the prepopulated Azure name servers in the top-level entry still cannot be removed or modified.",
+					"soa:a": "The server name is the one property that cannot be changed: Azure preconfigures it to the primary name server name, which is why the exhibit shows ns1-37.azure-dns.com there.",
+					"soa:c": "This entry is created and deleted automatically with the zone, so it has no separate create or delete operation that an administrator can invoke at will.",
+					"soa:d": "Signing the zone with DNSSEC adds the DNSKEY, RRSIG and NSEC3 entries; it is not a precondition for working on the start-of-authority entry, whose properties stay editable apart from the server name."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-zones-records"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-delegate-domain-azure-dns"
+				}
+			],
+			"subtopics": [
+				"public-dns-zone",
+				"apex-record-sets",
+				"zone-administration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HJHMS0DDEAHCBJ3Z4Y1QQM",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You publish the contoso.com domain through an Azure public DNS zone that is delegated to the Azure name servers, and you publish the internal namespace corp.contoso.com through an Azure private DNS zone that is linked to vnet-app (10.1.0.0/16) with automatic registration of virtual machines turned on. Your security team wants a record published that tells certificate authorities that a single named authority may issue certificates for contoso.com, and an administrator has proposed adding that record to the private zone so that it sits alongside the internal names. Which statement describes where the record can be published?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Zone",
+						"Hosted in",
+						"Details"
+					],
+					"rows": [
+						[
+							"contoso.com",
+							"Azure public DNS zone",
+							"Delegated to the four Azure name servers; holds www A 203.0.113.10, @ NS and @ SOA"
+						],
+						[
+							"corp.contoso.com",
+							"Azure private DNS zone",
+							"Linked to vnet-app (10.1.0.0/16) with autoregistration on; holds www A 10.1.0.20 and mail MX 10.1.0.25"
+						]
+					]
+				},
+				"statement": "The record that names the permitted certificate authority {{slot1}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "can be published in the public zone, because an Azure private zone accepts only the A, AAAA, CNAME, MX, PTR, SOA, SRV and TXT record types"
+							},
+							{
+								"id": "b",
+								"text": "can be published in the private zone rather than the public zone, because an Azure private zone accepts every record type that a public zone accepts"
+							},
+							{
+								"id": "c",
+								"text": "can be published in the private zone rather than the public zone, because an Azure private zone accepts the A, AAAA, CAA, CNAME, MX, NS, PTR, SOA, SRV and TXT record types"
+							},
+							{
+								"id": "d",
+								"text": "can be published in the private zone rather than the public zone, because an Azure private zone accepts the A, AAAA, CAA, CNAME, MX, NS, PTR, SOA, SRV, TXT and TLSA record types"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a"
+			},
+			"explanation": {
+				"correct": "The record that names the permitted certificate authority is a CAA record. Azure Private DNS supports the A, AAAA, CNAME, MX, PTR, SOA, SRV and TXT record types, so a CAA record set cannot be created in the private zone corp.contoso.com, and the proposal to add it there fails. A public zone supports CAA alongside the other common types, so the restriction for contoso.com belongs in the public zone that holds the domain.",
+				"perChoice": {
+					"slot1:b": "This claim that a private zone takes every record type a public zone takes is not correct: the types an Azure private zone supports are A, AAAA, CNAME, MX, PTR, SOA, SRV and TXT, and CAA is not among them, so the record cannot be added to corp.contoso.com.",
+					"slot1:c": "The list given here wrongly adds CAA and NS to the capabilities of a private zone. An Azure private zone supports A, AAAA, CNAME, MX, PTR, SOA, SRV and TXT, so the record that names the permitted certificate authority has to be published in the public zone instead.",
+					"slot1:d": "This list is broader still, because TLSA is not a record type an Azure private zone supports either, and the real private zone set is A, AAAA, CNAME, MX, PTR, SOA, SRV and TXT. The certificate-authority record therefore cannot be created in the private zone."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/private-dns-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-zones-records"
+				}
+			],
+			"subtopics": [
+				"private-dns",
+				"record-types",
+				"public-dns"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HJPCEB6DHCM0ZR72KF5FY8",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your company publishes contoso.com through a public Azure DNS zone that is already delegated to the Azure name servers, and the zone holds the record sets listed in the exhibit. A partner organisation runs its own name servers at ns1.partner-dns.net and ns2.partner-dns.org, and it wants every name beneath sales.contoso.com answered by those servers, while the remaining names in the domain must continue to be answered by Azure. The domain's registration stays where it is, so you can only work inside the contoso.com zone. Which change should you make in that zone?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Record set name",
+						"Type",
+						"Records"
+					],
+					"rows": [
+						[
+							"@",
+							"NS",
+							"ns1-37.azure-dns.com, ns2-37.azure-dns.net, ns3-37.azure-dns.org, ns4-37.azure-dns.info"
+						],
+						[
+							"www",
+							"A",
+							"203.0.113.20"
+						],
+						[
+							"mail",
+							"A",
+							"203.0.113.25"
+						],
+						[
+							"@",
+							"MX",
+							"10 mail.contoso.com"
+						]
+					]
+				},
+				"statement": "To hand the sales.contoso.com names over to the partner's servers, you should {{delegation}}.",
+				"slots": [
+					{
+						"id": "delegation",
+						"options": [
+							{
+								"id": "a",
+								"text": "add an NS record set named sales to the contoso.com zone that contains the partner's name servers"
+							},
+							{
+								"id": "b",
+								"text": "replace the NS record set at the top of the contoso.com zone with one that contains the partner's name servers"
+							},
+							{
+								"id": "c",
+								"text": "add an A record set named sales to the contoso.com zone that contains the partner's name servers"
+							},
+							{
+								"id": "d",
+								"text": "add a CNAME record set named sales that points at one of the partner's name servers"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"delegation": "a"
+			},
+			"explanation": {
+				"correct": "A branch of a domain is delegated to other name servers by an NS record set in the parent zone whose name is the subdomain label, so adding an NS record set named sales to the contoso.com zone and listing the partner's name servers in it makes those servers the ones consulted for sales.contoso.com while the rest of the domain stays with Azure. The NS record set that sits at the top of the zone is created and removed automatically with the zone and its pre-populated Azure name servers cannot be edited or deleted, so the delegation cannot be made there. A and CNAME records express addresses and aliases for a single name and never delegate a subtree to other servers.",
+				"perChoice": {
+					"delegation:b": "The record set at the top of the zone is created and deleted automatically with the zone, and the name servers pre-populated inside it cannot be removed or edited, so it cannot be rewritten for the partner. Even if it could be, a change there would apply to the whole domain rather than only to sales.contoso.com.",
+					"delegation:c": "An A record maps a host name to an IP address; it has no way to name a set of name servers that should be consulted for a subtree, so the partner's servers would never be asked to answer those names.",
+					"delegation:d": "A CNAME record only makes one host name an alias for another host name that already resolves to an address; it does not hand a part of the domain over to other servers, which is done only with the name server records in the parent zone."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-zones-records"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/dns/dns-delegate-domain-azure-dns"
+				}
+			],
+			"subtopics": [
+				"public-dns-zone",
+				"dns-delegation",
+				"ns-record-set"
+			],
+			"reviewed": false
+		}
+	]
+}

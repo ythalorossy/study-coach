@@ -1,0 +1,1610 @@
+{
+	"skill": "networking.private-endpoints",
+	"questions": [
+		{
+			"id": "q_01M6H0BP8PV6SX789GR6XV6HEQ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your team operates the `vnet-app` virtual network in subscription `sub-app`. A storage account named `contosodata` is administered by the platform team in subscription `sub-platform`. You deployed a private endpoint in `snet-app` so the applications in your VNet reach that storage account over the private path. After deployment, the application cannot open a connection to the private IP address of the endpoint, even though the address was assigned successfully. You need the private data path to work. Which action should you take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Name                        pe-contoso-blob\nVirtual network             vnet-app\nSubnet                      snet-app (10.1.0.0/24)\nPrivate-link resource       /subscriptions/sub-platform/resourceGroups/rg-platform/providers/Microsoft.Storage/storageAccounts/contosodata\nTarget subresource          blob\nConnection approval method  Manual\nRequest message             Private access for Contoso app\nConnection status           Pending\nPrivate IP address          10.1.0.5"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Ask the resource owner to review and approve the pending private endpoint connection"
+					},
+					{
+						"id": "b",
+						"text": "Edit the private endpoint resource and set the pending connection state to Approved"
+					},
+					{
+						"id": "c",
+						"text": "Delete the pending private endpoint connection and create a new request that uses the automatic approval method"
+					},
+					{
+						"id": "d",
+						"text": "Add a manual A record to the private DNS zone linked to the VNet so the storage FQDN points at 10.1.0.5 while the request is pending"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Only a private endpoint whose connection status is Approved carries traffic; an endpoint in Pending, Rejected, or Disconnected state silently passes nothing even though its private IP is assigned. The endpoint was created with the manual approval method against a storage account administered by another subscription's team, so the request stays in Pending until the private-link resource owner reviews the request (the request message identifies it) and approves it. The exhibit shows the state that explains the symptom: Connection status is Pending while the private IP 10.1.0.5 exists.",
+				"perChoice": {
+					"b": "Connection status is read-only on the private endpoint; it cannot be set from the endpoint resource. Reviewing, approving, rejecting, or deleting a connection are actions performed on the private-link resource by the party that owns it, so editing the endpoint cannot move the state to Approved.",
+					"c": "Automatic approval requires the permission Microsoft.<Provider>/<resource_type>/privateEndpointConnectionsApproval/action on the target resource, which you do not have for a storage account owned by the platform team — so a new request created with the automatic method would still sit in Pending. Deleting the connection also puts the endpoint in Disconnected (informative only), and only the endpoint owner can then delete the endpoint resource.",
+					"d": "The private IP is already assigned, so name resolution is not what is broken: an endpoint whose connection is not Approved passes no traffic regardless of how the name resolves. A manual A record also does not keep itself updated if the address changes, so it cannot replace resolving the endpoint correctly. The connection state must be settled first."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/create-private-endpoint-portal"
+				}
+			],
+			"subtopics": [
+				"private-endpoint-approval",
+				"connection-status"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6H0EWT0CTWSC4FQ36PVFGAG",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a virtual network `vnet-sec` in subscription `sub-sec` that hosts a finance application. Three private endpoints were created in it: one for the blob endpoint of storage account `contosostore1`, one for the file endpoint of storage account `contosostore2`, and one for Azure Key Vault `kv-contoso`. The application reads and writes to both storage accounts successfully, but every call to the Key Vault fails because its name does not resolve to the endpoint address inside `vnet-sec`. You need `kv-contoso` reachable over its private path from the virtual network, with the two storage endpoints continuing to work. Which action should you take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"virtualNetwork\": \"vnet-sec\",\n  \"privateEndpoints\": [\n    { \"name\": \"pe-sto-blob\", \"target\": \"Storage account contosostore1\", \"subresource\": \"blob\", \"privateIP\": \"10.0.1.4\" },\n    { \"name\": \"pe-sto-file\", \"target\": \"Storage account contosostore2\", \"subresource\": \"file\", \"privateIP\": \"10.0.1.5\" },\n    { \"name\": \"pe-kv\", \"target\": \"Azure Key Vault kv-contoso\", \"privateIP\": \"10.0.1.6\" }\n  ],\n  \"privateDnsZonesLinkedToVnetSec\": [\n    { \"zone\": \"privatelink.blob.core.windows.net\", \"aRecord\": \"contosostore1 -> 10.0.1.4\" },\n    { \"zone\": \"privatelink.file.core.windows.net\", \"aRecord\": \"contosostore2 -> 10.0.1.5\" }\n  ],\n  \"observedFromVmInVnetSec\": {\n    \"storageBlobNames\": \"resolve to 10.0.1.4\",\n    \"storageFileNames\": \"resolve to 10.0.1.5\",\n    \"kv-contoso\": \"resolves to the public address 20.60.10.4\"\n  }\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Deploy a private DNS zone named `privatelink.vaultcore.azure.net` and link it to `vnet-sec`"
+					},
+					{
+						"id": "b",
+						"text": "Deploy a private DNS zone named `privatelink.database.windows.net` and link it to `vnet-sec`"
+					},
+					{
+						"id": "c",
+						"text": "Deploy a private DNS zone named `privatelink.blob.core.windows.net` and link it to `vnet-sec`"
+					},
+					{
+						"id": "d",
+						"text": "Deploy a private DNS zone named `privatelink.file.core.windows.net` and link it to `vnet-sec`"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Every private endpoint needs a private DNS zone whose name matches the recommended zone for the service and subresource it fronts, and that zone must be linked to the virtual network. The recommended zone for Azure Key Vault is `privatelink.vaultcore.azure.net`. Because no such zone is linked to `vnet-sec`, the name `kv-contoso` still resolves to the public address `20.60.10.4` instead of the endpoint's private IP `10.0.1.6`, so the application never reaches the private path. Deploying and linking the recommended zone adds the A record that maps `kv-contoso` to `10.0.1.6`, while the two storage zones stay in place and keep serving their endpoints.",
+				"perChoice": {
+					"b": "`privatelink.database.windows.net` is the recommended private DNS zone for Azure SQL Database, not for Azure Key Vault. Linking it would not produce a record for `kv-contoso`, so the Key Vault name would still resolve publicly.",
+					"c": "`privatelink.blob.core.windows.net` is already linked to `vnet-sec` and already serves the blob endpoint of `contosostore1`. The Key Vault name is not part of that zone's namespace, and a zone already in use for one service should not be repurposed to hold records for another service.",
+					"d": "`privatelink.file.core.windows.net` is already linked to `vnet-sec` and already serves the file endpoint of `contosostore2`. It does not cover Key Vault names, and adding the Key Vault record to a zone used by another service is not a valid pattern."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-dns"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview"
+				}
+			],
+			"subtopics": [
+				"private-dns-zones",
+				"key-vault-private-endpoints"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6H0KTSG8TZZB0E58WZ1J5WZ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a virtual network `vnet-billing` that hosts an invoicing application. The application reads from two Cosmos DB accounts, `cosmos-inv-a` and `cosmos-inv-b`, reached through private endpoints that target the `Sql` subresource. Both connections show as approved and both endpoints carry private IPs from `snet-billing`, but neither account name resolves inside the virtual network any more, so the private data path is down. You need both Cosmos DB accounts reachable over the private path from `vnet-billing`. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Object",
+						"Name",
+						"Configuration"
+					],
+					"rows": [
+						[
+							"Virtual network",
+							"vnet-billing",
+							"VNet link: privatelink.documents.azure.com"
+						],
+						[
+							"Private endpoint",
+							"pe-inv-a",
+							"Target: cosmos-inv-a / Sql; private IP: 10.2.0.4; connection status: Approved"
+						],
+						[
+							"Private endpoint",
+							"pe-inv-b",
+							"Target: cosmos-inv-b / Sql; private IP: 10.2.0.5; connection status: Approved"
+						],
+						[
+							"Private DNS zone",
+							"privatelink.documents.azure.com",
+							"Linked to vnet-billing; linked to pe-inv-a and pe-inv-b; A records for cosmos-inv-a and cosmos-inv-b: none"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Reuse the linked private DNS zone and add a second A record for cosmos-inv-b pointing to 10.2.0.5"
+					},
+					{
+						"id": "b",
+						"text": "Create a distinct private DNS zone for each private endpoint and link each zone to the virtual network"
+					},
+					{
+						"id": "c",
+						"text": "Enable fallback to Internet on the virtual network link and keep both endpoints using the existing zone"
+					},
+					{
+						"id": "d",
+						"text": "Unlink the private DNS zone from the virtual network and publish both account names with public DNS A records"
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "Both private endpoints target the same service type, and a single private DNS zone must not serve two private endpoints of the same service type: attaching the second endpoint to the existing zone removes the A record that was created for the first endpoint, so neither account name resolves. The supported pattern is one private DNS zone per private endpoint, each linked to the virtual network, so each endpoint's service name is answered by its own zone and points at its own private IP.",
+				"perChoice": {
+					"a": "Keeping both endpoints on one zone is the arrangement that caused the failure, because the record created for the first endpoint is dropped when the second endpoint of the same service type is attached to that zone; adding another record to the same zone does not restore private resolution for both names.",
+					"c": "Fallback to Internet only applies when a name is not found in the private zone, and it returns the public resolution of the resource rather than the endpoint's private IP, so the application still would not use the private data path.",
+					"d": "Publishing the account names through public DNS and removing the zone link sends client traffic to the public endpoints of the service, which does not satisfy the requirement that both accounts are reached over the private path."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-dns"
+				}
+			],
+			"subtopics": [
+				"private-dns",
+				"private-endpoint-topology"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6H0QFXK3EVFQWWFYTY2PM3F",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You support a partner integration in which your applications must reach a custom Private Link service that the partner publishes behind its own standard load balancer. The partner shared the moniker `contoso-migration`, and the service exposes a single subresource named `migration`. You deployed a private endpoint in subnet `snet-pe` of virtual network `vnet-core` (subscription `sub-core`, region `westeurope`) against that moniker, and the connection has not been accepted since it was created. Your own identity holds no approval permission on the partner's resource, and you need the partner's operators to be able to review the request and decide on it. Which configuration should you use when you create the endpoint?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Private endpoint",
+							"pe-migration, resource group rg-core, subscription sub-core"
+						],
+						[
+							"Placement",
+							"vnet-core / snet-pe, region westeurope"
+						],
+						[
+							"Target",
+							"Custom Private Link service published by the partner"
+						],
+						[
+							"Moniker used to reach the target",
+							"contoso-migration"
+						],
+						[
+							"Target subresource",
+							"migration"
+						],
+						[
+							"Request message",
+							"Please approve the migration link for the platform team"
+						],
+						[
+							"Connection status",
+							"Pending"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Connection approval method = Manual, with the manual request parameter set to True during the create flow"
+					},
+					{
+						"id": "b",
+						"text": "Connection approval method = Automatic, with the manual request parameter set to True during the create flow"
+					},
+					{
+						"id": "c",
+						"text": "Connection approval method = Manual, with the request message identifying the requesting team"
+					},
+					{
+						"id": "d",
+						"text": "Connection approval method = Automatic, with the request message identifying the requesting team"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The target is reached through the partner's moniker (alias) rather than a resource ID, so the endpoint must be created with the manual connection approval method and the manual request parameter set to True during the create flow. That is what hands a request to the partner's operators, who can then approve, reject, or leave it pending. Automatic approval cannot be used either, because it only completes the connection when the creator holds the privateEndpointConnectionsApproval action on the target resource, which your identity does not have.",
+				"perChoice": {
+					"b": "Automatic approval only completes the connection when the creator has the privateEndpointConnectionsApproval action on the target resource, and moniker-based connections are handled through the manual method, so adding the manual request parameter to an Automatic endpoint does not make the connection usable.",
+					"c": "Manual is the right approval method, but a moniker-based connection also needs the manual request parameter set to True at creation time. A request message on its own does not register the request with the partner's operators, so the connection stays pending and no traffic can flow.",
+					"d": "This combines both problems: automatic approval needs approval rights on the partner's resource that your identity lacks, and moniker-based connections are handled with the manual method. Supplying only a request message leaves the connection in the pending state shown in the exhibit."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview"
+				}
+			],
+			"subtopics": [
+				"private-endpoint-approval",
+				"private-link-service-alias"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6H0TVBHNM8945A98ZZMH38T",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have virtual network `vnet-orders` in subscription `sub-orders` (region `northeurope`). Applications in `vnet-orders` reach SQL server `sql-orders` through private endpoint `pe-orders`, which targets the `sqlServer` subresource and holds private IP 10.20.3.7 in subnet `snet-pe` (10.20.3.0/24). Network security group `nsg-pe` is associated with `snet-pe`, and its inbound rule `allow-sql` permits TCP 1433 only from 10.20.0.0/16, so sessions coming from the jump-host subnet 10.20.9.0/24 are supposed to be rejected. A VM named `vm-jump` (10.20.9.5) nevertheless opened a session to 10.20.3.7 on port 1433 and queried the database, which your security baseline forbids. You need traffic sent to the private endpoint to be evaluated by `nsg-pe` and to pass through the firewall appliance in the VNet. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Private endpoint `pe-orders`",
+							"Connection status Approved; target subresource `sqlServer` on `sql-orders`; private IP 10.20.3.7"
+						],
+						[
+							"Subnet `snet-pe`",
+							"Address space 10.20.3.0/24; Network Policy for Private Endpoints: Disabled"
+						],
+						[
+							"Network security group `nsg-pe`",
+							"Associated with `snet-pe`; inbound rule `allow-sql`: TCP, source 10.20.0.0/16, destination port 1433"
+						],
+						[
+							"VM `vm-jump` in `snet-jump`",
+							"Address 10.20.9.5; session to 10.20.3.7:1433 completed successfully"
+						],
+						[
+							"Endpoint network interface `pe-orders-nic`",
+							"No effective security rules shown in the portal"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Open the Edit subnet pane for `snet-pe`, and under Network Policy for Private Endpoints select Network security groups and Route tables, then save."
+					},
+					{
+						"id": "b",
+						"text": "Open the Edit subnet pane for `snet-pe`, and under Network Policy for Private Endpoints select Disabled, then save."
+					},
+					{
+						"id": "c",
+						"text": "Open the Edit subnet pane for `snet-pe`, and under Network policies for virtual machines select Enabled with Network security groups, and leave Network Policy for Private Endpoints unchanged, then save."
+					},
+					{
+						"id": "d",
+						"text": "Open the Edit subnet pane for `snet-pe`, and under Network Policy for Private Endpoints select Route tables only, then save."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Support for network security groups, user-defined routes, and application security groups on a private endpoint's network interface is an opt-in that is configured per subnet, and it is off by default. That switch is the Network Policy for Private Endpoints setting on the subnet, edited in the Edit subnet pane; it governs only the private endpoints in that subnet. Because it is currently Disabled, `nsg-pe` is never consulted for traffic destined to `pe-orders`, which is why the jump host's session succeeded and why the portal lists no effective security rules for the endpoint interface. Selecting Network security groups and Route tables there turns on both the NSG filtering and the custom paths (so the traffic can be sent through the firewall appliance), and the effective rules for the endpoint interface then appear in the portal.",
+				"perChoice": {
+					"b": "Selecting Disabled keeps the private endpoint setting switched off, so NSG, user-defined route, and application security group support stay inactive for interfaces in `snet-pe`. `nsg-pe` would continue to be ignored for traffic sent to `pe-orders`, and the jump host would keep its session to the endpoint.",
+					"c": "The Network policies for virtual machines setting governs how network security groups apply to the interfaces of ordinary resources such as virtual machines in the subnet; it does not switch on NSG, user-defined route, or application security group support for private endpoint interfaces. That support comes only from the separate private endpoint setting on the subnet, so attaching another network security group under this toggle would still leave `pe-orders` unfiltered.",
+					"d": "Selecting Route tables only enables user-defined routing for the endpoint, which lets the traffic follow your own paths such as the firewall appliance, but the network security group stays out of the path. Traffic sent to the private endpoint would therefore still not be evaluated by `nsg-pe`, and the jump host would keep its access to the SQL server."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/create-private-endpoint-portal"
+				}
+			],
+			"subtopics": [
+				"private-endpoint-network-policies",
+				"network-security-group-support",
+				"subnet-configuration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6H10G8MHGV4SKDPZE7QPD15",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You operate an Azure Key Vault named `kv-prod` in subscription `sub-sec`. Applications in virtual network `vnet-hub` reach the vault through private endpoint `pe-kv` in subnet `snet-pe`, and from inside the virtual network the vault's name resolves to the address assigned to that endpoint. Your security baseline states that no client may reach `kv-prod` except over that private path, but a workstation on the corporate internet still completes requests to the vault's public address. The on-premises site connects to `vnet-hub` over an ExpressRoute circuit, and its applications must keep reaching the vault. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Object",
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Private endpoint `pe-kv`",
+							"Target subresource",
+							"`vault` of Key Vault `kv-prod`"
+						],
+						[
+							"Private endpoint `pe-kv`",
+							"Connection status",
+							"Approved"
+						],
+						[
+							"Private endpoint `pe-kv`",
+							"Private IP address",
+							"10.30.4.12"
+						],
+						[
+							"Private endpoint `pe-kv`",
+							"Subnet",
+							"`snet-pe` (10.30.4.0/24) of `vnet-hub`"
+						],
+						[
+							"Private DNS zone `privatelink.vaultcore.azure.net`",
+							"Virtual network link",
+							"`vnet-hub`"
+						],
+						[
+							"Private DNS zone `privatelink.vaultcore.azure.net`",
+							"A record for `kv-prod`",
+							"10.30.4.12"
+						],
+						[
+							"Key Vault `kv-prod`",
+							"Request from a workstation outside `vnet-hub`",
+							"Succeeds against `kv-prod.vault.azure.net`"
+						],
+						[
+							"On-premises site",
+							"Connectivity to `vnet-hub`",
+							"ExpressRoute circuit"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set Public network access to Disabled on the Key Vault `kv-prod`"
+					},
+					{
+						"id": "b",
+						"text": "Set Public network access to Disabled on the private endpoint `pe-kv`"
+					},
+					{
+						"id": "c",
+						"text": "Set Public network access to Disabled on the private DNS zone `privatelink.vaultcore.azure.net`"
+					},
+					{
+						"id": "d",
+						"text": "Set Public network access to Enabled on the Key Vault `kv-prod` and rely on the private endpoint for isolation"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A private endpoint only gives the service a privately reachable IP inside your virtual network; it does not, on its own, restrict public network access to that service. The control that closes the public path is the service-level setting Public network access, and it lives on the private-link resource itself, here the Key Vault `kv-prod`. Setting it to Disabled makes the vault reject connections that arrive at its public/front-door endpoint, while traffic sent to the approved private endpoint keeps flowing. The applications in `vnet-hub` and the on-premises site, which reaches `vnet-hub` over ExpressRoute (a supported reachable peer for private endpoints), both travel over that private endpoint and are therefore unaffected.",
+				"perChoice": {
+					"b": "Public network access is a property of the Azure service that owns the private-link resource, not of the private endpoint. A private endpoint exposes only a name, a subnet, the target resource and subresource, an approval method, and a read-only connection status, so there is no public-access switch to set on `pe-kv`, and changing anything on it would not stop clients from using the vault's public address.",
+					"c": "A private DNS zone only steers name resolution for the virtual network it is linked to; it has no public-network-access property and cannot influence whether the service accepts connections made directly against its public address.",
+					"d": "Leaving public access enabled means the vault keeps answering requests on its public endpoint, which violates the baseline. A private endpoint provides a private IP path to the service but does not restrict public network access to it, so the endpoint cannot be used as the only isolation control."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-dns"
+				}
+			],
+			"subtopics": [
+				"public-network-access",
+				"private-link-service-controls",
+				"key-vault-private-dns"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HGQEVRZ8V9GXAK7QGV2BZ4",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your company runs a payment application inside the virtual network `vnet-hr`, and that application must read and write the storage account `hrshared` that a central platform team publishes for it. You are creating the private endpoint for `hrshared`, and the hosts in `vnet-hr` have to be able to connect to it over the private path. The platform team also runs the virtual network `vnet-shared` in their own subscription, and the two networks are not peered. In which subscription and region should you create the private endpoint?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"virtualNetworks\": [\n    {\n      \"name\": \"vnet-hr\",\n      \"subscription\": \"sub-hr\",\n      \"region\": \"westeurope\",\n      \"subnet\": \"snet-hr\",\n      \"addressPrefix\": \"10.20.0.0/24\"\n    },\n    {\n      \"name\": \"vnet-shared\",\n      \"subscription\": \"sub-shared\",\n      \"region\": \"northeurope\",\n      \"subnet\": \"snet-shared\",\n      \"addressPrefix\": \"10.30.0.0/24\"\n    }\n  ],\n  \"privateLinkResource\": {\n    \"name\": \"hrshared\",\n    \"type\": \"Microsoft.Storage/storageAccounts\",\n    \"subscription\": \"sub-shared\",\n    \"region\": \"northeurope\",\n    \"targetSubresource\": \"blob\"\n  },\n  \"peering\": {\n    \"vnet-hr-to-vnet-shared\": \"none\"\n  }\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Subscription `sub-hr`, region `westeurope`"
+					},
+					{
+						"id": "b",
+						"text": "Subscription `sub-shared`, region `northeurope`"
+					},
+					{
+						"id": "c",
+						"text": "Subscription `sub-hr`, region `northeurope`"
+					},
+					{
+						"id": "d",
+						"text": "Subscription `sub-shared`, region `westeurope`"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A private endpoint lives inside the virtual network whose clients use it, and it must be created in the same subscription and the same region as that virtual network. The hosts that will call the storage account sit in `vnet-hr`, which belongs to subscription `sub-hr` in region `westeurope`, so the endpoint belongs there. The private-link resource itself is not tied to the endpoint's location: `hrshared` may remain in `sub-shared` in `northeurope` and still be the target of an endpoint created in `sub-hr`/`westeurope`.",
+				"perChoice": {
+					"b": "This placement follows the private-link resource instead of the virtual network of the clients. `hrshared` does live in `sub-shared`/`northeurope`, but the endpoint has to be created in the subscription and region of the virtual network that hosts the application, so a private address handed out inside `vnet-shared` would not serve the hosts in `vnet-hr`.",
+					"c": "The subscription is right but the region is not. An endpoint is created in the same region as the virtual network it belongs to, and `vnet-hr` is in `westeurope`; the region of the storage account does not pull the endpoint into `northeurope`.",
+					"d": "The region matches `vnet-hr` but the subscription does not. The endpoint must be created in the subscription of the virtual network whose clients use it, so creating it under `sub-shared` would place it outside the subscription that owns `vnet-hr` and its address would not serve the payment application."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview"
+				}
+			],
+			"subtopics": [
+				"private-endpoint-placement",
+				"private-link-architecture"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HGT6YT4X7KW084NF0ASS4R",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You support a reporting application that runs in the virtual network `vnet-hybrid` (subscription `sub-net`, region `westeurope`). The application reads from two storage accounts: `contosodata`, which it reaches through a private endpoint in subnet `snet-pe`, and `contosoarchive`, which it reaches over the account's public address. Since the private DNS zone was deployed and linked to `vnet-hybrid`, lookups for `contosodata` return the private address of the endpoint, but lookups for `contosoarchive` now fail inside the network. The platform team has announced that `contosoarchive` will be moved to a different public IP address next month, and the application must keep working through that change without anyone editing records by hand. You need both storage accounts usable from `vnet-hybrid`. Which action should you take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "$ az network private-dns zone list -g rg-dns -o table\nName                              Resource Group\nprivatelink.blob.core.windows.net  rg-dns\n\n$ az network private-dns vnet link list -g rg-dns -z privatelink.blob.core.windows.net -o table\nName      Virtual Network\nlink-hyb  vnet-hybrid\n\n$ az network private-endpoint list -g rg-net -o table\nName             PrivateIpAddresses\npe-contosodata   10.30.1.9\n\n$ nslookup contosodata.blob.core.windows.net\nServer:  168.63.129.16\nName:    contosodata.blob.core.windows.net\nAddress: 10.30.1.9\n\n$ nslookup contosoarchive.blob.core.windows.net\nServer:  168.63.129.16\n*** Can't find contosoarchive.blob.core.windows.net: Non-existent domain"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Turn on fallback to Internet for the virtual network link that connects `vnet-hybrid` to the private DNS zone"
+					},
+					{
+						"id": "b",
+						"text": "Create a private endpoint for `contosoarchive` in a second subnet of the same virtual network and link the existing private DNS zone to `vnet-hybrid`"
+					},
+					{
+						"id": "c",
+						"text": "Add an A record for `contosoarchive` in the private DNS zone that holds the account's current public IP address"
+					},
+					{
+						"id": "d",
+						"text": "Remove the private DNS zone from `vnet-hybrid` and add the private endpoint address to the hosts file of every virtual machine in the virtual network"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The linked zone `privatelink.blob.core.windows.net` is authoritative for the blob service names, so a name that has no record in the zone — here `contosoarchive.blob.core.windows.net` — is answered with NXDOMAIN instead of being resolved through public DNS. Turning on fallback to Internet for the virtual network link makes names that are not present in the zone resolve through public DNS again, while names that do have a record (the private address of `contosodata`) keep resolving to the private endpoint. Because the lookup is performed at request time, the application also keeps working after the account's public IP address changes, with no record to maintain.",
+				"perChoice": {
+					"b": "One existing private DNS zone must not serve two private endpoints of the same service type: the record that already points at the first endpoint is removed and name resolution breaks for both. Each private endpoint of a service type needs its own zone. In addition, the requirement is that `contosoarchive` stays reachable over its public address, not over a private endpoint.",
+					"c": "A manually created A record is a fixed value that stops matching as soon as the account's public IP address changes. The requirement states that resolution must keep working through the address change without anyone editing records by hand, so a static record does not satisfy it.",
+					"d": "Populating the hosts file is only recommended for testing, and it would cover just the private endpoint address; the public account `contosoarchive` would still have no entry. Unlinking the zone from the virtual network also removes the automatic record that resolves `contosodata` to its private endpoint, which breaks the private path for that account."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-dns"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview"
+				}
+			],
+			"subtopics": [
+				"private-dns",
+				"dns-name-resolution"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HH2R2PHJX5Y6QNQ7678WJE",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You operate the private connectivity for the Azure PaaS services that a business application in the virtual network `vnet-app` (subscription `sub-app`) depends on. Five private endpoints are deployed in subnet `snet-pe`, one for each service, and the table lists every endpoint together with the service it points at. The application must reach each service through its ordinary service name, and that name has to resolve inside `vnet-app` to the address assigned to the matching endpoint. You need the name resolution to be handled for you instead of maintained by hand. Which private DNS zone should you create and link to `vnet-app` for each endpoint?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Private endpoint | Target service                            | Traffic that must reach it\n-----------------|-------------------------------------------|---------------------------\npe-kv01         | kv-contoso - Azure Key Vault              | Reading secrets and keys\npe-cdb01        | cdb-sales - Cosmos DB account (SQL API)   | Querying account data\npe-app01        | app-contoso - App Service web app         | Serving the web front end\npe-hub01        | hub-telemetry - Event Hub namespace       | Publishing telemetry events\npe-reg01        | cr-contoso - Container Registry           | Pushing and pulling images"
+				},
+				"items": [
+					{
+						"id": "i-kv",
+						"text": "privatelink.vaultcore.azure.net"
+					},
+					{
+						"id": "i-cdb",
+						"text": "privatelink.documents.azure.com"
+					},
+					{
+						"id": "i-web",
+						"text": "privatelink.azurewebsites.net"
+					},
+					{
+						"id": "i-bus",
+						"text": "privatelink.servicebus.windows.net"
+					},
+					{
+						"id": "i-crg",
+						"text": "privatelink.azurecr.io"
+					},
+					{
+						"id": "i-sql",
+						"text": "privatelink.database.windows.net"
+					},
+					{
+						"id": "i-hsm",
+						"text": "privatelink.managedhsm.azure.net"
+					},
+					{
+						"id": "i-scm",
+						"text": "scm.privatelink.azurewebsites.net"
+					}
+				],
+				"slots": [
+					{
+						"id": "s-kv",
+						"label": "The zone required by pe-kv01"
+					},
+					{
+						"id": "s-cdb",
+						"label": "The zone required by pe-cdb01"
+					},
+					{
+						"id": "s-app",
+						"label": "The zone required by pe-app01"
+					},
+					{
+						"id": "s-hub",
+						"label": "The zone required by pe-hub01"
+					},
+					{
+						"id": "s-reg",
+						"label": "The zone required by pe-reg01"
+					}
+				]
+			},
+			"key": {
+				"s-app": "i-web",
+				"s-cdb": "i-cdb",
+				"s-hub": "i-bus",
+				"s-kv": "i-kv",
+				"s-reg": "i-crg"
+			},
+			"explanation": {
+				"correct": "Each endpoint's zone is fixed by the service it points at, and every zone has to be created with the recommended name and linked to `vnet-app` so that the service name resolves to the address of the endpoint. Azure Key Vault maps to privatelink.vaultcore.azure.net, a Cosmos DB account used through the SQL API maps to privatelink.documents.azure.com, an App Service web app maps to privatelink.azurewebsites.net, an Event Hub namespace maps to privatelink.servicebus.windows.net (shared with Service Bus), and a Container Registry maps to privatelink.azurecr.io. Using the recommended zone names is also what makes the endpoint configuration populate the zone records for you, instead of records being maintained by hand.",
+				"perChoice": {
+					"i-bus": "privatelink.servicebus.windows.net is the zone for Event Hub namespaces (the same zone as Service Bus), which is what pe-hub01 requires.",
+					"i-cdb": "privatelink.documents.azure.com is the zone for a Cosmos DB account reached through the SQL API, which is the target of pe-cdb01.",
+					"i-crg": "privatelink.azurecr.io is the zone for a Container Registry, so it fits pe-reg01; the entries for it are added automatically.",
+					"i-hsm": "privatelink.managedhsm.azure.net is the zone for a managed HSM (HSM pool) vault. The vault in the table is a standard Key Vault, so this zone fits no row.",
+					"i-kv": "privatelink.vaultcore.azure.net is the recommended zone for Azure Key Vault, so this is the zone to create and link for pe-kv01.",
+					"i-scm": "scm.privatelink.azurewebsites.net holds the SCM/Kudu records of a web app. When you already use Azure private DNS zones, those records are added to the privatelink.azurewebsites.net zone instead of deploying the SCM zone on its own, so this zone fits no row.",
+					"i-sql": "privatelink.database.windows.net is the zone for Azure SQL Database. No SQL database is reached through the endpoints in the table, so this zone fits no row.",
+					"i-web": "privatelink.azurewebsites.net is the zone for web apps, so it belongs to pe-app01. The deployment (SCM/Kudu) records are placed in this same zone."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-dns"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview"
+				}
+			],
+			"subtopics": [
+				"private-dns-zones",
+				"private-endpoint-configuration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HH84WENZAKDB7PW5BR3T7F",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have four private endpoints deployed in subnet `snet-pe` of virtual network `vnet-app` (subscription `sub-app`), one for each service listed below. You need to explain to the application owners what each state that the portal records on a private endpoint connection means for the private data path, and who still has to act before clients can reach the service. Which state matches each description?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Private endpoint | Service behind the endpoint      | Target subresource | Private IP address\n-----------------|----------------------------------|--------------------|-------------------\npe-web           | App Service web app web-contoso  | sites              | 10.20.1.4\npe-sql           | SQL server sql-contoso           | sqlServer          | 10.20.1.5\npe-kv            | Key Vault kv-contoso             | vault              | 10.20.1.6\npe-files         | Storage account contosofiles     | file               | 10.20.1.7"
+				},
+				"items": [
+					{
+						"id": "approved",
+						"text": "Approved"
+					},
+					{
+						"id": "pending",
+						"text": "Pending"
+					},
+					{
+						"id": "rejected",
+						"text": "Rejected"
+					},
+					{
+						"id": "disconnected",
+						"text": "Disconnected"
+					},
+					{
+						"id": "automatic",
+						"text": "Automatic"
+					},
+					{
+						"id": "manual",
+						"text": "Manual"
+					}
+				],
+				"slots": [
+					{
+						"id": "traffic-flows",
+						"label": "Traffic can flow from the virtual network through the endpoint to the service."
+					},
+					{
+						"id": "awaiting-decision",
+						"label": "The request is waiting for the owner of the service to accept it or turn it down."
+					},
+					{
+						"id": "turned-down",
+						"label": "The owner of the service turned the request down, so the endpoint carries no traffic."
+					},
+					{
+						"id": "connection-removed",
+						"label": "The owner removed the connection, so the endpoint stays deployed but is no longer attached to the service."
+					}
+				]
+			},
+			"key": {
+				"awaiting-decision": "pending",
+				"connection-removed": "disconnected",
+				"traffic-flows": "approved",
+				"turned-down": "rejected"
+			},
+			"explanation": {
+				"correct": "The read-only connection status on a private endpoint has four values, and only the one where the connection was accepted lets the endpoint send traffic. The accepted state is the only one in which clients reach the service over the private path; a request that was raised manually and still awaits the resource owner is left in the waiting state; a request the owner turned down stays in the turned-down state and passes no traffic; and when the owner removes the connection, the endpoint is left in the detached state, where it remains deployed for cleanup but is no longer linked to the service. The other two values, Automatic and Manual, are the connection approval method chosen when the endpoint is created, not a state recorded afterwards, so they fit no slot.",
+				"perChoice": {
+					"approved": "Approved — the connection was accepted automatically or by the resource owner and is ready to use, so traffic can flow from the virtual network through the endpoint to the service. This is the only state in which the endpoint can send traffic.",
+					"automatic": "Automatic is the connection approval method used at creation time, which lets Azure accept the connection without the resource owner reviewing it. It is a creation setting rather than a state recorded on the connection, so it fits no slot.",
+					"disconnected": "Disconnected — the owner of the service removed the connection; the endpoint stays deployed and becomes informative only (it should then be deleted for cleanup) and is no longer attached to the service.",
+					"manual": "Manual is the connection approval method used at creation time when the owner of the service should review and decide on the request. It is a creation setting rather than a state recorded on the connection, so it fits no slot.",
+					"pending": "Pending — the connection was requested manually and is waiting for approval by the owner of the service, which is why the request is outstanding and someone still has to act.",
+					"rejected": "Rejected — the owner of the service turned the request down, and the endpoint is updated to reflect that outcome while passing no traffic."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/create-private-endpoint-portal"
+				}
+			],
+			"subtopics": [
+				"connection-status",
+				"approval-method"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HHGH8P1443SSC2DP30E4NK",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a business application in your virtual network that reaches several Azure PaaS services through private endpoints deployed in subnet `snet-pe`. Your monitoring reported the six situations listed in the exhibit, and in each of them the service is not usable over the private path. You need every situation corrected so that the private path works as intended. Which change should you make for each situation? Drag each change into the matching slot.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "[1] App Configuration `appcfg-prod`\n    - The endpoint is approved and its private address is reachable from the application\n      virtual network, but the configuration name still resolves to the internet address.\n\n[2] Blob endpoint of storage account `contosostore1`\n    - Creating the endpoint fails with an error that points at the way the account was\n      provisioned; the account was created many years ago with the older storage type.\n\n[3] Web app `web-orders`\n    - The endpoint is approved, but the site cannot be opened over the private path while\n      its hosting plan is on the Free tier.\n\n[4] SQL server `sql-orders`, hosted in the platform subscription\n    - Creating the endpoint in that subscription fails with an error saying a required\n      component was never switched on.\n\n[5] Kubernetes cluster `aks-prod`\n    - Creating the endpoint with a reserved private IP of 10.0.0.24 fails, while letting\n      the platform choose the address succeeds.\n\n[6] File share `contosofiles`\n    - After its traffic was moved to the private path, the mapped drive on the application\n      host no longer opens."
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Create and link `privatelink.azconfig.io` to the virtual network"
+					},
+					{
+						"id": "b",
+						"text": "Migrate the storage account to General Purpose v2"
+					},
+					{
+						"id": "c",
+						"text": "Move the plan to Basic, Standard, PremiumV2, PremiumV3, IsolatedV2, or Functions Premium"
+					},
+					{
+						"id": "d",
+						"text": "Add the Microsoft.Network resource provider to both subscriptions"
+					},
+					{
+						"id": "e",
+						"text": "Allocate the private address dynamically instead of reserving it"
+					},
+					{
+						"id": "f",
+						"text": "Re-map the drive from inside the virtual network using the endpoint's private address"
+					},
+					{
+						"id": "g",
+						"text": "Ask the resource owner to accept the outstanding request"
+					},
+					{
+						"id": "h",
+						"text": "Turn on network policy for private endpoints on `snet-pe`"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "App Configuration"
+					},
+					{
+						"id": "s2",
+						"label": "Blob endpoint of `contosostore1`"
+					},
+					{
+						"id": "s3",
+						"label": "Web app"
+					},
+					{
+						"id": "s4",
+						"label": "SQL server"
+					},
+					{
+						"id": "s5",
+						"label": "Kubernetes cluster"
+					},
+					{
+						"id": "s6",
+						"label": "File share"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d",
+				"s5": "e",
+				"s6": "f"
+			},
+			"explanation": {
+				"correct": "Each reported situation has a different cause, and each needs its own change. The configuration name can only resolve to the endpoint's address inside the virtual network once the matching private DNS zone (`privatelink.azconfig.io`) is created and linked to that network. The older storage account cannot accept a private endpoint at all, because private endpoints can only be created on a General Purpose v2 (GPv2) storage account, so the account must be migrated first. The web app is not served over the private path because private endpoints for web apps require an App Service plan on Basic, Standard, PremiumV2, PremiumV3, IsolatedV2, or Functions Premium (Elastic Premium) — a Free plan cannot host it. Endpoint creation in the platform subscription fails until the Microsoft network resource provider (Microsoft.Network) is registered in both the subscription that holds the private-link resource and the subscription that holds the endpoint. The cluster's endpoint cannot use a reserved private IP, because static IP configuration is unsupported for AKS (as it is for Application Gateway, HD Insight, Recovery Services Vaults, and third-party Private Link services), so the address must be allocated dynamically. Finally, the file share was connected over the public endpoint and must be re-mapped from inside the virtual network after its traffic moves to the private path.",
+				"perChoice": {
+					"a": "Hosts inside the virtual network resolve the configuration name through a private DNS zone linked to that network; `privatelink.azconfig.io` is the zone that carries the address record for App Configuration, so creating and linking it makes the name resolve to the endpoint's private address.",
+					"b": "Private endpoints can only be created on a General Purpose v2 storage account, so the account created with the older storage type has to be migrated before an endpoint for its blob subresource can be created at all.",
+					"c": "For a web app, the plan must run on Basic, Standard, PremiumV2, PremiumV3, IsolatedV2, or Functions Premium (Elastic Premium) before the site can be reached through a private endpoint; the Free plan in the exhibit cannot serve the site that way.",
+					"d": "The subscription holding the private-link resource and the subscription holding the private endpoint must both be registered with the Microsoft network resource provider, so adding it to both subscriptions removes the creation error.",
+					"e": "Static IP configuration is not supported for AKS, so the endpoint for the cluster must take the dynamically allocated private address; the reserved address requested in the exhibit is what makes creation fail.",
+					"f": "A file share that was connected over the public endpoint has to be re-mounted after the traffic moves to the private endpoint, so re-mapping the drive from a host inside the virtual network over the private address restores access.",
+					"g": "Fits no slot: the connections described in the exhibit are already approved and none of the six situations is a request waiting on the resource owner, so an approval action changes nothing.",
+					"h": "Fits no slot: subnet network policy for private endpoints only matters when network security group, route table, or application security group evaluation is required on the endpoint subnet, and none of the six situations involves filtering or forcing traffic through an appliance."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-dns"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/create-private-endpoint-portal"
+				}
+			],
+			"subtopics": [
+				"private-dns-zones",
+				"private-endpoint-configuration",
+				"private-endpoint-troubleshooting"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HHWB1GH8HEW3HGT2YJ826J",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a platform team that is bringing Azure PaaS services into the private connectivity model of the virtual network `vnet-app` (subscription `sub-app`, region `westeurope`). The exhibit lists six requirements that came up during the onboarding, and each one is met by a single configuration value from the list. You need every requirement satisfied by the right value. Which configuration value belongs with each requirement?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Ref  Object in your estate\n---  ------------------------------------------\nR1   Storage account `stgapp` in `sub-app`\n     Requirement: Your own team administers the account and your identity\n     already holds the permission needed to accept connections on it, so no\n     other team has to act.\n\nR2   Storage account `stosup` in `sub-sup`\n     Requirement: A different team administers the account, and its operators\n     must be able to review what you send and decide whether to accept it.\n\nR3   Key Vault `kvapp`\n     Requirement: Your security baseline says the vault may be reached only\n     over the private path, but a workstation on the corporate internet still\n     completes requests to the vault's public address.\n\nR4   Private endpoint `pe-kv` in `snet-pe`\n     Requirement: The connection is live and clients already pass traffic over\n     it; you want to note the value that the portal records for that\n     connection.\n\nR5   Container Registry `crapp`\n     Requirement: The build pipeline pulls images and must resolve the\n     registry's name to the private address assigned to the endpoint that\n     fronts it.\n\nR6   Web App `app-portal`\n     Requirement: The portal application must resolve its own name to the\n     private address of the endpoint that fronts it."
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Automatic"
+					},
+					{
+						"id": "i2",
+						"text": "Manual"
+					},
+					{
+						"id": "i3",
+						"text": "Disabled"
+					},
+					{
+						"id": "i4",
+						"text": "Approved"
+					},
+					{
+						"id": "i5",
+						"text": "privatelink.azurecr.io"
+					},
+					{
+						"id": "i6",
+						"text": "privatelink.azurewebsites.net"
+					}
+				],
+				"slots": [
+					{
+						"id": "r1",
+						"label": "R1 — `stgapp`"
+					},
+					{
+						"id": "r2",
+						"label": "R2 — `stosup`"
+					},
+					{
+						"id": "r3",
+						"label": "R3 — `kvapp`"
+					},
+					{
+						"id": "r4",
+						"label": "R4 — `pe-kv`"
+					},
+					{
+						"id": "r5",
+						"label": "R5 — `crapp`"
+					},
+					{
+						"id": "r6",
+						"label": "R6 — `app-portal`"
+					}
+				]
+			},
+			"key": {
+				"r1": "i1",
+				"r2": "i2",
+				"r3": "i3",
+				"r4": "i4",
+				"r5": "i5",
+				"r6": "i6"
+			},
+			"explanation": {
+				"correct": "Each requirement is settled by a different part of the private endpoint configuration. R1 is approved without outside involvement because your identity already holds the permission to accept connections on `stgapp`, so the approval method is Automatic. R2 sits with another team that must review and decide, so the request is raised for Manual approval. R3 needs the vault to stop answering on its public address, which is done by turning public network access off, i.e. setting it to Disabled. R4 describes a live connection, and the only connection state that can carry traffic is Approved, which is the value the portal records. R5 is resolved by the recommended zone privatelink.azurecr.io for a container registry, and R6 by the recommended zone privatelink.azurewebsites.net for Web Apps, in each case linked to the virtual network so the service name resolves to the endpoint's private address.",
+				"perChoice": {
+					"i1": "R1 — `stgapp`: because you already hold the permission to accept connections on the target account, the connection can be accepted as soon as the endpoint is created, so the approval method is Automatic.",
+					"i2": "R2 — `stosup`: the resource owner is a different team, so the connection request has to be sent to them for review and decision, which means the Manual approval method.",
+					"i3": "R3 — `kvapp`: a private endpoint on its own does not stop clients from using the public address; to allow only the private path, public network access on the vault is turned off, i.e. set to Disabled.",
+					"i4": "R4 — `pe-kv`: the portal records one of four connection states, and only the Approved state can send traffic, so a live connection that already passes traffic is the Approved value.",
+					"i5": "R5 — `crapp`: the recommended private DNS zone for a container registry is privatelink.azurecr.io, linked to the virtual network so the registry name resolves to the endpoint's private address; the per-region data zone should not be added separately.",
+					"i6": "R6 — `app-portal`: the recommended private DNS zone for Web Apps is privatelink.azurewebsites.net; when Azure private DNS zones are already in use, the SCM/Kudu record belongs in that same zone rather than a separate one."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-dns"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/create-private-endpoint-portal"
+				}
+			],
+			"subtopics": [
+				"private-endpoint-configuration",
+				"connection-approval",
+				"private-dns-zones"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HJ1D46N05BPCGPRPJ6YKZ7",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are rolling out private connectivity for a logistics platform that spans three virtual networks: `vnet-gov` in Azure Government, `vnet-chn` in Azure China, and `vnet-com` in the commercial Azure cloud. Clients in each of those networks reach Azure PaaS services through private endpoints deployed in subnet `snet-pe` of their own network, and the exhibit lists every endpoint with the service it points at and the cloud that service runs in. Each client must connect to its service through the service's ordinary hostname, and that hostname has to resolve inside the client's virtual network to the address carried by the matching endpoint, with the resolution records created for you instead of typed in by hand. Which private DNS zone do you create and link for each endpoint?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Private endpoint",
+						"Service the endpoint points at",
+						"Cloud",
+						"Private IP in `snet-pe`"
+					],
+					"rows": [
+						[
+							"pe-kv-gov",
+							"Azure Key Vault",
+							"Azure Government",
+							"10.30.0.10"
+						],
+						[
+							"pe-cos-chn",
+							"Azure Cosmos DB, `Sql` subresource",
+							"Azure China",
+							"10.40.0.10"
+						],
+						[
+							"pe-ac",
+							"Azure App Configuration",
+							"Commercial",
+							"10.50.0.10"
+						],
+						[
+							"pe-eh",
+							"Azure Event Hubs",
+							"Commercial",
+							"10.50.0.11"
+						],
+						[
+							"pe-cr",
+							"Azure Container Registry",
+							"Commercial",
+							"10.50.0.12"
+						],
+						[
+							"pe-as",
+							"Azure App Service",
+							"Commercial",
+							"10.50.0.13"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "privatelink.vaultcore.usgovcloudapi.net"
+					},
+					{
+						"id": "i2",
+						"text": "privatelink.documents.azure.cn"
+					},
+					{
+						"id": "i3",
+						"text": "privatelink.azconfig.io"
+					},
+					{
+						"id": "i4",
+						"text": "privatelink.servicebus.windows.net"
+					},
+					{
+						"id": "i5",
+						"text": "privatelink.azurecr.io"
+					},
+					{
+						"id": "i6",
+						"text": "privatelink.azurewebsites.net"
+					},
+					{
+						"id": "i7",
+						"text": "privatelink.vaultcore.azure.net"
+					},
+					{
+						"id": "i8",
+						"text": "privatelink.keyvault.azure.net"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "pe-kv-gov — Azure Key Vault endpoint in Azure Government"
+					},
+					{
+						"id": "s2",
+						"label": "pe-cos-chn — Azure Cosmos DB (`Sql` subresource) endpoint in Azure China"
+					},
+					{
+						"id": "s3",
+						"label": "pe-ac — Azure App Configuration endpoint in the commercial cloud"
+					},
+					{
+						"id": "s4",
+						"label": "pe-eh — Azure Event Hubs endpoint in the commercial cloud"
+					},
+					{
+						"id": "s5",
+						"label": "pe-cr — Azure Container Registry endpoint in the commercial cloud"
+					},
+					{
+						"id": "s6",
+						"label": "pe-as — Azure App Service endpoint in the commercial cloud"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5",
+				"s6": "i6"
+			},
+			"explanation": {
+				"correct": "Every service has its own recommended private DNS zone, and the sovereign clouds use different suffixes from the commercial cloud. The vault endpoint sits in Azure Government, so it needs the Government Key Vault zone (usgovcloudapi.net suffix); the Cosmos DB endpoint targets the Sql subresource in Azure China, so it needs the .azure.cn zone; the four endpoints in the commercial cloud need the commercial zones for App Configuration, Event Hubs, Container Registry and App Service. Creating and linking exactly these zones is what makes Azure populate the records that map each service's ordinary hostname to the private address of its endpoint, so the applications keep using the normal service names.",
+				"perChoice": {
+					"i1": "Belongs with the Key Vault endpoint in Azure Government: the Government Key Vault zone carries the usgovcloudapi.net suffix.",
+					"i2": "Belongs with the Cosmos DB endpoint in Azure China: the Sql subresource of a Cosmos DB account in that cloud resolves through the .azure.cn suffix.",
+					"i3": "Belongs with the App Configuration endpoint in the commercial cloud, whose zone is the azconfig.io one.",
+					"i4": "Belongs with the Event Hubs endpoint in the commercial cloud; Event Hubs and Service Bus namespaces share the servicebus.windows.net zone.",
+					"i5": "Belongs with the Container Registry endpoint in the commercial cloud; when private DNS zones are used, the per-region data zone should not be deployed as an extra zone because the entries are added automatically.",
+					"i6": "Belongs with the App Service endpoint in the commercial cloud; the SCM/Kudu records for the app belong in this same zone rather than in a separately linked zone.",
+					"i7": "Fits no slot: the vault in the exhibit runs in Azure Government, where the zone ends in usgovcloudapi.net, so the commercial-cloud vault zone would never receive the endpoint's records.",
+					"i8": "Fits no slot: the zone documented for Key Vault is the vaultcore one, so records would not be generated automatically inside a privatelink.keyvault.azure.net zone."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-dns"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview"
+				}
+			],
+			"subtopics": [
+				"private-dns-zones",
+				"sovereign-cloud-dns",
+				"service-dns-zones"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HJ5ZQSB8AVBWMWQ91QRVYT",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have four workloads running inside virtual network `vnet-core` that must reach their Azure back ends through private endpoints. The platform team wants a separate endpoint for each workload, and during creation the portal asks you to choose the target subresource that the endpoint attaches to. You need each endpoint aimed at the correct part of its service so the private path works. Which value do you select for each workload? Drag each value into the matching slot.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Workload",
+						"Back end in Azure",
+						"What the workload needs"
+					],
+					"rows": [
+						[
+							"Customer portal",
+							"App Service application",
+							"Answers requests on its public hostname"
+						],
+						[
+							"Order catalogue",
+							"Cosmos DB account",
+							"Order items stored and queried as documents"
+						],
+						[
+							"Media archive",
+							"Storage account",
+							"Uploaded media objects kept in the account"
+						],
+						[
+							"Team drive",
+							"Storage account",
+							"Documents shared with users as a mounted drive"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i_blob",
+						"text": "blob"
+					},
+					{
+						"id": "i_file",
+						"text": "file"
+					},
+					{
+						"id": "i_sites",
+						"text": "sites"
+					},
+					{
+						"id": "i_sql",
+						"text": "Sql"
+					}
+				],
+				"slots": [
+					{
+						"id": "s_app",
+						"label": "App Service application"
+					},
+					{
+						"id": "s_cosmos",
+						"label": "Cosmos DB account"
+					},
+					{
+						"id": "s_objects",
+						"label": "Storage account holding uploaded media objects"
+					},
+					{
+						"id": "s_share",
+						"label": "Storage account shared as a mounted drive"
+					}
+				]
+			},
+			"key": {
+				"s_app": "i_sites",
+				"s_cosmos": "i_sql",
+				"s_objects": "i_blob",
+				"s_share": "i_file"
+			},
+			"explanation": {
+				"correct": "The platform validates each private endpoint against exactly one private-link resource and one of its subresources, so the value chosen at creation must match the part of the service the workload actually calls. A web application hosted on App Service is reached through the sites subresource, a Cosmos DB account is reached through the Sql subresource, the storage account that serves uploaded media objects is reached through the blob subresource, and the storage account shared as a mounted drive is reached through the file subresource. The two storage workloads cannot share one endpoint, because a storage account needs a separate endpoint for each part it exposes.",
+				"perChoice": {
+					"i_blob": "This belongs with the storage account that holds uploaded media objects: the blob subresource exposes the object data of a storage account, and it is a separate endpoint target from the file part of the same kind of account.",
+					"i_file": "This belongs with the storage account that users mount as a shared drive: the file subresource covers file shares in a storage account, and access to that part needs its own endpoint.",
+					"i_sites": "This belongs with the App Service application: a web app running on App Service is reached through the sites subresource, which the portal offers when the resource type Microsoft.Web/sites is selected.",
+					"i_sql": "This belongs with the Cosmos DB account: the Sql subresource is the target for a Cosmos DB account whose items are stored and queried as documents, and it is listed as one of the Cosmos DB subresources."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/create-private-endpoint-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-dns"
+				}
+			],
+			"subtopics": [
+				"private-endpoint-target-subresource",
+				"private-endpoint-creation",
+				"storage-private-endpoints"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HJBYK8KVHC851KCF0QD5DQ",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are onboarding the Azure services that the finance reporting application in virtual network `vnet-app` (subscription `sub-app`, region `westeurope`) depends on, so that the application reaches each of them over a private path instead of over the public internet. Private endpoints for the services listed in the exhibit are deployed in subnet `snet-pe`, and your network team requires that the address carried by an endpoint stays valid for the whole life of that endpoint, so that the firewall rules and the DNS records built on it remain correct. Two of the deployments cannot be completed in the form the owning teams asked for. You need both of them completed so that the private path works for the application. Which configuration should you use for each deployment?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Private endpoint | Target service                                    | Requested by the owning team                                | Current state\npe-store      | Storage account contosostore (account kind Standard,        | An endpoint for the blob subresource                          | Azure refuses to create the endpoint\n              | general purpose v1)                                       |                                                           |\npe-aks        | Azure Kubernetes Service cluster aks-fin                  | Private IP configuration with ipconfig-1 set to 10.0.1.20 in  | Endpoint not created yet\n              |                                                           | subnet snet-pe (10.0.1.0/24)                                |"
+				},
+				"statement": "For the storage account, the endpoint can only be completed once the account is of the {{storeKind}} type, and for the Kubernetes cluster, the endpoint must be completed using {{aksIp}}.",
+				"slots": [
+					{
+						"id": "storeKind",
+						"options": [
+							{
+								"id": "gpv2",
+								"text": "general purpose v2 (GPv2)"
+							},
+							{
+								"id": "gpv1",
+								"text": "general purpose v1 (GPv1)"
+							},
+							{
+								"id": "pbb",
+								"text": "premium block blob storage"
+							},
+							{
+								"id": "pfs",
+								"text": "premium file storage"
+							}
+						]
+					},
+					{
+						"id": "aksIp",
+						"options": [
+							{
+								"id": "dynamic",
+								"text": "Dynamic allocation of the private IP address"
+							},
+							{
+								"id": "static1",
+								"text": "Static allocation of the private IP address with ipconfig-1 set to 10.0.1.20"
+							},
+							{
+								"id": "static2",
+								"text": "Static allocation of the private IP address with ipconfig-2 set to 10.0.1.20"
+							},
+							{
+								"id": "static3",
+								"text": "Static allocation of the private IP address with ipconfig-1 set to 10.0.1.4"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"aksIp": "dynamic",
+				"storeKind": "gpv2"
+			},
+			"explanation": {
+				"correct": "The storage account `contosostore` is a `Standard` account, that is a general purpose v1 account, and Azure allows private endpoints to be created only on a general purpose v2 (GPv2) storage account, so the account has to be brought to GPv2 before the `blob` endpoint can be added. For the Kubernetes cluster, static IP address configuration is listed as unsupported for Azure Kubernetes Service, so the endpoint must be created with the dynamically allocated private IP address. The requirement that the address stays valid for the life of the endpoint is still met, because the address picked from the subnet is not changed during the endpoint's lifecycle.",
+				"perChoice": {
+					"storeKind:gpv1": "Private endpoints can only be created on a general purpose v2 storage account, so leaving the account as general purpose v1 keeps the endpoint uncreatable. The account has to be brought to GPv2 first, not kept at v1.",
+					"storeKind:pbb": "A premium block blob storage account is a legacy account kind and not a general purpose v2 account, so a private endpoint cannot be created on it either; it would first have to be brought to GPv2.",
+					"storeKind:pfs": "A premium file storage account is likewise a legacy account kind rather than a general purpose v2 account, so it does not support private endpoints and must be brought to GPv2 before the endpoint can be created.",
+					"aksIp:static1": "Static IP address configuration is unsupported for Azure Kubernetes Service, so an endpoint that pins ipconfig-1 to a fixed address such as 10.0.1.20 cannot be created for the cluster.",
+					"aksIp:static2": "Static IP address configuration is unsupported for Azure Kubernetes Service, so renaming the configuration to ipconfig-2 and pinning it to a fixed address does not make the endpoint creatable.",
+					"aksIp:static3": "Static IP address configuration is unsupported for Azure Kubernetes Service, so the choice of fixed address is irrelevant; the endpoint cannot be created with a pinned address for this service."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/create-private-endpoint-portal"
+				}
+			],
+			"subtopics": [
+				"storage-account-requirements",
+				"private-ip-configuration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HJH9QA44895REHSRCCF87P",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You run the private connectivity for a business application in `vnet-app`, where every Azure PaaS service the application depends on is reached through a private endpoint. The network team wants the traffic sent to those endpoints to be evaluated by the network security group and to follow the routing configuration that are assigned to `snet-pe`, and wants all of the endpoint interfaces grouped in a single application security group so that the endpoint traffic can be filtered per service. You now have to repeat this pattern for a second business unit in a region the company has not deployed to yet, and you need to pick a region where the pattern behaves the way it does today, and to confirm how much headroom you have left for the interface grouping. Which region should you pick, and how many members may one application security group hold?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Item                                            Value\nVirtual network                                 vnet-app\nAddress range hosting the endpoints             snet-pe\nNetwork security group attached to             snet-pe\nRoute table attached to                         snet-pe\nEndpoint network interface                      private-endpoint-nic\nServices reached privately                      Blob, File and Queue storage, Key Vault, Web App, Cosmos DB (Sql), Event Hub\nPrivate endpoints in scope                      27\nPlanned additional endpoints for the new unit    10"
+				},
+				"statement": "The new deployment should go to {{region}}, and a single application security group may hold at most {{asgCap}} members.",
+				"slots": [
+					{
+						"id": "region",
+						"options": [
+							{
+								"id": "a",
+								"text": "West India"
+							},
+							{
+								"id": "b",
+								"text": "East US"
+							},
+							{
+								"id": "c",
+								"text": "Australia Central 2"
+							},
+							{
+								"id": "d",
+								"text": "South Africa West"
+							}
+						]
+					},
+					{
+						"id": "asgCap",
+						"options": [
+							{
+								"id": "a",
+								"text": "50 members"
+							},
+							{
+								"id": "b",
+								"text": "40 members"
+							},
+							{
+								"id": "c",
+								"text": "100 members"
+							},
+							{
+								"id": "d",
+								"text": "200 members"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"asgCap": "a",
+				"region": "b"
+			},
+			"explanation": {
+				"correct": "The pattern in the exhibit relies on network security group filtering, user-defined routing and application security group membership on the private endpoint network interfaces. Support for those three capabilities on private endpoints is unavailable in West India, Australia Central 2, South Africa West and Brazil Southeast, so of the candidate regions only East US can reproduce the behaviour the company has today; network security group support is additionally unavailable in all Government and China regions, none of which are listed here. For the interface grouping, an application security group coupled to the network security group on the endpoint subnet may hold at most 50 members (IP configurations), and going beyond that limit can cause connection failures. The 27 endpoints in scope plus the 10 planned for the new unit therefore fit inside one application security group.",
+				"perChoice": {
+					"asgCap:b": "The cap is 50 members; an application security group holds at most 50 IP configurations, so a value of 40 understates the headroom the platform actually allows.",
+					"asgCap:c": "100 members exceeds the maximum of 50 IP configurations allowed in a single application security group on the endpoint subnet, and connection failures can occur beyond that limit.",
+					"asgCap:d": "200 members is well above the maximum of 50 IP configurations permitted per application security group coupled to the network security group on the endpoint subnet, which can lead to connection failures.",
+					"region:a": "Support for network security groups, user-defined routes and application security groups on private endpoints is not available in West India, so the traffic sent to the endpoints would neither be filtered nor redirected as the pattern requires.",
+					"region:c": "Australia Central 2 is one of the regions where network security group, user-defined route and application security group support for private endpoints is unavailable, so the endpoint pattern cannot be reproduced there.",
+					"region:d": "South Africa West is listed as a region where network security group, user-defined route and application security group support for private endpoints is unavailable, so the pattern would not work there."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/create-private-endpoint-portal"
+				}
+			],
+			"subtopics": [
+				"private-endpoint-regional-limits",
+				"application-security-group-limits"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HJKP0D9SEWJ38BXB877Y16",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are rolling out private connectivity for the analytics platform that runs in virtual network `vnet-analytics` (subscription `sub-an`, region `westeurope`). The platform reads from a storage account that a central team owns and publishes, and the network team wants every connection aimed at the private endpoints to be evaluated by the network security group attached to subnet `snet-pe`. The exhibit lists the two items of this rollout that are currently failing. You need both of them completed so that the platform reaches the published storage account over the private path and the traffic sent to the endpoints is filtered the way the security team intends. Which configuration should you use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Rollout item",
+						"Target",
+						"Observed result"
+					],
+					"rows": [
+						[
+							"Private endpoint for the published storage account",
+							"Storage account `contosostore`, subresource `blob`, in subscription `sub-an`",
+							"Deployment fails and the platform team is told that the type of the account does not support private endpoints."
+						],
+						[
+							"Inbound rule in network security group `nsg-pe`",
+							"Subnet `snet-pe` of `vnet-analytics`",
+							"The rule is rejected because its combination of source addresses, destination addresses and port ranges is above the limit that applies to the network interfaces of private endpoints."
+						]
+					]
+				},
+				"statement": "The published storage account has to be {{accountType}}, and the inbound rule in `nsg-pe` has to be limited to {{ruleScale}}.",
+				"slots": [
+					{
+						"id": "accountType",
+						"options": [
+							{
+								"id": "a",
+								"text": "A General Purpose v2 (GPv2) storage account"
+							},
+							{
+								"id": "b",
+								"text": "A General Purpose v1 (GPv1) storage account"
+							},
+							{
+								"id": "c",
+								"text": "A classic storage account with hot and cool access tiers"
+							},
+							{
+								"id": "d",
+								"text": "A Blob Storage (Standard LRS) storage account"
+							}
+						]
+					},
+					{
+						"id": "ruleScale",
+						"options": [
+							{
+								"id": "a",
+								"text": "50 sources × 50 destinations × 100 port ranges"
+							},
+							{
+								"id": "b",
+								"text": "100 sources × 100 destinations × 100 port ranges"
+							},
+							{
+								"id": "c",
+								"text": "100 sources × 50 destinations × 100 port ranges"
+							},
+							{
+								"id": "d",
+								"text": "50 sources × 100 destinations × 100 port ranges"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"accountType": "a",
+				"ruleScale": "a"
+			},
+			"explanation": {
+				"correct": "Private endpoints can only be created on a General Purpose v2 (GPv2) storage account, so the published account `contosostore` has to be that generation before the endpoint for its `blob` subresource can be deployed. For the network security group on the subnet that holds the private endpoints, the number of rule combinations is limited: sources × destinations × port ranges must stay at or below 250K. 50 × 50 × 100 = 250K is accepted, while each of the other three combinations (500K or 1M) exceeds the ceiling, so the security team has to narrow one of the three dimensions of the rule.",
+				"perChoice": {
+					"accountType:b": "A General Purpose v1 (GPv1) account belongs to the previous storage generation and cannot host private endpoints; only the General Purpose v2 generation supports them.",
+					"accountType:c": "A classic storage account with hot and cool access tiers is a legacy account type that cannot host private endpoints.",
+					"accountType:d": "A Blob Storage (Standard LRS) account is a legacy single-service account and is not the General Purpose v2 generation that private endpoints require.",
+					"ruleScale:b": "100 × 100 × 100 = 1M combinations, which is above the 250K ceiling that applies to the network interfaces of private endpoints.",
+					"ruleScale:c": "100 × 50 × 100 = 500K combinations, which is above the 250K ceiling for the network interfaces of private endpoints.",
+					"ruleScale:d": "50 × 100 × 100 = 500K combinations, which is above the 250K ceiling for the network interfaces of private endpoints."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/create-private-endpoint-portal"
+				}
+			],
+			"subtopics": [
+				"storage-endpoint-requirements",
+				"nsg-rule-scaling-limits"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HJPA9RCHZVWKYNTXDVCVJP",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are onboarding the developer platform that runs in virtual network `vnet-build` (subscription `sub-build`, region `westeurope`) to private connectivity. The platform pulls images from the Azure Container Registry `contosoimages`, stores build output in the storage account `buildartifacts`, and publishes the release portal `portal-contoso` on the App Service plan `plan-portal`. Requests for private endpoints for all three were raised in subnet `snet-pe`, and the exhibit lists the outcome of each request. The team needs the registry hostname to resolve inside `vnet-build` to the address carried by its endpoint, with the records produced for you rather than typed in by hand, and every pull, upload and portal request to travel over the private path. Which configuration should you use for each item?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Outcome of the request"
+					],
+					"rows": [
+						[
+							"Registry `contosoimages`",
+							"Endpoint created in `snet-pe`, but `contosoimages.azurecr.io` does not resolve inside `vnet-build`"
+						],
+						[
+							"Storage account `buildartifacts`",
+							"Request refused; the message names the kind of the account as the reason"
+						],
+						[
+							"Web app `portal-contoso`",
+							"Request refused; the message names the hosting plan of the app as the reason"
+						]
+					]
+				},
+				"statement": "Select one value for each item: link the private DNS zone {{registryZone}} to `vnet-build` for the registry, run `buildartifacts` as a {{storageKind}} storage account, and host `portal-contoso` on a {{planTier}} App Service plan.",
+				"slots": [
+					{
+						"id": "registryZone",
+						"options": [
+							{
+								"id": "a",
+								"text": "privatelink.azurecr.io"
+							},
+							{
+								"id": "b",
+								"text": "privatelink.containerregistry.azurecr.io"
+							},
+							{
+								"id": "c",
+								"text": "{regionName}.data.privatelink.azurecr.io"
+							},
+							{
+								"id": "d",
+								"text": "privatelink.containers.azurecr.io"
+							}
+						]
+					},
+					{
+						"id": "storageKind",
+						"options": [
+							{
+								"id": "a",
+								"text": "Premium Block Blob Storage"
+							},
+							{
+								"id": "b",
+								"text": "General Purpose v1 (GPv1)"
+							},
+							{
+								"id": "c",
+								"text": "General Purpose v2 (GPv2)"
+							},
+							{
+								"id": "d",
+								"text": "Premium File Storage"
+							}
+						]
+					},
+					{
+						"id": "planTier",
+						"options": [
+							{
+								"id": "a",
+								"text": "Free"
+							},
+							{
+								"id": "b",
+								"text": "Basic"
+							},
+							{
+								"id": "c",
+								"text": "Shared"
+							},
+							{
+								"id": "d",
+								"text": "Consumption"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"registryZone": "a",
+				"storageKind": "c",
+				"planTier": "b"
+			},
+			"explanation": {
+				"correct": "The three items are answered by the recommended private DNS zone for the registry, the storage account kind that supports private endpoints, and a hosting tier that supports a web app private endpoint. For the registry, the service's own records belong in the zone named privatelink.azurecr.io, which you create and link to the VNet; the entries for the registry are then added for you, so an extra {regionName}.data.privatelink.azurecr.io zone is not part of the recommended setup. For the storage account, a private endpoint can only be created against a General Purpose v2 (GPv2) storage account, so `buildartifacts` has to be run on that kind before the endpoint request will succeed. For the web app, a private endpoint is only offered on the App Service plan tiers Basic, Standard, PremiumV2, PremiumV3, IsolatedV2 or the Functions Premium (Elastic Premium) tier, so `portal-contoso` must be moved onto one of those, and Basic is the lowest-cost tier that satisfies it.",
+				"perChoice": {
+					"registryZone:b": "No records are generated for the registry in this zone name, so the registry hostname would still fail to resolve inside the virtual network. The entries are only written for you when the zone carries the name the service documentation lists.",
+					"registryZone:c": "This data zone is not what is deployed for a container registry endpoint: the recommended setup uses the single zone named privatelink.azurecr.io and lets the entries be added for you, so adding this extra zone does not produce the registry records and is not part of the supported pattern.",
+					"registryZone:d": "This is not the zone used for the registry, so no records would be created for it and the registry hostname would not resolve to the address carried by the endpoint.",
+					"storageKind:a": "A block blob account is not supported for private endpoints; only a general purpose account of the second generation qualifies, so the endpoint request would continue to be refused.",
+					"storageKind:b": "An account of the first generation does not support private endpoints. The account must be the general purpose kind of the second generation for the endpoint to be created.",
+					"storageKind:d": "A file-share-only account is not supported for private endpoints; only the general purpose account kind of the second generation can carry a private endpoint.",
+					"planTier:a": "A web app hosted on the Free plan cannot have a private endpoint, so choosing this tier leaves the request refused.",
+					"planTier:c": "A web app hosted on the Shared plan cannot have a private endpoint, so choosing this tier leaves the request refused.",
+					"planTier:d": "Consumption is not one of the plan tiers that support a private endpoint for a web app, so this choice leaves the request refused."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-dns"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/create-private-endpoint-portal"
+				}
+			],
+			"subtopics": [
+				"private-dns-zones",
+				"storage-account-kind",
+				"app-service-plan-tiers"
+			],
+			"reviewed": false
+		}
+	]
+}

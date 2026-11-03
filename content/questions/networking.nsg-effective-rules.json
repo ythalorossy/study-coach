@@ -1,0 +1,2642 @@
+{
+	"skill": "networking.nsg-effective-rules",
+	"questions": [
+		{
+			"id": "q_01M6FMDHN4B6JVVNVCF3DW60KY",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Linux virtual machine named web-vm that runs a public-facing web application. The VM sits in the app-subnet of the hub-vnet virtual network, has a public IP address, and its network interface is named web-vm-nic. Two network security groups are associated with it: nsg-app-subnet is linked to the subnet, and nsg-web-nic is linked to the network interface.\n\nSince the last change to nsg-web-nic, external clients report that they can no longer reach the web application over HTTP, although the application itself is healthy and serving requests locally. The merged effective rules view for web-vm-nic lists the following rows.\n\nThe team must restore external HTTP access to the application and wants to keep an NSG associated at both the subnet and network interface levels. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"NSG",
+						"Association",
+						"Rule name",
+						"Direction",
+						"Source",
+						"Destination port",
+						"Access",
+						"Priority"
+					],
+					"rows": [
+						[
+							"nsg-app-subnet",
+							"Subnet",
+							"defaultSecurityRules/AllowVnetInBound",
+							"Inbound",
+							"VirtualNetwork",
+							"Any",
+							"Allow",
+							"65000"
+						],
+						[
+							"nsg-app-subnet",
+							"Subnet",
+							"defaultSecurityRules/AllowAzureLoadBalancerInBound",
+							"Inbound",
+							"AzureLoadBalancer",
+							"Any",
+							"Allow",
+							"65001"
+						],
+						[
+							"nsg-app-subnet",
+							"Subnet",
+							"defaultSecurityRules/DenyAllInBound",
+							"Inbound",
+							"Any",
+							"Any",
+							"Deny",
+							"65500"
+						],
+						[
+							"nsg-app-subnet",
+							"Subnet",
+							"defaultSecurityRules/AllowInternetOutbound",
+							"Outbound",
+							"Internet",
+							"Any",
+							"Allow",
+							"65000"
+						],
+						[
+							"nsg-web-nic",
+							"NetworkInterface",
+							"defaultSecurityRules/AllowVnetInBound",
+							"Inbound",
+							"VirtualNetwork",
+							"Any",
+							"Allow",
+							"65000"
+						],
+						[
+							"nsg-web-nic",
+							"NetworkInterface",
+							"securityRules/Allow-HTTP",
+							"Inbound",
+							"Any",
+							"80",
+							"Allow",
+							"100"
+						],
+						[
+							"nsg-web-nic",
+							"NetworkInterface",
+							"defaultSecurityRules/DenyAllInBound",
+							"Inbound",
+							"Any",
+							"Any",
+							"Deny",
+							"65500"
+						],
+						[
+							"nsg-web-nic",
+							"NetworkInterface",
+							"defaultSecurityRules/AllowInternetOutbound",
+							"Outbound",
+							"Internet",
+							"Any",
+							"Allow",
+							"65000"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add an inbound allow rule for TCP 80 in the subnet NSG, and keep the existing allow rule in the NIC NSG."
+					},
+					{
+						"id": "b",
+						"text": "Add an inbound allow rule for TCP 80 in the NIC NSG, and keep the existing rule set in the subnet NSG."
+					},
+					{
+						"id": "c",
+						"text": "Add an inbound deny rule for TCP 80 in the subnet NSG, and keep the existing allow rule in the NIC NSG."
+					},
+					{
+						"id": "d",
+						"text": "Add an outbound allow rule for TCP 80 in the subnet NSG, and keep the existing allow rule in the NIC NSG."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Inbound rules from the subnet NSG and the NIC NSG are combined with AND: a connection is admitted only if both levels permit it. The merged view shows that nsg-web-nic already permits inbound TCP 80 (securityRules/Allow-HTTP, priority 100, source Any), but nsg-app-subnet carries only the built-in defaults, so the Internet-sourced request is stopped by defaultSecurityRules/DenyAllInBound (priority 65500) at the subnet level and never reaches the NIC rules. Creating the same inbound allow rule (source Any, source port Any, destination the VM address, destination port 80, protocol TCP, access Allow, a priority such as 100 that outranks the default deny) in nsg-app-subnet makes the flow permitted at both levels; the NIC-level allow rule is retained because both NSGs stay attached.",
+				"perChoice": {
+					"b": "A single allow is not sufficient for inbound traffic: the connection must also be permitted by the subnet NSG. The NIC NSG already contains securityRules/Allow-HTTP for destination port 80 at priority 100, so adding another allow there changes nothing, and the subnet NSG's defaultSecurityRules/DenyAllInBound still blocks traffic from the Internet.",
+					"c": "This makes the block explicit rather than removing it. Inbound traffic must be permitted by both the subnet NSG and the NIC NSG, so a deny on the subnet side stops the flow regardless of the allow that exists on the interface side.",
+					"d": "Outbound rules govern traffic leaving the VM, not the inbound connection from the client, and the built-in AllowInternetOutbound default already permits egress to the Internet. Adding an outbound allow for TCP 80 therefore has no bearing on the failing request."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/diagnose-network-traffic-filter-problem"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-group-how-it-works"
+				}
+			],
+			"subtopics": [
+				"nsg-effective-rules",
+				"inbound-rule-evaluation",
+				"subnet-nic-nsg-merge"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FMGDH6EPFA3AAZ0F5FAEDD",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Windows Server virtual machine named sql-vm that hosts an internal line-of-business application. The machine sits in the mgmt-subnet of the core-vnet virtual network, its network interface is sql-vm-nic, and the merged view of the rules that apply to that interface is shown below.\n\nAdministrators on the corporate network can no longer open Remote Desktop to the machine, even though the application is healthy and listening on TCP 3389. Corporate security requires that an NSG stay associated with both the subnet and the network interface, and that Remote Desktop remain reachable only from the corporate source range 203.0.113.0/24. You need to restore administrator access while meeting those requirements. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Rule name",
+						"NSG",
+						"Association",
+						"Direction",
+						"Source",
+						"Destination",
+						"Destination port",
+						"Protocol",
+						"Access",
+						"Priority"
+					],
+					"rows": [
+						[
+							"defaultSecurityRules/AllowVNetInBound",
+							"nsg-mgmt-subnet",
+							"Subnet",
+							"Inbound",
+							"VirtualNetwork",
+							"VirtualNetwork",
+							"Any",
+							"Any",
+							"Allow",
+							"65000"
+						],
+						[
+							"defaultSecurityRules/DenyAllInBound",
+							"nsg-mgmt-subnet",
+							"Subnet",
+							"Inbound",
+							"0.0.0.0/0",
+							"Any",
+							"Any",
+							"Any",
+							"Deny",
+							"65500"
+						],
+						[
+							"securityRules/Allow-RDP-CorpRange",
+							"nsg-mgmt-subnet",
+							"Subnet",
+							"Inbound",
+							"203.0.113.0/24",
+							"10.10.1.20",
+							"3389",
+							"TCP",
+							"Allow",
+							"110"
+						],
+						[
+							"defaultSecurityRules/AllowVNetInBound",
+							"nsg-sql-nic",
+							"NetworkInterface",
+							"Inbound",
+							"VirtualNetwork",
+							"VirtualNetwork",
+							"Any",
+							"Any",
+							"Allow",
+							"65000"
+						],
+						[
+							"defaultSecurityRules/DenyAllInBound",
+							"nsg-sql-nic",
+							"NetworkInterface",
+							"Inbound",
+							"0.0.0.0/0",
+							"Any",
+							"Any",
+							"Any",
+							"Deny",
+							"65500"
+						],
+						[
+							"defaultSecurityRules/AllowInternetOutBound",
+							"nsg-sql-nic",
+							"NetworkInterface",
+							"Outbound",
+							"Any",
+							"Internet",
+							"Any",
+							"Any",
+							"Allow",
+							"65000"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Create an inbound allow rule for TCP 3389 from the source range 203.0.113.0/24 with priority 120 in nsg-mgmt-subnet, the NSG associated with the subnet."
+					},
+					{
+						"id": "b",
+						"text": "Change the priority of the default DenyAllInBound rule in nsg-sql-nic from 65500 to 120."
+					},
+					{
+						"id": "c",
+						"text": "Create an inbound allow rule for TCP 3389 with source address prefix Any and priority 120 in nsg-sql-nic, the NSG associated with the network interface."
+					},
+					{
+						"id": "d",
+						"text": "Create an inbound allow rule for TCP 3389 from the source range 203.0.113.0/24 with priority 120 in nsg-sql-nic, the NSG associated with the network interface."
+					}
+				]
+			},
+			"key": {
+				"optionId": "d"
+			},
+			"explanation": {
+				"correct": "Effective rules are the merge of the rules of the NSG on the network interface and the rules of the NSG on the subnet, and inbound traffic must be permitted by both of them. In the merged view the only rule permitting TCP 3389 from 203.0.113.0/24 sits at the subnet level (nsg-mgmt-subnet, priority 110); the interface-level NSG (nsg-sql-nic) contains only the built-in defaults, whose DenyAllInBound at priority 65500 blocks the flow. Adding an inbound allow rule for TCP 3389 from 203.0.113.0/24 in nsg-sql-nic with a priority such as 120 (which outranks the default deny) supplies the missing permission at the interface level, keeps the source restricted to the corporate range, and leaves both NSG associations in place as the baseline requires.",
+				"perChoice": {
+					"a": "This adds a duplicate of the rule that already exists at the subnet level. The interface-level NSG still has no rule permitting TCP 3389, so the built-in DenyAllInBound at priority 65500 continues to block the connection; when both levels carry an NSG, the permission has to exist in both of them for inbound traffic to flow.",
+					"b": "The built-in default rules are fixed: their priorities cannot be changed and the rules themselves cannot be edited or deleted, so the default deny at the interface level stays at 65500 and still blocks inbound TCP 3389.",
+					"c": "This would restore the connection, but a source prefix of Any exposes Remote Desktop to every source, including the internet, which violates the requirement that it be reachable only from the corporate source range 203.0.113.0/24."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/diagnose-network-traffic-filter-problem"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-group-how-it-works"
+				}
+			],
+			"subtopics": [
+				"nsg-effective-rules",
+				"inbound-rule-combination",
+				"troubleshooting-blocked-traffic"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FMP1RJRD2XB7YDRGF5NM2P",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Linux virtual machine named batch-vm that runs a log-collection agent. The machine sits in the app-subnet of the prod-vnet virtual network, and its network interface is named batch-vm-nic. Two network security groups apply to it: nsg-app-subnet is linked to the subnet, and nsg-batch-nic is linked to the network interface.\n\nSince the agent was upgraded, every attempt to send its logs to an Azure Storage account over HTTPS (TCP 443) times out, while inbound administration from the corporate range still works normally. The outbound rows of the merged effective security rules view for batch-vm-nic are shown below.\n\nThe uploads must succeed again, security policy requires that egress to the internet stay blocked for every destination other than Azure Storage over TCP 443, and both network security groups must remain associated. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Rule",
+						"Association",
+						"Priority",
+						"Direction",
+						"Protocol",
+						"Source",
+						"Destination",
+						"Port",
+						"Access"
+					],
+					"rows": [
+						[
+							"securityRules/AllowStorageUpload",
+							"NetworkInterface",
+							"110",
+							"Outbound",
+							"TCP",
+							"*",
+							"Storage",
+							"443",
+							"Allow"
+						],
+						[
+							"securityRules/BlockOutbound",
+							"Subnet",
+							"200",
+							"Outbound",
+							"*",
+							"*",
+							"*",
+							"*",
+							"Deny"
+						],
+						[
+							"defaultSecurityRules/AllowInternetOutbound",
+							"NetworkInterface",
+							"65000",
+							"Outbound",
+							"*",
+							"*",
+							"Internet",
+							"*",
+							"Allow"
+						],
+						[
+							"defaultSecurityRules/AllowInternetOutbound",
+							"Subnet",
+							"65000",
+							"Outbound",
+							"*",
+							"*",
+							"Internet",
+							"*",
+							"Allow"
+						],
+						[
+							"defaultSecurityRules/DenyAllOutBound",
+							"NetworkInterface",
+							"65500",
+							"Outbound",
+							"*",
+							"*",
+							"*",
+							"*",
+							"Deny"
+						],
+						[
+							"defaultSecurityRules/DenyAllOutBound",
+							"Subnet",
+							"65500",
+							"Outbound",
+							"*",
+							"*",
+							"*",
+							"*",
+							"Deny"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add an outbound allow rule to nsg-app-subnet for TCP 443 to the Storage service tag, using a priority number lower than 200."
+					},
+					{
+						"id": "b",
+						"text": "Add an outbound allow rule to nsg-batch-nic for TCP 443 to the Storage service tag, using a priority number lower than 110."
+					},
+					{
+						"id": "c",
+						"text": "Edit the outbound deny rule in nsg-app-subnet so that its action allows outbound traffic."
+					},
+					{
+						"id": "d",
+						"text": "Add an outbound allow rule to nsg-app-subnet for TCP 443 to the Storage service tag, using a priority number higher than 200."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The merged view shows that the network interface NSG already permits outbound TCP 443 to the Storage service tag (priority 110), while the subnet NSG carries a deny rule for all outbound traffic at priority 200. For outbound traffic the rules of the network interface NSG are processed first and the subnet NSG rules afterwards, and a deny in either of the two groups stops the flow, so the interface-level allow never carries the upload through. The permit therefore has to exist in nsg-app-subnet as well, and it has to outrank that group's deny rule, which means giving it a priority number lower than 200. Because the deny rule is kept and only the storage exception is added, egress to every other internet destination stays blocked, and both groups remain associated.",
+				"perChoice": {
+					"b": "The network interface NSG already permits outbound TCP 443 to the Storage service tag at priority 110, so another allow rule there changes nothing. The upload is still stopped by the deny rule in nsg-app-subnet, because a deny in either of the two groups blocks outbound traffic regardless of an allow in the other.",
+					"c": "Turning that deny rule into an allow would let the uploads through, but it would also open egress to every destination on the internet, breaking the policy that only Azure Storage over TCP 443 may be reached. The deny rule should stay in place and a narrow exception should be added above it.",
+					"d": "A priority number higher than 200 ranks below the deny rule in nsg-app-subnet, so that deny rule still matches first and the upload remains blocked. The new rule needs a lower number than the deny rule to take precedence over it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-group-how-it-works"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/diagnose-network-traffic-filter-problem"
+				}
+			],
+			"subtopics": [
+				"nsg-effective-rules",
+				"outbound-rule-processing",
+				"rule-priority"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FMZAWDERTZ9TET83070KV8",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have two Linux virtual machines that both sit in the payout-subnet of the finance-vnet virtual network. order-vm runs an order intake API that listens on TCP 8080, and ledger-vm polls that API over the private addresses of the subnet. Neither interface has a network security group of its own; a single network security group named nsg-payout is associated with the payout-subnet. Since nsg-payout was associated with the subnet, requests sent from ledger-vm to order-vm time out, although the API is healthy and answers locally on the machine. The merged effective rules view for order-vm-nic lists the rows below. You need order intake to work again between the two virtual machines while nsg-payout stays associated with the payout-subnet. Which action should you take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Effective security rules - order-vm-nic\n\nRule name                                  Assoc.   Priority  Direction  Access  Source          Destination  Protocol/Port\nsecurityRules/DenyEast-West-Traffic        Subnet   100       Inbound    Deny    VirtualNetwork  Any          Any\ndefaultSecurityRules/AllowVnetInBound      Subnet   65000     Inbound    Allow   VirtualNetwork  Any          Any\ndefaultSecurityRules/DenyAllInBound        Subnet   65500     Inbound    Deny    0.0.0.0/0       Any          Any\ndefaultSecurityRules/AllowVnetOutBound     Subnet   65000     Outbound   Allow   VirtualNetwork  Any          Any\ndefaultSecurityRules/AllowInternetOutBound Subnet   65001     Outbound   Allow   Any             Internet     Any\ndefaultSecurityRules/DenyAllOutBound       Subnet   65500     Outbound   Deny    Any             Any          Any"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Edit the custom rule in nsg-payout so that it stops blocking traffic that originates inside the virtual network."
+					},
+					{
+						"id": "b",
+						"text": "Associate a new network security group with order-vm-nic that allows inbound TCP 8080 from the ledger-vm address range, leaving nsg-payout in place."
+					},
+					{
+						"id": "c",
+						"text": "Raise the priority number of the custom rule in nsg-payout so that it is processed after the built-in rule that permits traffic from all sources inside the virtual network."
+					},
+					{
+						"id": "d",
+						"text": "Add an outbound rule to nsg-payout that allows all response traffic from order-vm back to ledger-vm on TCP 8080, leaving the inbound rows untouched."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The merged view shows that the only user-created rule, securityRules/DenyEast-West-Traffic, sits at priority 100 in the network security group associated with the subnet and denies inbound traffic whose source is the VirtualNetwork service tag. ledger-vm is inside that virtual network, so its calls to order-vm match this rule. Because lower priority numbers are processed first, that deny is evaluated before defaultSecurityRules/AllowVnetInBound, the built-in rule that normally permits traffic originating inside the virtual network and between virtual machines in the same subnet. The blocking rule lives in the network security group associated with the subnet, so that group has to be adjusted for the flow to succeed. Editing the custom rule so it no longer matches traffic originating inside the virtual network (or adding an allow rule with a priority number lower than 100 for the ledger-vm address range in the same group) restores order intake while nsg-payout stays associated with the payout-subnet.",
+				"perChoice": {
+					"b": "A network security group associated with the interface cannot override the one associated with the subnet. Inbound traffic is evaluated against the subnet's network security group first and then the interface's, and the port has to be permitted by both, so the priority 100 deny in nsg-payout keeps dropping the calls from ledger-vm no matter what an interface-level group allows.",
+					"c": "User-created rules accept priorities from 100 to 4096, while the built-in rules carry the lowest priority, so a custom rule can never be processed after defaultSecurityRules/AllowVnetInBound. Moving the rule to a higher number therefore cannot make it yield to the built-in allow, and the calls stay blocked.",
+					"d": "The connection is refused on the inbound side before any response is generated, and outbound rules are evaluated in the opposite direction, with the interface's group first and the subnet's group second. The built-in outbound rules already permit the reply traffic, so an extra outbound rule for TCP 8080 changes nothing for the requests coming from ledger-vm."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-group-how-it-works"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/diagnose-network-traffic-filter-problem"
+				}
+			],
+			"subtopics": [
+				"effective-security-rules",
+				"nsg-rule-priority",
+				"intra-subnet-traffic"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FN505909K23HH57RJT3MQT",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Linux virtual machine named api-vm that hosts an internal REST API. The machine sits in the svc-subnet of the prod-vnet virtual network, has a public IP address assigned, and its network interface is api-vm-nic. After a recent hardening review, the security team recorded that every port of the machine can be reached from the internet.\n\nThe properties of the machine and the result of the rules review are shown below.\n\nThe team must reduce the internet-facing surface of every virtual machine in svc-subnet, and the audit needs a listing of all the rules that govern api-vm-nic, including the built-in defaults. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Virtual machine",
+							"api-vm (Linux)"
+						],
+						[
+							"Virtual machine power state",
+							"Running"
+						],
+						[
+							"Network interface",
+							"api-vm-nic"
+						],
+						[
+							"Virtual network / subnet",
+							"prod-vnet / svc-subnet"
+						],
+						[
+							"Public IP address",
+							"52.148.10.7 assigned"
+						],
+						[
+							"Network security group associated with api-vm-nic",
+							"None"
+						],
+						[
+							"Network security group associated with svc-subnet",
+							"None"
+						],
+						[
+							"Rules review for api-vm-nic (Get-AzEffectiveNetworkSecurityGroup)",
+							"No rules returned"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Associate a new network security group with svc-subnet, add the inbound and outbound rules the API needs, and then review the effective security rules for api-vm-nic to confirm what applies to the interface."
+					},
+					{
+						"id": "b",
+						"text": "Associate a new network security group with api-vm-nic, add the inbound and outbound rules the API needs, and then review the effective security rules for api-vm-nic to confirm what applies to the interface."
+					},
+					{
+						"id": "c",
+						"text": "Associate a new network security group with svc-subnet, add the inbound and outbound rules the API needs, and then review only the custom rules stored in the network security group to confirm what applies to the interface."
+					},
+					{
+						"id": "d",
+						"text": "Associate a new network security group with svc-subnet, add the inbound and outbound rules the API needs, and then use IP flow verify in Azure Network Watcher to confirm what applies to the interface."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The machine has a public IP address and no network security group on either level, so nothing filters its traffic and all of its ports stay exposed to the internet. Putting the new network security group on svc-subnet gives every interface in that subnet a filtered path, which is the scope the team asked for and the attachment level recommended over per-interface associations; the allow rules needed by the API are then added so the service keeps working. The audit listing comes from the effective security rules view for api-vm-nic, because that view merges the rules of the network security group on the subnet with those on the interface and shows the built-in defaults, such as the inbound deny and the outbound allow, alongside the custom rules.",
+				"perChoice": {
+					"b": "Attaching the network security group to api-vm-nic filters only that one interface. Every other virtual machine in svc-subnet would remain unfiltered and exposed, so the requirement to reduce the surface of the whole subnet is not met, and an interface-level association is the scope to avoid when a subnet-wide filter is needed.",
+					"c": "Looking only at the custom rules stored in the network security group omits the built-in defaults and shows only one level of the configuration, so it cannot produce the listing of everything that governs api-vm-nic that the audit requires. The merged effective rules view for the interface is the source for that listing.",
+					"d": "IP flow verify answers a yes/no question for one specific flow and names the rule responsible for it; it does not enumerate every rule that governs the interface. It is useful after the rules are in place to confirm one flow, not to build the audit listing."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/diagnose-network-traffic-filter-problem"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-group-how-it-works"
+				}
+			],
+			"subtopics": [
+				"effective-security-rules",
+				"nsg-attachment-scope",
+				"subnet-security-group"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FNA1S6EPTV1671REFR0WTA",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Windows Server virtual machine named win-vm that administrators manage remotely with WMI and DCOM tooling. The machine sits in the ops-subnet of the corp-vnet virtual network, has a public IP address, and its network interface is named win-vm-nic. Two network security groups apply to it: nsg-ops-subnet is linked to the subnet, and nsg-win-nic is linked to the network interface.\n\nRemote management from a management host in the corporate range 198.51.100.0/24 does not work: a connectivity test to TCP 135 times out, and the follow-on connection over the dynamic range is refused as well. The dynamic range configured on win-vm was confirmed as 49152-65535. The inbound rows of the merged effective rules view for win-vm-nic are shown below.\n\nRemote management must work again from the corporate source range 198.51.100.0/24 only, and both network security groups must remain associated with the machine. Which action should you take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Association     Rule name                                    Priority  Direction  Source           Port  Access\nSubnet         defaultSecurityRules/AllowVnetInBound       65000     Inbound    VirtualNetwork   *     Allow\nSubnet         defaultSecurityRules/AllowAzureLoadBalancerInBound  65000  Inbound  AzureLoadBalancer  *  Allow\nSubnet         defaultSecurityRules/DenyAllInBound          65500     Inbound    0.0.0.0/0        *     Deny\nNetworkInterface  defaultSecurityRules/AllowVnetInBound     65000     Inbound    VirtualNetwork   *     Allow\nNetworkInterface  defaultSecurityRules/AllowAzureLoadBalancerInBound  65000  Inbound  AzureLoadBalancer  *  Allow\nNetworkInterface  defaultSecurityRules/DenyAllInBound        65500     Inbound    0.0.0.0/0        *     Deny"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Create two inbound allow rules in both nsg-ops-subnet and nsg-win-nic - one for TCP 135 and one for TCP 49152-65535 - each with its own unused priority between 100 and 4096, source 198.51.100.0/24, destination the win-vm-nic address or the ops-subnet address range."
+					},
+					{
+						"id": "b",
+						"text": "Create two inbound allow rules in nsg-win-nic only - one for TCP 135 and one for TCP 49152-65535 - each with its own unused priority between 100 and 4096, source 198.51.100.0/24, destination the win-vm-nic address or the ops-subnet address range."
+					},
+					{
+						"id": "c",
+						"text": "Create two inbound allow rules in both nsg-ops-subnet and nsg-win-nic - one for TCP 135 and one for TCP 49152-65535 - each with its own unused priority between 100 and 4096, source Any, destination the win-vm-nic address or the ops-subnet address range."
+					},
+					{
+						"id": "d",
+						"text": "In both nsg-ops-subnet and nsg-win-nic, replace the built-in default deny rule with two custom inbound allow rules for TCP 135 and TCP 49152-65535 at priorities between 100 and 4096, source 198.51.100.0/24."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Inbound traffic is evaluated by the subnet network security group first and then by the network interface one, and the two sets of inbound rules are combined with AND, so the port has to be permitted at both levels. Remote WMI/DCOM management needs TCP 135 for the RPC endpoint mapper plus the dynamic RPC range, which on this host is 49152-65535, so one allow rule per port is needed. Both nsg-ops-subnet and nsg-win-nic must carry those two allow rules, each with its own unused priority between 100 and 4096 so that it outranks the built-in default deny, with the corporate source range as source and the NIC or subnet address range as destination.",
+				"perChoice": {
+					"b": "This adds the allow rules only on the interface-level network security group. Inbound rules are combined with AND: the port must also be allowed by the subnet network security group, so while its rules still contain only the built-in defaults the connection stays blocked.",
+					"c": "Using Any as the source address prefix opens the management ports to every source address, so it does not meet the requirement that remote management be reachable only from 198.51.100.0/24.",
+					"d": "The built-in default rules are the standard set present in every network security group and are not something you can swap for your own rules. Traffic is permitted by adding custom allow rules whose priorities outrank the built-in default deny."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/diagnose-network-traffic-filter-problem"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-group-how-it-works"
+				}
+			],
+			"subtopics": [
+				"effective-security-rules",
+				"inbound-rule-combination",
+				"remote-management-ports"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FNGKPV2D0NQJKFMT1QJAHE",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Linux virtual machine named edge-vm that administrators maintain over SSH. The machine sits in the edge-subnet of the hub-vnet virtual network, has a public IP address, and its network interface is named edge-vm-nic. Two network security groups apply to it: nsg-edge-subnet is linked to the subnet and nsg-edge-nic is linked to the network interface.\n\nAdministrators on the corporate range 198.51.100.0/24 can no longer open an SSH session to edge-vm: the connection attempt times out before any login prompt appears. The machine is powered on, the SSH daemon answers locally, and nothing was modified recently on the machine or in either of the two network security groups. The inbound rows of the merged effective security rules view for edge-vm-nic are listed below.\n\nThe team must restore administrative SSH access from the corporate range and determine what is actually stopping the sessions. Which action should you take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"networkInterface\": \"edge-vm-nic\",\n  \"effectiveSecurityRules\": [\n    { \"rule\": \"securityRules/Allow-SSH-Corp\", \"association\": \"NetworkInterface\", \"priority\": 100, \"direction\": \"Inbound\", \"source\": \"198.51.100.0/24\", \"destinationPort\": \"22\", \"protocol\": \"TCP\", \"access\": \"Allow\" },\n    { \"rule\": \"securityRules/Allow-SSH-Corp\", \"association\": \"Subnet\", \"priority\": 100, \"direction\": \"Inbound\", \"source\": \"198.51.100.0/24\", \"destinationPort\": \"22\", \"protocol\": \"TCP\", \"access\": \"Allow\" },\n    { \"rule\": \"defaultSecurityRules/AllowVNetInBound\", \"association\": \"NetworkInterface\", \"priority\": 65000, \"direction\": \"Inbound\", \"source\": \"VirtualNetwork\", \"destinationPort\": \"*\", \"protocol\": \"*\", \"access\": \"Allow\" },\n    { \"rule\": \"defaultSecurityRules/AllowVNetInBound\", \"association\": \"Subnet\", \"priority\": 65000, \"direction\": \"Inbound\", \"source\": \"VirtualNetwork\", \"destinationPort\": \"*\", \"protocol\": \"*\", \"access\": \"Allow\" },\n    { \"rule\": \"defaultSecurityRules/AllowAzureLoadBalancerInBound\", \"association\": \"NetworkInterface\", \"priority\": 65001, \"direction\": \"Inbound\", \"source\": \"AzureLoadBalancer\", \"destinationPort\": \"*\", \"protocol\": \"*\", \"access\": \"Allow\" },\n    { \"rule\": \"defaultSecurityRules/AllowAzureLoadBalancerInBound\", \"association\": \"Subnet\", \"priority\": 65001, \"direction\": \"Inbound\", \"source\": \"AzureLoadBalancer\", \"destinationPort\": \"*\", \"protocol\": \"*\", \"access\": \"Allow\" },\n    { \"rule\": \"defaultSecurityRules/DenyAllInBound\", \"association\": \"NetworkInterface\", \"priority\": 65500, \"direction\": \"Inbound\", \"source\": \"0.0.0.0/0\", \"destinationPort\": \"*\", \"protocol\": \"*\", \"access\": \"Deny\" },\n    { \"rule\": \"defaultSecurityRules/DenyAllInBound\", \"association\": \"Subnet\", \"priority\": 65500, \"direction\": \"Inbound\", \"source\": \"0.0.0.0/0\", \"destinationPort\": \"*\", \"protocol\": \"*\", \"access\": \"Deny\" }\n  ]\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add an inbound rule with priority 90 to nsg-edge-subnet that allows TCP 22 from 198.51.100.0/24 to the interface."
+					},
+					{
+						"id": "b",
+						"text": "Remove the nsg-edge-nic association from edge-vm-nic so that only the subnet rules filter traffic for the interface."
+					},
+					{
+						"id": "c",
+						"text": "Check the firewall software running inside the guest operating system, the routes configured for the interface, and whether a forced tunnel sends the traffic on-premises."
+					},
+					{
+						"id": "d",
+						"text": "Change the priority of the default DenyAllInBound rule in nsg-edge-subnet so that it is evaluated before the custom SSH rule."
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "The merged view shows an allow for TCP 22 from 198.51.100.0/24 at priority 100 under both the NetworkInterface and the Subnet association. Inbound traffic is evaluated against the subnet's rules first and then the interface's rules, and the port has to be allowed by both, so this flow already passes NSG filtering; the built-in DenyAllInBound at priority 65500 is evaluated later and never applies, and no other row denies it. When no rule in the effective view explains a failure, the blocker lies outside the network security groups: firewall software running inside the guest operating system, routes configured for virtual appliances or on-premises traffic, or a forced tunnel that redirects traffic on-premises. Inspecting those three items on edge-vm therefore targets the actual cause; IP flow verify in Network Watcher can also confirm the verdict for the SSH flow, returning allowed or denied and naming the rule responsible.",
+				"perChoice": {
+					"a": "The same source and port are already allowed by the rule at priority 100 in both network security groups, so an extra allow only duplicates what exists and cannot unblock the sessions; the merged view shows no denial for this flow.",
+					"b": "Removing the interface-level association does not restore the sessions: the subnet-level rules already allow TCP 22 from that range, so the flow keeps passing NSG filtering and still fails for the same reason. It also drops a control the team relies on.",
+					"d": "The built-in deny at priority 65500 is never reached for this flow because the allow at priority 100 is evaluated first, so reordering the default rule changes nothing. Moving that deny ahead of the custom allow would actually block the administrative access that has to be restored."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/diagnose-network-traffic-filter-problem"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-group-how-it-works"
+				}
+			],
+			"subtopics": [
+				"nsg-effective-rules",
+				"traffic-filter-troubleshooting",
+				"forced-tunneling"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FNQHABTVBJZ8HEMD5XF43Z",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Linux virtual machine named app-vm that runs the storefront web application. The machine sits in the web-subnet of the shop-vnet virtual network, and its network interface is app-vm-nic. A single network security group named nsg-shop is associated with both web-subnet and app-vm-nic.\n\nThe quarterly firewall review flagged the merged effective security rules listing for app-vm-nic, because every row of nsg-shop shows up a second time in that listing and reviewers cannot tell which copy governs a given flow. Filtering must keep applying to every virtual machine in web-subnet, and the listing must show each rule of nsg-shop only once. Which action should you take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Effective security rules listing for app-vm-nic (resource group shop-rg)\n\nNetwork security group   Association       Rule name                            Direction  Priority  Access  Source         Destination port\nnsg-shop                  Subnet            defaultSecurityRules/DenyAllInBound   Inbound    65500     Deny    *               *\nnsg-shop                  NetworkInterface  defaultSecurityRules/DenyAllInBound   Inbound    65500     Deny    *               *\nnsg-shop                  Subnet            securityRules/Allow-HTTPS-Inbound      Inbound    110       Allow   VirtualNetwork  443\nnsg-shop                  NetworkInterface  securityRules/Allow-HTTPS-Inbound      Inbound    110       Allow   VirtualNetwork  443\nnsg-shop                  Subnet            securityRules/Deny-SSH-Inbound         Inbound    120       Deny    *               22\nnsg-shop                  NetworkInterface  securityRules/Deny-SSH-Inbound         Inbound    120       Deny    *               22\nnsg-shop                  Subnet            securityRules/Allow-Outbound-All       Outbound   100       Allow   *               *\nnsg-shop                  NetworkInterface  securityRules/Allow-Outbound-All       Outbound   100       Allow   *               *\n\nNetwork interfaces located in shop-vnet / web-subnet\n\nNetwork interface   Virtual machine   Network security group\napp-vm-nic          app-vm            nsg-shop\napi-vm-nic          api-vm            none\nworker-vm-nic       worker-vm         none\n"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Remove the association between the network interface and the network security group, keeping the association to the subnet."
+					},
+					{
+						"id": "b",
+						"text": "Remove the association between the subnet and the network security group, keeping the association to the network interface."
+					},
+					{
+						"id": "c",
+						"text": "Keep both associations and delete the repeated entries from the rule list of the network security group so the merged listing shows each rule once."
+					},
+					{
+						"id": "d",
+						"text": "Keep both associations and lower the priority number of the custom rules on the network interface so the merged listing applies each rule once."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The repeated rows are a side effect of the same network security group being linked at two levels: when one group is linked to both the network interface and the subnet, the merged listing shows its built-in defaults and its custom rules once per association. Dropping the network interface level leaves a single association, so each rule of nsg-shop is listed once, and filtering stays in place because the subnet-level association applies to every network interface in web-subnet, including app-vm-nic, api-vm-nic and worker-vm-nic. Associating a group at both levels for the same workload is also discouraged, because overlapping rules conflict and produce filtering problems that are hard to troubleshoot; associating at the subnet level is the recommended approach.",
+				"perChoice": {
+					"b": "Removing the association to the subnet leaves api-vm-nic and worker-vm-nic with no network security group at all, because neither interface has one of its own, so those machines stop being filtered. It also contradicts the recommendation to attach the group to the subnet rather than to individual interfaces.",
+					"c": "The network security group does not store two copies of a rule: the repeated rows exist only in the merged listing, produced by the two associations. Nothing can be deleted from the rule list to remove them, and the built-in default rules are present in every group and cannot be removed at all.",
+					"d": "A priority number only decides which matching rule wins for a given flow; it does not collapse repeated rows in the merged listing. Keeping both associations leaves the duplicated entries in place, so the review requirement is not met."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/diagnose-network-traffic-filter-problem"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-group-how-it-works"
+				}
+			],
+			"subtopics": [
+				"effective-security-rules",
+				"nsg-association-levels",
+				"duplicate-rule-rows"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6FP4J6TQP4VBQSY4XAKG35W",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a Linux virtual machine named catalog-vm that hosts a product catalogue served over HTTPS. The machine runs in the app-subnet of the retail-vnet virtual network, with network interface named catalog-vm-nic, and it has a public IP address. Two network security groups apply to catalog-vm-nic: nsg-app-subnet is attached to app-subnet, and nsg-catalog-nic is attached to catalog-vm-nic.\n\nThe merged listing of all rules that apply to catalog-vm-nic is shown below.\n\nYou need to document what happens in each of the five situations below with the rules currently in force. Drag the outcome onto each situation.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Priority  Rule name                                   Direction  Source            Dest port  Action  Association\n100       securityRules/Allow-HTTPS-Corp              Inbound    198.51.100.0/24   443        Allow   Subnet (nsg-app-subnet)\n110       securityRules/Allow-HTTPS-Corp              Inbound    198.51.100.0/24   443        Allow   NetworkInterface (nsg-catalog-nic)\n200       securityRules/Allow-SSH-Corp                Inbound    198.51.100.0/24   22         Allow   Subnet (nsg-app-subnet)\n300       securityRules/Deny-SMTP-Internet            Outbound   *                  25         Deny    NetworkInterface (nsg-catalog-nic)\n65000     defaultSecurityRules/DenyAllInBound         Inbound    0.0.0.0/0         *          Deny    Subnet (nsg-app-subnet)\n65000     defaultSecurityRules/DenyAllInBound         Inbound    0.0.0.0/0         *          Deny    NetworkInterface (nsg-catalog-nic)\n65000     defaultSecurityRules/AllowInternetOutbound  Outbound   *                  *          Allow   Subnet (nsg-app-subnet)\n65000     defaultSecurityRules/AllowInternetOutbound  Outbound   *                  *          Allow   NetworkInterface (nsg-catalog-nic)"
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Permitted — both levels carry matching rule for that source range and port"
+					},
+					{
+						"id": "i2",
+						"text": "Blocked — custom rule matches different source range, so the built-in default ends the attempt"
+					},
+					{
+						"id": "i3",
+						"text": "Permitted — built-in default lets traffic leave toward outside destinations, and nothing blocks it"
+					},
+					{
+						"id": "i4",
+						"text": "Blocked — matching rule for that port carried by only one level, other level lacks it"
+					},
+					{
+						"id": "i5",
+						"text": "Blocked — one level ends the attempt through recorded denial before other level gets evaluated"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Client at 198.51.100.25 opens an HTTPS session on port 443 to catalog-vm"
+					},
+					{
+						"id": "s2",
+						"label": "Client at 203.0.113.5 opens an HTTPS session on port 443 to catalog-vm"
+					},
+					{
+						"id": "s3",
+						"label": "catalog-vm downloads a page from a public website"
+					},
+					{
+						"id": "s4",
+						"label": "Administrator at 198.51.100.25 opens a secure shell session on port 22 to catalog-vm"
+					},
+					{
+						"id": "s5",
+						"label": "catalog-vm sends mail to an internet host on port 25"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "The merged listing is the union of the rules of the network security group attached to app-subnet and the one attached to catalog-vm-nic, each with its own built-in defaults, so every situation has to be judged against both of them. Inbound traffic must be allowed by the subnet group and by the network interface group at the same time, so the HTTPS rule that appears in both groups lets the client at 198.51.100.25 reach catalog-vm, while the rule for port 22 exists only in the subnet group and the network interface group's default denial therefore stops the shell session. The client at 203.0.113.5 matches no custom rule, so the default that denies inbound traffic with source 0.0.0.0/0 ends that attempt. For outbound traffic the built-in default that permits traffic to the internet applies, so the page download leaves the machine, and the custom denial for port 25 stops the mail attempt in the group that holds it, with the other group never evaluated.",
+				"perChoice": {
+					"i1": "Belongs with the client at 198.51.100.25 opening an HTTPS session on port 443. The rule that allows that source range and port is present in the subnet group and in the network interface group, and inbound traffic needs an allow from both.",
+					"i2": "Belongs with the client at 203.0.113.5. Its address falls outside 198.51.100.0/24, so no custom rule covers it and the built-in default that denies inbound traffic with source 0.0.0.0/0 ends the attempt.",
+					"i3": "Belongs with the page download from a public website. The built-in default that permits outbound traffic applies, and no rule denies that traffic, so the request leaves the machine.",
+					"i4": "Belongs with the administrator opening a secure shell session on port 22. That rule is carried by only one of the two groups, the other group lacks it, and the built-in denial of that group blocks the inbound connection.",
+					"i5": "Belongs with the mail sent to an internet host on port 25. A denial recorded in one group ends the outbound attempt, and for outbound traffic the other group is never evaluated."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/diagnose-network-traffic-filter-problem"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-group-how-it-works"
+				}
+			],
+			"subtopics": [
+				"nsg-effective-rules",
+				"inbound-outbound-evaluation",
+				"default-security-rules"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GX2P14ZWRNVWS24A311H06",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a Linux virtual machine named sync-vm that runs a file synchronization agent for regional offices. The machine sits in sync-subnet of the corp-vnet virtual network, which uses the address space 10.10.0.0/16, and it has a public IP address. Its network interface is named sync-vm-nic. Two network security groups are associated with it: nsg-sync-subnet is linked to sync-subnet, and nsg-sync-nic is linked to sync-vm-nic. The merged set of rules that apply to sync-vm-nic is listed below.\n\nYou need to record what the configuration in force does with the five flows below. Drag the outcome onto each flow.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Priority",
+						"Rule",
+						"Direction",
+						"Source",
+						"Destination",
+						"Destination port",
+						"Protocol",
+						"Action",
+						"Network security group",
+						"Association"
+					],
+					"rows": [
+						[
+							"100",
+							"Allow-SMB-From-Corp",
+							"Inbound",
+							"198.51.100.0/24",
+							"sync-vm-nic",
+							"445",
+							"TCP",
+							"Allow",
+							"nsg-sync-subnet",
+							"Subnet"
+						],
+						[
+							"100",
+							"Allow-SMB-From-Corp",
+							"Inbound",
+							"198.51.100.0/24",
+							"sync-vm-nic",
+							"445",
+							"TCP",
+							"Allow",
+							"nsg-sync-nic",
+							"NetworkInterface"
+						],
+						[
+							"120",
+							"Allow-HTTPS-Any",
+							"Inbound",
+							"Any",
+							"sync-vm-nic",
+							"8443",
+							"TCP",
+							"Allow",
+							"nsg-sync-subnet",
+							"Subnet"
+						],
+						[
+							"65000",
+							"defaultSecurityRules/AllowVNetInBound",
+							"Inbound",
+							"VirtualNetwork",
+							"sync-vm-nic",
+							"Any",
+							"Any",
+							"Allow",
+							"nsg-sync-subnet",
+							"Subnet"
+						],
+						[
+							"65001",
+							"defaultSecurityRules/AllowAzureLoadBalancerInBound",
+							"Inbound",
+							"AzureLoadBalancer",
+							"sync-vm-nic",
+							"Any",
+							"Any",
+							"Allow",
+							"nsg-sync-subnet",
+							"Subnet"
+						],
+						[
+							"65500",
+							"defaultSecurityRules/DenyAllInBound",
+							"Inbound",
+							"0.0.0.0/0",
+							"sync-vm-nic",
+							"Any",
+							"Any",
+							"Deny",
+							"nsg-sync-subnet",
+							"Subnet"
+						],
+						[
+							"65000",
+							"defaultSecurityRules/AllowVNetInBound",
+							"Inbound",
+							"VirtualNetwork",
+							"sync-vm-nic",
+							"Any",
+							"Any",
+							"Allow",
+							"nsg-sync-nic",
+							"NetworkInterface"
+						],
+						[
+							"65001",
+							"defaultSecurityRules/AllowAzureLoadBalancerInBound",
+							"Inbound",
+							"AzureLoadBalancer",
+							"sync-vm-nic",
+							"Any",
+							"Any",
+							"Allow",
+							"nsg-sync-nic",
+							"NetworkInterface"
+						],
+						[
+							"65500",
+							"defaultSecurityRules/DenyAllInBound",
+							"Inbound",
+							"0.0.0.0/0",
+							"sync-vm-nic",
+							"Any",
+							"Any",
+							"Deny",
+							"nsg-sync-nic",
+							"NetworkInterface"
+						],
+						[
+							"100",
+							"Allow-HTTPS-Partner",
+							"Outbound",
+							"Any",
+							"203.0.113.0/24",
+							"443",
+							"TCP",
+							"Allow",
+							"nsg-sync-nic",
+							"NetworkInterface"
+						],
+						[
+							"200",
+							"Deny-Outbound-Internet",
+							"Outbound",
+							"Any",
+							"Internet",
+							"Any",
+							"Any",
+							"Deny",
+							"nsg-sync-subnet",
+							"Subnet"
+						],
+						[
+							"65000",
+							"defaultSecurityRules/AllowVnetOutBound",
+							"Outbound",
+							"Any",
+							"VirtualNetwork",
+							"Any",
+							"Any",
+							"Allow",
+							"nsg-sync-nic",
+							"NetworkInterface"
+						],
+						[
+							"65001",
+							"defaultSecurityRules/AllowInternetOutBound",
+							"Outbound",
+							"Any",
+							"Internet",
+							"Any",
+							"Any",
+							"Allow",
+							"nsg-sync-nic",
+							"NetworkInterface"
+						],
+						[
+							"65500",
+							"defaultSecurityRules/DenyAllOutBound",
+							"Outbound",
+							"Any",
+							"Any",
+							"Any",
+							"Any",
+							"Deny",
+							"nsg-sync-nic",
+							"NetworkInterface"
+						],
+						[
+							"65000",
+							"defaultSecurityRules/AllowVnetOutBound",
+							"Outbound",
+							"Any",
+							"VirtualNetwork",
+							"Any",
+							"Any",
+							"Allow",
+							"nsg-sync-subnet",
+							"Subnet"
+						],
+						[
+							"65001",
+							"defaultSecurityRules/AllowInternetOutBound",
+							"Outbound",
+							"Any",
+							"Internet",
+							"Any",
+							"Any",
+							"Allow",
+							"nsg-sync-subnet",
+							"Subnet"
+						],
+						[
+							"65500",
+							"defaultSecurityRules/DenyAllOutBound",
+							"Outbound",
+							"Any",
+							"Any",
+							"Any",
+							"Any",
+							"Deny",
+							"nsg-sync-subnet",
+							"Subnet"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Delivered because permit rows match in both rule sets"
+					},
+					{
+						"id": "i2",
+						"text": "Permitted because the built-in rows match the flow"
+					},
+					{
+						"id": "i3",
+						"text": "Stopped because the permit row is present in only one rule set"
+					},
+					{
+						"id": "i4",
+						"text": "Stopped because a deny row matches the traffic"
+					},
+					{
+						"id": "i5",
+						"text": "Stopped because no permit row covers the flow"
+					},
+					{
+						"id": "i6",
+						"text": "Permitted because a permit row in one rule set overrides a deny row in the other"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "SMB from a desktop at 198.51.100.0/24 to TCP 445 on sync-vm"
+					},
+					{
+						"id": "s2",
+						"label": "HTTPS from a client on the internet to TCP 8443 on sync-vm"
+					},
+					{
+						"id": "s3",
+						"label": "SSH from a client on the internet to TCP 22 on sync-vm"
+					},
+					{
+						"id": "s4",
+						"label": "Outbound TCP 443 from sync-vm to the partner endpoint at 203.0.113.10"
+					},
+					{
+						"id": "s5",
+						"label": "Outbound TCP 443 from sync-vm to 10.10.5.20, a host in app-subnet of corp-vnet"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i3",
+				"s3": "i5",
+				"s4": "i4",
+				"s5": "i2"
+			},
+			"explanation": {
+				"correct": "Inbound traffic is evaluated against the subnet rule set first and the network interface rule set second, and the port must be permitted by both of them, so an inbound permit that exists in only one rule set never reaches the machine and the built-in deny of all inbound traffic at priority 65500 takes over in the other rule set. Outbound traffic is evaluated against the network interface rule set first and the subnet rule set second, and a deny in either rule set stops the flow regardless of the permit found in the other one; the built-in rows permit traffic only when no custom deny matches first, because a lower priority number wins. Applying those rules to the five flows gives the placement shown in the key.",
+				"perChoice": {
+					"i1": "Fits the SMB flow to TCP 445 from 198.51.100.0/24. The priority 100 Allow-SMB-From-Corp row permits that source and port in nsg-sync-subnet and the same row permits it in nsg-sync-nic, so the port is permitted at both levels and the traffic is delivered.",
+					"i2": "Fits the outbound TCP 443 flow to 10.10.5.20 in app-subnet. That address is inside corp-vnet, so the built-in AllowVnetOutBound row at priority 65000 permits it in nsg-sync-nic and in nsg-sync-subnet, and the priority 200 deny of internet destinations does not match an address inside the virtual network, so the connection is permitted by the built-in rows.",
+					"i3": "Fits the HTTPS flow to TCP 8443 from the internet. The priority 120 Allow-HTTPS-Any row that permits that port exists only in nsg-sync-subnet, while nsg-sync-nic has no row permitting TCP 8443 from an internet source and falls through to the built-in deny of all inbound traffic at priority 65500, so a permit present in only one rule set is not enough and the flow is stopped.",
+					"i4": "Fits the outbound TCP 443 flow to the partner endpoint at 203.0.113.10. The priority 100 Allow-HTTPS-Partner row permits it in nsg-sync-nic, but nsg-sync-subnet holds the priority 200 Deny-Outbound-Internet row that matches the internet destination, and that deny outranks the built-in allow for internet traffic at priority 65001 in the same rule set, so the traffic is stopped.",
+					"i5": "Fits the SSH flow to TCP 22 from the internet. No row in nsg-sync-subnet or in nsg-sync-nic permits TCP 22 from an internet source, so no permit row covers that flow and only the built-in rows apply, with the deny of all inbound traffic at priority 65500 in both rule sets blocking the connection.",
+					"i6": "Fits none of the flows. Inbound traffic needs a permit from both rule sets, and outbound traffic is still evaluated in the second rule set, where a matching deny stops the flow, so a permit row in one rule set never overrides a deny row in the other."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-group-how-it-works"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/diagnose-network-traffic-filter-problem"
+				}
+			],
+			"subtopics": [
+				"effective-security-rules",
+				"nsg-rule-evaluation-order",
+				"default-rules-and-service-tags"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GYDHFE5NB7Y4APMZGYV1SS",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have two Linux virtual machines in the shared-subnet of the acme-vnet virtual network. billing-vm, whose network interface is billing-vm-nic, hosts an internal billing service that listens on TCP 8443, and reporting-vm, whose network interface is reporting-vm-nic, sends nightly end-of-day reports to that service across the private addresses of the subnet. One network security group, nsg-shared, is associated with shared-subnet, and neither interface carries a network security group of its own.\n\nThe deny rule below was introduced to keep the billing service from being reached by other workloads that share the subnet. Since the billing service moved to its new build, every report sent from reporting-vm times out before the service replies, although the service is healthy and answers requests locally. The merged effective security rules view for billing-vm-nic lists the rows below.\n\nReport delivery from reporting-vm to billing-vm has to work again, the existing inbound deny rule for TCP 8443 must stay in nsg-shared exactly as written, and nsg-shared has to remain associated with shared-subnet. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Rule name",
+						"Direction",
+						"Priority",
+						"Source",
+						"Destination",
+						"Destination port",
+						"Access",
+						"Association"
+					],
+					"rows": [
+						[
+							"securityRules/Allow-BillingSsh",
+							"Inbound",
+							"110",
+							"203.0.113.0/24",
+							"Any",
+							"22",
+							"Allow",
+							"Subnet"
+						],
+						[
+							"securityRules/Deny-SubnetIngest",
+							"Inbound",
+							"120",
+							"10.20.0.0/24",
+							"Any",
+							"8443",
+							"Deny",
+							"Subnet"
+						],
+						[
+							"defaultSecurityRules/AllowVnetInBound",
+							"Inbound",
+							"65000",
+							"VirtualNetwork",
+							"Any",
+							"Any",
+							"Allow",
+							"Subnet"
+						],
+						[
+							"defaultSecurityRules/DenyAllInBound",
+							"Inbound",
+							"65500",
+							"0.0.0.0/0",
+							"Any",
+							"Any",
+							"Deny",
+							"Subnet"
+						],
+						[
+							"defaultSecurityRules/AllowInternetOutBound",
+							"Outbound",
+							"65000",
+							"Any",
+							"Internet",
+							"Any",
+							"Allow",
+							"Subnet"
+						]
+					]
+				},
+				"statement": "The change that restores the report flow while respecting the stated constraints is to {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Add an inbound allow rule to nsg-shared for TCP 8443 from reporting-vm to billing-vm with a priority number lower than the number on the deny rule."
+							},
+							{
+								"id": "b",
+								"text": "Add an inbound allow rule to nsg-shared for TCP 8443 from reporting-vm to billing-vm with a priority number higher than the number on the deny rule."
+							},
+							{
+								"id": "c",
+								"text": "Add an inbound allow rule for TCP 8443 from reporting-vm to billing-vm to a new network security group associated with reporting-vm-nic, and keep the deny rule on nsg-shared with its priority number."
+							},
+							{
+								"id": "d",
+								"text": "Add an inbound allow rule to nsg-shared for TCP 8443 from reporting-vm to billing-vm with a priority number, and remove the deny rule on nsg-shared."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "Inside a single network security group the rules are evaluated by priority, and the rule with the lower priority number takes precedence. The custom deny rule for TCP 8443 sits at priority 120 in nsg-shared, so it wins over the built-in AllowVnetInBound default at 65000 and blocks the reports arriving from reporting-vm in the same subnet. Putting an allow rule for TCP 8443 from reporting-vm to billing-vm into the same network security group with a priority number below 120 makes that rule take precedence for this flow only, while the deny rule stays in place for the other workloads in the subnet and nsg-shared remains associated with shared-subnet. Because no network security group is attached to billing-vm-nic, the subnet association is the only level that filters this inbound traffic, so the new rule in nsg-shared is sufficient on its own.",
+				"perChoice": {
+					"action:b": "A priority number above 120 is evaluated after the deny rule, so the deny at priority 120 still blocks the report traffic and the added rule never takes effect for that flow.",
+					"action:c": "The flow into billing-vm is filtered by the rules of the network security group associated with the subnet that holds billing-vm-nic, and inbound traffic has to be permitted by the subnet group and the network interface group at the same time. A group attached to reporting-vm-nic filters traffic entering reporting-vm and cannot override the subnet deny, so the reports stay blocked.",
+					"action:d": "This breaks the stated constraint that the inbound deny rule for TCP 8443 must remain in nsg-shared exactly as written, and it would also reopen the billing service to every other workload in the shared subnet that the deny rule was created to block."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-group-how-it-works"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/diagnose-network-traffic-filter-problem"
+				}
+			],
+			"subtopics": [
+				"nsg-effective-rules",
+				"nsg-rule-priority",
+				"inbound-traffic-filtering"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GYZA09JJBM8273FKE9S70D",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Linux virtual machine named checkout-vm that hosts a customer checkout service served over HTTPS. The machine sits in the app-subnet of the retail-vnet virtual network, its network interface is named checkout-vm-nic, and it is exposed to the public internet. One network security group, nsg-app, is associated with app-subnet, and no network security group is associated with checkout-vm-nic.\n\nCustomers report that every attempt to reach the checkout service on TCP 443 times out, while the same call succeeds from a machine inside the virtual network. The listing below shows every rule that applies to checkout-vm-nic.\n\nThe team needs external HTTPS to work again, and it also needs an unambiguous yes or no answer for that single flow together with the rule that decides it. Which steps should the team take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Rule name",
+						"Direction",
+						"Action",
+						"Priority",
+						"Source",
+						"Destination",
+						"Destination port"
+					],
+					"rows": [
+						[
+							"securityRules/Allow-Http-8080",
+							"Inbound",
+							"Allow",
+							"100",
+							"Any",
+							"Any",
+							"8080"
+						],
+						[
+							"defaultSecurityRules/AllowVnetInBound",
+							"Inbound",
+							"Allow",
+							"65000",
+							"VirtualNetwork",
+							"VirtualNetwork",
+							"Any"
+						],
+						[
+							"defaultSecurityRules/AllowAzureLoadBalancerInBound",
+							"Inbound",
+							"Allow",
+							"65001",
+							"AzureLoadBalancer",
+							"0.0.0.0/0",
+							"Any"
+						],
+						[
+							"defaultSecurityRules/DenyAllInBound",
+							"Inbound",
+							"Deny",
+							"65500",
+							"0.0.0.0/0",
+							"0.0.0.0/0",
+							"Any"
+						],
+						[
+							"defaultSecurityRules/AllowVnetOutBound",
+							"Outbound",
+							"Allow",
+							"65000",
+							"VirtualNetwork",
+							"VirtualNetwork",
+							"Any"
+						],
+						[
+							"defaultSecurityRules/AllowInternetOutBound",
+							"Outbound",
+							"Allow",
+							"65001",
+							"0.0.0.0/0",
+							"Internet",
+							"Any"
+						],
+						[
+							"defaultSecurityRules/DenyAllOutBound",
+							"Outbound",
+							"Deny",
+							"65500",
+							"0.0.0.0/0",
+							"0.0.0.0/0",
+							"Any"
+						]
+					]
+				},
+				"statement": "The recovery plan is to {{nsgRule}} and then {{flowCheck}}.",
+				"slots": [
+					{
+						"id": "nsgRule",
+						"options": [
+							{
+								"id": "a",
+								"text": "create an inbound allow rule for TCP 443 from Any in nsg-app with a priority number lower than the default deny rule"
+							},
+							{
+								"id": "b",
+								"text": "create an inbound deny rule for TCP 443 from Any in nsg-app with a priority number lower than the default deny rule"
+							},
+							{
+								"id": "c",
+								"text": "create an outbound allow rule for TCP 443 from Any in nsg-app with a priority number lower than the default deny rule"
+							},
+							{
+								"id": "d",
+								"text": "create an inbound allow rule for TCP 443 from Any in nsg-app with a priority number higher than the default deny rule"
+							}
+						]
+					},
+					{
+						"id": "flowCheck",
+						"options": [
+							{
+								"id": "a",
+								"text": "run IP flow verify in Azure Network Watcher for the flow"
+							},
+							{
+								"id": "b",
+								"text": "read the merged effective security rules listing for the interface in the portal"
+							},
+							{
+								"id": "c",
+								"text": "use the Azure Virtual Network Manager network verifier for the endpoint pair"
+							},
+							{
+								"id": "d",
+								"text": "collect the virtual network flow logs for the interface in the subscription"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"flowCheck": "a",
+				"nsgRule": "a"
+			},
+			"explanation": {
+				"correct": "Nothing in the listing allows inbound TCP 443: the only custom rule in nsg-app opens port 8080, and the built-in default rule DenyAllInBound (priority 65500 in the listing, source 0.0.0.0/0, which includes the internet) denies everything else that arrives from outside. That is why external calls to port 443 time out while calls from inside the virtual network still succeed through AllowVnetInBound. Rules are processed in priority order and a lower number wins, so a new inbound allow rule for TCP 443 from Any whose priority number is lower than the default deny rule is evaluated first and opens the port; custom priorities run from 100 to 4096, so a value such as 100 outranks the default rules. Because nsg-app is the group associated with app-subnet and no group is attached to the interface, that one rule is enough. For the second step, IP flow verify in Azure Network Watcher returns a yes/no verdict for one specific flow and identifies the security rule responsible for allowing or denying it, which is exactly what the team asked for.",
+				"perChoice": {
+					"flowCheck:b": "The merged effective security rules listing shows the rules that are configured and applied, but it returns no yes/no verdict for one flow and does not name the rule responsible for that flow.",
+					"flowCheck:c": "The network verifier gives insight into reachability between virtual machines, the internet and other Azure resources and into the rules and policies in play. That is broader reachability analysis, not the per-flow verdict with the responsible rule that was requested.",
+					"flowCheck:d": "Flow logs are retrospective: they analyze traffic to and from the virtual network that already passed through the associated network security groups. They do not produce a yes/no verdict for the flow being tested.",
+					"nsgRule:b": "A deny rule for TCP 443 keeps blocked exactly the traffic the team wants to permit. The symptom already comes from a deny, so adding another deny cannot open the port.",
+					"nsgRule:c": "The failing connections are inbound, and outbound rules are never consulted for traffic arriving at the interface, so the default deny rule would still stop TCP 443.",
+					"nsgRule:d": "A lower priority number wins, so a custom rule numbered above the default deny rule is never reached for this traffic. Custom rule priorities are in fact limited to the range 100 to 4096, which all sit below the default rules."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/diagnose-network-traffic-filter-problem"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-group-how-it-works"
+				}
+			],
+			"subtopics": [
+				"effective-security-rules",
+				"nsg-rule-priority",
+				"ip-flow-verify"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GZ380GF016T6TQ877NXX0B",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Windows Server virtual machine named file-vm in the resource group corp-rg. The machine has two network interfaces, file-vm-nic0 and file-vm-nic1, and both of them are connected to the data-subnet of the corp-vnet virtual network. The network security group nsg-data is associated with data-subnet, and the network security group nsg-nic1 is associated with file-vm-nic1; file-vm-nic0 has no group of its own attached. The machine is powered on.\n\nThe compliance team needs a machine-readable copy of every rule that governs file-vm-nic1, including the built-in defaults, because the listing in the browser stops after the first 50 rows. The team also has to record which network security groups contribute to that listing.\n\nWhich action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Virtual machine",
+							"file-vm (resource group corp-rg)"
+						],
+						[
+							"Power state",
+							"Running"
+						],
+						[
+							"data-subnet",
+							"nsg-data"
+						],
+						[
+							"file-vm-nic0",
+							"none"
+						],
+						[
+							"file-vm-nic1",
+							"nsg-nic1"
+						]
+					]
+				},
+				"statement": "Run {{cmd}} to retrieve the complete merged rule set that governs file-vm-nic1, and expect the result to contain {{scope}}.",
+				"slots": [
+					{
+						"id": "cmd",
+						"options": [
+							{
+								"id": "a",
+								"text": "Get-AzEffectiveNetworkSecurityGroup -NetworkInterfaceName file-vm-nic1 -ResourceGroupName corp-rg"
+							},
+							{
+								"id": "b",
+								"text": "Get-AzNetworkSecurityGroup -Name nsg-nic1 -ResourceGroupName corp-rg"
+							},
+							{
+								"id": "c",
+								"text": "Get-AzNetworkSecurityGroupAssociation -Name file-vm-nic1 -ResourceGroupName corp-rg"
+							},
+							{
+								"id": "d",
+								"text": "Get-AzNetworkInterface -Name file-vm-nic1 -ResourceGroupName corp-rg"
+							}
+						]
+					},
+					{
+						"id": "scope",
+						"options": [
+							{
+								"id": "e",
+								"text": "the built-in defaults plus the rules of nsg-data plus the rules of nsg-nic1"
+							},
+							{
+								"id": "f",
+								"text": "the built-in defaults plus the rules of nsg-nic1"
+							},
+							{
+								"id": "g",
+								"text": "the built-in defaults plus the rules of nsg-data"
+							},
+							{
+								"id": "h",
+								"text": "the rules of nsg-data and the rules of nsg-nic1 without the built-in defaults"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"cmd": "a",
+				"scope": "e"
+			},
+			"explanation": {
+				"correct": "Get-AzEffectiveNetworkSecurityGroup returns the merged rule set for an interface as JSON, so it is the right way to capture the whole listing instead of only the 50 rows the browser shows. Because file-vm-nic1 is connected to data-subnet, the merged view combines the rules of nsg-data (the group linked to the subnet) with the rules of nsg-nic1 (the group linked to the interface) and also carries the built-in defaults, such as the default inbound deny and the default outbound allow, shown with the defaultSecurityRules/ prefix. Each interface has its own merged view, so file-vm-nic0 combines only nsg-data with the built-in defaults because no group is attached to that interface.",
+				"perChoice": {
+					"cmd:b": "This returns only the rule set defined inside nsg-nic1 itself. It says nothing about the rules of the subnet-level group that also apply to the interface.",
+					"cmd:c": "This reports which network security groups are linked to the interface and to its subnet, but it does not return the merged rules that govern the interface.",
+					"cmd:d": "This returns the configuration of the network interface, including the identifiers of the attached groups, not the rules that apply to the interface.",
+					"scope:f": "The group linked to data-subnet, nsg-data, applies to every interface in that subnet, so its rules are merged into the listing for file-vm-nic1.",
+					"scope:g": "The group linked directly to the interface, nsg-nic1, also applies to file-vm-nic1, so its rules belong in the listing as well.",
+					"scope:h": "The built-in defaults are always part of the listing, shown with the defaultSecurityRules/ prefix, so they cannot be left out."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/diagnose-network-traffic-filter-problem"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-group-how-it-works"
+				}
+			],
+			"subtopics": [
+				"effective-security-rules",
+				"network-interface-associations",
+				"powershell-network-cmdlets"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GZ8HJDMPCD61JT2N4DNJYD",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Linux virtual machine named web-vm that serves a customer portal over HTTPS. The machine runs in the app-subnet of the prod-vnet virtual network, its network interface is web-vm-nic, and the network security group nsg-app is associated with app-subnet. A custom inbound rule in nsg-app at priority 110 allows TCP 443 from the VirtualNetwork service tag to any destination, and the built-in default rules are present alongside it.\n\nprod-vnet was peered with partner-vnet, whose address space is 10.40.0.0/16, three days ago. Since that peering was created, the security team has seen machines in partner-vnet open HTTPS sessions to web-vm, which the business did not intend to allow. The team wants to establish exactly which source addresses the VirtualNetwork service tag matches today for web-vm-nic, so that the rule can be narrowed to corporate ranges only. Which should the team do?\n\nThe rules that apply to web-vm-nic are listed below.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Rule name",
+						"Direction",
+						"Priority",
+						"Source",
+						"Destination",
+						"Port",
+						"Access"
+					],
+					"rows": [
+						[
+							"securityRules/Allow-Internal-Https",
+							"Inbound",
+							"110",
+							"VirtualNetwork",
+							"*",
+							"443",
+							"Allow"
+						],
+						[
+							"defaultSecurityRules/AllowVnetInBound",
+							"Inbound",
+							"65000",
+							"VirtualNetwork",
+							"VirtualNetwork",
+							"*",
+							"Allow"
+						],
+						[
+							"defaultSecurityRules/AllowAzureLoadBalancerInBound",
+							"Inbound",
+							"65001",
+							"AzureLoadBalancer",
+							"VirtualNetwork",
+							"*",
+							"Allow"
+						],
+						[
+							"defaultSecurityRules/DenyAllInBound",
+							"Inbound",
+							"65500",
+							"0.0.0.0/0",
+							"*",
+							"*",
+							"Deny"
+						],
+						[
+							"defaultSecurityRules/AllowInternetOutBound",
+							"Outbound",
+							"65000",
+							"*",
+							"Internet",
+							"*",
+							"Allow"
+						]
+					]
+				},
+				"statement": "To establish exactly which source addresses the VirtualNetwork service tag matches today for web-vm-nic, the team should inspect {{detail}}.",
+				"slots": [
+					{
+						"id": "detail",
+						"options": [
+							{
+								"id": "a",
+								"text": "the expanded source address prefixes for the VirtualNetwork service tag"
+							},
+							{
+								"id": "b",
+								"text": "the destination address prefixes for the custom rule that allows TCP 443 from the VirtualNetwork service tag"
+							},
+							{
+								"id": "c",
+								"text": "the source address prefixes for the built-in default rule that denies all inbound traffic"
+							},
+							{
+								"id": "d",
+								"text": "the priority numbers for the custom inbound rules that use a service tag"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"detail": "a"
+			},
+			"explanation": {
+				"correct": "The listing that applies to web-vm-nic is the merged view of every rule that governs that interface, and for a rule whose source is a service tag the listing also reports the individual address prefixes behind that tag in the expanded source address prefixes. The VirtualNetwork service tag automatically picks up the address space of a peered virtual network, so once partner-vnet was peered, its 10.40.0.0/16 range began matching the allow rule, which is why machines in partner-vnet can now open HTTPS sessions to web-vm. Reading that expansion tells the team exactly which source addresses satisfy the rule today, so it can then narrow the rule to corporate ranges.",
+				"perChoice": {
+					"detail:b": "The destination side of the allow rule describes where matching traffic is delivered (any destination in this rule), not which sources satisfy the tag, so it cannot reveal the partner range that now matches.",
+					"detail:c": "The built-in default deny rule carries the fixed source 0.0.0.0/0 and no service tag, so the prefixes attached to it say nothing about which addresses the VirtualNetwork service tag matches.",
+					"detail:d": "Priority numbers only decide which rule is evaluated first when several rules match; they carry no address information and therefore cannot show what the service tag resolves to."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/diagnose-network-traffic-filter-problem"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-group-how-it-works"
+				}
+			],
+			"subtopics": [
+				"service-tag-expansion",
+				"effective-security-rules"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GZT96H5CNH2710QHPC5NY3",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Linux virtual machine named metrics-vm with the network interface metrics-vm-nic, placed in the telemetry-subnet of the obs-vnet virtual network in the resource group obs-rg. The network security group nsg-telemetry is associated with telemetry-subnet, and no network security group is associated with metrics-vm-nic.\n\nThe platform engineer ran the PowerShell query for the rules that apply to metrics-vm-nic and received a response that names neither a group nor a rule. The audit needs every rule that governs that interface, the built-in defaults included, in machine-readable form. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Virtual machine",
+							"metrics-vm"
+						],
+						[
+							"Compute state",
+							"Deallocated"
+						],
+						[
+							"Network interface",
+							"metrics-vm-nic"
+						],
+						[
+							"Group associated with telemetry-subnet",
+							"nsg-telemetry"
+						],
+						[
+							"nsg-telemetry associated with the subnet since",
+							"3 weeks ago"
+						],
+						[
+							"Group associated with metrics-vm-nic",
+							"None"
+						],
+						[
+							"Custom rules in nsg-telemetry",
+							"4"
+						]
+					]
+				},
+				"statement": "The response names neither a group nor a rule because {{cause}}, and the platform team should {{action}}.",
+				"slots": [
+					{
+						"id": "cause",
+						"options": [
+							{
+								"id": "a",
+								"text": "the machine being stopped"
+							},
+							{
+								"id": "b",
+								"text": "the machine having no group at either level"
+							},
+							{
+								"id": "c",
+								"text": "the machine having a group with no custom rules"
+							},
+							{
+								"id": "d",
+								"text": "the machine having a group association saved moments before the query ran"
+							}
+						]
+					},
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "start the machine and rerun the query"
+							},
+							{
+								"id": "b",
+								"text": "attach nsg-telemetry to the network interface of the machine and rerun the query"
+							},
+							{
+								"id": "c",
+								"text": "remove nsg-telemetry from the subnet of the machine and rerun the query"
+							},
+							{
+								"id": "d",
+								"text": "request the listing from the nsg-telemetry resource page for the machine and rerun the query"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"cause": "a",
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "Effective security rules are only returned while the virtual machine is running. metrics-vm is deallocated, so the query listed neither a group nor any rules even though nsg-telemetry is associated with telemetry-subnet. Bringing the machine up and rerunning the query returns the merged rules for metrics-vm-nic, including the built-in defaults, because a group associated with the subnet alone is sufficient for the listing to appear.",
+				"perChoice": {
+					"cause:b": "A group associated with the subnet is enough for effective rules to be listed, and the interface does not need a group of its own. The exhibit also shows nsg-telemetry associated with telemetry-subnet, so no group at either level is not the situation.",
+					"cause:c": "The exhibit lists four custom rules in nsg-telemetry, and every group also carries the built-in defaults, so an empty group does not explain the empty response.",
+					"cause:d": "The association of nsg-telemetry with telemetry-subnet is three weeks old, so the response is not a stale copy of a just-made change. That situation only calls for waiting a few seconds before querying, and it would still show the groups once the state is reflected.",
+					"action:b": "Attaching the same group to the network interface does not address why nothing was returned, and it would only make the shared rules appear twice in the merged listing.",
+					"action:c": "Detaching nsg-telemetry would leave the subnet unfiltered and would still yield no listing, because the rules appear only when a group is associated and the machine is running.",
+					"action:d": "The portal listing draws on the same effective rules data, so it stays empty while the machine is deallocated. The portal view also shows only the first 50 rows and can export them as a CSV file."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/diagnose-network-traffic-filter-problem"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-group-how-it-works"
+				}
+			],
+			"subtopics": [
+				"nsg-effective-rules",
+				"effective-rules-output",
+				"azure-powershell"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6H08TQ3HBE7F42022PSK158",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Linux virtual machine named orders-vm that hosts an internal order API listening on TCP 8080. The machine sits in orders-subnet of the trade-vnet virtual network, whose address space is 10.20.0.0/16; orders-subnet covers 10.20.3.0/24 and the machine's private address is 10.20.3.10. Its network interface is named orders-vm-nic. Two network security groups apply to it: nsg-orders-subnet is associated with orders-subnet, and nsg-orders-nic is associated with orders-vm-nic. Two weeks ago trade-vnet was peered with partner-vnet, whose address space is 10.40.0.0/16, and the partner application now calls the same API.\n\nThe merged effective security rules view for orders-vm-nic lists the inbound rows below.\n\nThe support team must record exactly which sources are able to open a connection to the API.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Association",
+						"Rule",
+						"Source",
+						"Destination",
+						"Destination port",
+						"Protocol",
+						"Access"
+					],
+					"rows": [
+						[
+							"Subnet",
+							"Built-in default",
+							"VirtualNetwork",
+							"VirtualNetwork",
+							"*",
+							"Any",
+							"Allow"
+						],
+						[
+							"Subnet",
+							"Built-in default",
+							"AzureLoadBalancer",
+							"0.0.0.0/0",
+							"*",
+							"Any",
+							"Allow"
+						],
+						[
+							"Subnet",
+							"defaultSecurityRules/DenyAllInBound",
+							"0.0.0.0/0",
+							"0.0.0.0/0",
+							"*",
+							"Any",
+							"Deny"
+						],
+						[
+							"Subnet",
+							"securityRules/Allow-Orders-Api",
+							"10.20.3.0/24",
+							"10.20.3.10",
+							"8080",
+							"Tcp",
+							"Allow"
+						],
+						[
+							"NetworkInterface",
+							"Built-in default",
+							"VirtualNetwork",
+							"VirtualNetwork",
+							"*",
+							"Any",
+							"Allow"
+						],
+						[
+							"NetworkInterface",
+							"Built-in default",
+							"AzureLoadBalancer",
+							"0.0.0.0/0",
+							"*",
+							"Any",
+							"Allow"
+						],
+						[
+							"NetworkInterface",
+							"defaultSecurityRules/DenyAllInBound",
+							"0.0.0.0/0",
+							"0.0.0.0/0",
+							"*",
+							"Any",
+							"Deny"
+						],
+						[
+							"NetworkInterface",
+							"securityRules/Deny-Public-Api",
+							"Internet",
+							"10.20.3.10",
+							"8080",
+							"Tcp",
+							"Deny"
+						]
+					]
+				},
+				"statement": "With the rules in force, {{slotA}} can open a connection to the API on TCP 8080 of orders-vm.",
+				"slots": [
+					{
+						"id": "slotA",
+						"options": [
+							{
+								"id": "a",
+								"text": "hosts inside trade-vnet and hosts inside the peered partner-vnet"
+							},
+							{
+								"id": "b",
+								"text": "hosts inside trade-vnet, but not hosts inside the peered partner-vnet"
+							},
+							{
+								"id": "c",
+								"text": "hosts inside the peered partner-vnet and hosts on the public internet"
+							},
+							{
+								"id": "d",
+								"text": "any host that can route to the machine, because the custom rule in the subnet group matches every source"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slotA": "a"
+			},
+			"explanation": {
+				"correct": "Inbound traffic reaches the machine only when both the subnet group and the interface group allow it, and the built-in defaults admit traffic that originates inside the virtual network. The VirtualNetwork service tag expands automatically to include the address prefixes of peered virtual networks, so partner-vnet traffic is covered by that built-in allow, and the rule exists in both nsg-orders-subnet and nsg-orders-nic. Hosts inside trade-vnet are allowed as well, through the built-in default rule and, for the API port, through the custom rule in the subnet group. Hosts on the public internet match the built-in default deny whose source is 0.0.0.0/0 in the subnet group, and the interface group also carries a custom deny for the Internet source on TCP 8080, so internet traffic is stopped.",
+				"perChoice": {
+					"slotA:b": "The VirtualNetwork service tag automatically expands to include the prefixes of peered virtual networks, so hosts in partner-vnet match the built-in default rule that admits traffic coming from inside the virtual network, and that rule is present in both nsg-orders-subnet and nsg-orders-nic. Partner traffic is therefore permitted, so the rules in force do not confine the API to trade-vnet.",
+					"slotA:c": "Hosts in the peered partner-vnet are indeed allowed, but hosts on the public internet are not: their traffic matches the built-in default deny with source 0.0.0.0/0 in the subnet group, and the interface group holds a custom deny for the Internet source on TCP 8080. Inbound traffic must be allowed by both groups, so internet traffic never reaches the API.",
+					"slotA:d": "The custom rule in the subnet group permits TCP 8080 only from 10.20.3.0/24, so it does not match every source, and the remaining inbound traffic is filtered by the built-in default deny with source 0.0.0.0/0 that exists in both groups. Only the sources matched by the built-in allow for traffic from inside the virtual network reach the machine."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-group-how-it-works"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/diagnose-network-traffic-filter-problem"
+				}
+			],
+			"subtopics": [
+				"nsg-effective-rules",
+				"default-security-rules",
+				"service-tag-expansion"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HGQ2WYYZC1G0C4F95B5CPS",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a Linux virtual machine named gw-vm in the wan-subnet of the gateway-vnet virtual network, whose address space is 10.45.0.0/16. The network interface of the machine is named gw-vm-nic. Two network security groups are associated with it: nsg-wan-subnet is linked to the wan-subnet, and nsg-gateway-nic is linked to gw-vm-nic. The machine is powered on, and the merged listing of the rules that govern gw-vm-nic is shown below.\n\nRecord what the configuration in force does with each of the five connections listed below. Drag the outcome onto each connection.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Rule",
+						"Priority",
+						"Direction",
+						"Source",
+						"Source port",
+						"Destination",
+						"Destination port",
+						"Protocol",
+						"Access",
+						"Association"
+					],
+					"rows": [
+						[
+							"securityRules/Allow-Https-Internet",
+							"100",
+							"Inbound",
+							"Internet",
+							"*",
+							"*",
+							"443",
+							"TCP",
+							"Allow",
+							"Subnet"
+						],
+						[
+							"securityRules/Allow-Https-Internet",
+							"100",
+							"Inbound",
+							"Internet",
+							"*",
+							"*",
+							"443",
+							"TCP",
+							"Allow",
+							"NetworkInterface"
+						],
+						[
+							"securityRules/Allow-Ssh-Corp",
+							"110",
+							"Inbound",
+							"198.51.100.0/24",
+							"*",
+							"*",
+							"22",
+							"TCP",
+							"Allow",
+							"NetworkInterface"
+						],
+						[
+							"securityRules/Deny-Http-Any",
+							"120",
+							"Inbound",
+							"*",
+							"*",
+							"*",
+							"80",
+							"TCP",
+							"Deny",
+							"Subnet"
+						],
+						[
+							"securityRules/Deny-Http-Any",
+							"120",
+							"Inbound",
+							"*",
+							"*",
+							"*",
+							"80",
+							"TCP",
+							"Deny",
+							"NetworkInterface"
+						],
+						[
+							"securityRules/Deny-Outbound-Smtp",
+							"100",
+							"Outbound",
+							"*",
+							"*",
+							"*",
+							"25",
+							"TCP",
+							"Deny",
+							"Subnet"
+						],
+						[
+							"defaultSecurityRules/AllowVnetInBound",
+							"65000",
+							"Inbound",
+							"VirtualNetwork",
+							"*",
+							"VirtualNetwork",
+							"*",
+							"*",
+							"Allow",
+							"Subnet"
+						],
+						[
+							"defaultSecurityRules/AllowVnetInBound",
+							"65000",
+							"Inbound",
+							"VirtualNetwork",
+							"*",
+							"VirtualNetwork",
+							"*",
+							"*",
+							"Allow",
+							"NetworkInterface"
+						],
+						[
+							"defaultSecurityRules/AllowAzureLoadBalancerInBound",
+							"65001",
+							"Inbound",
+							"AzureLoadBalancer",
+							"*",
+							"VirtualNetwork",
+							"*",
+							"*",
+							"Allow",
+							"Subnet"
+						],
+						[
+							"defaultSecurityRules/AllowAzureLoadBalancerInBound",
+							"65001",
+							"Inbound",
+							"AzureLoadBalancer",
+							"*",
+							"VirtualNetwork",
+							"*",
+							"*",
+							"Allow",
+							"NetworkInterface"
+						],
+						[
+							"defaultSecurityRules/DenyAllInBound",
+							"65500",
+							"Inbound",
+							"0.0.0.0/0",
+							"*",
+							"*",
+							"*",
+							"*",
+							"Deny",
+							"Subnet"
+						],
+						[
+							"defaultSecurityRules/DenyAllInBound",
+							"65500",
+							"Inbound",
+							"0.0.0.0/0",
+							"*",
+							"*",
+							"*",
+							"*",
+							"Deny",
+							"NetworkInterface"
+						],
+						[
+							"defaultSecurityRules/AllowVnetOutBound",
+							"65000",
+							"Outbound",
+							"VirtualNetwork",
+							"*",
+							"VirtualNetwork",
+							"*",
+							"*",
+							"Allow",
+							"Subnet"
+						],
+						[
+							"defaultSecurityRules/AllowVnetOutBound",
+							"65000",
+							"Outbound",
+							"VirtualNetwork",
+							"*",
+							"VirtualNetwork",
+							"*",
+							"*",
+							"Allow",
+							"NetworkInterface"
+						],
+						[
+							"defaultSecurityRules/AllowInternetOutBound",
+							"65001",
+							"Outbound",
+							"Internet",
+							"*",
+							"Internet",
+							"*",
+							"*",
+							"Allow",
+							"Subnet"
+						],
+						[
+							"defaultSecurityRules/AllowInternetOutBound",
+							"65001",
+							"Outbound",
+							"Internet",
+							"*",
+							"Internet",
+							"*",
+							"*",
+							"Allow",
+							"NetworkInterface"
+						],
+						[
+							"defaultSecurityRules/DenyAllOutBound",
+							"65500",
+							"Outbound",
+							"*",
+							"*",
+							"*",
+							"*",
+							"*",
+							"Deny",
+							"Subnet"
+						],
+						[
+							"defaultSecurityRules/DenyAllOutBound",
+							"65500",
+							"Outbound",
+							"*",
+							"*",
+							"*",
+							"*",
+							"*",
+							"Deny",
+							"NetworkInterface"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "allow-builtin-egress",
+						"text": "Allowed - neither NSG has a custom deny entry for it, and the built-in allow for leaving traffic takes effect."
+					},
+					{
+						"id": "deny-egress-smtp",
+						"text": "Denied - the NIC NSG allows the exchange first, and a custom deny entry in the subnet NSG ends it."
+					},
+					{
+						"id": "deny-inbound-ssh-partial",
+						"text": "Denied - the custom allow entry in the NIC NSG does not help, because the subnet NSG holds no matching allow and its built-in default deny ends the exchange."
+					},
+					{
+						"id": "allow-both-custom",
+						"text": "Allowed - both NSGs hold custom allow entries that select the sender by service tag."
+					},
+					{
+						"id": "deny-inbound-http-first",
+						"text": "Denied - the custom deny entry in the subnet NSG ends the exchange ahead of any check in the NIC NSG."
+					}
+				],
+				"slots": [
+					{
+						"id": "out-443",
+						"label": "Outbound connection from the machine to 203.0.113.9 on TCP 443"
+					},
+					{
+						"id": "out-25",
+						"label": "Outbound connection from the machine to 203.0.113.9 on TCP 25"
+					},
+					{
+						"id": "in-22-corp",
+						"label": "Inbound connection from 198.51.100.5 to the machine on TCP 22"
+					},
+					{
+						"id": "in-443-web",
+						"label": "Inbound connection from 203.0.113.9 to the machine on TCP 443"
+					},
+					{
+						"id": "in-80-web",
+						"label": "Inbound connection from 203.0.113.9 to the machine on TCP 80"
+					}
+				]
+			},
+			"key": {
+				"out-443": "allow-builtin-egress",
+				"out-25": "deny-egress-smtp",
+				"in-22-corp": "deny-inbound-ssh-partial",
+				"in-443-web": "allow-both-custom",
+				"in-80-web": "deny-inbound-http-first"
+			},
+			"explanation": {
+				"correct": "Inbound traffic is evaluated against the subnet NSG first and the NIC NSG second, and the two groups combine with AND, so a port must be allowed by both groups to reach the machine. Outbound traffic is evaluated in the opposite order, with the NIC NSG first, and a deny in either group stops the flow. Inbound TCP 443 from 203.0.113.9 is allowed because nsg-wan-subnet and nsg-gateway-nic each carry a custom allow rule whose source is the Internet service tag on TCP 443. Inbound TCP 80 from 203.0.113.9 is denied by the custom deny rule on TCP 80 in the subnet NSG, which is consulted first for inbound traffic. Inbound TCP 22 from 198.51.100.5 is denied because only nsg-gateway-nic allows that source range on TCP 22; nsg-wan-subnet has no matching allow, so its built-in default inbound deny ends the flow. Outbound TCP 25 to 203.0.113.9 is denied because the NIC NSG allows it first through its built-in outbound allow and the custom deny rule on TCP 25 in the subnet NSG then stops it. Outbound TCP 443 to 203.0.113.9 is allowed because neither group holds a custom deny for it and the built-in outbound allow in both groups permits it.",
+				"perChoice": {
+					"allow-builtin-egress": "Belongs on the outbound TCP 443 connection to 203.0.113.9: no custom deny rule covers that port in either group, so the built-in outbound allow present in both groups permits the flow.",
+					"deny-egress-smtp": "Belongs on the outbound TCP 25 connection to 203.0.113.9: outbound evaluation starts at the NIC NSG, whose built-in outbound allow lets the flow through, and the custom deny rule on TCP 25 in the subnet NSG then ends it.",
+					"deny-inbound-ssh-partial": "Belongs on the inbound TCP 22 connection from 198.51.100.5: only nsg-gateway-nic holds an allow rule for that source range, and because inbound rules combine with AND, nsg-wan-subnet contributes no allow for TCP 22 and its built-in default deny ends the flow.",
+					"allow-both-custom": "Belongs on the inbound TCP 443 connection from 203.0.113.9: the Internet service tag in the custom allow rule of each group matches the sender, so both groups permit the flow.",
+					"deny-inbound-http-first": "Belongs on the inbound TCP 80 connection from 203.0.113.9: inbound evaluation starts at the subnet NSG, whose custom deny rule on TCP 80 matches the flow and stops it before nsg-gateway-nic is consulted."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-group-how-it-works"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/diagnose-network-traffic-filter-problem"
+				}
+			],
+			"subtopics": [
+				"effective-security-rules",
+				"nsg-rule-evaluation-order",
+				"inbound-outbound-combination"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HGT4EY9C8NAXDPT0R55YBF",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a Linux virtual machine named med-vm that runs a triage application. The machine sits in the triage-subnet of the care-network virtual network, it has a public IP address, and its network interface is named med-vm-nic. Two network security groups apply to it: nsg-triage-subnet is linked to the subnet and nsg-med-nic is linked to the network interface. A second virtual network that uses the address space 10.60.0.0/16 is connected to care-network.\n\nThe merged listing of every rule that governs med-vm-nic is shown below.\n\nThe on-call engineer needs a runbook that names, for each of the five connections below, the one rule in that listing that decides the result. Drag the deciding rule onto each connection.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Rule",
+						"Priority",
+						"Direction",
+						"Source",
+						"Destination",
+						"Port",
+						"Action",
+						"Listed from"
+					],
+					"rows": [
+						[
+							"securityRules/Allow-HTTPS-From-Corp",
+							"100",
+							"Inbound",
+							"203.0.113.0/24",
+							"Any",
+							"443",
+							"Allow",
+							"nsg-triage-subnet"
+						],
+						[
+							"securityRules/Allow-HTTPS-From-Corp",
+							"100",
+							"Inbound",
+							"203.0.113.0/24",
+							"Any",
+							"443",
+							"Allow",
+							"nsg-med-nic"
+						],
+						[
+							"securityRules/Allow-SSH-From-Any",
+							"100",
+							"Inbound",
+							"Any",
+							"Any",
+							"22",
+							"Allow",
+							"nsg-med-nic"
+						],
+						[
+							"securityRules/Deny-PeeredRange-Egress",
+							"120",
+							"Outbound",
+							"Any",
+							"10.60.0.0/16",
+							"Any",
+							"Deny",
+							"nsg-triage-subnet"
+						],
+						[
+							"defaultSecurityRules/AllowVnetInBound",
+							"65000",
+							"Inbound",
+							"VirtualNetwork",
+							"Any",
+							"Any",
+							"Allow",
+							"nsg-triage-subnet and nsg-med-nic"
+						],
+						[
+							"defaultSecurityRules/AllowVnetOutBound",
+							"65000",
+							"Outbound",
+							"VirtualNetwork",
+							"Any",
+							"Any",
+							"Allow",
+							"nsg-triage-subnet and nsg-med-nic"
+						],
+						[
+							"defaultSecurityRules/AllowAzureLoadBalancerInBound",
+							"65001",
+							"Inbound",
+							"AzureLoadBalancer",
+							"Any",
+							"Any",
+							"Allow",
+							"nsg-triage-subnet and nsg-med-nic"
+						],
+						[
+							"defaultSecurityRules/AllowInternetOutBound",
+							"65001",
+							"Outbound",
+							"Any",
+							"Internet",
+							"Any",
+							"Allow",
+							"nsg-triage-subnet and nsg-med-nic"
+						],
+						[
+							"defaultSecurityRules/DenyAllInBound",
+							"65500",
+							"Inbound",
+							"Any",
+							"Any",
+							"Any",
+							"Deny",
+							"nsg-triage-subnet and nsg-med-nic"
+						],
+						[
+							"defaultSecurityRules/DenyAllOutBound",
+							"65500",
+							"Outbound",
+							"Any",
+							"Any",
+							"Any",
+							"Deny",
+							"nsg-triage-subnet and nsg-med-nic"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "securityRules/Allow-HTTPS-From-Corp (priority 100)"
+					},
+					{
+						"id": "i2",
+						"text": "defaultSecurityRules/DenyAllInBound (priority 65500)"
+					},
+					{
+						"id": "i3",
+						"text": "securityRules/Deny-PeeredRange-Egress (priority 120)"
+					},
+					{
+						"id": "i4",
+						"text": "defaultSecurityRules/AllowInternetOutBound (priority 65001)"
+					},
+					{
+						"id": "i5",
+						"text": "defaultSecurityRules/AllowVnetInBound (priority 65000)"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Connection A: a client at 203.0.113.0/24 opens TCP 443 to med-vm"
+					},
+					{
+						"id": "s2",
+						"label": "Connection B: a host on the public network opens TCP 22 to med-vm"
+					},
+					{
+						"id": "s3",
+						"label": "Connection C: med-vm opens a session to 10.60.5.20 on TCP 443"
+					},
+					{
+						"id": "s4",
+						"label": "Connection D: med-vm opens a session to 8.8.8.8 on TCP 53"
+					},
+					{
+						"id": "s5",
+						"label": "Connection E: another virtual machine in the same subnet calls TCP 8080 on med-vm"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "Each connection is decided by one rule from the merged listing for med-vm-nic. Inbound traffic has to be permitted by the group on the subnet and by the group on the interface, while a single deny in either group stops traffic going out. Connection A is permitted by the priority 100 rule that both groups carry, Connection B falls to the built-in inbound deny because the subnet group never permits that port, Connection C is stopped by the custom outbound deny, Connection D relies on the built-in outbound allow, and Connection E is permitted by the built-in rule that admits traffic originating inside the virtual network, which outranks the built-in inbound deny because it carries the lower number.",
+				"perChoice": {
+					"i1": "Connection A: the source 203.0.113.0/24 and port 443 match this rule, and the same rule at priority 100 exists in nsg-triage-subnet and in nsg-med-nic, so the traffic is permitted and this is the deciding rule.",
+					"i2": "Connection B: nsg-med-nic permits TCP 22 for any source, but nsg-triage-subnet contains no matching permit, so evaluation in that group ends at the built-in inbound deny at priority 65500. Inbound rules from the two groups combine so that one permit on its own is not enough, so the session never reaches the machine.",
+					"i3": "Connection C: the destination 10.60.5.20 sits inside 10.60.0.0/16, so the custom outbound deny at priority 120 in nsg-triage-subnet stops the session, and the other group is not consulted afterwards because a deny in either group ends outbound traffic.",
+					"i4": "Connection D: no custom rule in either group matches a destination of 8.8.8.8, so the built-in outbound allow at priority 65001 permits the session and no later rule changes that result.",
+					"i5": "Connection E: the source is inside the same virtual network, so the built-in inbound allow at priority 65000 matches and takes precedence over the built-in inbound deny at priority 65500, since the lower number wins."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/diagnose-network-traffic-filter-problem"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-group-how-it-works"
+				}
+			],
+			"subtopics": [
+				"nsg-effective-rules",
+				"inbound-outbound-evaluation",
+				"default-security-rules"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HGZ0VAJFA5TBPBS7M8CYPR",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You support a subscription that contains a Linux machine named data-vm and a Windows machine named jump-vm, each with a single NIC. The NIC of data-vm (data-vm-nic) sits in data-subnet of prod-vnet, and the NIC of jump-vm (jump-vm-nic) sits in admin-subnet of corp-vnet. The rules that govern a NIC are the merged set of the rules of the network security group (NSG) attached to that NIC and of the group attached to its subnet, and the same merged listing can be produced in more than one place.\n\nYour colleagues work from Windows machines that have PowerShell and the Az module installed, from Linux machines that have the Azure CLI installed, and one reviewer works only in the Azure portal in a browser.\n\nYou need to match each of the five deliverables below to the tool or command that produces it. Drag the appropriate choice onto each deliverable.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Machine",
+						"NIC",
+						"Subnet",
+						"Network security groups that apply"
+					],
+					"rows": [
+						[
+							"data-vm (Linux)",
+							"data-vm-nic",
+							"data-subnet of prod-vnet",
+							"nsg-data-subnet, nsg-data-nic"
+						],
+						[
+							"jump-vm (Windows)",
+							"jump-vm-nic",
+							"admin-subnet of corp-vnet",
+							"nsg-admin-subnet"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Get-AzEffectiveNetworkSecurityGroup -NetworkInterfaceName <nic-name> -ResourceGroupName <rg-name>, run in PowerShell with the Az module, returning the rules as JSON"
+					},
+					{
+						"id": "i2",
+						"text": "az network nic list-effective-nsg --name <nic-name> --resource-group <rg-name>, run with the Azure CLI, returning the rules as JSON"
+					},
+					{
+						"id": "i3",
+						"text": "The Effective security rules pane in the Azure portal (Networking > Network settings > the network interface > Help), with its Download button for the complete output"
+					},
+					{
+						"id": "i4",
+						"text": "IP flow verify in Azure Network Watcher"
+					},
+					{
+						"id": "i5",
+						"text": "The network verifier in Azure Virtual Network Manager"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Confirm whether one inbound connection from a known source address and port is permitted, and identify the rule that decided it"
+					},
+					{
+						"id": "s2",
+						"label": "Confirm which machines, the internet and other Azure resources can reach one another, taking NSG rules and other policies into account"
+					},
+					{
+						"id": "s3",
+						"label": "Obtain the merged rule set that governs one machine's traffic as JSON from a Windows workstation"
+					},
+					{
+						"id": "s4",
+						"label": "Obtain the merged rule set that governs one machine's traffic as JSON from a Linux workstation"
+					},
+					{
+						"id": "s5",
+						"label": "Archive the whole rule set that governs one machine's traffic as a file, including the entries the browser does not display after the first fifty rows"
+					}
+				]
+			},
+			"key": {
+				"s1": "i4",
+				"s2": "i5",
+				"s3": "i1",
+				"s4": "i2",
+				"s5": "i3"
+			},
+			"explanation": {
+				"correct": "Each deliverable maps to a different way of inspecting the rules that apply to a NIC. IP flow verify in Azure Network Watcher returns a yes/no verdict for one specific flow and names the rule that allowed or denied it, so it belongs with the first deliverable. The network verifier in Azure Virtual Network Manager explains reachability between machines, the internet and other Azure resources, taking NSG rules and other policies into account, so it belongs with the second. Get-AzEffectiveNetworkSecurityGroup is the PowerShell cmdlet that returns the merged rule set as JSON for the Windows colleague, while az network nic list-effective-nsg is the Azure CLI command that returns the same JSON for the Linux colleague. The portal's Effective security rules pane is the browser-based view, and because it displays only the first fifty rules, its Download button is what produces the complete file for archiving.",
+				"perChoice": {
+					"i1": "Belongs with the deliverable about obtaining the merged rule set as JSON from a Windows workstation: Get-AzEffectiveNetworkSecurityGroup is the PowerShell cmdlet run with the Az module, and its output is returned in JSON format.",
+					"i2": "Belongs with the deliverable about obtaining the merged rule set as JSON from a Linux workstation: az network nic list-effective-nsg is the Azure CLI command that returns the same JSON output as the PowerShell cmdlet.",
+					"i3": "Belongs with the deliverable about archiving the complete rule list from the browser: the Effective security rules pane shows only the first fifty rules, and its Download button exports all of them as a .csv file.",
+					"i4": "Belongs with the deliverable about confirming one specific inbound connection and identifying the rule responsible: IP flow verify in Azure Network Watcher reports whether the traffic is allowed or denied and, when it is denied, names the security rule that denied it.",
+					"i5": "Belongs with the deliverable about reachability between machines, the internet and other Azure resources: the network verifier in Azure Virtual Network Manager provides insight into the NSG rules and other Azure rules and policies that might affect connectivity."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/diagnose-network-traffic-filter-problem"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-group-how-it-works"
+				}
+			],
+			"subtopics": [
+				"effective-security-rules",
+				"nsg-troubleshooting-tools",
+				"network-security-groups"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HH1FR0G6TW36Z3B55JHT43",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You support five Linux virtual machines in one subscription. The support team must record what the merged listing of the rules that apply to a network interface contains for every machine.\n\nThe table below shows, for every machine, the group attached to a network interface, the group attached to the subnet that holds that interface, and the power state.\n\nDrag the description of the listing onto the machine it belongs to.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Machine",
+						"Network interface",
+						"Subnet that holds the interface",
+						"Group attached to the interface",
+						"Group attached to that subnet",
+						"Power state"
+					],
+					"rows": [
+						[
+							"db-vm",
+							"db-vm-nic",
+							"db-subnet of db-vnet",
+							"none",
+							"nsg-db",
+							"running"
+						],
+						[
+							"api-vm",
+							"api-vm-nic",
+							"api-subnet of api-vnet",
+							"nsg-api-nic",
+							"nsg-api-subnet",
+							"running"
+						],
+						[
+							"web-vm",
+							"web-vm-nic",
+							"web-subnet of web-vnet",
+							"nsg-web",
+							"nsg-web",
+							"running"
+						],
+						[
+							"agent-vm",
+							"agent-vm-nic",
+							"agent-subnet of agent-vnet",
+							"nsg-agent-nic",
+							"none",
+							"running"
+						],
+						[
+							"edge-vm",
+							"edge-vm-nic",
+							"edge-subnet of edge-vnet",
+							"none",
+							"none",
+							"running"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "subnet-only",
+						"text": "Only the group attached to the subnet contributes rules to the listing, together with the built-in defaults of that group."
+					},
+					{
+						"id": "nic-only",
+						"text": "Only the group attached to the network interface contributes rules to the listing, together with the built-in defaults of that group."
+					},
+					{
+						"id": "both-levels",
+						"text": "Both groups contribute rules to the listing, together with the built-in defaults of each group."
+					},
+					{
+						"id": "same-group-twice",
+						"text": "The rules of the single group appear twice in the listing, because that group is attached to the subnet and to the network interface."
+					},
+					{
+						"id": "nothing-attached",
+						"text": "The listing stays empty, because no group is attached at either level."
+					}
+				],
+				"slots": [
+					{
+						"id": "s-db",
+						"label": "db-vm"
+					},
+					{
+						"id": "s-api",
+						"label": "api-vm"
+					},
+					{
+						"id": "s-web",
+						"label": "web-vm"
+					},
+					{
+						"id": "s-agent",
+						"label": "agent-vm"
+					},
+					{
+						"id": "s-edge",
+						"label": "edge-vm"
+					}
+				]
+			},
+			"key": {
+				"s-db": "subnet-only",
+				"s-api": "both-levels",
+				"s-web": "same-group-twice",
+				"s-agent": "nic-only",
+				"s-edge": "nothing-attached"
+			},
+			"explanation": {
+				"correct": "The merged view of the rules that apply to an interface combines the rules of the group attached to that interface with the rules of the group attached to the subnet that holds it, and every group carries its own built-in defaults. db-vm has a group only on the subnet, so its listing holds just that group's rules plus its defaults. agent-vm has a group only on the interface, so its listing holds just that group's rules plus its defaults. api-vm has two different groups, one at each level, so the listing merges both sets of rules. web-vm has the same group at both levels, so every entry of that group is repeated in the merged output. edge-vm has no group at either level, so the listing holds no entries at all.",
+				"perChoice": {
+					"subnet-only": "Belongs to db-vm: nsg-db is attached to db-subnet and no group is attached to db-vm-nic, so the listing contains the rules of nsg-db along with that group's built-in defaults.",
+					"nic-only": "Belongs to agent-vm: nsg-agent-nic is attached to the interface and no group is attached to agent-subnet, so the listing contains the rules of nsg-agent-nic along with that group's built-in defaults.",
+					"both-levels": "Belongs to api-vm: nsg-api-subnet and nsg-api-nic are attached at the two levels, so the listing merges the rules of both groups and each group's built-in defaults.",
+					"same-group-twice": "Belongs to web-vm: nsg-web is attached to web-subnet and to web-vm-nic, so the merged output repeats the entries of that single group.",
+					"nothing-attached": "Belongs to edge-vm: no group is attached to edge-vm-nic or to edge-subnet, so no rules are listed for that interface."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-group-how-it-works"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/diagnose-network-traffic-filter-problem"
+				}
+			],
+			"subtopics": [
+				"nsg-effective-rules",
+				"nsg-attachment-scope",
+				"nsg-rule-merging"
+			],
+			"reviewed": false
+		}
+	]
+}

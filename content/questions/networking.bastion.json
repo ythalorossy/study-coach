@@ -1,0 +1,1796 @@
+{
+	"skill": "networking.bastion",
+	"questions": [
+		{
+			"id": "q_01M6GZ8QB5K3V08635YPQVMS30",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your team must give administrators RDP and SSH access to the Linux and Windows virtual machines in Contoso-VNet while keeping every target machine and the Azure Bastion host itself off the public internet. The compliance group also needs to review graphical remote sessions after they finish, and administrators want to use the client already installed on their laptops. Which tier of Azure Bastion should you deploy in this virtual network?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Virtual network            : Contoso-VNet (East US 2), address space 10.1.0.0/16\nAzureBastionSubnet         : 10.1.1.0/26, contains no other resources\nTarget machines            : Linux VM (SSH 22), Windows VM (RDP 3389), no public IP addresses\nPublic IP on bastion host  : must not be assigned\nEvidence kept after a\n  session ends            : graphical RDP and SSH session playback for the compliance group\nAdmin tooling              : locally installed SSH/RDP client plus browser-based portal session"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Developer tier"
+					},
+					{
+						"id": "b",
+						"text": "Basic tier"
+					},
+					{
+						"id": "c",
+						"text": "Standard tier"
+					},
+					{
+						"id": "d",
+						"text": "Premium tier"
+					}
+				]
+			},
+			"key": {
+				"optionId": "d"
+			},
+			"explanation": {
+				"correct": "The combination of requirements here needs the top tier: a deployment with no public IP on the bastion host (private-only architecture), capture of graphical RDP and SSH sessions that are stored in a blob container for later review, plus the native client with Microsoft Entra ID authentication. Session recording and the private-only deployment without a public IP are both available only in the Premium tier, and Premium also includes everything the Standard tier offers.",
+				"perChoice": {
+					"a": "The Developer tier runs on shared infrastructure at no charge, but it handles a single VM at a time, is limited to selected regions, and is intended for development and testing. It offers neither session recording nor the native client, and it does not provide the private-only architecture.",
+					"b": "The Basic tier is a dedicated deployment with a fixed capacity of two instances, but it lacks the native client, shareable links, IP-based connections, custom ports and file transfer. It has no session recording, and a dedicated Basic deployment still requires a Standard SKU, statically allocated public IP address, so it cannot be deployed without one.",
+					"c": "The Standard tier adds the native client, shareable links, IP-based connections, custom ports, file transfer and host scaling, but it still requires a public IP address on the bastion host and it does not include session recording. Because the environment must run without a public IP on the host and must retain playback of graphical sessions, Standard alone is not sufficient."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/bastion-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/configuration-settings"
+				}
+			],
+			"subtopics": [
+				"bastion-sku-selection",
+				"private-only-deployment",
+				"session-recording"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GZCN7V5ZECQBTWWHYG6JWA",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You are preparing a deployment of Azure Bastion into the hub virtual network so administrators can reach the virtual machines over private IP addresses, using the RDP or SSH client already installed on their laptops. The plan below lists the settings your team has prepared for this deployment. Exactly one of the planned values conflicts with the requirements for a dedicated Bastion deployment. Which planned setting should you change before you deploy?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Planned setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Virtual network",
+							"hub-vnet"
+						],
+						[
+							"Resource group for the host and the subnet",
+							"rg-hub-east"
+						],
+						[
+							"Subnet name",
+							"AzureBastionSubnet"
+						],
+						[
+							"Subnet address prefix",
+							"10.4.1.0/26"
+						],
+						[
+							"Public IP SKU",
+							"Standard"
+						],
+						[
+							"Public IP allocation method",
+							"Dynamic"
+						],
+						[
+							"Tier",
+							"Standard"
+						],
+						[
+							"Instance count",
+							"3"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Change the public IP allocation method to Static"
+					},
+					{
+						"id": "b",
+						"text": "Change the public IP SKU to Basic and leave the allocation method as planned"
+					},
+					{
+						"id": "c",
+						"text": "Change the AzureBastionSubnet address prefix to 10.4.1.0/28"
+					},
+					{
+						"id": "d",
+						"text": "Change the tier to Developer"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A dedicated Azure Bastion deployment requires a public IP address on the Standard SKU whose allocation method is Static, so the planned Dynamic value is the one setting that must change. Everything else in the plan is already acceptable: the subnet is named AzureBastionSubnet, sits in the same virtual network and the same resource group as the bastion host, and its /26 prefix satisfies the minimum subnet size; the Standard tier supports the chosen instance count and the native client.",
+				"perChoice": {
+					"b": "The public IP address used by a dedicated Bastion deployment must be on the Standard SKU, so Basic is not a valid choice here. The SKU in the plan is already correct, and the allocation method is the value that has to be fixed.",
+					"c": "AzureBastionSubnet must be /26 or larger for a Bastion deployed now, and /28 is smaller than that minimum, so this edit would break the subnet size requirement instead of fixing anything.",
+					"d": "The Developer tier runs on shared infrastructure rather than a dedicated host placed in your virtual network, it serves only one virtual machine at a time, and it offers no native client, so it does not satisfy the stated requirement of a dedicated host reached with the client already installed on the laptops."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/configuration-settings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/bastion-overview"
+				}
+			],
+			"subtopics": [
+				"bastion-public-ip-requirements",
+				"bastion-subnet-requirements",
+				"bastion-deployment-configuration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GZK6SD0Q5830F967FVRSBF",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a hub virtual network that runs an Azure Bastion host, plus two workload virtual machines that are reachable only over their private addresses. The operations team can open the Connect > Bastion pane, but the workload machines do not appear there and a session attempt is rejected with an authorization error, even though inbound SSH and RDP traffic from the virtual network is already permitted. You need the team to reach the Linux and Windows machines through the bastion host. Which access change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"bastion\": {\n    \"name\": \"bastion-hub\",\n    \"resourceGroup\": \"rg-network\",\n    \"virtualNetwork\": \"vnet-hub\"\n  },\n  \"roleAssignments\": [\n    { \"principal\": \"ops-oncall\", \"role\": \"Reader\", \"scope\": \"/subscriptions/s1/resourceGroups/rg-network/providers/Microsoft.Network/virtualNetworks/vnet-hub\" },\n    { \"principal\": \"ops-oncall\", \"role\": \"Network Contributor\", \"scope\": \"/subscriptions/s1/resourceGroups/rg-network/providers/Microsoft.Network/virtualNetworks/vnet-hub/subnets/app-subnet\" },\n    { \"principal\": \"ops-oncall\", \"role\": \"Reader\", \"scope\": \"/subscriptions/s1/resourceGroups/rg-apps/providers/Microsoft.Storage/storageAccounts/stapp001\" }\n  ],\n  \"targetMachines\": [\n    { \"name\": \"vm-sales-01\", \"os\": \"Linux\", \"resourceGroup\": \"rg-apps\", \"publicIpAddress\": null, \"privateIpAddress\": \"10.20.5.12\", \"networkInterface\": \"nic-sales-01\" },\n    { \"name\": \"vm-hr-02\", \"os\": \"Windows\", \"resourceGroup\": \"rg-apps\", \"publicIpAddress\": null, \"privateIpAddress\": \"10.20.5.19\", \"networkInterface\": \"nic-hr-02\" }\n  ],\n  \"subnetNetworkSecurityGroup\": {\n    \"name\": \"nsg-app-subnet\",\n    \"inboundRules\": [\n      { \"protocol\": \"TCP\", \"port\": \"22\", \"source\": \"VirtualNetwork\" },\n      { \"protocol\": \"TCP\", \"port\": \"3389\", \"source\": \"VirtualNetwork\" }\n    ]\n  }\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Reader on the target virtual machine and on the network interface that holds its private IP"
+					},
+					{
+						"id": "b",
+						"text": "Reader on the target virtual machine and on the Bastion host"
+					},
+					{
+						"id": "c",
+						"text": "Reader on the Bastion host and on the network interface that holds its private IP"
+					},
+					{
+						"id": "d",
+						"text": "Reader on the storage account and on the virtual network that contains the targets"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Opening a session through the bastion host requires the Reader role on the virtual machine being reached and on the network interface that carries that machine's private address. The current assignments give the team read access only to the virtual network, a subnet, and a storage account; the workload machines and their network interfaces live in rg-apps and have no read access, and the inbound ports are already permitted. Granting Reader on each target virtual machine and on its network interface is what unblocks the sessions.",
+				"perChoice": {
+					"b": "This still leaves the network interface that holds the private address without read access, so sessions to those machines would continue to be rejected.",
+					"c": "This still leaves the target virtual machine itself without read access. Reading the Bastion host and the network interface does not cover the virtual machine that is being connected to.",
+					"d": "Read access on the storage account and on the virtual network does not extend to the workload virtual machines or their network interfaces in rg-apps, so the connection attempts would still fail."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/tutorial-create-host-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/configuration-settings"
+				}
+			],
+			"subtopics": [
+				"connection-prerequisites",
+				"rbac-scopes",
+				"private-access"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GZQEP1XEX660DTPMBEDT5J",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a hub virtual network in the West Europe region where your team must deploy a bastion host that runs in every availability zone of the region, so that a single zone failure does not interrupt remote access to the workload virtual machines. You created a public IP address before starting the deployment, and the deployment fails with a validation error stating that the public IP address is not compatible with the availability zones selected for the bastion host. The settings that were submitted with the deployment request are listed below. Which setting should you change so that the deployment succeeds?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Deployment method: Manually specified settings\nBastion tier: Standard\nBastion availability zones: 1, 2, 3\nAzureBastionSubnet address prefix: 10.6.0.0/26\nPublic IP SKU: Standard\nPublic IP allocation method: Static\nPublic IP availability zone: 2"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Recreate the public IP address so that it covers all three availability zones of the region."
+					},
+					{
+						"id": "b",
+						"text": "Change the bastion host configuration so that it runs in the single availability zone where the current public IP address is assigned, instead of all three availability zones of the region."
+					},
+					{
+						"id": "c",
+						"text": "Recreate the public IP address so that it has no availability zone assigned and can be used in any zone of the region."
+					},
+					{
+						"id": "d",
+						"text": "Recreate the public IP address so that it uses the Basic SKU with a Dynamic allocation method."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "When a bastion host is placed in zones 1, 2, and 3 of a region, the public IP address that fronts it must also cover zones 1, 2, and 3. The address in the submitted request is zonal in a single zone, so it cannot be paired with a host that spans the region's three zones, and the deployment is rejected. Recreating the public IP address with the same three-zone coverage as the host fixes the validation error while still satisfying the other requirements for the address, namely the Standard SKU and the Static allocation method, and it leaves the /26 AzureBastionSubnet and the manually specified deployment unchanged.",
+				"perChoice": {
+					"b": "Reducing the bastion host to the single zone used by the existing address would leave the address unable to cover the three zones the host is meant to span, and it also contradicts the stated requirement that the host run in every availability zone of the region. Availability zone choices are fixed at deployment time and cannot be edited on an existing host, so the address is the part that must be redone.",
+					"c": "A public IP address that carries no availability zone does not meet the requirement that the address cover zones 1, 2, and 3 while the bastion host is placed in all three zones. A zone-less public IP is only flexible in the opposite situation, where the bastion host itself is deployed without a zone.",
+					"d": "The public IP address for a dedicated Bastion deployment must use the Standard SKU with a Static allocation method, so neither changing the SKU to Basic nor switching to a Dynamic allocation is a valid configuration for the address. These changes also leave the zone coverage mismatch between the address and the host untouched."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/configuration-settings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/bastion-overview"
+				}
+			],
+			"subtopics": [
+				"availability-zones",
+				"public-ip-requirements"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6GZYZBWVK2Z76ZRAXTCPBND",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a hub virtual network whose address space covers IPv4 only, and it runs a Standard tier Azure Bastion host that was created earlier this year. Your security team wants administrators to connect to that host over IPv6, and the workload virtual machines in the network must keep working with the private addresses they already use. The current configuration is listed below. Which set of changes should your team make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Virtual network address space",
+							"10.20.0.0/16, IPv4 only"
+						],
+						[
+							"AzureBastionSubnet",
+							"10.20.1.0/26, IPv4 only"
+						],
+						[
+							"Bastion host",
+							"bast-hub, Standard tier, created 2026-02-18"
+						],
+						[
+							"Target virtual machine network interface",
+							"ipconfig1, 10.20.1.10, no IPv6 address"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add an IPv6 address space to the virtual network and to the AzureBastionSubnet, add an IPv6 address to the target virtual machine's network interface, and deploy a new dual stack Bastion host so that administrators can connect to the host over IPv6 while the traffic from the host to the virtual machines stays over IPv4."
+					},
+					{
+						"id": "b",
+						"text": "Add an IPv6 address space to the virtual network and to the AzureBastionSubnet, then convert the existing bast-hub host to dual stack so that administrators can connect to the host over IPv6 without a second host."
+					},
+					{
+						"id": "c",
+						"text": "Add an IPv6 address space only to the AzureBastionSubnet, keep bast-hub as it is, and let the traffic from the host to the virtual machines use IPv6 instead of IPv4 so that administrators can connect to the host over IPv6."
+					},
+					{
+						"id": "d",
+						"text": "Deploy a private-only Bastion host in the virtual network and assign IPv6 addresses to the target virtual machine's network interface so that administrators can connect to the host over IPv6."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A dual-stack Bastion has to be created that way from the start, because a host that was deployed as IPv4-only can never be converted afterwards. Supporting IPv6 means the virtual network and the AzureBastionSubnet both need IPv6 address space, and the target virtual machine's network interface needs IPv6 support inside that dual-stack network. The hop from the bastion host to the target virtual machines keeps using IPv4, so the workloads keep the private addresses they already have, while administrators reach the host itself over IPv6.",
+				"perChoice": {
+					"b": "An IPv4-only bastion host cannot be converted to dual stack once it has been deployed; the dual-stack choice is fixed at creation time, so a second host has to be deployed instead of changing bast-hub in place.",
+					"c": "This leaves bast-hub as an IPv4-only host, so administrators still could not reach it over IPv6, and it also relies on IPv6 for the connection between the bastion host and the target virtual machines, a hop that always uses IPv4.",
+					"d": "IPv6 is not supported on private-only bastion deployments, and that architecture has no public IP address at all, so it cannot deliver the IPv6 connectivity to the host that the security team is asking for."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/configuration-settings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/bastion-overview"
+				}
+			],
+			"subtopics": [
+				"bastion-dual-stack",
+				"bastion-ipv6",
+				"bastion-deployment"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6H02J8DMD3C9E4SNCGYK11Q",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a hub virtual network that has hosted a dedicated bastion host since October 2021. That host now handles more concurrent remote sessions than it can comfortably serve, and the operations team wants to add scale units to the same host instead of standing up a second one, so the workload virtual machines and their private addresses stay exactly where they are. Before you submit the higher instance count, which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Bastion resource name:   hub-bastion\nTier:                    Standard\nInstance count:          2\nDedicated subnet name:   AzureBastionSubnet\nDedicated subnet prefix: 10.0.1.0/27\nSubnet created:          October 2021\nPublic IP address:       Standard SKU, Static allocation\nTarget virtual machines: Windows and Linux virtual machines in the same virtual network, private addresses only"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Resize the /27 AzureBastionSubnet to /26 or larger, and then raise the instance count on the host"
+					},
+					{
+						"id": "b",
+						"text": "Deploy a second dedicated bastion host in the same /27 AzureBastionSubnet and keep two scale units on each host"
+					},
+					{
+						"id": "c",
+						"text": "Raise the instance count on the existing /27 AzureBastionSubnet to five and leave the subnet prefix unchanged"
+					},
+					{
+						"id": "d",
+						"text": "Leave the /27 AzureBastionSubnet unchanged and turn on session recording so administrators can review the sessions they run"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The AzureBastionSubnet was created before November 2, 2021, so the /27 prefix is still accepted for the running host. That prefix size, however, caps how many extra scale units host scaling can add to a Standard tier deployment. The subnet therefore has to be expanded to /26 or larger (for example 10.0.1.0/26) first, and only then can the instance count be raised to add the capacity the operations team needs.",
+				"perChoice": {
+					"b": "Adding a second dedicated host does not enlarge the capacity of the existing one, and the operations team explicitly wants to grow the current host rather than run another one; a second host would also add another hourly charge and data transfer costs.",
+					"c": "A /27 prefix that predates November 2, 2021 remains valid for the host that is already running, but it limits how many scale units host scaling can add. Leaving the prefix at /27 and only raising the instance count does not give the extra capacity the team asked for.",
+					"d": "Session recording is offered only on the Premium tier and captures graphical RDP and SSH sessions for later review in a storage account. It does not add concurrent connection capacity, and it does not change the subnet size, so it does not solve the scaling problem."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/configuration-settings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/bastion-overview"
+				}
+			],
+			"subtopics": [
+				"bastion-subnet-sizing",
+				"host-scaling",
+				"instance-count"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6H04NK47DXTAAQKYBP6A322",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a hub virtual network that runs a dedicated bastion host, and the Windows servers inside it must not accept RDP on the usual port — the RDP service on WinServer01 now listens on TCP 53389. When the operations team opens Connect > Bastion and starts a session to WinServer01, the session never reaches the server. You need the team to reach that server through this host. The configuration currently in place is listed below. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Bastion tier",
+							"Basic"
+						],
+						[
+							"Bastion instance count",
+							"2"
+						],
+						[
+							"Bastion subnet",
+							"AzureBastionSubnet (10.1.1.0/26)"
+						],
+						[
+							"Bastion public IP",
+							"Standard SKU, Static allocation"
+						],
+						[
+							"Target virtual machine",
+							"WinServer01, RDP service on TCP 53389"
+						],
+						[
+							"Target virtual machine public IP",
+							"None"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Move the host to the Standard tier or higher and supply port 53389 at connection time"
+					},
+					{
+						"id": "b",
+						"text": "Move the host to the Standard tier or higher and supply port 3389 at connection time"
+					},
+					{
+						"id": "c",
+						"text": "Keep the host on the Basic tier and supply port 53389 at connection time"
+					},
+					{
+						"id": "d",
+						"text": "Keep the host on the Basic tier and supply port 3389 at connection time"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Two things are required here. Custom inbound connection ports are supported only from the Standard tier upward, so the Basic tier host shown in the exhibit has to be raised to Standard tier or higher before a non-default port can be used. In addition, when a custom port is configured, that port must be supplied when the session is started — a session that uses the default RDP port will not reach a service that is listening on TCP 53389. Moving the tier and supplying port 53389 at connection time is the only combination that satisfies both conditions.",
+				"perChoice": {
+					"b": "Raising the tier is the right tier change, but the connection still targets 3389. WinServer01's RDP service no longer listens on the default port, so the custom value has to be supplied when the session starts; otherwise the session does not reach the server.",
+					"c": "Supplying the custom port at connection time is right, but the host in the exhibit runs the Basic tier, and custom inbound ports are supported only from the Standard tier upward. Basic also lacks the native client, shareable links, IP-based connections and file transfer, so the tier has to be raised before the custom port can be used.",
+					"d": "This fails for two reasons: a Basic tier host does not support custom inbound ports, and WinServer01's RDP service is not listening on 3389, so a session supplied with the default port cannot succeed either."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/configuration-settings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/bastion-overview"
+				}
+			],
+			"subtopics": [
+				"bastion-custom-ports",
+				"bastion-sku-comparison"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6H06N7YSHR119TJWW43PT0V",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Standard tier Azure Bastion host in your hub network. The audit team needs the graphical sessions that administrators run through this host to be captured and kept in your storage account, so that each one can be reviewed after the session finishes. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Current setting"
+					],
+					"rows": [
+						[
+							"Bastion tier",
+							"Standard"
+						],
+						[
+							"Scale units",
+							"2"
+						],
+						[
+							"Public IP address",
+							"Standard SKU, Static allocation"
+						],
+						[
+							"Subnet",
+							"AzureBastionSubnet (/26)"
+						],
+						[
+							"Destination for captured sessions",
+							"contoso-audit storage account"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Change the tier to Premium and enable session recording so the recordings land in a blob container in your storage account via a SAS URL"
+					},
+					{
+						"id": "b",
+						"text": "Change the tier to Premium and enable session recording so the recordings land in the host's own built-in storage"
+					},
+					{
+						"id": "c",
+						"text": "Keep the tier at Standard and enable session recording so the recordings land in a blob container in your storage account"
+					},
+					{
+						"id": "d",
+						"text": "Change the tier to Developer and enable session recording so the recordings land in a blob container in your storage account via a SAS URL"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Session recording is a capability that only the Premium tier provides, and the captured files are written to a blob container in your own storage account through a SAS URL once the session is closed or disconnected, where they can be reviewed on the Session Recording page. So the correct change is to move the host to Premium and point the recording destination at a blob container in the contoso-audit storage account via a SAS URL.",
+				"perChoice": {
+					"b": "The tier change is right, but the destination is wrong: the files are not kept in storage managed by the host itself. They are placed in a blob container in your storage account, referenced through a SAS URL, so the storage location must be changed.",
+					"c": "Capturing sessions is only available on the Premium tier, so keeping the host at Standard leaves the audit requirement unmet no matter how the destination is configured.",
+					"d": "The Developer tier runs on shared infrastructure for a single virtual machine at a time and is intended for development and testing; it does not offer session recording, so moving to it cannot satisfy the audit requirement."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/configuration-settings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/bastion-overview"
+				}
+			],
+			"subtopics": [
+				"azure-bastion",
+				"session-recording",
+				"bastion-skus"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6H0C7W9YZ0C1T60YPT3RW1B",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a hub virtual network, Contoso-Hub-VNet, that holds the workload virtual machines, and you need a dedicated Azure Bastion host in it so that administrators can open RDP and SSH sessions to those machines over their private addresses. The draft plan reuses the public IP address that the hub network already owns and leaves the subnet for the host to be chosen. Drag each value to the plan row where it belongs.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Fact about Contoso-Hub-VNet",
+						"Value"
+					],
+					"rows": [
+						[
+							"Virtual network address space",
+							"10.20.0.0/16"
+						],
+						[
+							"Subnet that holds the workload virtual machines",
+							"10.20.5.0/24"
+						],
+						[
+							"Subnet that holds the application servers",
+							"10.20.9.0/24"
+						],
+						[
+							"Resource group that contains the hub network",
+							"rg-hub-networking"
+						],
+						[
+							"Public IP address that the hub network already owns",
+							"pip-hub-app — Basic SKU, Dynamic allocation"
+						],
+						[
+							"Machines reached through the host",
+							"Linux and Windows virtual machines that have private addresses only"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "AzureBastionSubnet"
+					},
+					{
+						"id": "i2",
+						"text": "10.20.1.0/26"
+					},
+					{
+						"id": "i3",
+						"text": "10.20.5.0/26"
+					},
+					{
+						"id": "i4",
+						"text": "10.20.9.0/26"
+					},
+					{
+						"id": "i5",
+						"text": "Standard"
+					},
+					{
+						"id": "i6",
+						"text": "Static"
+					},
+					{
+						"id": "i7",
+						"text": "Reader"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Exact name of the subnet that holds the host"
+					},
+					{
+						"id": "s2",
+						"label": "Address prefix of that subnet"
+					},
+					{
+						"id": "s3",
+						"label": "SKU of the public IP address used by the host"
+					},
+					{
+						"id": "s4",
+						"label": "Allocation method of that public IP address"
+					},
+					{
+						"id": "s5",
+						"label": "Role assigned on the target virtual machine and its network interface"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i5",
+				"s4": "i6",
+				"s5": "i7"
+			},
+			"explanation": {
+				"correct": "A dedicated host (Basic, Standard or Premium) must sit in a subnet named exactly AzureBastionSubnet, in the same virtual network and the same resource group as the host, holding no other resources, and that subnet must be /26 or larger. Of the candidate prefixes, only 10.20.1.0/26 is both large enough and free of collisions: 10.20.5.0/26 and 10.20.9.0/26 are carved out of subnets that already exist in this virtual network. A dedicated deployment also requires a public IP address, and that address must be of the Standard SKU with static allocation; pip-hub-app is Basic and dynamic, so it does not meet those conditions and cannot be reused for the host. Finally, opening a session to a target virtual machine requires the Reader role on the virtual machine and on the network interface that holds its private IP.",
+				"perChoice": {
+					"i1": "This is the exact name the dedicated subnet for this host must carry, and that subnet must live in the same virtual network and resource group as the host and contain no other resources.",
+					"i2": "A /26 meets the minimum size for the host subnet, and 10.20.1.0/26 falls inside the 10.20.0.0/16 address space without touching 10.20.5.0/24 or 10.20.9.0/24, so it is the only valid prefix on offer.",
+					"i3": "This prefix is taken from 10.20.5.0/24, the subnet that already contains the workload virtual machines, so the two address ranges would overlap and the deployment would be rejected.",
+					"i4": "This prefix is taken from 10.20.9.0/24, the subnet that already contains the application servers, so it overlaps an existing subnet in the same virtual network.",
+					"i5": "The public IP address that a dedicated host uses must be of the Standard SKU; the Basic address already owned by this hub network does not qualify.",
+					"i6": "The public IP address for a dedicated host must use static allocation; an existing address can only be reused when it already satisfies the SKU and allocation requirements, which pip-hub-app does not.",
+					"i7": "Starting a session requires this role on the target virtual machine and on the network interface that holds its private IP."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/configuration-settings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/tutorial-create-host-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/bastion-overview"
+				}
+			],
+			"subtopics": [
+				"bastion-deployment-settings",
+				"bastion-subnet-and-public-ip",
+				"bastion-session-access"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6H0F5B7A8E2JH8X57K0EDTK",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a hub virtual network, Contoso-Hub-VNet, that holds Linux and Windows workload virtual machines reachable only through their private addresses, and you need a bastion host for your operations team. Four separate requests have come in, each asking for a different level of capability, and you have to decide which tier of Azure Bastion satisfies each one. Drag each tier to the request that it satisfies.",
+				"items": [
+					{
+						"id": "dev",
+						"text": "Developer"
+					},
+					{
+						"id": "basic",
+						"text": "Basic"
+					},
+					{
+						"id": "std",
+						"text": "Standard"
+					},
+					{
+						"id": "prem",
+						"text": "Premium"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "A zero-cost host on infrastructure shared with other tenants that reaches a single virtual machine at a time and can later be converted to a paid tier"
+					},
+					{
+						"id": "s2",
+						"label": "A host on infrastructure dedicated to your own virtual network that runs two instances and serves sessions started from the browser-based client in the portal"
+					},
+					{
+						"id": "s3",
+						"label": "A host on infrastructure dedicated to your own virtual network with an instance count you choose, offering the native SSH or RDP client, file transfer and custom connection ports"
+					},
+					{
+						"id": "s4",
+						"label": "A host that can be deployed without any public IP address and that captures graphical sessions so they can be reviewed afterwards"
+					}
+				]
+			},
+			"key": {
+				"s1": "dev",
+				"s2": "basic",
+				"s3": "std",
+				"s4": "prem"
+			},
+			"explanation": {
+				"correct": "Each request is matched to the tier whose documented capabilities fit it: the free shared-infrastructure tier that serves one virtual machine at a time goes with the proof-of-concept request, the dedicated two-instance tier that offers only the browser-based portal client goes with the simple production request, the tier that adds the native client, file transfer, custom ports and a selectable instance count goes with the support desk request, and the tier that adds graphical session capture and a deployment without a public IP address goes with the compliance request.",
+				"perChoice": {
+					"dev": "The Developer tier is backed by shared infrastructure rather than a dedicated host, it is free, it supports one virtual machine at a time, and it can be upgraded to a paid tier later. That matches the request for a zero-cost host for a single test machine.",
+					"basic": "The Basic tier is a dedicated deployment in your own virtual network with a fixed capacity of two instances. It offers only the browser-based web client in the portal, without the native client, shareable links, IP-based connections, custom ports or file transfer, so it matches the request for a dedicated two-instance host used from the portal.",
+					"std": "The Standard tier contains everything in Basic and adds the native client, shareable links, IP-based connections, custom ports and file transfer, and it lets you choose the number of scale units. That matches the request for a configurable instance count together with the locally installed SSH or RDP client and custom ports.",
+					"prem": "The Premium tier contains everything in Standard and adds session recording for compliance plus a private-only deployment in which the host has no public IP address, so public-IP connections are refused. That matches the request for a host with no public IP address whose graphical sessions must be captured and reviewed."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/bastion-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/configuration-settings"
+				}
+			],
+			"subtopics": [
+				"bastion-tiers",
+				"bastion-skus"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6H0JRC0HPRGNJGF226AX3P4",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have three Azure Bastion hosts in the hub virtual network of your company, and the operations team has written down what each host allows after your latest configuration changes. You need to work out which setting accounts for each of the three observations, so that the same problem is not repeated on the next host you build. Drag each setting to the host where it belongs.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Host",
+						"Observation reported by the operations team"
+					],
+					"rows": [
+						[
+							"bastion-hub-01",
+							"Sessions open from the browser in the portal, but the SSH program on the administrator's laptop is refused, and no data can be transferred while the connection is open."
+						],
+						[
+							"bastion-hub-02",
+							"Every connection that arrives over the host's public address is rejected, although the workload virtual machines in the network are reached over their private addresses."
+						],
+						[
+							"bastion-hub-03",
+							"The creation of the host was rejected because the address picked for it does not satisfy the requirements for a dedicated deployment."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Tier set to Basic"
+					},
+					{
+						"id": "i2",
+						"text": "Tier set to Standard"
+					},
+					{
+						"id": "i3",
+						"text": "Tier set to Premium, host created without a public IP address"
+					},
+					{
+						"id": "i4",
+						"text": "Public IP address created with the Basic SKU and dynamic allocation"
+					},
+					{
+						"id": "i5",
+						"text": "Instance count raised to 4 scale units"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "bastion-hub-01"
+					},
+					{
+						"id": "s2",
+						"label": "bastion-hub-02"
+					},
+					{
+						"id": "s3",
+						"label": "bastion-hub-03"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i3",
+				"s3": "i4"
+			},
+			"explanation": {
+				"correct": "Each observation is produced by one configuration setting. bastion-hub-01 behaves like the Basic tier: it gives administrators only the browser-based web client, so the native client (the SSH program on the laptop) is refused and there is no file transfer during a session. bastion-hub-02 is a host that was created with no public IP address in a private-only deployment, which is only possible on the Premium tier, so connections arriving over a public address are rejected. bastion-hub-03 never got created because a dedicated deployment requires the host's public IP address to use the Standard SKU with a static allocation method, so an address built with the Basic SKU and dynamic allocation is refused at deployment time.",
+				"perChoice": {
+					"i1": "This belongs to bastion-hub-01. The Basic tier offers the browser-based web client only and has no native client, no file transfer, no shareable links, no custom ports and no IP-based connections, which is exactly what the team sees: portal sessions succeed while the SSH program on the laptop is refused and nothing can be transferred. The free Developer tier also lacks the native client and file transfer, but it runs on shared infrastructure for testing a single virtual machine rather than as a dedicated host, so it is not the setting that matches a dedicated deployment.",
+					"i2": "This fits none of the three observations. The Standard tier adds the native client, file transfer, shareable links, custom ports and IP-based connections to Basic, so it cannot explain a refused laptop connection or missing data transfer. It also does not support a private-only deployment without a public IP address, and it does not change the requirements that apply to the public IP address of a dedicated deployment.",
+					"i3": "This belongs to bastion-hub-02. A private-only deployment produces a host with no internet-routable address that can only be reached over its private address, and connections that arrive over a public address are refused. That architecture is available only on the Premium tier, so the tier and the missing public IP address belong together here.",
+					"i4": "This belongs to bastion-hub-03. For a dedicated deployment the host's public IP address must use the Standard SKU with a static allocation method; an address created with the Basic SKU and a dynamic allocation method is not accepted, so the creation request is rejected during validation.",
+					"i5": "This fits none of the three observations. Raising the instance count adds scale units to a host so it can serve more concurrent connections, which is host scaling available on Standard and above. It does not change which connection methods a tier supports, does not create or remove a public IP address, and does not change the deployment architecture, so it explains none of the reported behaviour."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/bastion-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/configuration-settings"
+				}
+			],
+			"subtopics": [
+				"bastion-sku-comparison",
+				"bastion-public-ip",
+				"bastion-deployment-requirements"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6H0SMBYFVWT6VWKG1V16JAC",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have an Azure Bastion deployment in Contoso-Hub-VNet that your team uses to reach the workload machines in that VNet over their private addresses. The plan below lists what has to be in place for sessions to work and what the dedicated setup needs so that people outside the office can start them. Drag each element to the slot it belongs to. One of the elements is not needed here and belongs in no slot.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Element",
+						"State in Contoso-Hub-VNet"
+					],
+					"rows": [
+						[
+							"Workload machines",
+							"WinServer01 and LinuxApp01, each reachable only through its private address"
+						],
+						[
+							"How sessions start",
+							"The team opens the Connect > Bastion pane in the portal and then picks the target machine"
+						],
+						[
+							"Kind of Azure Bastion setup",
+							"A dedicated setup placed inside Contoso-Hub-VNet, with an address of its own for incoming sessions"
+						],
+						[
+							"Inbound filtering on the workload machines",
+							"Only the connection types that the security team approved are allowed to reach the machines"
+						],
+						[
+							"Where the team works",
+							"The team works from outside the office and from other corporate locations"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i_reader",
+						"text": "Reader on the target machine and on its NIC"
+					},
+					{
+						"id": "i_rdp",
+						"text": "Inbound TCP 3389 for RDP on the target machine"
+					},
+					{
+						"id": "i_ssh",
+						"text": "Inbound TCP 22 for SSH on the target machine"
+					},
+					{
+						"id": "i_tls",
+						"text": "TLS on port 443 for the link from the remote workstation into the target network"
+					},
+					{
+						"id": "i_bastion_pip",
+						"text": "A Standard SKU public IP with Static allocation for the host itself"
+					},
+					{
+						"id": "i_target_pip",
+						"text": "A public IP on every target machine"
+					}
+				],
+				"slots": [
+					{
+						"id": "s_permission",
+						"label": "The access permission that must be granted on the workload machine and on the adapter that carries its private address"
+					},
+					{
+						"id": "s_graphical",
+						"label": "The firewall rule that must let a graphical desktop session reach the workload machine"
+					},
+					{
+						"id": "s_terminal",
+						"label": "The firewall rule that must let a terminal session reach the workload machine"
+					},
+					{
+						"id": "s_transit",
+						"label": "The safeguard that keeps what the team sends to Contoso-Hub-VNet from being read in transit"
+					},
+					{
+						"id": "s_reachable",
+						"label": "The address that makes the dedicated setup reachable from the internet, whether created new or already present in the subscription"
+					}
+				]
+			},
+			"key": {
+				"s_graphical": "i_rdp",
+				"s_permission": "i_reader",
+				"s_reachable": "i_bastion_pip",
+				"s_terminal": "i_ssh",
+				"s_transit": "i_tls"
+			},
+			"explanation": {
+				"correct": "Each slot asks for one specific piece of the setup. The access permission slot takes the Reader role, because opening a session to a workload machine requires that role on the machine itself and on the network interface that holds its private address. The graphical desktop session slot takes the inbound TCP 3389 rule, the default RDP port for Windows targets, and the terminal session slot takes the inbound TCP 22 rule, the default SSH port for Linux targets. The in-transit safeguard slot takes TLS on port 443, which is how the connection to the deployment is protected. The slot describing the address that makes the dedicated setup reachable from the internet takes the Standard SKU public IP with Static allocation, because a dedicated deployment requires a public IP that uses the Standard SKU and Static allocation; an address that already meets those criteria can be reused. The public IP on every target machine fits no slot, since the workload machines are reached over their private addresses through the deployment and need no public IP of their own.",
+				"perChoice": {
+					"i_reader": "It belongs in the access permission slot: to open a session to a workload machine, the person must hold the Reader role on that machine and on the network interface that carries its private address.",
+					"i_rdp": "It belongs in the graphical desktop session slot: RDP uses TCP 3389 by default, and that inbound rule has to be allowed on the Windows workload machine for the session to reach it.",
+					"i_ssh": "It belongs in the terminal session slot: SSH uses TCP 22 by default, and that inbound rule has to be allowed on the Linux workload machine for the session to reach it.",
+					"i_tls": "It belongs in the in-transit safeguard slot: the connection to the deployment is protected with TLS on port 443, which is the encryption applied to the traffic between the workstation and the virtual network.",
+					"i_bastion_pip": "It belongs in the slot about the address that makes the dedicated setup reachable from the internet: a dedicated deployment needs a public IP that uses the Standard SKU with Static allocation, and an existing public IP may be reused when it meets those criteria.",
+					"i_target_pip": "It fits no slot. The workload machines are reached over their private addresses through the deployment, so they do not need a public IP of their own; the public IP requirement applies to the deployment itself, not to the targets."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/tutorial-create-host-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/configuration-settings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/bastion-overview"
+				}
+			],
+			"subtopics": [
+				"bastion-session-prerequisites",
+				"bastion-public-ip-requirements",
+				"bastion-connection-security"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6H107866KGSMT1S4WWBT2WX",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a hub virtual network, Contoso-Hub-VNet, that holds workload virtual machines reachable only over their private addresses, and each team below opens its sessions through the Azure Bastion host deployed there. The teams differ in how they work and in the tier of the host they will use. Drag each connection approach to the team it suits.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Team",
+						"Access requirement",
+						"Tier of the host they will use"
+					],
+					"rows": [
+						[
+							"Quality assurance lab",
+							"Testers use shared computers that carry no remote access software, and the team works on one virtual machine at a time",
+							"Developer"
+						],
+						[
+							"Operations team",
+							"Administrators must send and receive files while a session to a server is open",
+							"Standard"
+						],
+						[
+							"Field partners",
+							"Partners are not given an account that can sign in to the Azure portal",
+							"Standard"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "HTML5 web client in the Azure portal"
+					},
+					{
+						"id": "i2",
+						"text": "Native client using the installed SSH or RDP application"
+					},
+					{
+						"id": "i3",
+						"text": "Shareable link"
+					},
+					{
+						"id": "i4",
+						"text": "Direct connection to the virtual machine's public IP address"
+					},
+					{
+						"id": "i5",
+						"text": "A VPN connection to the hub virtual network followed by a remote desktop session"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Quality assurance lab"
+					},
+					{
+						"id": "s2",
+						"label": "Operations team"
+					},
+					{
+						"id": "s3",
+						"label": "Field partners"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3"
+			},
+			"explanation": {
+				"correct": "The Quality assurance lab works from shared computers that carry no remote access software, so its testers open a session from the portal page in a browser; the browser-based web client is offered on every tier, including the free Developer tier that handles one virtual machine at a time. The Operations team works with the SSH or RDP software already on its administrators' laptops and exchanges files during a session, which matches the native client available from the Standard tier upward. The Field partners cannot sign in to the Azure portal, so they use the shareable link: the page that opens asks them for the username/password or private key of the target virtual machine, and this option is also available from the Standard tier upward. The two remaining approaches match none of the three teams.",
+				"perChoice": {
+					"i1": "Belongs with the Quality assurance lab: its testers have nothing but a browser on the shared computers, and the browser-based web client in the portal works with every tier, so it also covers the free Developer tier the lab will use.",
+					"i2": "Belongs with the Operations team: the administrators drive sessions with the SSH or RDP software already installed on their laptops and exchange files while connected, and both the native client and file transfer are available from the Standard tier upward.",
+					"i3": "Belongs with the Field partners: the recipients never see the portal and instead authenticate with the credentials of the target virtual machine, and this option is available from the Standard tier upward.",
+					"i4": "Fits no slot: the workload virtual machines answer only on their private addresses and carry no public IP address, so nothing can be reached directly at a public address, and such a path would bypass the bastion host entirely.",
+					"i5": "Fits no slot: a VPN path into the hub virtual network is a separate remote access arrangement that does not run sessions through the bastion host and would require each connecting device to be set up for VPN instead of the hosted session options."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/bastion-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/configuration-settings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/tutorial-create-host-portal"
+				}
+			],
+			"subtopics": [
+				"bastion-connection-methods",
+				"bastion-sku-capabilities",
+				"bastion-shareable-links"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6H14676Z9KC2YMG0154XET9",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a hub virtual network, Fabrikam-Hub-VNet, that contains a dedicated Azure Bastion host named fabrikam-bastion and two workload virtual machines, WinSrv01 and LinuxSrv01, neither of which carries a public address. The operations team opens sessions to those machines from home using the RDP and SSH software that is already installed on their laptops, and the network team is writing down which traffic travels over which part of the setup so that firewall and monitoring rules can be prepared. The components involved are listed in the exhibit. Drag each traffic description to the part of the session it belongs to.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Component",
+						"Details"
+					],
+					"rows": [
+						[
+							"fabrikam-bastion",
+							"Standard tier, deployed into Fabrikam-Hub-VNet, public address 20.60.1.4"
+						],
+						[
+							"WinSrv01",
+							"Windows Server 2022, address 10.2.0.10, network interface in subnet App-Subnet"
+						],
+						[
+							"LinuxSrv01",
+							"Ubuntu Server 22.04, address 10.2.0.11, network interface in subnet App-Subnet"
+						],
+						[
+							"Administrator laptop",
+							"Home broadband connection, uses the RDP and SSH client software already installed"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "TLS on TCP 443"
+					},
+					{
+						"id": "i2",
+						"text": "RDP over TCP 3389"
+					},
+					{
+						"id": "i3",
+						"text": "SSH over TCP 22"
+					},
+					{
+						"id": "i4",
+						"text": "The private IP of each machine"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "The link between the administrator's laptop and fabrikam-bastion"
+					},
+					{
+						"id": "s2",
+						"label": "The link between fabrikam-bastion and WinSrv01"
+					},
+					{
+						"id": "s3",
+						"label": "The link between fabrikam-bastion and LinuxSrv01"
+					},
+					{
+						"id": "s4",
+						"label": "The addressing used on the target side of every session"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "A session to a workload machine has two legs. The client (the portal web client or the RDP/SSH software on the laptop) first reaches the bastion host over the public interface, and that leg is protected with TLS on TCP 443, which is also why the host needs a public address while the machines stay shielded from port scanning. The host then opens the real desktop or terminal session to the machine over that machine's private IP address, using RDP on the default inbound port 3389 for the Windows host and SSH on the default inbound port 22 for the Linux host. Because the host reaches the machines over their private addresses, the workload virtual machines need no public IP address of their own.",
+				"perChoice": {
+					"i1": "Belongs with the laptop-to-host leg: RDP and SSH sessions reach the bastion host over TLS on TCP 443, so an inbound rule for that port on the public interface is what lets the session start.",
+					"i2": "Belongs with the host-to-Windows leg: the default inbound connection port for RDP is 3389, and that port has to be open on the Windows machine for the desktop session to come up.",
+					"i3": "Belongs with the host-to-Linux leg: the default inbound connection port for SSH is 22, and that port has to be open on the Linux machine for the terminal session to come up.",
+					"i4": "Belongs with the machine-side addressing: the bastion host reaches every target in the virtual network over its private IP address, which is exactly why WinSrv01 and LinuxSrv01 carry no public address."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/bastion-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/configuration-settings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/tutorial-create-host-portal"
+				}
+			],
+			"subtopics": [
+				"bastion-traffic-path",
+				"bastion-connection-ports",
+				"bastion-private-ip"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HGNYXBQPA7G3CEPE2KCQBY",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your company operates two separate virtual networks, Contoso-Core-VNet and Contoso-Spoke-VNet, and an Azure Bastion host named core-bastion-01 already serves the workload machines in Contoso-Core-VNet. The operations team now wants to reach the workload machines in Contoso-Spoke-VNet through that same host, so the team keeps running a single remote access setup, and the administrators also want to start their sessions from home rather than from the office. The current environment is shown below.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Contoso-Core-VNet",
+						"Contoso-Spoke-VNet"
+					],
+					"rows": [
+						[
+							"Resource group",
+							"rg-core",
+							"rg-spoke"
+						],
+						[
+							"Address space",
+							"10.1.0.0/16",
+							"10.2.0.0/16"
+						],
+						[
+							"Azure Bastion host",
+							"core-bastion-01 (Standard tier)",
+							"none"
+						],
+						[
+							"Public IP address of the Azure Bastion host",
+							"core-bastion-pip (Standard, static)",
+							"not applicable"
+						],
+						[
+							"Workload machines",
+							"3 Windows, 1 Linux",
+							"2 Windows, 2 Linux"
+						],
+						[
+							"Public IP address on the workload machines",
+							"none",
+							"none"
+						]
+					]
+				},
+				"statement": "To let the operations team reach the workload machines in Contoso-Spoke-VNet through the single host that already runs in Contoso-Core-VNet, your team should {{slot1}}; so that the administrators can start those sessions from home, the inbound rule for the host's public IP address must allow {{slot2}} traffic.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "Peer Contoso-Core-VNet with Contoso-Spoke-VNet"
+							},
+							{
+								"id": "b",
+								"text": "Add a public IP address to each workload machine in Contoso-Spoke-VNet"
+							},
+							{
+								"id": "c",
+								"text": "Deploy a second Azure Bastion host in Contoso-Spoke-VNet"
+							},
+							{
+								"id": "d",
+								"text": "Widen the AzureBastionSubnet of Contoso-Core-VNet to cover 10.2.0.0/16"
+							}
+						]
+					},
+					{
+						"id": "slot2",
+						"options": [
+							{
+								"id": "a",
+								"text": "TCP 443"
+							},
+							{
+								"id": "b",
+								"text": "TCP 3389"
+							},
+							{
+								"id": "c",
+								"text": "TCP 22"
+							},
+							{
+								"id": "d",
+								"text": "TCP 80"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a",
+				"slot2": "a"
+			},
+			"explanation": {
+				"correct": "A single Azure Bastion deployment can serve workload machines in other virtual networks once those networks are linked, so peering Contoso-Core-VNet and Contoso-Spoke-VNet lets the existing host core-bastion-01 reach the spoke machines over their private addresses, which keeps one remote access setup instead of two. Client sessions terminate on the bastion host itself and are encrypted with TLS on port 443, so 443 is the only port that has to be open inbound on the host's public IP address for administrators working from home; RDP 3389 and SSH 22 are used on the hop from the host to the target machine, not by the client against the host.",
+				"perChoice": {
+					"slot1:b": "Giving the spoke machines public IP addresses would expose them directly to the internet and bypass the centralized remote access setup; the requirement is to reach them over their private addresses through the existing host.",
+					"slot1:c": "A second host would give the team a working setup, but it contradicts the stated goal of running a single remote access setup and adds another resource to maintain and another set of hourly charges, since one deployment can serve several linked networks.",
+					"slot1:d": "The subnet reserved for the host must sit in the same virtual network as the host and may hold no other resources; it cannot be widened to swallow an address range that belongs to a different virtual network, and that range belongs to a separate network that must be linked instead.",
+					"slot2:b": "Port 3389 is the RDP port that the host opens toward the target machine; it is not the port that clients use against the host's public IP address.",
+					"slot2:c": "Port 22 is the SSH port that the host uses toward the target machine; client connections terminate on the host over TLS instead.",
+					"slot2:d": "Port 80 carries unencrypted web traffic and is not used by Azure Bastion; both the browser-based client and the native client connect to the host over TLS on 443."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/bastion-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/configuration-settings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/tutorial-create-host-portal"
+				}
+			],
+			"subtopics": [
+				"bastion-peering",
+				"bastion-network-requirements",
+				"bastion-client-connection"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HGQKKP0Z8SXKMAXH9YVJRT",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a dedicated Azure Bastion host named hub-bastion-01 in the virtual network Contoso-Hub-VNet, where the workload virtual machines, including WinSrv01, are reachable only over their private addresses. Administrators start their remote sessions from the office and from home, either in the Azure portal or with the remote desktop software already installed on their laptops. Sessions started in the office reach the host but the session window to WinSrv01 never opens, while sessions started at home cannot reach the host at all. The network team has attached one network security group to the AzureBastionSubnet and another one to the network interface of WinSrv01, and the inbound rules currently configured on them are listed below. You need administrators to open sessions to WinSrv01. Which rule should the network team add to each of the two network security groups?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Network security group",
+						"Attached to",
+						"Inbound rules in place"
+					],
+					"rows": [
+						[
+							"nsg-bastion",
+							"AzureBastionSubnet",
+							"Allow all inbound from 192.168.50.0/24 (office range); DenyAllInbound"
+						],
+						[
+							"nsg-winsrv01",
+							"Network interface of WinSrv01",
+							"Allow all inbound from 192.168.50.0/24 (office range); DenyAllInbound"
+						]
+					]
+				},
+				"statement": "To restore those sessions, the network team should add {{bastionRule}} to the network security group on the AzureBastionSubnet and {{vmRule}} to the network security group on the network interface of WinSrv01.",
+				"slots": [
+					{
+						"id": "bastionRule",
+						"options": [
+							{
+								"id": "a",
+								"text": "Allow inbound TCP 443 from the Internet"
+							},
+							{
+								"id": "b",
+								"text": "Allow inbound TCP 3389 from the Internet"
+							},
+							{
+								"id": "c",
+								"text": "Allow inbound TCP 22 from the Internet"
+							},
+							{
+								"id": "d",
+								"text": "Allow inbound TCP 80 from the Internet"
+							}
+						]
+					},
+					{
+						"id": "vmRule",
+						"options": [
+							{
+								"id": "a",
+								"text": "Allow inbound TCP 3389 from the virtual network"
+							},
+							{
+								"id": "b",
+								"text": "Allow inbound TCP 22 from the virtual network"
+							},
+							{
+								"id": "c",
+								"text": "Allow inbound TCP 443 from the Internet"
+							},
+							{
+								"id": "d",
+								"text": "Allow inbound TCP 80 from the Internet"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"bastionRule": "a",
+				"vmRule": "a"
+			},
+			"explanation": {
+				"correct": "A remote session to a virtual machine travels over two hops. On the first hop the administrator's browser or native client contacts the bastion host's public address, and that connection is encrypted with TLS on port 443, so the network security group on the AzureBastionSubnet must allow inbound TCP 443 from the Internet; without it, sessions started outside the office range never reach the host. On the second hop the host opens the remote desktop session to WinSrv01 over the private addresses of the virtual network, which requires inbound TCP 3389 (the default RDP port for Windows targets) from the virtual network on the network security group attached to the target's network interface. The current rules on both groups only admit the office range, which explains why home sessions fail before reaching the host and why office sessions never get a window to WinSrv01.",
+				"perChoice": {
+					"bastionRule:b": "The desktop protocol port is used on the hop from the host to the target machine inside the virtual network, not on the hop where remote users contact the host over the Internet, so opening it to the Internet is unnecessary and exposes the target's protocol directly.",
+					"bastionRule:c": "Port 22 carries SSH sessions to a target machine; users do not open a session straight to the host with SSH, and the encrypted channel to the host is established on port 443.",
+					"bastionRule:d": "Port 80 serves unencrypted HTTP and is not the port used for the encrypted remote access channel to the host, which runs over TLS on port 443.",
+					"vmRule:b": "Port 22 opens an SSH session, but WinSrv01 is a Windows machine reached with remote desktop, which listens on port 3389 by default.",
+					"vmRule:c": "Port 443 is the port remote users use to reach the host itself; it is not the port the host uses to open a session to the target machine, and WinSrv01 has no public address of its own.",
+					"vmRule:d": "Port 80 is plain HTTP and is not used for the hop from the host to WinSrv01, which carries remote desktop traffic on port 3389 over the private addresses of the virtual network."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/bastion-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/configuration-settings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/tutorial-create-host-portal"
+				}
+			],
+			"subtopics": [
+				"network-security-groups",
+				"connection-ports"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HGSBQGQHA2GDB23KB7SK0S",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are creating the very first Azure Bastion resource in the hub virtual network Contoso-Hub-VNet, so that the operations team can open RDP and SSH sessions to the workload virtual machines over their private addresses. You already prepared a subnet for the deployment, but the deployment is rejected with a validation error that points at the subnet you selected. The network layout as it stands today is shown below. Which change should the network team make before you run the deployment again?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Virtual network",
+							"Contoso-Hub-VNet"
+						],
+						[
+							"Resource group holding Contoso-Hub-VNet",
+							"rg-hub-networking"
+						],
+						[
+							"Resource group planned for the Azure Bastion resource",
+							"rg-hub-networking"
+						],
+						[
+							"Subnet selected for the deployment",
+							"WorkloadSubnet"
+						],
+						[
+							"Address range of that subnet",
+							"10.1.1.0/27"
+						],
+						[
+							"Date that subnet was created",
+							"14 March 2026"
+						],
+						[
+							"Resources currently in that subnet",
+							"vm-app01 (Linux), vm-app02 (Windows), nsg-app01"
+						]
+					]
+				},
+				"statement": "Before you run the deployment again, the network team should {{fix}}.",
+				"slots": [
+					{
+						"id": "fix",
+						"options": [
+							{
+								"id": "a",
+								"text": "create a new empty subnet named AzureBastionSubnet with a /26 address range in Contoso-Hub-VNet"
+							},
+							{
+								"id": "b",
+								"text": "rename the prepared subnet to AzureBastionSubnet and leave it with a /27 address range in Contoso-Hub-VNet"
+							},
+							{
+								"id": "c",
+								"text": "create a new subnet named AzureBastionSubnet with a /26 address range in Contoso-Hub-VNet that also holds the workload virtual machines and the network security group"
+							},
+							{
+								"id": "d",
+								"text": "create a new empty subnet named AzureBastionSubnet with a /27 address range in Contoso-Hub-VNet"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"fix": "a"
+			},
+			"explanation": {
+				"correct": "A dedicated deployment needs a subnet that is named exactly AzureBastionSubnet, sits in the same virtual network and the same resource group as the Azure Bastion resource, contains nothing but the host, and is /26 or larger for any host deployed now. The subnet that was prepared is named WorkloadSubnet, is only a /27 created in March 2026, and already holds two virtual machines and a network security group, so it fails on the name, the size and the contents. Creating a new, empty AzureBastionSubnet with a /26 address range in Contoso-Hub-VNet (placed in rg-hub-networking, the same resource group as the planned resource) meets every requirement and leaves the workload virtual machines exactly where they are.",
+				"perChoice": {
+					"fix:b": "Renaming the prepared subnet gives it the required name, but it stays a /27, which is below the /26 minimum that applies to any Azure Bastion deployed after 2 November 2021, and it would still contain the two workload virtual machines and the network security group, which may not sit in the host's subnet.",
+					"fix:c": "The name and the /26 range are right, but the host's subnet must contain no other resources, so leaving the workload virtual machines and the network security group inside it would still fail validation.",
+					"fix:d": "The name and the empty subnet are right, but a /27 is smaller than the /26 minimum that applies to a host deployed after 2 November 2021, so the deployment would continue to be rejected."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/configuration-settings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/bastion-overview"
+				}
+			],
+			"subtopics": [
+				"bastion-subnet-requirements",
+				"bastion-deployment-prerequisites"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HGWB580BTCZKMNRHB472ZK",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "An engineer opens the Connect > Bastion pane of WinSrv01 in Contoso-Hub-VNet and picks the entry that prepares the host for you with the values the platform derives from the virtual network, rather than specifying every setting by hand. The change board wants to know what this entry puts in place and how long the work takes. Which statement correctly describes the outcome?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Entry in the Connect > Bastion pane",
+						"What the entry does"
+					],
+					"rows": [
+						[
+							"Deploy Bastion",
+							"Prepares a host for you with the values the platform derives from the virtual network"
+						],
+						[
+							"Configure manually",
+							"Lets you specify the tier, instance count, availability zones and the other settings yourself"
+						],
+						[
+							"Developer",
+							"A no-cost option for development and testing with limited features"
+						]
+					]
+				},
+				"statement": "Choosing that entry gives the team {{outcome}}.",
+				"slots": [
+					{
+						"id": "outcome",
+						"options": [
+							{
+								"id": "a",
+								"text": "a Standard tier host in the virtual network, and the deployment takes roughly 10 minutes"
+							},
+							{
+								"id": "b",
+								"text": "a Standard tier host in the virtual network, and the deployment takes just a few seconds"
+							},
+							{
+								"id": "c",
+								"text": "a Basic tier host in the virtual network, and the deployment takes roughly 10 minutes"
+							},
+							{
+								"id": "d",
+								"text": "a host built from WinSrv01 in the virtual network, and the deployment takes roughly 10 minutes"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"outcome": "a"
+			},
+			"explanation": {
+				"correct": "The entry named Deploy Bastion performs a one-click deployment that provisions the Standard SKU with default settings taken from the virtual network, and a deployment of this kind takes roughly 10 minutes to complete. After it is up, the tier and the other settings can still be adjusted or the SKU upgraded. WinSrv01 is merely where the pane was opened: that virtual machine is not part of the Bastion configuration and never becomes a bastion host.",
+				"perChoice": {
+					"outcome:b": "A deployment of this kind takes roughly 10 minutes; the few-seconds figure belongs to the Developer entry, which is deployed on shared infrastructure for a single virtual machine in supported regions.",
+					"outcome:c": "The one-click path provisions the Standard SKU. Basic is a dedicated tier with fixed capacity that lacks the native client, file transfer and custom ports, and it is not what this entry creates.",
+					"outcome:d": "The virtual machine the pane was opened from is only the starting point: it is not part of the Bastion configuration and does not turn into a bastion host, so the host is a separate Bastion resource in the virtual network."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/tutorial-create-host-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/bastion-overview"
+				}
+			],
+			"subtopics": [
+				"bastion-deployment-options",
+				"bastion-skus"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HGZN4PVZV6SMK05A3S9Z61",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your team runs a dedicated Azure Bastion host in the hub virtual network Contoso-Hub-VNet, and administrators open RDP and SSH sessions to the workload virtual machines over their private addresses. Two items are on your list this week: the security team wants the workload virtual machines to stop being reachable directly from the internet, and the finance team asked why the subscription still shows charges for this host in a period during which nobody opened a session. Which change should your team make to the workload virtual machines, and what should you tell finance?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Current configuration"
+					],
+					"rows": [
+						[
+							"Bastion host",
+							"hub-bastion-01, Standard tier, dedicated deployment in Contoso-Hub-VNet"
+						],
+						[
+							"Bastion host public IP address",
+							"pip-hub-bastion, Standard SKU, Static allocation method"
+						],
+						[
+							"WinSrv01",
+							"Public IP address pip-win01 attached to network interface nic-win01"
+						],
+						[
+							"Bastion sessions opened in the last 30 days",
+							"0"
+						]
+					]
+				},
+				"statement": "The security team should {{publicIpChange}}, and finance should be told that {{billingReason}}.",
+				"slots": [
+					{
+						"id": "publicIpChange",
+						"options": [
+							{
+								"id": "a",
+								"text": "dissociate the public IP address from the network interface of the workload virtual machines and then delete the public IP resource"
+							},
+							{
+								"id": "b",
+								"text": "delete the public IP resource of the workload virtual machines and let the network interface release the address on its own"
+							},
+							{
+								"id": "c",
+								"text": "delete the public IP address that the bastion host uses, because the workload virtual machines are reached over their private addresses"
+							},
+							{
+								"id": "d",
+								"text": "change the allocation method of the public IP address of the workload virtual machines from Static to Dynamic and keep it attached"
+							}
+						]
+					},
+					{
+						"id": "billingReason",
+						"options": [
+							{
+								"id": "a",
+								"text": "the host is charged hourly since creation, and the charge continues for as long as the resource exists"
+							},
+							{
+								"id": "b",
+								"text": "the host is charged per session from the first connection, and the charge stops when the last session is closed"
+							},
+							{
+								"id": "c",
+								"text": "the host is charged once a month from the first session, and the charge continues for as long as the resource exists"
+							},
+							{
+								"id": "d",
+								"text": "the host is charged only for outbound traffic, and the charge stops when no data is transferred"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"publicIpChange": "a",
+				"billingReason": "a"
+			},
+			"explanation": {
+				"correct": "Once the host is in place, the workload machines are reached over their private addresses, so any direct internet address on them is no longer needed; the documented way to clear it is to break the link between the address and the network interface first and only afterwards delete the public IP resource. The cost question has a similar root cause, because the price is driven by the resource rather than by usage: the hourly charge for the host starts as soon as the host exists, adds outbound data transfer costs, and keeps accruing for as long as the resource exists whether or not anyone connects. Only removing the host (and its resource group) stops the charges.",
+				"perChoice": {
+					"publicIpChange:b": "Deleting the public IP resource while it is still bound to the network interface does not clear the address from the machine. The link between the address and the interface has to be broken first, and only after that can the public IP resource be deleted.",
+					"publicIpChange:c": "The public IP address on the bastion host is what lets remote administrators reach the host itself. A dedicated deployment needs an address of Standard SKU with a Static allocation method, so removing it breaks the remote access path, and it does nothing to the workload machines.",
+					"publicIpChange:d": "Switching the allocation method changes how an address is assigned, but the address stays bound to the network interface, so the machine remains directly reachable from the internet.",
+					"billingReason:b": "The cost of the host does not depend on open connections. The hourly charge and the outbound data transfer charge keep accruing whether or not administrators connect, so closing the last session does not stop them.",
+					"billingReason:c": "Charges are accumulated per hour for the running host rather than billed as one amount per month, and they apply even when no session has ever been opened.",
+					"billingReason:d": "Outbound data transfer is only part of the price. The hourly charge for the host applies from the moment the host exists and does not fall to zero when no traffic moves."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/tutorial-create-host-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/bastion-overview"
+				}
+			],
+			"subtopics": [
+				"bastion-public-ip-cleanup",
+				"bastion-billing"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6HH3Y67662PN3HZJP3F2TGW",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are helping a product team set up remote access to a Linux virtual machine in Fabrikam-Dev-VNet through Azure Bastion, ahead of a production rollout that has not been approved yet. The team's plan for this phase is shown below. You need to recommend the tier to deploy for this phase, the way the team opens its sessions while the rollout is pending, and the number of machines that setup can serve at the same time.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Plan item",
+						"Detail"
+					],
+					"rows": [
+						[
+							"Environment",
+							"Fabrikam-Dev-VNet, proof of concept ahead of the production rollout"
+						],
+						[
+							"Workload to reach in this phase",
+							"lin-dev-01 (Linux)"
+						],
+						[
+							"Spend for the remote access host in this phase",
+							"No charge is acceptable"
+						],
+						[
+							"Needed once the rollout is approved",
+							"Several production machines, the client software on the administrators' laptops, file transfer, and links that let a colleague reach a machine without signing in to the portal"
+						]
+					]
+				},
+				"statement": "You should deploy the {{tier}} tier for this phase, the team will open its sessions with {{conn}}, and the setup can serve {{capacity}}.",
+				"slots": [
+					{
+						"id": "tier",
+						"options": [
+							{
+								"id": "a",
+								"text": "Developer"
+							},
+							{
+								"id": "b",
+								"text": "Basic"
+							},
+							{
+								"id": "c",
+								"text": "Standard"
+							},
+							{
+								"id": "d",
+								"text": "Premium"
+							}
+						]
+					},
+					{
+						"id": "conn",
+						"options": [
+							{
+								"id": "a",
+								"text": "the browser-based client in the portal"
+							},
+							{
+								"id": "b",
+								"text": "the native SSH client on the laptop signed in with Microsoft Entra ID"
+							},
+							{
+								"id": "c",
+								"text": "a shareable link that a recipient opens without signing in to the portal"
+							},
+							{
+								"id": "d",
+								"text": "the native SSH client on the laptop with file transfer"
+							}
+						]
+					},
+					{
+						"id": "capacity",
+						"options": [
+							{
+								"id": "a",
+								"text": "one virtual machine at a time"
+							},
+							{
+								"id": "b",
+								"text": "two virtual machines at a time"
+							},
+							{
+								"id": "c",
+								"text": "every virtual machine in the virtual network"
+							},
+							{
+								"id": "d",
+								"text": "as many virtual machines as the instance count allows"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"tier": "a",
+				"conn": "a",
+				"capacity": "a"
+			},
+			"explanation": {
+				"correct": "The plan is a proof of concept in which no charge for the remote access host is acceptable, which points to the free Developer tier, and that tier runs on shared infrastructure that is intended for development and testing work and can later be moved to a paid tier. Because the Developer offering is a shared one, it works with a single virtual machine at a time, and the only way to open a session is the browser-based client in the portal: the native client, file transfer and shareable links are capabilities of the paid tiers, so the team will pick those up when the rollout phase arrives.",
+				"perChoice": {
+					"tier:b": "Basic is a dedicated deployment that is billed hourly, so it fails the requirement that no charge is acceptable during this phase; it also lacks the native client and shareable links that the rollout phase will need.",
+					"tier:c": "Standard is a dedicated, billable tier, so it also fails the no-charge requirement for this phase, even though it is the tier that would supply the native client, file transfer and shareable links later on.",
+					"tier:d": "Premium is a dedicated, billable tier that adds session recording and a deployment without a public IP address, so it does not meet the requirement of no charge during this phase.",
+					"conn:b": "The native client is available with the Standard and Premium tiers only; the tier chosen for this phase offers the portal client alone.",
+					"conn:c": "Shareable links require the Standard tier or higher, so a recipient cannot be given such a link with the free tier used in this phase.",
+					"conn:d": "File transfer through the native client is a paid-tier capability, so it cannot be used with the free tier selected here.",
+					"capacity:b": "The shared, free tier reaches a single virtual machine at a time, so two simultaneous sessions are not supported.",
+					"capacity:c": "Reaching every machine in the virtual network at once is a property of the dedicated tiers; the shared tier works with one machine at a time.",
+					"capacity:d": "Choosing an instance count applies to the dedicated tiers, where Basic creates two instances and Standard or higher lets you pick the number of scale units; the shared tier has no instance count setting and stays with a single machine."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/bastion-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/configuration-settings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/bastion/tutorial-create-host-portal"
+				}
+			],
+			"subtopics": [
+				"bastion-skus",
+				"connection-methods",
+				"developer-tier"
+			],
+			"reviewed": false
+		}
+	]
+}
