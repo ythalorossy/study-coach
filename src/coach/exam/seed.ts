@@ -279,6 +279,8 @@ export const SKILLS: [id: string, specialist: SpecialistId, name: string, docUrl
 			`${S}/files/storage-files-introduction`,
 			`${S}/files/create-classic-file-share`,
 			`${S}/files/storage-files-planning`,
+			`${S}/files/storage-how-to-use-files-windows`,
+			"https://learn.microsoft.com/en-us/azure/backup/backup-azure-files",
 		],
 	],
 	[
@@ -524,6 +526,7 @@ export const SKILLS: [id: string, specialist: SpecialistId, name: string, docUrl
 			`${AS}/overview`,
 			`${AS}/getting-started`,
 			`${AS}/configure-common`,
+			`${AS}/overview-managed-identity`,
 		],
 	],
 	[
@@ -543,6 +546,7 @@ export const SKILLS: [id: string, specialist: SpecialistId, name: string, docUrl
 		[
 			`${AS}/app-service-web-tutorial-custom-domain`,
 			`${AS}/manage-custom-dns-migrate-domain`,
+			`${AS}/configure-ssl-certificate`,
 		],
 	],
 	[
