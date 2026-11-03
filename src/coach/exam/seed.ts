@@ -581,6 +581,7 @@ export const SKILLS: [id: string, specialist: SpecialistId, name: string, docUrl
 			`${N}/virtual-networks-overview`,
 			`${N}/manage-virtual-network`,
 			`${N}/virtual-network-manage-subnet`,
+			`${N}/ip-services/default-outbound-access`,
 		],
 	],
 	[

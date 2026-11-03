@@ -537,6 +537,1179 @@
 				"network-interfaces"
 			],
 			"reviewed": false
+		},
+		{
+			"id": "q_01M67ZHPYWD8N9ZH8FSDSMSVKB",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You administer the five subnets of the virtual network `corp-vnet` in East US 2 (subscription Contoso-Prod). The exhibit shows what each subnet holds today, and one request has been raised per subnet. For every request, drag the Azure setting or feature that delivers it into the matching slot.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Subnet",
+						"Subnet range",
+						"What it holds today"
+					],
+					"rows": [
+						[
+							"edge-snet",
+							"10.20.5.0/24",
+							"Two machines that terminate inbound traffic coming from the internet"
+						],
+						[
+							"web-snet",
+							"10.20.6.0/24",
+							"Three tiers of application machines"
+						],
+						[
+							"int-snet",
+							"10.20.4.0/24",
+							"Empty; reserved for a workload family that has not been deployed yet"
+						],
+						[
+							"ops-snet",
+							"10.20.3.0/24",
+							"Machines that today receive no default path to the internet"
+						],
+						[
+							"dmz-snet",
+							"10.20.2.0/24",
+							"Perimeter workloads that partners connect to"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Route table"
+					},
+					{
+						"id": "b",
+						"text": "Network security group"
+					},
+					{
+						"id": "c",
+						"text": "Subnet delegation"
+					},
+					{
+						"id": "d",
+						"text": "Private Subnet (Preview)"
+					},
+					{
+						"id": "e",
+						"text": "Add IPv6 address space"
+					},
+					{
+						"id": "f",
+						"text": "Network policy for private endpoints"
+					},
+					{
+						"id": "g",
+						"text": "NAT gateway"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "edge-snet — traffic leaving this subnet must be handed to a virtual appliance that inspects and forwards it instead of taking the most direct path to its destination."
+					},
+					{
+						"id": "s2",
+						"label": "web-snet — traffic flowing between the subnets that hold the three application tiers must be allowed or blocked by source IP, destination IP, port, and protocol."
+					},
+					{
+						"id": "s3",
+						"label": "int-snet — one Azure product must be able to place the objects it needs inside this subnet and have Azure manage them on that product's behalf."
+					},
+					{
+						"id": "s4",
+						"label": "ops-snet — machines created in this subnet must not come up with any default path to the internet; the team wants that absence to be a property of the subnet itself rather than left to chance."
+					},
+					{
+						"id": "s5",
+						"label": "dmz-snet — the perimeter tier has to hold resources that speak both IP versions; the extra version must be enabled once for the whole subnet instead of per resource."
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d",
+				"s5": "e"
+			},
+			"explanation": {
+				"correct": "Each request is met by a different subnet-level control. The edge subnet needs explicit next hops so that outbound packets are handed to an appliance, which is what a route table provides. The application subnet needs rule-based allow/deny by source and destination IP, port, and protocol, which is the job of a network security group. The integration subnet must be handed to one product that then creates and owns its own resources there, which is subnet delegation. The operations subnet must be created so that new machines get no default path out, which is the private subnet option. The perimeter subnet must carry both IP versions for the whole subnet at once, which is adding an IPv6 address space. The remaining two candidates solve problems no request raises here.",
+				"perChoice": {
+					"a": "This belongs in the edge-snet slot: a route table overrides the default next hop for traffic leaving a subnet, so packets can be handed to a virtual appliance that inspects and forwards them.",
+					"b": "This belongs in the web-snet slot: a network security group is the rule-based allow/deny control that filters traffic inside the virtual network by source and destination IP, port, and protocol.",
+					"c": "This belongs in the int-snet slot: subnet delegation gives one product permission to create and own its own resources in the subnet during deployment, which is what the integration team asked for.",
+					"d": "This belongs in the ops-snet slot: the private subnet option blocks default outbound access for new virtual machines, so machines created in the subnet come up with no default path to the internet.",
+					"e": "This belongs in the dmz-snet slot: adding an IPv6 address space to the subnet enables the second IP version for the whole subnet, which is what the perimeter tier needs; keep in mind that not every product supports IPv6 yet.",
+					"f": "This fits none of the requests: it extends the rule set and next-hop rules already attached to a subnet to privately addressed resources placed in it, and no request in this exercise concerns those resources.",
+					"g": "This fits none of the requests: it supplies an explicit outbound path for machines in a subnet that has none, whereas the ops-snet request asks for the opposite — that new machines receive no default path out."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-subnet"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-virtual-network"
+				}
+			],
+			"subtopics": [
+				"subnet-settings",
+				"traffic-control",
+				"outbound-access"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M67ZW74D7BDPYHEC0P8GQAK8",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You administer hub-vnet in East US 2 (subscription Contoso-Prod), where the reporting application runs, and the exhibit lists the environments and targets that have to connect to it. You need each of the six requests to be satisfied by exactly one of the options listed. Drag each option into the slot that states the request it satisfies.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Environment or target          | Current state\n------------------------------|----------------------------------------------------------------\nDeveloper laptops              | 8 staff working from home and on the road, without corporate hardware\nContoso head-office LAN        | 180 devices; the edge appliance on the perimeter supports IPsec tunnels\nContoso datacenter network     | A private circuit is contracted with a service provider\npartner-vnet in another region | Hosts the partner's application\nSQL database contosodl         | Queried by the reporting application that runs in hub-vnet\nStorage account contosodata    | Reachable today over its public address from any network"
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Point-to-site VPN"
+					},
+					{
+						"id": "b",
+						"text": "Site-to-site VPN"
+					},
+					{
+						"id": "c",
+						"text": "Azure ExpressRoute"
+					},
+					{
+						"id": "d",
+						"text": "Virtual network peering"
+					},
+					{
+						"id": "e",
+						"text": "Azure Private Link"
+					},
+					{
+						"id": "f",
+						"text": "Service endpoints"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Give one developer laptop encrypted access into the virtual network, with no change needed at the office"
+					},
+					{
+						"id": "s2",
+						"label": "Connect the whole on-premises office network with the cloud through an encrypted tunnel that starts at the edge appliance"
+					},
+					{
+						"id": "s3",
+						"label": "Extend the on-premises datacenter network into the cloud over a partner circuit that never carries traffic across the internet"
+					},
+					{
+						"id": "s4",
+						"label": "Let resources in partner-vnet and hub-vnet exchange traffic directly over the Azure backbone, even though the two sit in different regions"
+					},
+					{
+						"id": "s5",
+						"label": "Reach a single instance of the reporting database over an internal address that is never exposed to the internet"
+					},
+					{
+						"id": "s6",
+						"label": "Keep the storage account on its public address while accepting traffic only from inside the virtual network"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d",
+				"s5": "e",
+				"s6": "f"
+			},
+			"explanation": {
+				"correct": "The developer laptop request is met by a point-to-site VPN, the whole head-office LAN request by a site-to-site VPN, the datacenter request by Azure ExpressRoute (a private partner circuit that never uses the internet), the partner environment request by virtual network peering across regions, the reporting database request by Azure Private Link on a fully private address, and the storage account request by service endpoints, which keep the account on its public address while restricting it to the virtual network.",
+				"perChoice": {
+					"a": "This belongs with the developer-laptop request: a point-to-site VPN gives a single computer encrypted access to the virtual network with few or no changes to the local network, which is exactly what travelling staff without corporate hardware need.",
+					"b": "This belongs with the head-office request: a site-to-site VPN connects the whole on-premises network, through the on-premises VPN device, to an Azure VPN gateway in the virtual network, so all 180 office devices reach Azure over one encrypted tunnel.",
+					"c": "This belongs with the datacenter request: ExpressRoute is a private circuit provided by a partner that never carries the traffic over the internet, which is what the contracted private circuit provides.",
+					"d": "This belongs with the partner request: peering links two virtual networks in the same or different regions so resources on either side can communicate directly, without any on-premises VPN involved.",
+					"e": "This belongs with the reporting database request: Private Link exposes a single instance of a service on a fully private IP, so the database is reached on an address that is never exposed to the internet.",
+					"f": "This belongs with the storage account request: service endpoints keep the service on its public endpoint and restrict it to the virtual network, after which subnet access is additionally enabled on the storage account itself."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-subnet"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-virtual-network"
+				}
+			],
+			"subtopics": [
+				"vnet-connectivity",
+				"hybrid-connectivity",
+				"private-service-access"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6805RCSC5KQ732K7F9AM6VF",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have the draft address plan for a new virtual network, `pay-vnet`, that the Contoso platform team will build in West Europe (subscription Contoso-Prod). The IPAM team has allocated the IPv4 address space `10.60.0.0/16` for it, and each of the four application tiers will run in its own subnet. The exhibit lists how many virtual machines every tier runs today and how many it has to support at its peak. You need one address range per subnet so that Azure accepts every range in the plan, no two subnets overlap, and each tier still has room to grow. Which address range should you assign to each subnet? Drag the range into the matching slot.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Draft subnet plan for pay-vnet (allocated address space 10.60.0.0/16)\n\nTier          Subnet name         Machines today   Machines at peak\n------------  ------------------  ---------------  ----------------\nWeb           web-snet           50               90\nApplication   app-snet           15               45\nData          data-snet           6               10\nIntegration   integration-snet    8               12\n"
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "10.60.1.0/24"
+					},
+					{
+						"id": "i2",
+						"text": "10.60.2.0/26"
+					},
+					{
+						"id": "i3",
+						"text": "10.60.3.0/28"
+					},
+					{
+						"id": "i4",
+						"text": "10.60.4.0/27"
+					},
+					{
+						"id": "i5",
+						"text": "10.70.1.0/24"
+					},
+					{
+						"id": "i6",
+						"text": "169.254.40.0/24"
+					},
+					{
+						"id": "i7",
+						"text": "10.60.9.0/29"
+					},
+					{
+						"id": "i8",
+						"text": "224.0.0.0/4"
+					}
+				],
+				"slots": [
+					{
+						"id": "web",
+						"label": "Web tier subnet"
+					},
+					{
+						"id": "application",
+						"label": "Application tier subnet"
+					},
+					{
+						"id": "data",
+						"label": "Data tier subnet"
+					},
+					{
+						"id": "integration",
+						"label": "Integration tier subnet"
+					}
+				]
+			},
+			"key": {
+				"application": "i2",
+				"data": "i3",
+				"integration": "i4",
+				"web": "i1"
+			},
+			"explanation": {
+				"correct": "Each subnet range must sit inside the allocated space 10.60.0.0/16, must not overlap any other subnet range, and must hold the tier's peak number of virtual machines with room to grow. Azure reserves five addresses in every subnet (the first and the last plus three for Azure services), so a /24 leaves 251 usable addresses, a /26 leaves 59, a /27 leaves 27 and a /28 leaves 11. That fixes the placement uniquely: the web tier (90 machines at peak) can only take the /24, the application tier (45 at peak) the /26, the data tier (10 at peak) the /28 and the integration tier (12 at peak) the /27, and none of those ranges overlap each other.",
+				"perChoice": {
+					"i1": "Correct for the Web tier subnet: the range lies inside 10.60.0.0/16, does not overlap the other three subnet ranges, and after the five addresses Azure reserves it still offers 251 usable addresses, comfortably covering the 90 virtual machines the tier must run at peak.",
+					"i2": "Correct for the Application tier subnet: the range is inside the allocated space and does not overlap the other subnets, and its 59 usable addresses cover the 45 machines the tier needs at peak while leaving growth headroom.",
+					"i3": "Correct for the Data tier subnet: the range sits inside the allocated space and leaves 11 usable addresses once Azure's five reserved addresses are taken out, which covers the 10 machines the tier must run at peak.",
+					"i4": "Correct for the Integration tier subnet: the range is inside the allocated space, does not overlap the other subnet ranges, and its 27 usable addresses cover the 12 machines needed at peak.",
+					"i5": "This range lies in 10.70.0.0/16, outside the space the IPAM team allocated for this network, so it cannot be used for any of the four subnets even though its size would otherwise fit the web tier.",
+					"i6": "This falls inside 169.254.0.0/16, the link-local range, which Azure never allows in a virtual network's address space, so it fits none of the subnets.",
+					"i7": "A /29 is the smallest range Azure accepts, and only three of its eight addresses remain usable after Azure's five reserved addresses, which is far too few for any of the four tiers.",
+					"i8": "224.0.0.0/4 is the multicast range, which can never be added to a virtual network's address space, so it fits no subnet in this plan."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-subnet"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-virtual-network"
+				}
+			],
+			"subtopics": [
+				"subnet-address-planning",
+				"reserved-addresses",
+				"vnet-address-space"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M680AZN2FZ9S38AP90JP5BR1",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You administer the virtual network `contoso-vnet` (West Europe, subscription Contoso-Prod). The IPAM team has raised four requests about the IPv4 address space of that network; the exhibit shows what the network holds today. Drag the operation that satisfies each request into the matching slot.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Object",
+						"Current configuration"
+					],
+					"rows": [
+						[
+							"Virtual network contoso-vnet",
+							"IPv4 address space 10.80.0.0/16, plus 10.81.0.0/24"
+						],
+						[
+							"Subnet app",
+							"10.80.1.0/24, part of the 10.80.0.0/16 range, 6 virtual machines running"
+						],
+						[
+							"Subnet data",
+							"10.80.2.0/24, part of the 10.80.0.0/16 range, 3 virtual machines running"
+						],
+						[
+							"Subnet gateway",
+							"10.80.3.0/24, part of the 10.80.0.0/16 range, 1 VPN gateway"
+						],
+						[
+							"Subnet pilot",
+							"10.81.0.0/24, part of the 10.81.0.0/24 range, no virtual machines left"
+						],
+						[
+							"Peered virtual network partner-vnet",
+							"IPv4 address space 10.90.0.0/16"
+						],
+						[
+							"On-premises network",
+							"IPv4 address space 10.100.0.0/16"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Add a non-overlapping CIDR range"
+					},
+					{
+						"id": "b",
+						"text": "Widen the range to cover a larger block of addresses"
+					},
+					{
+						"id": "c",
+						"text": "Shrink the range only while it still covers every subnet range inside it"
+					},
+					{
+						"id": "d",
+						"text": "Delete every subnet in the range first, then remove the range"
+					},
+					{
+						"id": "e",
+						"text": "Create a separate virtual network and connect the two with peering"
+					},
+					{
+						"id": "f",
+						"text": "Move the subnets into a different virtual network and delete this one"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Reserve a range belonging to the staging environment, clear of the space that other networks already use"
+					},
+					{
+						"id": "s2",
+						"label": "Make much more room within the main range, keeping the subnets exactly where they sit today"
+					},
+					{
+						"id": "s3",
+						"label": "Reclaim the unused part of the main range; the running workloads must stay exactly where they are"
+					},
+					{
+						"id": "s4",
+						"label": "Take the pilot range out of service now that the pilot workload is decommissioned"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d"
+			},
+			"explanation": {
+				"correct": "All four requests are edits to the IPv4 address space of contoso-vnet itself. The staging environment needs a new range added to that address space, and a new range cannot overlap the ranges already defined in the network, the peered network (10.90.0.0/16) or the on-premises network (10.100.0.0/16). More room in the main range means extending that range, for example changing a /16 to a /8, which leaves every subnet where it is. Reclaiming unused space in the main range means decreasing it, and that is permitted only while the smaller range still includes the ranges of the subnets inside it, so the running workloads keep their addresses. Taking the pilot range out of service means removing it, and a range that still holds a subnet cannot be removed, so the subnet and any resources in it are deleted first.",
+				"perChoice": {
+					"a": "Fits the staging request: a new range is added to the address space of contoso-vnet, and it must not overlap the ranges already defined in that network, the peered network or the on-premises network, otherwise those networks can no longer be connected.",
+					"b": "Fits the request for more room: extending the main range, for example from /16 to /8, enlarges it without moving any subnet or workload. Decreasing the range would do the opposite of what is asked.",
+					"c": "Fits the request to reclaim unused space: the main range can be decreased only as long as the smaller range still includes the ranges of every subnet inside it, which is exactly what keeps the running workloads on the same addresses.",
+					"d": "Fits the request to retire the pilot range: a range that still holds a subnet cannot be removed, so the subnets and the resources in them are deleted first and only then is the range removed.",
+					"e": "Fits no slot: a second virtual network joined by peering gives the staging environment a separate address space, but these requests are changes to the address space of contoso-vnet, which is not being replaced here.",
+					"f": "Fits no slot: moving the subnets into a different virtual network relocates the workloads rather than editing the address space of contoso-vnet, and the requests keep the workloads on their current subnets."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-virtual-network"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-subnet"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-overview"
+				}
+			],
+			"subtopics": [
+				"vnet-address-space",
+				"subnet-address-planning"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M680NFHJQ45QA1FQJ4NYMH9R",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have the virtual network `corp-vnet` in East US 2 (subscription Contoso-Prod), whose IPv4 address space is 10.10.0.0/16 and which is peered with `partner-vnet` (10.90.0.0/16). The exhibit lists five change requests raised against that network and its subnets, and Azure refused every one of them. You need to tell the requester what caused each refusal so the request can be corrected. Drag the cause of each refusal into the matching slot.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"#",
+						"Change requested",
+						"What the requester saw"
+					],
+					"rows": [
+						[
+							"1",
+							"Add a subnet named `data` with the range 10.30.0.0/24 to `corp-vnet`.",
+							"The creation is refused."
+						],
+						[
+							"2",
+							"Change the name of the subnet `app` to `application-tier`.",
+							"The portal offers no editable field for the name, and the command returns an error."
+						],
+						[
+							"3",
+							"Remove the `Microsoft.Web/serverFarms` delegation from the subnet `web`.",
+							"The delegation stays in place; the App Service plan `web-plan` is still deployed in that subnet."
+						],
+						[
+							"4",
+							"Change the range of the subnet `db` from 10.10.3.0/24 to 10.10.3.0/22.",
+							"The update is refused; two virtual machines are running in that subnet."
+						],
+						[
+							"5",
+							"Delete the subnet `legacy`.",
+							"The deletion is refused even though the subnet holds no resources; the network is still peered with another virtual network and a gateway connection remains active."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "The range does not sit inside the address space that the virtual network covers."
+					},
+					{
+						"id": "i2",
+						"text": "The value fixed at creation time cannot be altered afterwards."
+					},
+					{
+						"id": "i3",
+						"text": "Resources of the service the subnet was delegated to are still deployed in it."
+					},
+					{
+						"id": "i4",
+						"text": "The subnet must be empty before its own address space can be altered."
+					},
+					{
+						"id": "i5",
+						"text": "Gateway connections, gateways, IP addresses, virtual network peerings, or an App Service Environment can block subnet operations."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Attempt 1 — add the `data` subnet"
+					},
+					{
+						"id": "s2",
+						"label": "Attempt 2 — rename the `app` subnet"
+					},
+					{
+						"id": "s3",
+						"label": "Attempt 3 — free the `web` subnet for another service"
+					},
+					{
+						"id": "s4",
+						"label": "Attempt 4 — widen the `db` subnet"
+					},
+					{
+						"id": "s5",
+						"label": "Attempt 5 — remove the `legacy` subnet"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "Each keyed placement pairs what the requester saw with the constraint that explains it. The new subnet range 10.30.0.0/24 falls outside corp-vnet's 10.10.0.0/16 space, and a subnet range must lie inside the address space of its virtual network (and must not overlap other ranges, which rules out the peer). A virtual network name and a subnet name are fixed when the resource is created and cannot be changed afterwards, so the `app` subnet cannot be renamed. A subnet delegation cannot be added or removed while resources of the delegated service are still deployed in the subnet, so `web-plan` has to be deleted before the `Microsoft.Web/serverFarms` delegation can be dropped. A subnet's address range can only be changed while the subnet is empty, and two virtual machines sit in `db`. Finally, adding, changing, or deleting a subnet can be blocked by gateway connections, gateways, IP addresses, virtual network peerings, and an App Service Environment, which is what stops the `legacy` deletion.",
+				"perChoice": {
+					"i1": "Belongs in Attempt 1: a subnet address range must lie inside the address space of its virtual network, and 10.30.0.0/24 is outside corp-vnet's 10.10.0.0/16 and does not overlap the peer either.",
+					"i2": "Belongs in Attempt 2: the virtual network name and the subnet name are chosen at creation and are immutable afterwards, so the `app` subnet cannot be renamed and must be replaced if a new name is required.",
+					"i3": "Belongs in Attempt 3: a delegation cannot be added or removed while resources of the delegated service are deployed in the subnet, so the App Service plan `web-plan` must be removed before the delegation can be dropped.",
+					"i4": "Belongs in Attempt 4: a subnet's address range can only be changed while the subnet holds no resources, so the two virtual machines in `db` must be moved or deleted first.",
+					"i5": "Belongs in Attempt 5: subnet creation, modification, and deletion can fail because of gateway connections, gateways, IP addresses, virtual network peerings, or an App Service Environment, and corp-vnet still has a peering and an active gateway connection even though `legacy` itself is empty."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-subnet"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-virtual-network"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-overview"
+				}
+			],
+			"subtopics": [
+				"subnet-troubleshooting",
+				"address-space-planning",
+				"subnet-naming-and-delegation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M680W6X3FT4V8G62GRDDKJAK",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are reworking name resolution for Contoso's virtual networks and the workloads that run in them. The exhibit lists the objects involved and the resolvers configured on them today. Drag the DNS configuration or the behaviour that satisfies each request into the matching slot.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Object",
+						"Type",
+						"Resolvers configured today"
+					],
+					"rows": [
+						[
+							"app-vnet",
+							"Virtual network (newly built)",
+							"none yet"
+						],
+						[
+							"corp-vnet",
+							"Virtual network",
+							"10.40.0.4, 10.40.0.5"
+						],
+						[
+							"hub-vnet",
+							"Virtual network",
+							"10.40.0.6, 10.40.0.7"
+						],
+						[
+							"finance-vnet",
+							"Virtual network",
+							"10.40.0.4, 10.40.0.8"
+						],
+						[
+							"web-01",
+							"Virtual machine in the app subnet of app-vnet",
+							"none yet (follows app-vnet)"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Default (Azure-provided) DNS"
+					},
+					{
+						"id": "i2",
+						"text": "Custom DNS with 10.40.0.4 and 10.40.0.5"
+					},
+					{
+						"id": "i3",
+						"text": "The DNS settings on the network interface, which take precedence over those of the virtual network"
+					},
+					{
+						"id": "i4",
+						"text": "The first server in the list that can be reached answers the query and the remaining servers are skipped"
+					},
+					{
+						"id": "i5",
+						"text": "A removal that applies only to the list of one virtual network, leaving the other lists untouched"
+					},
+					{
+						"id": "i6",
+						"text": "The DNS settings of the virtual network, which take precedence over those on the network interface"
+					},
+					{
+						"id": "i7",
+						"text": "The servers in the list are used in a rotating pattern so the load is spread across them"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "The names of resources that run inside `app-vnet` must resolve with no setup, and the team does not want to stand up any name-resolution infrastructure of its own."
+					},
+					{
+						"id": "s2",
+						"label": "Names of resources that run in `hub-vnet` must be resolvable from `corp-vnet`."
+					},
+					{
+						"id": "s3",
+						"label": "The virtual machine `web-01` must reach the corporate resolver 10.40.0.53 even though `app-vnet` keeps the built-in ones."
+					},
+					{
+						"id": "s4",
+						"label": "The two resolvers configured on `hub-vnet` must be consulted in the sequence they were entered, never in a changing order."
+					},
+					{
+						"id": "s5",
+						"label": "The resolver 10.40.0.4 must stop being used by `finance-vnet`, while `corp-vnet` and everything else that depends on it must keep working through it."
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "The Azure-provided resolver handles names for resources connected to a single virtual network and needs no infrastructure of your own, so it fits app-vnet, which only has to resolve its own names (i1). The Azure-provided resolver cannot look up names in another virtual network, so corp-vnet must use custom DNS pointing at the corporate resolvers 10.40.0.4 and 10.40.0.5 to reach names in hub-vnet (i2). A network interface can carry its own DNS settings, and those override the ones set on the virtual network, so web-01 must carry 10.40.0.53 itself while app-vnet stays on the built-in ones (i3). Custom DNS servers are consulted in the order they appear in the list, not round-robin, so on hub-vnet the first reachable server answers and the others are skipped (i4). Deleting a resolver from one virtual network's list only removes it there; it stays registered with Azure for the other virtual networks that use it, so removing 10.40.0.4 from finance-vnet leaves corp-vnet working (i5).",
+				"perChoice": {
+					"i1": "Correct for app-vnet. The Azure-provided service registers resource names and private IP addresses automatically and resolves names between resources connected to the same virtual network, with no servers of your own to run, which is exactly what the request asks for.",
+					"i2": "Correct for corp-vnet. The built-in resolver cannot resolve names across virtual networks, so the corporate resolvers 10.40.0.4 and 10.40.0.5 have to be configured as custom DNS on the network for names in hub-vnet to resolve.",
+					"i3": "Correct for web-01. When a network interface has its own DNS server settings they take precedence over the settings configured on the virtual network, so the interface can use 10.40.0.53 while app-vnet keeps the built-in ones.",
+					"i4": "Correct for hub-vnet. Servers configured as custom DNS are used in the order they were entered; they do not work as a rotating set, so the first reachable server in the list handles the query and the remaining servers are not tried.",
+					"i5": "Correct for finance-vnet. Removing an address from the server list of a virtual network removes it only from that network's list; it stays registered with Azure for the other virtual networks that use it, so corp-vnet keeps resolving through 10.40.0.4.",
+					"i6": "This reverses the actual behaviour: the settings held on a network interface override those of the virtual network, not the other way round, so it satisfies none of the requests.",
+					"i7": "Servers listed as custom DNS are not used in a rotating pattern; they are consulted in the order they were entered, so this satisfies none of the requests."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-virtual-network"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-overview"
+				}
+			],
+			"subtopics": [
+				"dns-configuration",
+				"name-resolution",
+				"virtual-network-settings"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M680ZMJSJRAF0QG02964B78H",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You administer the virtual network `hub-vnet` in the Contoso-Prod subscription in East US 2. Today the network carries a single IPv4 range and holds two running subnets, and the Contoso partner team plans to peer `partner-vnet` into it next quarter, so `hub-vnet` has to carry a second range that will not clash with the space the partner network occupies. IPAM has offered two candidate ranges for that second range, and the change must leave the range already in place along with both subnets. Which Azure CLI command should you run?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"hub-vnet\": {\n    \"resourceGroup\": \"Contoso-Prod\",\n    \"location\": \"eastus2\",\n    \"addressSpace\": { \"addressPrefixes\": [ \"10.20.0.0/16\" ] },\n    \"subnets\": [\n      { \"name\": \"app\", \"addressPrefix\": \"10.20.1.0/24\" },\n      { \"name\": \"gateway\", \"addressPrefix\": \"10.20.2.0/24\" }\n    ]\n  },\n  \"partner-vnet\": {\n    \"resourceGroup\": \"Contoso-Partner\",\n    \"location\": \"eastus2\",\n    \"addressSpace\": { \"addressPrefixes\": [ \"10.30.0.0/16\" ] },\n    \"plannedPeering\": \"hub-vnet <-> partner-vnet\"\n  },\n  \"ipamCandidates\": [ \"10.21.0.0/16\", \"10.30.0.0/16\" ]\n}"
+				},
+				"statement": "The command that carries out this change is {{cmd}}.",
+				"slots": [
+					{
+						"id": "cmd",
+						"options": [
+							{
+								"id": "a",
+								"text": "az network vnet update --resource-group Contoso-Prod --name hub-vnet --address-prefixes 10.20.0.0/16 10.21.0.0/16"
+							},
+							{
+								"id": "b",
+								"text": "az network vnet update --resource-group Contoso-Prod --name hub-vnet --address-prefixes 10.20.0.0/16 10.30.0.0/16"
+							},
+							{
+								"id": "c",
+								"text": "az network vnet update --resource-group Contoso-Prod --name hub-vnet --address-prefixes 10.21.0.0/16"
+							},
+							{
+								"id": "d",
+								"text": "az network vnet create --resource-group Contoso-Prod --name hub-vnet --address-prefixes 10.20.0.0/16 10.21.0.0/16"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"cmd": "a"
+			},
+			"explanation": {
+				"correct": "The `--address-prefixes` argument of `az network vnet update` overrides the address space of the network instead of appending to it, so the range already configured, `10.20.0.0/16`, must be listed again next to the new one. Of the two candidates, only `10.21.0.0/16` is free of a clash, because `10.30.0.0/16` is the address space that `partner-vnet` occupies and networks with overlapping ranges can never be connected by peering. Because `hub-vnet` already exists, the change is made with `az network vnet update` rather than with a creation command, and listing both ranges keeps the two running subnets inside the network's address space.",
+				"perChoice": {
+					"cmd:b": "This keeps the range already configured but adds `10.30.0.0/16`, which is exactly the address space of `partner-vnet`. Overlapping address spaces stop the two networks from ever being connected by peering or VPN, so the planned peering could not be created afterwards.",
+					"cmd:c": "Only the new range is listed, and because `--address-prefixes` overrides the previous ranges instead of adding to them, `10.20.0.0/16` would disappear from the network. The two subnets at `10.20.1.0/24` and `10.20.2.0/24` would then sit outside the network's address space.",
+					"cmd:d": "`az network vnet create` is for building a network that does not exist yet, and a virtual network name has to be unique within its resource group, so this command conflicts with the `hub-vnet` that is already there instead of changing its address space."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-virtual-network"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-overview"
+				}
+			],
+			"subtopics": [
+				"vnet-address-space",
+				"azure-cli",
+				"ip-address-planning"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6811NHQSGW7Z1WKKDQ6JRGZ",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have been asked to design the network for the Contoso order platform in West Europe. The service has to keep running when a single availability zone is lost, and the plan pins each application tier to a different availability zone, as the exhibit shows. The platform team wants to avoid duplicating address space and connection relationships across the region, and every tier has to run in the availability zone given to it. Which approach should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Application tier",
+						"Instances",
+						"Availability zone"
+					],
+					"rows": [
+						[
+							"Web tier",
+							"6",
+							"Zone 1"
+						],
+						[
+							"Application tier",
+							"8",
+							"Zone 2"
+						],
+						[
+							"Batch tier",
+							"4",
+							"Zone 3"
+						]
+					]
+				},
+				"statement": "The Contoso platform team should {{slot1}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "Create a single virtual network in West Europe with one subnet per tier and place each tier's virtual machines in the availability zone listed for that tier"
+							},
+							{
+								"id": "b",
+								"text": "Create one virtual network per availability zone in West Europe and add a subnet for every tier inside each of them"
+							},
+							{
+								"id": "c",
+								"text": "Create three virtual networks in West Europe, one for each tier, and add the availability zone to the address range of each"
+							},
+							{
+								"id": "d",
+								"text": "Create a single virtual network in West Europe with one subnet per tier and add an availability zone to the address range of each subnet"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a"
+			},
+			"explanation": {
+				"correct": "A virtual network and all of its subnets span every availability zone in the region, so a single virtual network in West Europe can hold the three tiers in separate subnets while each tier's virtual machines are pinned to zone 1, 2 or 3. Nothing extra has to be created or configured per zone: the zone is simply chosen for each virtual machine when it is deployed, and the address ranges stay plain CIDR blocks inside the network's address space.",
+				"perChoice": {
+					"slot1:b": "Building one network per availability zone duplicates the address plan and the connections for the same three tiers, which is exactly what the team wants to avoid. It is also unnecessary, because a virtual network and its subnets already cover every zone in the region, so the tiers can share one network and still run in different zones.",
+					"slot1:c": "Zones cannot be attached to an address range; subnet address ranges are CIDR blocks that must sit inside the virtual network's address space, and the zone of a virtual machine is chosen at deployment time rather than inherited from the network. Splitting the tiers into three separate networks also multiplies the address space and the routing and peering work without any zonal benefit.",
+					"slot1:d": "Adding an availability zone to the address range of a subnet is not a supported setting, so this change would be rejected by Azure. The single network with one subnet per tier is already the correct design, and the zone each workload runs in comes from the virtual machine's own configuration, not from the subnet's range."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-virtual-network"
+				}
+			],
+			"subtopics": [
+				"availability-zones",
+				"vnet-design",
+				"subnet-planning"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M681457GKW3MB315MNFPQDE2",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You administer the virtual network `contoso-vnet` in East US 2 (subscription Contoso-Prod), and the exhibit shows how the network looks today. The platform team is trying to place an Azure Application Gateway in the subnet that already exists, but every attempt is refused with an error that points at the subnet itself rather than at any gateway setting. The three virtual machines that run in that subnet must keep working, the address space of the virtual network must stay exactly as it is, and the gateway has to end up serving traffic inside `contoso-vnet`. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Virtual network",
+							"contoso-vnet"
+						],
+						[
+							"Region",
+							"East US 2"
+						],
+						[
+							"Subscription",
+							"Contoso-Prod"
+						],
+						[
+							"IPv4 address space",
+							"10.70.0.0/16"
+						],
+						[
+							"Subnet",
+							"10-appgw"
+						],
+						[
+							"Subnet address range",
+							"10.70.1.0/24"
+						],
+						[
+							"Workloads running in the subnet",
+							"3 Linux virtual machines"
+						],
+						[
+							"Resource the team wants to add",
+							"Azure Application Gateway"
+						]
+					]
+				},
+				"statement": "The action that puts the Azure Application Gateway inside `contoso-vnet` while the three virtual machines keep running and the address space stays as it is, is: {{slot1}}",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "Create a second subnet whose name starts with a letter and place the gateway in it"
+							},
+							{
+								"id": "b",
+								"text": "Rename the existing subnet so that its name starts with a letter and place the gateway in it"
+							},
+							{
+								"id": "c",
+								"text": "Create a second subnet whose name starts with a digit and place the gateway in it"
+							},
+							{
+								"id": "d",
+								"text": "Change the address range of the existing subnet and place the gateway in it"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a"
+			},
+			"explanation": {
+				"correct": "The refusal comes from the subnet's name: Azure Application Gateway can only be deployed into a subnet whose name begins with a letter, and `10-appgw` begins with a digit. A subnet name cannot be changed after the subnet is created, and the address range of a subnet can only be edited while the subnet holds no resources, so with three virtual machines deployed in it neither renaming nor resizing that subnet is an option. The workable move is to add another subnet inside `contoso-vnet` whose name starts with a letter, give it a range taken from the existing 10.70.0.0/16 space (for example 10.70.2.0/24), and put the Application Gateway there, leaving `10-appgw` and its workloads untouched.",
+				"perChoice": {
+					"slot1:b": "Renaming is not possible: a subnet name is fixed at creation and cannot be changed afterwards, so `10-appgw` can never take a letter-first name.",
+					"slot1:c": "A name that begins with a digit reproduces exactly the condition Azure rejects, so the same refusal comes back.",
+					"slot1:d": "The address range of a subnet can only be changed while no resources are deployed in it; with three virtual machines running there the edit is refused, and a different range would not remove the naming problem in any case."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-subnet"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-virtual-network"
+				}
+			],
+			"subtopics": [
+				"subnet-naming",
+				"subnet-configuration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6817ZJF4H34PXCJJ8PJWHB7",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You administer the virtual network `retail-vnet` and its `app` subnet in the East US 2 region of the Contoso-Prod subscription. Colleagues have already built the network security group, the route table and the NAT gateway that the `app` subnet is meant to use, as the exhibit shows, but Azure refuses every attempt to associate them with that subnet. You need the three objects associated with the `app` subnet, keeping the rules and the routes the team wrote and leaving the address space of the virtual network unchanged. Which action should you take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Object                    Name          Subscription   Region\nVirtual network           retail-vnet   Contoso-Prod   East US 2\nSubnet in retail-vnet     app           Contoso-Prod   East US 2\nNetwork security group    nsg-app       Contoso-Dev    West Europe\nRoute table               rt-app        Contoso-Dev    West Europe\nNAT gateway               nat-app       Contoso-Prod   West Europe"
+				},
+				"statement": "To make all three associations succeed, {{slot1}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "create the three objects again in the Contoso-Prod subscription in the East US 2 region and associate those copies with the `app` subnet"
+							},
+							{
+								"id": "b",
+								"text": "create the three objects again in the Contoso-Prod subscription but in the West Europe region and associate those copies with the `app` subnet"
+							},
+							{
+								"id": "c",
+								"text": "create the three objects again in the Contoso-Dev subscription in the East US 2 region and associate those copies with the `app` subnet"
+							},
+							{
+								"id": "d",
+								"text": "ask Azure to copy the three objects into the Contoso-Prod subscription and the East US 2 region and associate the copies with the `app` subnet"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a"
+			},
+			"explanation": {
+				"correct": "A network security group, a route table and a NAT gateway can only be associated with a subnet when the object already exists in the same subscription and the same location (region) as the virtual network it belongs to. `retail-vnet` sits in Contoso-Prod in East US 2, and each of the three objects is in the wrong place: `nsg-app` and `rt-app` are in another subscription, and `nat-app` is in another region. None of these objects can be moved across subscriptions or regions, so the team has to build replacements in the Contoso-Prod subscription in East US 2 and attach those, which keeps the subnet's address space and the rules and routes the team wrote.",
+				"perChoice": {
+					"slot1:b": "The subscription is right but the region is not: an object must also share the virtual network's location, so replacements built in West Europe are refused for a subnet of a virtual network in East US 2.",
+					"slot1:c": "The region is right but the subscription is not: the object must live in the same subscription as the virtual network, so a copy created in Contoso-Dev cannot be associated with a subnet of a virtual network owned by Contoso-Prod.",
+					"slot1:d": "Azure does not replicate a network security group, route table or NAT gateway into another subscription or region on request; each object has to be created in the subscription and region of the virtual network."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-subnet"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-virtual-network"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-overview"
+				}
+			],
+			"subtopics": [
+				"subnet-associations",
+				"network-security-groups",
+				"route-tables"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M681Z1Z9ZVJ6K837CJQQZSCP",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You administer the virtual network `hub-vnet` in the Contoso-Prod subscription, and it holds the `app`, `data` and `integration` subnets. A junior engineer has to be able to create, change and remove the subnets of `hub-vnet`, to move virtual machines into and out of those subnets, and to switch on a service endpoint for one of them, but that same account must not be able to remove `hub-vnet` itself or to manage its peerings. Which access arrangement should you apply to the engineer's account?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Virtual network",
+							"hub-vnet"
+						],
+						[
+							"Subscription",
+							"Contoso-Prod"
+						],
+						[
+							"Region",
+							"East US 2"
+						],
+						[
+							"Subnets",
+							"app, data, integration"
+						],
+						[
+							"Engineer access today",
+							"Reader, limited to hub-vnet"
+						]
+					]
+				},
+				"statement": "The access arrangement that satisfies every one of these requirements is {{slot0}}.",
+				"slots": [
+					{
+						"id": "slot0",
+						"options": [
+							{
+								"id": "a",
+								"text": "A custom role scoped to the virtual network that allows read, write, delete, join and joinViaServiceEndpoint on its subnets"
+							},
+							{
+								"id": "b",
+								"text": "Network Contributor scoped to the virtual network, which allows read, write and delete on its subnets and on every other network resource"
+							},
+							{
+								"id": "c",
+								"text": "Contributor scoped to the virtual network, which allows read, write and delete on its subnets and on every other resource type"
+							},
+							{
+								"id": "d",
+								"text": "Reader scoped to the virtual network, which allows read-only access to its subnets and to every other network resource"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot0": "a"
+			},
+			"explanation": {
+				"correct": "A custom role scoped to the virtual network is the only arrangement that can carry exactly the subnet permissions the engineer needs — read, write and delete on subnets, join for moving virtual machines into or out of a subnet, and joinViaServiceEndpoint for switching on a service endpoint — while leaving out the permissions that would let the account delete `hub-vnet` itself or change its peerings. The built-in roles either carry the broader rights that the requirements forbid or the narrower rights that block the required work.",
+				"perChoice": {
+					"slot0:b": "Network Contributor carries read, write and delete rights over all network resources in scope, so this arrangement would also let the engineer remove `hub-vnet` and work with its peerings, which the requirements rule out.",
+					"slot0:c": "Contributor grants read, write and delete on every resource type in scope, including `hub-vnet` itself, so it is far broader than the duties the engineer actually performs.",
+					"slot0:d": "Reader is read-only, so the engineer could not create, change or remove subnets, move virtual machines into or out of them, or switch on a service endpoint."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-subnet"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-virtual-network"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-overview"
+				}
+			],
+			"subtopics": [
+				"rbac-permissions",
+				"subnet-management"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6826JAJK0Q02K7SBDM29QHN",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You administer the virtual network `corp-vnet` in East US 2 (subscription Contoso-Prod). The IPAM team has asked for the `data` subnet to use the address range 10.10.2.0/24, and the two Linux virtual machines and the private endpoint in `data` must keep serving traffic with their data intact and must still be hosted in `data` once the work is done. Azure rejects the request and the range of `data` stays 10.10.1.0/24. Which sequence of actions should you carry out to apply the new range, and which check should you make if Azure still refuses the change afterwards?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Setting                                Current value\n---------------------------------------  ------------------------------------------------------------------\nRegion and subscription of corp-vnet     East US 2, Contoso-Prod\nAddress space of corp-vnet               10.10.0.0/16\nAddress range of subnet data             10.10.1.0/24\nContents of subnet data                  2 Linux virtual machines (web-01, web-02) and 1 private\n                                        endpoint for Azure Storage\nAddress range of subnet web              10.10.10.0/24\nContents of subnet web                   1 Linux virtual machine (api-01)"
+				},
+				"statement": "You should {{slot1}}, and if Azure still refuses the change afterwards you should {{slot2}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "Move the workloads in `data` to a temporary subnet of `corp-vnet`, change the address range of `data` to 10.10.2.0/24, and then move the workloads back into `data`."
+							},
+							{
+								"id": "b",
+								"text": "Delete the workloads in `data`, change the address range of `data` to 10.10.2.0/24, and then recreate the workloads as new virtual machines in `data`."
+							},
+							{
+								"id": "c",
+								"text": "Add a range of 10.10.2.0/24 to the address space of `corp-vnet` and change the address range of `data` to 10.10.2.0/24 while the workloads stay in place."
+							},
+							{
+								"id": "d",
+								"text": "Move the workloads in `data` to the `web` subnet of `corp-vnet`, change the address range of `data` to 10.10.2.0/24, and then leave the workloads in `web`, which becomes a permanent home for them."
+							}
+						]
+					},
+					{
+						"id": "slot2",
+						"options": [
+							{
+								"id": "a",
+								"text": "Check whether gateway connections, gateways, IP resources, virtual network peerings, or an App Service Environment are blocking the subnet operation."
+							},
+							{
+								"id": "b",
+								"text": "Check whether the resource group that holds `corp-vnet` carries a deny assignment on subnet write operations."
+							},
+							{
+								"id": "c",
+								"text": "Check whether the virtual network quota for the subscription has been reached and request an increase if a limit has been exhausted."
+							},
+							{
+								"id": "d",
+								"text": "Check whether the delegation list of the `data` subnet names a service that must be removed before the range can be edited."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a",
+				"slot2": "a"
+			},
+			"explanation": {
+				"correct": "An existing subnet only accepts a new address range while nothing is deployed in it, so the workloads have to leave `data` first. The keyed sequence moves them to a temporary subnet of `corp-vnet` (a free, non-overlapping range inside the network's address space, such as 10.10.3.0/24), changes the range of `data` to 10.10.2.0/24, and moves them back so that `data` keeps hosting the two virtual machines and the private endpoint; the exact steps for relocating a given resource type differ, for example a private endpoint is recreated with a network interface in the target subnet. If the change is still refused, the documentation lists the connections that can block adding, changing or deleting a subnet: gateway connections, gateways, IPs, virtual network peerings, and an App Service Environment (ASE), which is exactly what the keyed check looks for.",
+				"perChoice": {
+					"slot1:b": "Deleting the workloads does free the subnet, and Azure does allow the range to be edited once nothing is deployed in it, but this breaks the stated requirement that the two virtual machines and the private endpoint keep running with their current data: the instances would have to be torn down and rebuilt and the private endpoint recreated from scratch.",
+					"slot1:c": "10.10.2.0/24 already sits inside the address space of `corp-vnet`, so adding it to the network changes nothing, and a network-level range does not unlock a subnet-level edit: Azure only accepts a new subnet address range while the subnet holds no resources, so the workloads would have to leave first.",
+					"slot1:d": "This does apply the new range to `data`, but the workloads end up hosted in `web` instead of `data`, which does not meet the requirement that they remain hosted in `data` once the work is done.",
+					"slot2:b": "A deny assignment at resource group scope can block writes in practice, but it is not the list of connections named for a failed subnet add, change or delete: gateway connections, gateways, IPs, virtual network peerings, and an App Service Environment.",
+					"slot2:c": "Networking quotas are raised through a quota request, but a subnet address range edit is not refused because a quota limit was reached; the documented blockers for a failed subnet operation are gateway connections, gateways, IPs, virtual network peerings, and an App Service Environment.",
+					"slot2:d": "Delegations only have to be cleared before you change the delegations of a subnet, not before you change its address range, and a delegation is not listed as a blocker for this operation; the documented blockers are gateway connections, gateways, IPs, virtual network peerings, and an App Service Environment."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-subnet"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-virtual-network"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-overview"
+				}
+			],
+			"subtopics": [
+				"subnet-address-range",
+				"subnet-resource-relocation",
+				"subnet-operation-blockers"
+			],
+			"reviewed": false
 		}
 	]
 }
