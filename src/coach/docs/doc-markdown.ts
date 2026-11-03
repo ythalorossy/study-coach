@@ -53,7 +53,7 @@ export function prepareMarkdown(md: string, opts: PrepareOptions): { title: stri
 			tab = tab === "none" ? "first" : "skip";
 			continue;
 		}
-		if (tab !== "none" && line.trim() === "---") {
+		if (tab !== "none" && /^-{3,}$/.test(line.trim())) {
 			tab = "none";
 			continue;
 		}

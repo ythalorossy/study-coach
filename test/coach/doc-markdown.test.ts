@@ -35,6 +35,13 @@ describe("prepareMarkdown", () => {
 		expect(r.markdown.match(/Loop/g)).toHaveLength(3);
 	});
 
+	it("ends a tab group at any line of three or more dashes", () => {
+		const r = prepareMarkdown("Before\n# [Portal](#tab/portal)\nportal-step\n# [CLI](#tab/cli)\ncli-step\n-----\nAfter", none);
+		expect(r.markdown).toContain("portal-step");
+		expect(r.markdown).not.toContain("cli-step");
+		expect(r.markdown).toContain("After");
+	});
+
 	it("keeps only the first tab", () => {
 		const r = prepareMarkdown("Before\n# [Portal](#tab/portal)\nA\n# [CLI](#tab/cli)\nB\n---\nAfter", none);
 		expect(r.markdown).toContain("A");
