@@ -4,8 +4,8 @@ title: "Coach server"
 flowchart TB
     subgraph boundary["Coach server [Container]"]
         src__files["src (root files)<br/>[Component]<br/>Server entry (Hono app: agent<br/>routers and the coach API) and the<br/>Flue persistence adapter"]
-        src_agents["agents<br/>[Component]<br/>Flue agents: Coach (lead<br/>instructor), QuestionWriter,<br/>FactSheetWriter, and the scaffold<br/>Assistant"]
-        src_coach["coach<br/>[Component]<br/>Domain core: database and seed,<br/>skills and instructor catalog,<br/>question admission (leak check and<br/>verifier), readiness, docs corpus,<br/>fact sheets, HTTP API"]
+        src_agents["agents<br/>[Component]<br/>Flue agents: Coach (lead<br/>instructor), QuestionWriter,<br/>FactSheetWriter, FactSheetReviewer<br/>(checks each sheet bullet against<br/>its Learn page), and the scaffold<br/>Assistant"]
+        src_coach["coach<br/>[Component]<br/>Domain core in three subfolders:<br/>exam/ (skills, areas,<br/>instructors), questions/ (schema,<br/>admission with leak check and<br/>verifier, committed bank import<br/>and export, lint, delivery<br/>shuffle) and docs/ (corpus, fact<br/>sheets, fact check); plus the<br/>database, models, readiness and<br/>the HTTP API"]
         src_evals["evals<br/>[Component]<br/>Live lesson evals against the real<br/>model (vitest)"]
         src_subagents["subagents<br/>[Component]<br/>One specialist instructor subagent<br/>per catalog entry, delegated to by<br/>the lead"]
         src_tools["tools<br/>[Component]<br/>Agent tools: speak, show_diagram,<br/>progress, present_question,<br/>set_lesson, read_ms_docs, and the<br/>waiting gates"]
@@ -17,13 +17,13 @@ flowchart TB
     src_tools --> src_coach
     coach_web["Web app<br/>[Container: React 18, Vite]<br/>Home, Room (live lesson),<br/>Practice, Coverage and Docs<br/>screens in the browser; proxies<br/>/api and /agents to the server"]
     coach_web -->|"Calls the coach API and<br/>streams lesson conversations<br/>from<br/>[JSON/HTTP, Flue client]"| boundary
-    coach_db[("Coach database<br/>[Container: SQLite (node:sqlite, WAL)]<br/>Skills, areas, verified questions,<br/>sessions, attempts, flags and<br/>cached Learn pages; shared by the<br/>server and generation runs")]
+    coach_db[("Coach database<br/>[Container: SQLite (node:sqlite, WAL)]<br/>Skills, areas, verified questions,<br/>sessions, attempts, flags and<br/>cached Learn pages; shared by the<br/>server and generation runs; a new<br/>database loads the committed<br/>question bank on first run")]
     boundary -->|"Reads skills and questions,<br/>records sessions and<br/>attempts in<br/>[node:sqlite]"| coach_db
     flue_db[("Conversation store<br/>[Container: SQLite (Flue sqlite adapter)]<br/>Durable Flue conversations for<br/>lessons; batch runs use an in-<br/>memory store instead")]
     boundary -->|"Persists lesson<br/>conversations in<br/>[Flue sqlite adapter]"| flue_db
-    docs_corpus[("Docs corpus and fact sheets<br/>[Container: Markdown files (data/docs, content/fact-sheets)]<br/>Markdown-only sparse clones of<br/>azure-docs and entra-docs, plus<br/>one committed fact sheet per skill<br/>that the writer and verifier read")]
+    docs_corpus[("Docs corpus and fact sheets<br/>[Container: Markdown files (data/docs, content/fact-sheets)]<br/>Markdown-only sparse clones of<br/>azure-docs and entra-docs, one<br/>committed fact sheet per skill<br/>that the writer, verifier and<br/>reviewer read, and the committed<br/>question bank (content/questions,<br/>one JSON file per skill)")]
     boundary -->|"Reads doc pages and fact<br/>sheets from<br/>[fs]"| docs_corpus
-    ext_minimax["MiniMax API<br/>[Software System]<br/>Language model (MiniMax-M3 by<br/>default) for every role: lead,<br/>specialists, writer, verifier,<br/>fact-sheet writer"]
+    ext_minimax["MiniMax API<br/>[Software System]<br/>Language model (MiniMax-M3 by<br/>default; M3.1 Flash is used for<br/>the fact-sheet reviewer) for every<br/>role: lead, specialists, writer,<br/>verifier, fact-sheet writer and<br/>reviewer"]
     boundary -->|"Runs the lead and specialist<br/>instructors on<br/>[HTTPS]"| ext_minimax
     ext_learn["Microsoft Learn<br/>[Software System]<br/>Live documentation pages, fetched<br/>and cached when a page is not in<br/>the local corpus"]
     boundary -->|"Fetches pages missing from<br/>the corpus from<br/>[HTTPS, fetch]"| ext_learn

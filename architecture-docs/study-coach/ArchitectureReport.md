@@ -29,25 +29,26 @@ The automated dependency checks found no structural concerns.
 
 ## Architecture overview
 
-Study Coach is a single-user application run locally. A React web app talks to one Node server that hosts a Flue Coach agent (a lead instructor delegating to per-area specialist subagents) and a Hono JSON API over a SQLite database. A separate command-line pipeline syncs the Microsoft documentation into a local corpus, builds a fact sheet per skill and generates the question bank by running a writer agent once per question, admitting a question only after a leak check and an independent verifier agree with its key. Every model call goes to MiniMax (M3 by default; M3.1 Flash is available). Generation retries a slow or failing question once on a fallback model and logs each call's tokens and cost.
+Study Coach is a single-user application run locally. A React web app talks to one Node server that hosts a Flue Coach agent (a lead instructor delegating to per-area specialist subagents) and a Hono JSON API over a SQLite database. A separate command-line pipeline syncs the Microsoft documentation into a local corpus, builds a fact sheet per skill and generates the question bank by running a writer agent once per question, and a reviewer agent checks each fact-sheet bullet against the page it cites. The verified questions are committed as JSON and load into a fresh database on first run, admitting a question only after a leak check and an independent verifier agree with its key. Every model call goes to MiniMax (M3 by default; M3.1 Flash is available). Generation retries a slow or failing question once on a fallback model and logs each call's tokens and cost.
 
 ### Findings
 
-- Every role defaults to one provider, `minimax/MiniMax-M3` (`src/coach/models.ts:1`, fallbacks at `src/coach/models.ts:15`). Generation now retries a question that times out or ends in a model error once on a fallback model (`scripts/generate.ts:144`, default at `scripts/generate.ts:261`), but a used-up plan (usage-limit 429) still stops both generation and lessons, and lessons have no fallback at all.
-- The server and generation runs share `data/coach.db`; this is handled with WAL and a 5 s busy timeout (`src/coach/db.ts:86-89`). Flue's own store has no such setting, so batch runs avoid it with an in-memory store (`scripts/flue-jobs.ts:107-110`), which means generation conversations are not kept.
+- Every role defaults to one provider, `minimax/MiniMax-M3` (`src/coach/models.ts:1`, fallbacks at `src/coach/models.ts:16`). Generation retries a question that times out or ends in a model error once on a fallback model (`scripts/generate.ts:141`, flag at `scripts/generate.ts:258`), but a used-up usage window (a 429, "usage limit reached") stops generation after about an hour and twenty minutes of work and stops lessons outright, which have no fallback at all.
+- The server and generation runs share `data/coach.db`; this is handled with WAL and a 5 s busy timeout (`src/coach/db.ts:91-92`). Flue's own store has no such setting, so batch runs avoid it with an in-memory store (`scripts/flue-jobs.ts:119`), which means generation conversations are not kept.
 - The scaffold `Assistant` agent is still mounted at `/agents/assistant` with a hard-coded model (`src/app.ts:14`, `src/agents/assistant.ts:8`); nothing in the web app uses it.
-- There is no authentication on `/api` or `/agents` (`src/app.ts:11-16`); safety rests on the dev server binding to 127.0.0.1 (`package.json:9`). There is no production build or start script, only `vite dev`.
-- `src/coach/instructors.ts:4` imports `seed.ts`, which imports `instructors.ts` back (`src/coach/seed.ts:2`). It works because both are used only at call time; a top-level use on either side would break module loading.
-- Adding an area touches several places: skills in `src/coach/seed.ts`, instructors in `src/coach/instructors.ts` and `web/src/lib/instructors.ts`, colour tokens in `web/src/styles.css` and diagram nouns in `src/coach/diagram-schema.ts`.
-- The lead's tools and hand-overs are gated by a read-only "learner has the floor" flag (`src/tools/coach-tools.ts:185`, `src/agents/coach.ts:68-75`). Flue renders a subagent at delegation time and throws on any state write during a render, so the check must never write. An earlier version wrote there, and every hand-over failed while the evals still passed because they checked only speaker names; the eval now fails on any failed hand-over (`src/evals/coach.eval.ts:91`).
-- Generation runs each question as its own `flue run` process (`scripts/flue-jobs.ts:115`), so usage is recorded from inside the agent module through Flue's `observe()` (`src/coach/usage-log.ts:52-60`) and tied to the run by `GENERATE_RUN_ID` (`scripts/generate.ts:208`); the verifier's scratch conversation would otherwise be counted separately.
+- There is no authentication on `/api` or `/agents` (`src/app.ts:11-16`); safety rests on the dev server binding to 127.0.0.1 (`package.json:17`). There is no production build or start script, only `vite dev`.
+- Adding an area touches several places: skills in `src/coach/exam/seed.ts`, instructors in `src/coach/exam/instructors.ts` and `web/src/lib/instructors.ts`, colour tokens in `web/src/styles.css` and diagram nouns in `src/coach/diagram-schema.ts`. The earlier import cycle between instructors and seed is gone: `src/coach/exam/seed.ts` no longer imports the instructors.
+- The lead's tools and hand-overs are gated by a read-only "learner has the floor" flag (`src/tools/coach-tools.ts:185`, `src/agents/coach.ts:69`). Flue renders a subagent at delegation time and throws on any state write during a render, so the check must never write. An earlier version wrote there, and every hand-over failed while the evals still passed because they checked only speaker names; the eval now fails on any failed hand-over (`src/evals/coach.eval.ts:85`).
+- Generation runs each question as its own `flue run` process (`scripts/flue-jobs.ts:123`), so usage is recorded from inside the agent module through Flue's `observe()` (`src/coach/usage-log.ts:55`) and tied to the run by `GENERATE_RUN_ID` (`scripts/generate.ts:214`); the verifier's scratch conversation would otherwise be counted separately.
+- The committed question bank is unreviewed: the `reviewed` flag exists on every question (`src/coach/questions/question-bank.ts:20`) but only a person sets it, and the fact sheets are checked by a model reviewer whose findings differ between runs (`src/agents/fact-sheet-reviewer.ts:25`), so a clean result is not proof.
+- A page that is not in the local corpus is read live from Learn (`src/coach/docs/corpus.ts:124`), and a live read can return a partial page, which made the reviewer flag correct bullets as unsupported. Pages in the local corpus were once cut short by a tab-group bug (`src/coach/docs/doc-markdown.ts:56`), now fixed.
 
 ### Recommendations
 
 - Extend the fallback model to lessons, and to a usage-limit 429, so a used-up plan does not stop lessons.
 - Remove the scaffold Assistant route, or stop mounting it, since nothing uses it.
 - Keep the server bound to localhost; add authentication before exposing it on any other interface.
-- Break the instructors/seed cycle by moving AREAS and SKILLS into a module that imports neither.
+- Run the fact-sheet reviewer more than once, or on a second provider's model, and treat bullets citing live-read pages as unchecked rather than unsupported.
 - Derive the web instructor list and colours from the server catalog (for example via /api/skills) so a new area is data in one place.
 
 ## Architecture (C4 model)
@@ -85,7 +86,7 @@ flowchart TB
     learner("Learner<br/>[Person]<br/>Studies for AZ-104: takes lessons,<br/>practises questions, reads the<br/>docs and fact sheets")
     maintainer("Content maintainer<br/>[Person]<br/>Syncs the docs, builds fact sheets<br/>and generates the question bank<br/>from the command line (the same<br/>person as the learner)")
     system["Study Coach<br/>[Software System]<br/>A local study coach for Microsoft<br/>certification exams, starting with<br/>AZ-104: AI instructors teach each<br/>skill and the learner practises<br/>with original, documentation-<br/>checked questions"]
-    ext_minimax["MiniMax API<br/>[Software System]<br/>Language model (MiniMax-M3 by<br/>default) for every role: lead,<br/>specialists, writer, verifier,<br/>fact-sheet writer"]
+    ext_minimax["MiniMax API<br/>[Software System]<br/>Language model (MiniMax-M3 by<br/>default; M3.1 Flash is used for<br/>the fact-sheet reviewer) for every<br/>role: lead, specialists, writer,<br/>verifier, fact-sheet writer and<br/>reviewer"]
     ext_learn["Microsoft Learn<br/>[Software System]<br/>Live documentation pages, fetched<br/>and cached when a page is not in<br/>the local corpus"]
     ext_github_docs["MicrosoftDocs on GitHub<br/>[Software System]<br/>Source repositories (azure-docs,<br/>entra-docs) cloned sparsely into<br/>the local corpus"]
     learner -->|"Takes lessons and practises<br/>in<br/>[Browser]"| system
@@ -123,12 +124,12 @@ flowchart TB
     subgraph boundary["Study Coach [Software System]"]
         coach_web["Web app<br/>[Container: React 18, Vite]<br/>Home, Room (live lesson),<br/>Practice, Coverage and Docs<br/>screens in the browser; proxies<br/>/api and /agents to the server"]
         study_coach["Coach server<br/>[Container: Node.js, Hono, Flue 2.3 runtime (vite dev on 127.0.0.1:8787)]<br/>Hosts the Coach agent (lead plus<br/>specialist subagents) behind<br/>Flue's agent router and the coach<br/>JSON API for skills, sessions,<br/>practice, answers, coverage and<br/>docs"]
-        content_cli["Content pipeline<br/>[Container: Node.js scripts, flue run]<br/>docs:sync, docs:sheets and<br/>generate: clones the Microsoft<br/>docs, runs the FactSheetWriter and<br/>QuestionWriter agents as child<br/>processes, one per question"]
-        coach_db[("Coach database<br/>[Container: SQLite (node:sqlite, WAL)]<br/>Skills, areas, verified questions,<br/>sessions, attempts, flags and<br/>cached Learn pages; shared by the<br/>server and generation runs")]
+        content_cli["Content pipeline<br/>[Container: Node.js scripts, flue run]<br/>docs:sync, docs:sheets,<br/>docs:review, generate and the<br/>questions:* commands: clones the<br/>Microsoft docs, runs the<br/>FactSheetWriter, FactSheetReviewer<br/>and QuestionWriter agents as child<br/>processes (one per sheet, review<br/>or question), and exports, lints<br/>and imports the committed question<br/>bank"]
+        coach_db[("Coach database<br/>[Container: SQLite (node:sqlite, WAL)]<br/>Skills, areas, verified questions,<br/>sessions, attempts, flags and<br/>cached Learn pages; shared by the<br/>server and generation runs; a new<br/>database loads the committed<br/>question bank on first run")]
         flue_db[("Conversation store<br/>[Container: SQLite (Flue sqlite adapter)]<br/>Durable Flue conversations for<br/>lessons; batch runs use an in-<br/>memory store instead")]
-        docs_corpus[("Docs corpus and fact sheets<br/>[Container: Markdown files (data/docs, content/fact-sheets)]<br/>Markdown-only sparse clones of<br/>azure-docs and entra-docs, plus<br/>one committed fact sheet per skill<br/>that the writer and verifier read")]
+        docs_corpus[("Docs corpus and fact sheets<br/>[Container: Markdown files (data/docs, content/fact-sheets)]<br/>Markdown-only sparse clones of<br/>azure-docs and entra-docs, one<br/>committed fact sheet per skill<br/>that the writer, verifier and<br/>reviewer read, and the committed<br/>question bank (content/questions,<br/>one JSON file per skill)")]
     end
-    ext_minimax["MiniMax API<br/>[Software System]<br/>Language model (MiniMax-M3 by<br/>default) for every role: lead,<br/>specialists, writer, verifier,<br/>fact-sheet writer"]
+    ext_minimax["MiniMax API<br/>[Software System]<br/>Language model (MiniMax-M3 by<br/>default; M3.1 Flash is used for<br/>the fact-sheet reviewer) for every<br/>role: lead, specialists, writer,<br/>verifier, fact-sheet writer and<br/>reviewer"]
     ext_learn["Microsoft Learn<br/>[Software System]<br/>Live documentation pages, fetched<br/>and cached when a page is not in<br/>the local corpus"]
     ext_github_docs["MicrosoftDocs on GitHub<br/>[Software System]<br/>Source repositories (azure-docs,<br/>entra-docs) cloned sparsely into<br/>the local corpus"]
     learner -->|"Takes lessons and practises<br/>in<br/>[Browser]"| coach_web
@@ -162,10 +163,10 @@ flowchart TB
 |---|---|---|---|
 | **Web app** (container) | React 18, Vite | Home, Room (live lesson), Practice, Coverage and Docs screens in the browser; proxies /api and /agents to the server | — |
 | **Coach server** (container) | Node.js, Hono, Flue 2.3 runtime (vite dev on 127.0.0.1:8787) | Hosts the Coach agent (lead plus specialist subagents) behind Flue's agent router and the coach JSON API for skills, sessions, practice, answers, coverage and docs | `.` |
-| **Content pipeline** (container) | Node.js scripts, flue run | docs:sync, docs:sheets and generate: clones the Microsoft docs, runs the FactSheetWriter and QuestionWriter agents as child processes, one per question | — |
-| **Coach database** (data store) | SQLite (node:sqlite, WAL) | Skills, areas, verified questions, sessions, attempts, flags and cached Learn pages; shared by the server and generation runs | — |
+| **Content pipeline** (container) | Node.js scripts, flue run | docs:sync, docs:sheets, docs:review, generate and the questions:* commands: clones the Microsoft docs, runs the FactSheetWriter, FactSheetReviewer and QuestionWriter agents as child processes (one per sheet, review or question), and exports, lints and imports the committed question bank | — |
+| **Coach database** (data store) | SQLite (node:sqlite, WAL) | Skills, areas, verified questions, sessions, attempts, flags and cached Learn pages; shared by the server and generation runs; a new database loads the committed question bank on first run | — |
 | **Conversation store** (data store) | SQLite (Flue sqlite adapter) | Durable Flue conversations for lessons; batch runs use an in-memory store instead | — |
-| **Docs corpus and fact sheets** (data store) | Markdown files (data/docs, content/fact-sheets) | Markdown-only sparse clones of azure-docs and entra-docs, plus one committed fact sheet per skill that the writer and verifier read | — |
+| **Docs corpus and fact sheets** (data store) | Markdown files (data/docs, content/fact-sheets) | Markdown-only sparse clones of azure-docs and entra-docs, one committed fact sheet per skill that the writer, verifier and reviewer read, and the committed question bank (content/questions, one JSON file per skill) | — |
 
 ### Level 3: Components
 
@@ -187,8 +188,8 @@ title: "Coach server"
 flowchart TB
     subgraph boundary["Coach server [Container]"]
         src__files["src (root files)<br/>[Component]<br/>Server entry (Hono app: agent<br/>routers and the coach API) and the<br/>Flue persistence adapter"]
-        src_agents["agents<br/>[Component]<br/>Flue agents: Coach (lead<br/>instructor), QuestionWriter,<br/>FactSheetWriter, and the scaffold<br/>Assistant"]
-        src_coach["coach<br/>[Component]<br/>Domain core: database and seed,<br/>skills and instructor catalog,<br/>question admission (leak check and<br/>verifier), readiness, docs corpus,<br/>fact sheets, HTTP API"]
+        src_agents["agents<br/>[Component]<br/>Flue agents: Coach (lead<br/>instructor), QuestionWriter,<br/>FactSheetWriter, FactSheetReviewer<br/>(checks each sheet bullet against<br/>its Learn page), and the scaffold<br/>Assistant"]
+        src_coach["coach<br/>[Component]<br/>Domain core in three subfolders:<br/>exam/ (skills, areas,<br/>instructors), questions/ (schema,<br/>admission with leak check and<br/>verifier, committed bank import<br/>and export, lint, delivery<br/>shuffle) and docs/ (corpus, fact<br/>sheets, fact check); plus the<br/>database, models, readiness and<br/>the HTTP API"]
         src_evals["evals<br/>[Component]<br/>Live lesson evals against the real<br/>model (vitest)"]
         src_subagents["subagents<br/>[Component]<br/>One specialist instructor subagent<br/>per catalog entry, delegated to by<br/>the lead"]
         src_tools["tools<br/>[Component]<br/>Agent tools: speak, show_diagram,<br/>progress, present_question,<br/>set_lesson, read_ms_docs, and the<br/>waiting gates"]
@@ -200,13 +201,13 @@ flowchart TB
     src_tools --> src_coach
     coach_web["Web app<br/>[Container: React 18, Vite]<br/>Home, Room (live lesson),<br/>Practice, Coverage and Docs<br/>screens in the browser; proxies<br/>/api and /agents to the server"]
     coach_web -->|"Calls the coach API and<br/>streams lesson conversations<br/>from<br/>[JSON/HTTP, Flue client]"| boundary
-    coach_db[("Coach database<br/>[Container: SQLite (node:sqlite, WAL)]<br/>Skills, areas, verified questions,<br/>sessions, attempts, flags and<br/>cached Learn pages; shared by the<br/>server and generation runs")]
+    coach_db[("Coach database<br/>[Container: SQLite (node:sqlite, WAL)]<br/>Skills, areas, verified questions,<br/>sessions, attempts, flags and<br/>cached Learn pages; shared by the<br/>server and generation runs; a new<br/>database loads the committed<br/>question bank on first run")]
     boundary -->|"Reads skills and questions,<br/>records sessions and<br/>attempts in<br/>[node:sqlite]"| coach_db
     flue_db[("Conversation store<br/>[Container: SQLite (Flue sqlite adapter)]<br/>Durable Flue conversations for<br/>lessons; batch runs use an in-<br/>memory store instead")]
     boundary -->|"Persists lesson<br/>conversations in<br/>[Flue sqlite adapter]"| flue_db
-    docs_corpus[("Docs corpus and fact sheets<br/>[Container: Markdown files (data/docs, content/fact-sheets)]<br/>Markdown-only sparse clones of<br/>azure-docs and entra-docs, plus<br/>one committed fact sheet per skill<br/>that the writer and verifier read")]
+    docs_corpus[("Docs corpus and fact sheets<br/>[Container: Markdown files (data/docs, content/fact-sheets)]<br/>Markdown-only sparse clones of<br/>azure-docs and entra-docs, one<br/>committed fact sheet per skill<br/>that the writer, verifier and<br/>reviewer read, and the committed<br/>question bank (content/questions,<br/>one JSON file per skill)")]
     boundary -->|"Reads doc pages and fact<br/>sheets from<br/>[fs]"| docs_corpus
-    ext_minimax["MiniMax API<br/>[Software System]<br/>Language model (MiniMax-M3 by<br/>default) for every role: lead,<br/>specialists, writer, verifier,<br/>fact-sheet writer"]
+    ext_minimax["MiniMax API<br/>[Software System]<br/>Language model (MiniMax-M3 by<br/>default; M3.1 Flash is used for<br/>the fact-sheet reviewer) for every<br/>role: lead, specialists, writer,<br/>verifier, fact-sheet writer and<br/>reviewer"]
     boundary -->|"Runs the lead and specialist<br/>instructors on<br/>[HTTPS]"| ext_minimax
     ext_learn["Microsoft Learn<br/>[Software System]<br/>Live documentation pages, fetched<br/>and cached when a page is not in<br/>the local corpus"]
     boundary -->|"Fetches pages missing from<br/>the corpus from<br/>[HTTPS, fetch]"| ext_learn
@@ -232,7 +233,7 @@ The classes and interfaces of the key components: inheritance, implemented inter
 
 The lead Coach and the QuestionWriter: hooks, tools and instructions
 
-> Sources: SaveFactSheetDeps → `src/agents/fact-sheet-writer.ts:60`, SaveQuestionDeps → `src/agents/question-writer.ts:36`, SourcePage → `src/agents/fact-sheet-writer.ts:28`, WriterContext → `src/agents/question-writer.ts:215`
+> Sources: ReportDeps → `src/agents/fact-sheet-reviewer.ts:50`, SaveFactSheetDeps → `src/agents/fact-sheet-writer.ts:60`, SaveQuestionDeps → `src/agents/question-writer.ts:36`, SourcePage → `src/agents/fact-sheet-writer.ts:28`, WriterContext → `src/agents/question-writer.ts:215`
 
 ![c4-code-study-coach-src-agents](c4-code-study-coach-src-agents.svg)
 
@@ -248,6 +249,9 @@ config:
 ---
 classDiagram
     direction LR
+    class ReportDeps {
+        <<interface>>
+    }
     class SaveFactSheetDeps {
         <<interface>>
     }
@@ -260,6 +264,7 @@ classDiagram
     class WriterContext {
         <<interface>>
     }
+    style ReportDeps fill:#85bbf0,stroke:#5d82a8,color:#000000
     style SaveFactSheetDeps fill:#85bbf0,stroke:#5d82a8,color:#000000
     style SaveQuestionDeps fill:#85bbf0,stroke:#5d82a8,color:#000000
     style SourcePage fill:#85bbf0,stroke:#5d82a8,color:#000000
@@ -272,8 +277,8 @@ classDiagram
 
 Question admission, persistence and the instructor catalog
 
-> Sources: AdmitDeps → `src/coach/admit.ts:14`, CoachDb → `src/coach/db.ts:6`, CorpusPage → `src/coach/corpus.ts:81`, DocFetchError → `src/coach/docs.ts:5`, DocsApiOptions → `src/coach/docs-api.ts:8`, FactSheet → `src/coach/fact-sheets.ts:16`, MsDoc → `src/coach/docs.ts:14`, PrepareOptions → `src/coach/doc-markdown.ts:6`, PublicQuestion → `src/coach/question-schema.ts:87`, QuestionRow → `src/coach/questions.ts:21`, Readiness → `src/coach/readiness.ts:9`, RenderContext → `src/coach/doc-render.ts:9`
-> Not drawn: 11 more types (Skill, SkillProgress, Specialist, StoredSource, SyncState, Token, TurnLike, UnknownQuestionError, UsageEntry, UsageTotals, …)
+> Sources: AdmitDeps → `src/coach/questions/admit.ts:14`, BankFile → `src/coach/questions/question-bank.ts:23`, BankQuestion → `src/coach/questions/question-bank.ts:12`, CoachDb → `src/coach/db.ts:8`, CorpusPage → `src/coach/docs/corpus.ts:81`, DocFetchError → `src/coach/docs/docs.ts:5`, DocsApiOptions → `src/coach/docs/docs-api.ts:8`, FactCheckResult → `src/coach/docs/fact-check.ts:20`, FactSheet → `src/coach/docs/fact-sheets.ts:16`, Finding → `src/coach/docs/fact-check.ts:9`, ImportResult → `src/coach/questions/question-bank.ts:28`, LintIssue → `src/coach/questions/bank-lint.ts:5`
+> Not drawn: 17 more types (MsDoc, PrepareOptions, PublicQuestion, QuestionRow, Readiness, RenderContext, Skill, SkillProgress, Specialist, StoredSource, …)
 
 ![c4-code-study-coach-src-coach](c4-code-study-coach-src-coach.svg)
 
@@ -292,6 +297,12 @@ classDiagram
     class AdmitDeps {
         <<interface>>
     }
+    class BankFile {
+        <<interface>>
+    }
+    class BankQuestion {
+        <<interface>>
+    }
     class CoachDb {
         <<interface>>
     }
@@ -302,25 +313,19 @@ classDiagram
     class DocsApiOptions {
         <<interface>>
     }
+    class FactCheckResult {
+        <<interface>>
+    }
     class FactSheet {
         <<interface>>
     }
-    class MsDoc {
+    class Finding {
         <<interface>>
     }
-    class PrepareOptions {
+    class ImportResult {
         <<interface>>
     }
-    class PublicQuestion {
-        <<interface>>
-    }
-    class QuestionRow {
-        <<interface>>
-    }
-    class Readiness {
-        <<interface>>
-    }
-    class RenderContext {
+    class LintIssue {
         <<interface>>
     }
     class Error {
@@ -328,17 +333,17 @@ classDiagram
     }
     Error <|-- DocFetchError
     style AdmitDeps fill:#85bbf0,stroke:#5d82a8,color:#000000
+    style BankFile fill:#85bbf0,stroke:#5d82a8,color:#000000
+    style BankQuestion fill:#85bbf0,stroke:#5d82a8,color:#000000
     style CoachDb fill:#85bbf0,stroke:#5d82a8,color:#000000
     style CorpusPage fill:#85bbf0,stroke:#5d82a8,color:#000000
     style DocFetchError fill:#85bbf0,stroke:#5d82a8,color:#000000
     style DocsApiOptions fill:#85bbf0,stroke:#5d82a8,color:#000000
+    style FactCheckResult fill:#85bbf0,stroke:#5d82a8,color:#000000
     style FactSheet fill:#85bbf0,stroke:#5d82a8,color:#000000
-    style MsDoc fill:#85bbf0,stroke:#5d82a8,color:#000000
-    style PrepareOptions fill:#85bbf0,stroke:#5d82a8,color:#000000
-    style PublicQuestion fill:#85bbf0,stroke:#5d82a8,color:#000000
-    style QuestionRow fill:#85bbf0,stroke:#5d82a8,color:#000000
-    style Readiness fill:#85bbf0,stroke:#5d82a8,color:#000000
-    style RenderContext fill:#85bbf0,stroke:#5d82a8,color:#000000
+    style Finding fill:#85bbf0,stroke:#5d82a8,color:#000000
+    style ImportResult fill:#85bbf0,stroke:#5d82a8,color:#000000
+    style LintIssue fill:#85bbf0,stroke:#5d82a8,color:#000000
     style Error fill:#dbe9f6,stroke:#5d82a8,color:#000000,stroke-dasharray:4 3
 ```
 
@@ -430,8 +435,8 @@ sequenceDiagram
 
 | Method | Path | Declared in |
 |---|---|---|
-| GET | `/:skillId` | `src/coach/docs-api.ts:24` |
-| GET | `/:skillId/page` | `src/coach/docs-api.ts:41` |
+| GET | `/:skillId` | `src/coach/docs/docs-api.ts:24` |
+| GET | `/:skillId/page` | `src/coach/docs/docs-api.ts:41` |
 | POST | `/answers` | `src/coach/api.ts:168` |
 | GET | `/coverage` | `src/coach/api.ts:195` |
 | POST | `/practice/next` | `src/coach/api.ts:157` |
@@ -443,16 +448,17 @@ sequenceDiagram
 
 ### Configuration
 
-Config files: `.env`
+Config files: `.env`, `.env.sample`
 
 | Variable | Default | Used by | Declared in |
 |---|---|---|---|
-| `COACH_DB_PATH` | — | Coach server | `scripts/docs-sheets.ts:59`, `scripts/generate-stats.ts:70`, `scripts/generate.ts:284` |
+| `COACH_DB_PATH` | — | Coach server | `scripts/db-setup.ts:16`, `scripts/docs-review.ts:51`, `scripts/docs-sheets.ts:71` |
 | `COACH_MODEL` | — | Coach server | `.env:4` |
 | `EVAL_SWEEP_AREA` | — | Coach server | `src/evals/coach.eval.ts:230` |
 | `FLUE_DB_PATH` | — | Coach server | `src/db.ts:8` |
-| `GENERATE_PARALLEL` | — | Coach server | `scripts/docs-sheets.ts:50`, `scripts/generate.ts:251` |
-| `MINIMAX_API_KEY` | — | Coach server | `.env:3` |
+| `GENERATE_PARALLEL` | — | Coach server | `scripts/docs-review.ts:50`, `scripts/docs-sheets.ts:61`, `scripts/generate.ts:261` |
+| `MINIMAX_API_KEY` | — | Coach server | `.env:3`, `.env.sample:7` |
+| `REVIEWER_MODEL` | — | Coach server | `.env:8` |
 | `SPECIALIST_MODEL` | — | Coach server | `.env:5` |
 | `VERIFIER_MODEL` | — | Coach server | `.env:7` |
 | `WRITER_MODEL` | — | Coach server | `.env:6` |
@@ -463,7 +469,7 @@ Runtime, frameworks and key libraries declared in each container's build files.
 
 | Container | Declared |
 |---|---|
-| **Coach server** | `@flue/react ^2.3.0`, `@flue/runtime ^2.3.0`, `@flue/sdk ^2.3.0`, `@flue/vite ^2.3.0`, `hono ^4.13.13`, `marked ^15.0.12`, `react ^18.3.1`, `react-dom ^18.3.1`, `sanitize-html 2.18.0`, `valibot ^1.5.0`, `vite ^8.3.4`, `typescript ^7.0.2`, `vitest ^4.1.12` |
+| **Coach server** | `Node.js >=22.18`, `@flue/react ^2.3.0`, `@flue/runtime ^2.3.0`, `@flue/sdk ^2.3.0`, `@flue/vite ^2.3.0`, `hono ^4.13.13`, `marked ^15.0.12`, `react ^18.3.1`, `react-dom ^18.3.1`, `sanitize-html 2.18.0`, `valibot ^1.5.0`, `vite ^8.3.4`, `typescript ^7.0.2`, `vitest ^4.1.12` |
 
 ### C4 files
 
@@ -524,7 +530,7 @@ Every project or module and every reference between them, tests included. The au
 
 ```mermaid
 ---
-title: "flue · Project dependency graph"
+title: "study-coach · Project dependency graph"
 ---
 graph TD
     src__files["src (files)"]
@@ -602,5 +608,7 @@ graph TD
 
 ## Report Metadata
 
-Generator Version: 3.5.1
+- Generated By: architecture-skills plugin, c4-diagrams skill
+- Generator Version: 3.7.0
+- Source: https://github.com/ythalorossy/architecture-skills
 
