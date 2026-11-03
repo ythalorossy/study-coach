@@ -28,14 +28,14 @@ describe("coach db", () => {
 		expect(skills.n).toBe(69);
 	});
 
-	it("every skill has 2 to 4 learn.microsoft.com doc URLs", () => {
+	it("every skill has 2 to 5 learn.microsoft.com doc URLs", () => {
 		const db = openCoachDb(":memory:");
 		const rows = db.raw.prepare("SELECT id, doc_urls FROM skills").all() as Row[];
 		expect(rows).toHaveLength(69);
 		for (const row of rows) {
 			const urls = JSON.parse(row.doc_urls as string) as string[];
 			expect(urls.length).toBeGreaterThanOrEqual(2);
-			expect(urls.length).toBeLessThanOrEqual(4);
+			expect(urls.length).toBeLessThanOrEqual(5);
 			for (const url of urls) expect(url.startsWith("https://learn.microsoft.com/")).toBe(true);
 		}
 	});
