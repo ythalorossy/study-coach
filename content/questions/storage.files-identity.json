@@ -1719,6 +1719,77 @@
 				"smb-mounting"
 			],
 			"reviewed": false
+		},
+		{
+			"id": "q_01M6FMA624189G9A17XMVWRBYA",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You support the SMB shares of three storage accounts. Each account can point at only one of the identity sources that Azure Files supports, and whichever source you pick governs every share in that account. For each deployment described below, drag the identity source that should be configured on that account so that its users can reach the shares with their own credentials instead of an account key. One of the items in the list cannot serve this purpose on any account.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Deployment            Environment as it stands\n--------------------  -------------------------------------------------------------------------------------------\nField team offices    The office network already runs an identity forest that every client can reach\n                      directly, and its configuration cannot be changed. The account has to be joined to\n                      that forest by an administrator, and the people who use the share hold accounts\n                      both there and in the cloud tenant.\n\nShared services team  No such forest runs in the office network. The platform team runs a managed domain\n                      in Azure, expects the storage account's own entry to be created for them during\n                      setup, and keeps that managed domain synchronized with the cloud tenant for them.\n\nContractor laptops    Every device is joined to the cloud tenant only, no route to the controllers of any\n                      office forest exists, and an MFA exclusion will be set up for the storage account\n                      application."
+				},
+				"items": [
+					{
+						"id": "ad-ds",
+						"text": "On-premises Active Directory Domain Services (AD DS)"
+					},
+					{
+						"id": "entra-domain-services",
+						"text": "Microsoft Entra Domain Services"
+					},
+					{
+						"id": "entra-kerberos",
+						"text": "Microsoft Entra Kerberos"
+					},
+					{
+						"id": "entra-id",
+						"text": "Microsoft Entra ID"
+					}
+				],
+				"slots": [
+					{
+						"id": "field",
+						"label": "Field team offices"
+					},
+					{
+						"id": "shared",
+						"label": "Shared services team"
+					},
+					{
+						"id": "contractors",
+						"label": "Contractor laptops"
+					}
+				]
+			},
+			"key": {
+				"contractors": "entra-kerberos",
+				"field": "ad-ds",
+				"shared": "entra-domain-services"
+			},
+			"explanation": {
+				"correct": "Each storage account takes exactly one identity source, and the three deployments have different requirements, so they map to the three supported sources one to one. Field team offices runs an existing forest that every client can reach and that cannot be changed, and the account has to be joined to it, which is the case described for AD DS: clients must reach the domain controllers, and user accounts must be synced into Microsoft Entra ID so that per-user and per-group share permissions can be assigned. Shared services team has no such forest and works with a managed domain in Azure whose synchronization from the cloud tenant is handled by the platform, and that arrangement is what Microsoft Entra Domain Services provides: it creates the storage account identity automatically during enablement and manages the sync of user accounts for you. Contractor laptops has devices joined only to the cloud tenant with no route to any domain controller, which is precisely the gap that Microsoft Entra Kerberos exists to close: it removes the domain-controller connectivity requirement, accepts cloud-only identities, and requires the storage account application to be excluded from multifactor authentication policies. Microsoft Entra ID itself is not an identity source for Azure Files sign-in, so it fills none of the three slots.",
+				"perChoice": {
+					"ad-ds": "Belongs with Field team offices: an existing environment with a forest that clients can reach directly, which cannot be reconfigured, and the account must be joined to it as part of setup. Users who need individual share-level permissions also need their accounts synced into the cloud tenant, because share permissions are targeted at the cloud-side object while the folder entries are enforced in the forest.",
+					"entra-domain-services": "Belongs with Shared services team: the platform team already runs a managed domain in Azure and wants the storage account's own entry created for them during setup plus the copying of user accounts handled for them, and both are properties of this source, which is the fit for organizations that already use or need a managed domain in Azure.",
+					"entra-kerberos": "Belongs with Contractor laptops: devices that are joined only to the cloud tenant and have no route to the controllers of any office forest are the classic cloud-first case, and setting up an MFA exclusion for the storage account application is a stated prerequisite of this source. It also works for cloud-only accounts, which the other two sources do not accept without an existing forest.",
+					"entra-id": "Fits no slot: Azure Files supports exactly three sources for SMB sign-in, and only one can be configured per storage account. This one is where share-level role assignments are targeted, but it is not a source that can be configured on an account to validate a client's sign-in, so it cannot fill any of the three slots."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-active-directory-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-ad-ds-enable"
+				}
+			],
+			"subtopics": [
+				"identity-source-selection",
+				"azure-files-smb-identity"
+			],
+			"reviewed": false
 		}
 	]
 }
