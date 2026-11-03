@@ -39,14 +39,14 @@ built: 2026-10-30T21:32:48.906Z
 
 ## Compare and choose
 
-- Choose an ASG when a rule should follow an application role as machines change, a service tag when the target is an Azure service published as IP prefixes, and explicit IP addresses or CIDR ranges when only fixed hosts matter. ([Learn](https://learn.microsoft.com/en-us/azure/virtual-network/application-security-groups))
+- Prefer an ASG or a service tag over individual IP addresses in a rule. ([Learn](https://learn.microsoft.com/en-us/azure/virtual-network/application-security-groups))
 - A rule naming an ASG affects only member NICs, so a NIC outside the ASG is untouched even when the same NSG is attached to its subnet. ([Learn](https://learn.microsoft.com/en-us/azure/virtual-network/application-security-groups))
 - All NICs in an ASG must sit in one virtual network, and when a rule uses an ASG as both source and destination, all NICs in both ASGs must share that virtual network. ([Learn](https://learn.microsoft.com/en-us/azure/virtual-network/application-security-groups))
 - Plan ASGs before writing rules so tier-to-tier traffic needs a few group references, and prefer service tags or ASGs over long IP lists to cut rule count and maintenance. ([Learn](https://learn.microsoft.com/en-us/azure/virtual-network/application-security-groups))
 - To expose only a web tier, use `Internet` as source and the web ASG as destination with **Allow** on TCP port 80, like `Allow-HTTP-Inbound-Internet` at priority 100, because `DenyAllInbound` blocks unsolicited inbound traffic. ([Learn](https://learn.microsoft.com/en-us/azure/virtual-network/application-security-groups))
 - To isolate a database tier, add a **Deny** rule for all sources to the database ASG on port 1433, like `Deny-Database-All` at priority 120, because `AllowVNetInBound` otherwise permits all same-virtual-network traffic. ([Learn](https://learn.microsoft.com/en-us/azure/virtual-network/application-security-groups))
 - Give the legitimate path a lower priority number than that blanket deny, like `Allow-Database-BusinessLogic` at priority 110 from the logic ASG to the database ASG, so it matches first and everything else falls to the deny. ([Learn](https://learn.microsoft.com/en-us/azure/virtual-network/application-security-groups))
-- A subnet NSG filters a whole tier while a NIC NSG filters one interface; the documentation example uses one NSG on two subnets and still narrows traffic by ASG membership. ([Learn](https://learn.microsoft.com/en-us/azure/virtual-network/application-security-groups))
+- The documentation example uses one NSG on two subnets and still narrows traffic by ASG membership. ([Learn](https://learn.microsoft.com/en-us/azure/virtual-network/application-security-groups))
 - To unblock traffic a built-in rule blocks, add a custom rule with a lower priority number instead of editing the built-in, and use security admin rules when policy must be enforced across subscriptions. ([Learn](https://learn.microsoft.com/en-us/azure/virtual-network/manage-network-security-group)) ([Learn](https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview))
 
 ## Gotchas
