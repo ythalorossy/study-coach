@@ -1451,6 +1451,470 @@
 				"outbound-rule"
 			],
 			"reviewed": false
+		},
+		{
+			"id": "q_01M6M0JYR8H7XDA2SG2PNP4WM2",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You operate a Standard internal Azure Load Balancer named lb-orders in the virtual network vnet-orders. It balances four Linux VMs — vm-orders-01, vm-orders-02, vm-orders-03 and vm-orders-04 — that host the internal order API. A failing disk means vm-orders-03 has to be patched during a maintenance window of about three hours. While that window is open, vm-orders-03 must not receive any new client connections, the other three VMs must keep serving every request exactly as before, and vm-orders-03 must stay registered with the load balancer. You may not change the application, the servers, or their network security rules; the change has to be made on the load balancer resource itself. Which setting should you change?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"loadBalancerName\": \"lb-orders\",\n  \"sku\": \"Standard\",\n  \"loadBalancerType\": \"internal\",\n  \"frontendIpConfiguration\": { \"ipAddress\": \"10.20.7.12\", \"protocol\": \"TCP\", \"frontendPort\": 443 },\n  \"backendPoolName\": \"pool-orders\",\n  \"backendPoolServers\": [\"vm-orders-01\", \"vm-orders-02\", \"vm-orders-03\", \"vm-orders-04\"],\n  \"healthProbe\": { \"name\": \"probe-orders\", \"protocol\": \"HTTP\", \"port\": 8080, \"path\": \"/healthz\", \"intervalSeconds\": 15, \"threshold\": 3 },\n  \"loadBalancingRule\": { \"name\": \"rule-orders\", \"protocol\": \"TCP\", \"frontendPort\": 443, \"backendPort\": 443 },\n  \"currentProbeResult\": \"all four VMs reporting healthy\"\n}"
+				},
+				"statement": "To keep vm-orders-03 from taking new client connections during its patch window, you should change {{setting}}.",
+				"slots": [
+					{
+						"id": "setting",
+						"options": [
+							{
+								"id": "a",
+								"text": "the Admin State of the affected backend pool instance"
+							},
+							{
+								"id": "b",
+								"text": "the health probe of the affected backend pool"
+							},
+							{
+								"id": "c",
+								"text": "the load balancing rule of the affected backend pool"
+							},
+							{
+								"id": "d",
+								"text": "the frontend IP configuration of the affected load balancer"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"setting": "a"
+			},
+			"explanation": {
+				"correct": "The Admin State setting is the per-instance override used for maintenance work: it overrides the load balancer's health probe verdict for one backend pool instance. Setting the Admin State of vm-orders-03's entry in pool-orders to Down stops the load balancer from delivering new connections to that single VM even though its probe still reports it as healthy, while the probe configuration, the load balancing rule, the frontend address and the other three VMs are left untouched and vm-orders-03 stays in the pool. Admin State only takes effect where a health probe is attached to the rule, which is the case for rule-orders. Afterwards the instance can be returned to service by clearing that Admin State or setting it back to None.",
+				"perChoice": {
+					"setting:b": "This health probe belongs to the whole backend pool, so any change to it changes the health verdict for vm-orders-01 through vm-orders-04 together. It cannot single out one machine to stop taking new connections while the others keep serving.",
+					"setting:c": "The load balancing rule maps the frontend address and port onto every VM in the pool, so changing it alters the delivery of traffic to all four machines rather than to the single machine being patched.",
+					"setting:d": "The frontend IP configuration is the address that clients connect to; changing it would affect reachability of the whole order API and the traffic of all four VMs, not the routing to one machine."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/components"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/skus"
+				}
+			],
+			"subtopics": [
+				"admin-state",
+				"health-probes",
+				"backend-pool"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6M2088ZKW5R08EBKC4YA5RV",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have been given the task of creating a new internal Standard Azure Load Balancer named lb-pay in the virtual network vnet-pay to publish the finance department's internal payment authorization API. The three backend VMs of the payment pool are placed one in each of the three availability zones of the region where the load balancer is being created. You need the frontend to keep accepting client connections and keep delivering traffic to healthy backends while a single availability zone in that region is unavailable. Which availability zone configuration should you set on the frontend IP configuration of lb-pay?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Load balancer",
+							"lb-pay"
+						],
+						[
+							"SKU",
+							"Standard"
+						],
+						[
+							"Type",
+							"Internal"
+						],
+						[
+							"Frontend IP configuration",
+							"lb-pay-fe (private IPv4 address from subnet snet-pay)"
+						],
+						[
+							"Backend pool",
+							"be-pay (vm-pay-01, vm-pay-02, vm-pay-03)"
+						],
+						[
+							"Region",
+							"West Europe (3 availability zones)"
+						]
+					]
+				},
+				"statement": "The correct availability zone configuration for the frontend IP configuration of lb-pay is {{frontendZone}}.",
+				"slots": [
+					{
+						"id": "frontendZone",
+						"options": [
+							{
+								"id": "a",
+								"text": "Zone-redundant"
+							},
+							{
+								"id": "b",
+								"text": "Zonal, pinned to availability zone 1"
+							},
+							{
+								"id": "c",
+								"text": "Zonal, pinned to availability zone 2"
+							},
+							{
+								"id": "d",
+								"text": "Zonal, pinned to availability zone 3"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"frontendZone": "a"
+			},
+			"explanation": {
+				"correct": "On the Standard SKU the availability zone support type is set on the frontend IP configuration, and it can be either zone-redundant or zonal. A zone-redundant frontend IP configuration is served from infrastructure in the region's availability zones instead of being tied to one of them, so losing a single zone does not stop the load balancer from receiving and distributing traffic, while the health probes keep traffic only on healthy instances (here the pool has one VM per zone, so the VM in the failed zone is dropped and the others keep serving). A zonal frontend belongs to a single availability zone, so it offers no protection when that zone is unavailable and does not meet the requirement.",
+				"perChoice": {
+					"frontendZone:b": "This option binds the frontend IP configuration to availability zone 1 only, so the frontend depends on that single zone and the requirement of staying reachable during one zone outage is not met.",
+					"frontendZone:c": "This option binds the frontend IP configuration to availability zone 2 only, so the frontend depends on that single zone and the requirement of staying reachable during one zone outage is not met.",
+					"frontendZone:d": "This option binds the frontend IP configuration to availability zone 3 only, so the frontend depends on that single zone and the requirement of staying reachable during one zone outage is not met."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/skus"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-overview"
+				}
+			],
+			"subtopics": [
+				"availability-zones",
+				"frontend-ip-configuration",
+				"internal-load-balancer"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6M24056T222EH3GW2PJZQ00",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "A retail group publishes its customer portal to the internet through a public Standard Azure Load Balancer named lb-portal. For the upcoming release, every inbound request has to be inspected by the firewall appliance fw-vendor-01 — a single VM running a vendor virtual firewall image — before it reaches the web servers. The public address that clients use must not change, and the web servers and the application must not be modified. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Load balancer",
+							"lb-portal"
+						],
+						[
+							"SKU",
+							"Standard"
+						],
+						[
+							"Frontend IP",
+							"Public, 20.61.14.9"
+						],
+						[
+							"Frontend port",
+							"TCP 443"
+						],
+						[
+							"Backend pool",
+							"vm-web-01, vm-web-02, vm-web-03, vm-web-04 (NIC based)"
+						],
+						[
+							"Health probe",
+							"HTTP, port 443"
+						],
+						[
+							"Appliance",
+							"fw-vendor-01, one VM running a vendor virtual firewall image, no public IP address"
+						],
+						[
+							"Subnet",
+							"snet-app, NSG allows inbound TCP 443 from the internet"
+						]
+					]
+				},
+				"statement": "To have every inbound request inspected by the appliance before it reaches the web servers, you should {{slot1}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "Create a Gateway SKU load balancer with the appliance VM in its backend pool, and chain lb-portal to it."
+							},
+							{
+								"id": "b",
+								"text": "Create a Standard SKU load balancer with the appliance VM in its backend pool, and keep lb-portal in front of the web servers."
+							},
+							{
+								"id": "c",
+								"text": "Create an inbound NAT rule on lb-portal that forwards the frontend IP and port 443 to the appliance VM."
+							},
+							{
+								"id": "d",
+								"text": "Create a Gateway SKU load balancer with the appliance VM and the web servers in one backend pool, and keep lb-portal as it is."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a"
+			},
+			"explanation": {
+				"correct": "fw-vendor-01 is a third-party network virtual appliance, and Gateway is the Azure Load Balancer SKU dedicated to those appliances, while Standard is the general-purpose Layer 4 service. A Standard load balancer and a Gateway load balancer can be chained: the Standard public load balancer's frontend references the frontend IP configuration of the Gateway load balancer, so inbound traffic is handed to the appliance first and is then delivered onward to the consumer load balancer and its web servers, while clients keep using 20.61.14.9. The appliance VM belongs in the Gateway load balancer's backend pool, and the four web servers stay in lb-portal's pool.",
+				"perChoice": {
+					"slot1:b": "A Standard SKU load balancer spreads inbound traffic across every instance in its backend pool, so registering the appliance as one more pool member means some requests reach the web servers without ever passing through the appliance. The SKU dedicated to network virtual appliances is the Gateway one, and chaining a Standard load balancer to a Gateway load balancer is what inserts the appliance into the traffic path.",
+					"slot1:c": "An inbound NAT rule forwards a frontend IP and port to one specific instance in the backend pool. It is for single-instance access such as SSH or RDP, not for placing an appliance in the traffic path, and requests it sends to the appliance would not then be balanced on to the four web servers.",
+					"slot1:d": "The Gateway SKU is dedicated to network virtual appliances, so the application web servers do not belong in its backend pool; they must stay behind the Standard public load balancer. This option also leaves lb-portal unchanged, so no reference from the public frontend points at the appliance load balancer and inbound requests are never inspected."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/skus"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/components"
+				}
+			],
+			"subtopics": [
+				"gateway-load-balancer",
+				"network-virtual-appliance",
+				"load-balancer-sku"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6M27DY7YCA4T403W8DAAD0S",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You publish a home-improvement retailer's customer portal to the internet through a Standard public load balancer named lb-storefront. The four backend VMs behind that portal sit in the availability set aset-web and are added to lb-storefront's backend pool by their network interfaces. The business now wants a second, separate service — a returns portal — built on three new Windows VMs that are already deployed and that must remain in aset-web. The returns portal has to be reachable on its own public address through its own load balancer, while the customer portal keeps serving traffic exactly as it does today, and the portal VMs cannot be moved, removed or repurposed. Which configuration should you apply to the new load balancer and its backend pool?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Resource              Type                             Details\n-------------------  -------------------------------  ---------------------------------------------------------------------------\nlb-storefront        Standard public load balancer    Backend pool type: NIC based; frontend public address 20.10.4.7; publishes the customer portal\naset-web             Availability set                Contains vm-store-01 to vm-store-04 and vm-returns-01 to vm-returns-03\nvm-returns-01..03    Windows Server 2022 VMs          No public addresses; must remain members of aset-web\nlb-returns           Standard public load balancer    Not created yet; must publish the returns portal on its own public address"
+				},
+				"statement": "To publish the returns portal from its own load balancer while leaving the customer portal untouched, the team must {{config}}.",
+				"slots": [
+					{
+						"id": "config",
+						"options": [
+							{
+								"id": "a",
+								"text": "set lb-returns backend pool type to IP-based"
+							},
+							{
+								"id": "b",
+								"text": "set lb-returns backend pool type to NIC-based"
+							},
+							{
+								"id": "c",
+								"text": "set lb-returns backend pool type to NIC-based and move the returns VMs to another availability set"
+							},
+							{
+								"id": "d",
+								"text": "set lb-returns backend pool type to NIC-based and place the returns VMs in a separate resource group"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"config": "a"
+			},
+			"explanation": {
+				"correct": "Load balancers are counted against an availability set according to how their backend pool is built: only one public load balancer with a network-interface-based backend pool is permitted per availability set (and likewise one internal one), and that restriction does not apply to load balancers whose backend pool is built from the addresses of the instances. Because lb-storefront already occupies the single public NIC-based slot for aset-web, the new load balancer lb-returns has to use an IP-based backend pool to be created alongside it for the returns VMs, which stay in aset-web.",
+				"perChoice": {
+					"config:b": "This produces a second public load balancer for aset-web whose backend pool is network-interface based, exceeding the limit of one public NIC-based load balancer per availability set that lb-storefront already occupies.",
+					"config:c": "Moving the returns VMs to another availability set contradicts the requirement that they remain in aset-web, and as long as lb-returns keeps a network-interface-based backend pool it still counts against the per-availability-set limit.",
+					"config:d": "Changing resource groups does not change availability set membership, and the returns VMs are required to stay in aset-web, so lb-returns would still be a second public load balancer with a network-interface-based pool tied to that availability set."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/components"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/skus"
+				}
+			],
+			"subtopics": [
+				"backend-pool-types",
+				"availability-set-quota",
+				"load-balancer-skus"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6M2DTZ7B7YNDX95EDKKX9MM",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "A retail group publishes the same ordering service from two Azure regions. Each region already has its own public load balancer in front of the virtual machines that serve the application, and customers today must use a different address for each region. The business now wants one static public address that every customer uses, with each customer session served by the nearest regional deployment and a region that fails dropped from service automatically. The two regional load balancers must keep their current addresses and rules, and no virtual machine or application may be changed. Which configuration should you create?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Current deployments\n\nlb-west   (West US)       Public Standard load balancer\n                           frontend address 20.61.8.24\n                           backend pool: 4 virtual machines in vnet-west\n\nlb-eu     (North Europe)  Public Standard load balancer\n                           frontend address 20.60.115.9\n                           backend pool: 4 virtual machines in vnet-eu\n\nCustomer requirement\n                           One static public address for every customer\n                           Each session served by the nearest regional deployment\n                           A failed region leaves service automatically"
+				},
+				"statement": "To give all customers a single address that spans both regions, {{deployment}}.",
+				"slots": [
+					{
+						"id": "deployment",
+						"options": [
+							{
+								"id": "a",
+								"text": "Create a new public Standard load balancer with the Global tier and place the two regional load balancers in its backend pool"
+							},
+							{
+								"id": "b",
+								"text": "Create a new public Standard load balancer in West US and add the virtual machines from the North Europe deployment to its backend pool"
+							},
+							{
+								"id": "c",
+								"text": "Create a new internal load balancer with the Global tier and place the two regional load balancers in its backend pool"
+							},
+							{
+								"id": "d",
+								"text": "Change the SKU of the two regional load balancers to the Global tier so their existing frontend addresses serve all customers"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"deployment": "a"
+			},
+			"explanation": {
+				"correct": "A single public entry point that sends each customer to the nearest regional deployment and drops a failed region from service is what the Global tier of Azure Load Balancer provides for public Standard load balancers. You create a new load balancer in the Global tier and add the two existing regional load balancers to its backend pool, so their addresses, rules and virtual machines stay exactly as they are. The regional deployments themselves are never converted; they are linked from the new global one.",
+				"perChoice": {
+					"deployment:b": "A regional public Standard load balancer balances only virtual machines or scale set instances from a single virtual network in its own region, so the North Europe virtual machines cannot join the backend pool of a load balancer in West US, and a plain Standard load balancer does not distribute traffic between regions.",
+					"deployment:c": "Global tier front ends are public only; an internal front end is not supported on such a load balancer, so it could never give customers the public address they must use.",
+					"deployment:d": "Regional load balancers cannot be upgraded to the Global tier - a Global tier load balancer has to be created as a separate resource - and each of the two regional load balancers would keep serving only its own region instead of one shared entry point."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/skus"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/components"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-overview"
+				}
+			],
+			"subtopics": [
+				"global-tier-cross-region",
+				"public-load-balancer",
+				"regional-failover"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6M2ZKQ9WK89XHTJM9W3AVMP",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are building a new public load balancer named lb-storefront for the checkout portal of an online retailer in the virtual network vnet-store. The portal has to be reachable from the internet, and the four checkout VMs in the backend pool also have to reach the internet through the load balancer's own address. The Basic SKU can no longer be used for new deployments, so the replacement has to deliver both of these behaviours. Two things are blocking go-live. First, the frontend IP configuration is still empty, and the exhibit lists the address resources that exist in the subscription. Second, during a routine application restart that lasts about twelve seconds, the checkout VMs are dropped from the pool even though each one recovers on its own; the operations team wants the pool to tolerate such short restarts while still removing a VM whose application never comes back. The probe currently removes a member after two consecutive failures, and a restarting VM is not accepting connections on port 8080 at all. Which combination should the frontend use, and which change should you make to the health probe?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"loadBalancerToCreate\": {\n    \"name\": \"lb-storefront\",\n    \"frontendIpConfigurations\": [],\n    \"backendPool\": \"pool-checkout\",\n    \"backendMembers\": [\"vm-checkout-01\", \"vm-checkout-02\", \"vm-checkout-03\", \"vm-checkout-04\"]\n  },\n  \"healthProbe\": {\n    \"name\": \"probe-checkout\",\n    \"protocol\": \"Http\",\n    \"port\": 8080,\n    \"intervalInSeconds\": 5,\n    \"timeoutInSeconds\": 2\n  },\n  \"publicIpCandidates\": [\n    { \"name\": \"pip-store-a\", \"sku\": \"Basic\", \"allocation\": \"Static\", \"address\": \"20.60.30.11\" },\n    { \"name\": \"pip-store-b\", \"sku\": \"Standard\", \"allocation\": \"Static\", \"address\": \"20.60.30.12\" }\n  ]\n}"
+				},
+				"statement": "The frontend should be created with {{frontend}}, and the health probe should be adjusted with {{probe}}.",
+				"slots": [
+					{
+						"id": "frontend",
+						"options": [
+							{
+								"id": "a",
+								"text": "The Basic SKU public IP on a Standard SKU load balancer"
+							},
+							{
+								"id": "b",
+								"text": "The Standard SKU public IP on a Standard SKU load balancer"
+							},
+							{
+								"id": "c",
+								"text": "The Standard SKU public IP on a Basic SKU load balancer"
+							},
+							{
+								"id": "d",
+								"text": "The Basic SKU public IP on a Basic SKU load balancer"
+							}
+						]
+					},
+					{
+						"id": "probe",
+						"options": [
+							{
+								"id": "a",
+								"text": "Increase the unhealthy threshold on the health probe"
+							},
+							{
+								"id": "b",
+								"text": "Decrease the unhealthy threshold on the health probe"
+							},
+							{
+								"id": "c",
+								"text": "Change the health probe protocol from HTTP to TCP"
+							},
+							{
+								"id": "d",
+								"text": "Change the health probe timeout from 2 seconds to 10 seconds"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"frontend": "b",
+				"probe": "a"
+			},
+			"explanation": {
+				"correct": "The new load balancer has to be a Standard SKU public load balancer: the Basic SKU was retired on 30 September 2025 and never supported outbound rules, so only Standard can publish the portal to the internet and at the same time give the checkout VMs outbound connectivity through the load balancer's own address. A public Standard load balancer requires a Standard public IP address, so pip-store-b is the only address resource in the subscription that can be attached to the frontend, while pip-store-a uses the Basic SKU and is rejected as a SKU mismatch. For the probe, the unhealthy threshold is the setting that decides when an instance is pulled out of rotation. Raising it keeps a VM in the pool while it is briefly restarting, and a VM whose application never returns is still removed once the higher number of consecutive probe failures is reached.",
+				"perChoice": {
+					"frontend:a": "A Basic SKU public IP cannot be attached to a Standard SKU load balancer, so the frontend would still be rejected because the public IP SKU and the load balancer SKU must match.",
+					"frontend:c": "A Standard SKU public IP cannot be attached to a Basic SKU load balancer, and the Basic SKU was retired on 30 September 2025, so it is not an option for this deployment.",
+					"frontend:d": "The Basic SKU was retired on 30 September 2025 and it never supported outbound rules, so this combination cannot satisfy both the internet-facing publishing and the outbound requirements for the checkout VMs.",
+					"probe:b": "Lowering the unhealthy threshold makes the load balancer pull a member out of rotation after fewer consecutive probe failures, so the brief application restarts would remove healthy VMs from the pool even sooner.",
+					"probe:c": "While the application is restarting it is not accepting connections at all, so a TCP probe fails in exactly the same way as the HTTP probe, and a TCP probe would also stop validating the application's health path.",
+					"probe:d": "A longer timeout does not change how many consecutive probe failures are tolerated. The probe failures still count while the application is not listening, so members would still leave the pool during the restart."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/skus"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/components"
+				}
+			],
+			"subtopics": [
+				"load-balancer-sku",
+				"public-ip-sku-compatibility",
+				"health-probe-threshold"
+			],
+			"reviewed": false
 		}
 	]
 }

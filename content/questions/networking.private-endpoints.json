@@ -1605,6 +1605,224 @@
 				"app-service-plan-tiers"
 			],
 			"reviewed": false
+		},
+		{
+			"id": "q_01M6M01P1QVF4YT5C6NA8Z9944",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a reporting platform that runs in the virtual network `vnet-report` (subscription `sub-net`, region `westeurope`) and must read the archive data held in the storage account `st-archive`, which the data platform team owns in subscription `sub-data`. You raised the private endpoint `pe-archive` in subnet `snet-pe` of `vnet-report`, and the data platform team reported the outcome of that attempt, as shown in the exhibit. You need the endpoint created and the clients in `vnet-report` to reach `st-archive` over the private path. Which configuration should you use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Reported value"
+					],
+					"rows": [
+						[
+							"Private endpoint",
+							"`pe-archive` in subnet `snet-pe` of `vnet-report`"
+						],
+						[
+							"Endpoint subscription and region",
+							"`sub-net`, `westeurope`"
+						],
+						[
+							"Target service",
+							"Storage account `st-archive` in subscription `sub-data`"
+						],
+						[
+							"Storage account kind",
+							"General Purpose v1"
+						],
+						[
+							"Outcome of the attempt",
+							"Creation was rejected, and the data platform team saw a message stating that `Microsoft.Network` was not registered in the subscription that contains the target service"
+						]
+					]
+				},
+				"statement": "For the private endpoint to be deployed and to serve the reporting platform, the storage account must use the {{kind}} account kind, and the Microsoft.Network resource provider must be registered in {{scope}}.",
+				"slots": [
+					{
+						"id": "kind",
+						"options": [
+							{
+								"id": "a",
+								"text": "General Purpose v2 (StorageV2)"
+							},
+							{
+								"id": "b",
+								"text": "General Purpose v1 (Storage)"
+							},
+							{
+								"id": "c",
+								"text": "BlockBlobStorage"
+							},
+							{
+								"id": "d",
+								"text": "FileStorage"
+							}
+						]
+					},
+					{
+						"id": "scope",
+						"options": [
+							{
+								"id": "a",
+								"text": "The subscription hosting the private endpoint plus the subscription hosting the private-link resource"
+							},
+							{
+								"id": "b",
+								"text": "The subscription hosting the private endpoint only"
+							},
+							{
+								"id": "c",
+								"text": "The subscription hosting the private-link resource only"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"kind": "a",
+				"scope": "a"
+			},
+			"explanation": {
+				"correct": "Private endpoints can only be created on a General Purpose v2 (GPv2) storage account. `st-archive` is currently a General Purpose v1 account, so it has to be changed to the General Purpose v2 kind before a private endpoint can target it. Separately, the Microsoft.Network resource provider must be registered in the subscription that contains the private endpoint (`sub-net`) and in the subscription that contains the private-link resource (`sub-data`); both subscriptions take part in the creation, so registering only one of them leaves the deployment rejected, exactly as the reported message shows.",
+				"perChoice": {
+					"kind:b": "General Purpose v1 is the legacy storage account kind, and private endpoints can only be created on a General Purpose v2 account, so leaving the account as it is keeps the creation rejected.",
+					"kind:c": "BlockBlobStorage is a blob-only storage account type, not the General Purpose v2 kind, so it cannot be the target of a private endpoint.",
+					"kind:d": "FileStorage is a storage account type limited to file shares, not the General Purpose v2 kind, so it cannot be the target of a private endpoint.",
+					"scope:b": "Registering Microsoft.Network only in the subscription that holds the private endpoint is not sufficient: the subscription that holds the private-link resource (`sub-data`) must have the provider registered as well.",
+					"scope:c": "Registering Microsoft.Network only in the subscription that holds the private-link resource is not sufficient: the subscription that holds the private endpoint (`sub-net`) must have the provider registered as well."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/azure/private-link/private-endpoint-overview"
+				}
+			],
+			"subtopics": [
+				"private-endpoint-prerequisites",
+				"storage-account-kinds"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6M05B2NNM8MWR009DHESFSK",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You look after the private connectivity for a business application that runs in the virtual network `vnet-app` in subscription `sub-app`. The application reads blob containers from two storage accounts, `contosostore1` and `contosostore2`, which a central platform team owns in subscription `sub-platform`. You raised the private endpoints listed in the exhibit in subnet `snet-app`, and both connections report as approved. You then associated both of those endpoints with the single private DNS zone `privatelink.blob.core.windows.net` and linked that zone to `vnet-app`. Since that change, neither account name resolves inside the network, and the application returns empty result sets. The platform team has also asked you to confirm that the `Microsoft.Network` provider is registered wherever it is required, because nobody on their side tracks that. You need both storage accounts reachable over the private path from `vnet-app`, with both account names resolving inside the network to the private address carried by the endpoint created for that account. Which actions should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Storage accounts",
+							"contosostore1 and contosostore2 — subscription sub-platform"
+						],
+						[
+							"Virtual network",
+							"vnet-app — subscription sub-app"
+						],
+						[
+							"Private endpoints",
+							"pe-blob-1 → contosostore1 / blob, pe-blob-2 → contosostore2 / blob, both in subnet snet-app"
+						],
+						[
+							"Connection status",
+							"Approved for pe-blob-1 and pe-blob-2"
+						],
+						[
+							"Private DNS zone",
+							"privatelink.blob.core.windows.net, linked to vnet-app"
+						],
+						[
+							"Endpoints associated with that zone",
+							"pe-blob-1 and pe-blob-2"
+						],
+						[
+							"Microsoft.Network registration",
+							"Not confirmed in either subscription"
+						]
+					]
+				},
+				"statement": "To correct the deployment, you should {{slot1}}. To restore name resolution inside `vnet-app`, you should {{slot2}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "register every subscription involved with Microsoft.Network"
+							},
+							{
+								"id": "b",
+								"text": "register only the subscription that holds the endpoint with Microsoft.Network"
+							},
+							{
+								"id": "c",
+								"text": "register only the subscription that holds the storage accounts with Microsoft.Network"
+							},
+							{
+								"id": "d",
+								"text": "register no subscription with Microsoft.Network"
+							}
+						]
+					},
+					{
+						"id": "slot2",
+						"options": [
+							{
+								"id": "a",
+								"text": "create a separate private DNS zone for each of the storage accounts and link it to the virtual network"
+							},
+							{
+								"id": "b",
+								"text": "create a shared private DNS zone for both of the storage accounts and link it to the virtual network"
+							},
+							{
+								"id": "c",
+								"text": "create a shared public DNS zone for both of the storage accounts and link it to the virtual network"
+							},
+							{
+								"id": "d",
+								"text": "create a shared private DNS zone for both of the storage accounts and add one A record per account"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a",
+				"slot2": "a"
+			},
+			"explanation": {
+				"correct": "Two things stand between this deployment and a working private path. First, the networking resource provider has to be registered in both subscriptions that take part in the setup: the one that holds the private endpoints (sub-app) and the one that holds the storage accounts (sub-platform). That is why every subscription involved must be registered with Microsoft.Network rather than just one of them. Second, name resolution fails because a private DNS zone that is linked to a single Azure service must not be associated with two different private endpoints of that same service type. When pe-blob-2 was associated with the zone that already held pe-blob-1, the A record created for the first endpoint was removed, so both account names stopped resolving inside vnet-app. The supported layout is one matching private DNS zone per endpoint — a zone for pe-blob-1 and a zone for pe-blob-2 — with each of those zones linked to vnet-app so that the records for the endpoints are generated automatically.",
+				"perChoice": {
+					"slot1:b": "This covers only the subscription that holds the private endpoints. The subscription that holds the storage accounts must be registered with Microsoft.Network as well, because that is where the private-link resource lives and the provider registration is required in both subscriptions.",
+					"slot1:c": "This covers only the subscription that holds the storage accounts. The subscription that holds the private endpoints must be registered with Microsoft.Network as well, because the endpoints are created and used there.",
+					"slot1:d": "No registration at all leaves the setup blocked: the subscription containing the private endpoints and the subscription containing the private-link resource must both be registered with the Microsoft network resource provider before the private path can be used.",
+					"slot2:b": "This is the arrangement that is already in place and it is what caused the failure. Associating two different private endpoints of the same service type with one private DNS zone deletes the A record that was created for the first endpoint, so resolution fails for both accounts from inside the virtual network.",
+					"slot2:c": "A public DNS zone cannot carry the private addresses of the endpoints, so the account names would not resolve to the private path from inside vnet-app. Keeping both endpoints associated with a single zone also repeats the failure that is already visible in the exhibit.",
+					"slot2:d": "Adding manual A records to a zone shared by two endpoints of the same service type does not repair the setup, because the record created for one endpoint is removed when the other endpoint is associated with that zone. The zone has to be split so that every endpoint has its own matching zone."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-dns"
+				}
+			],
+			"subtopics": [
+				"private-dns-zone-configuration",
+				"resource-provider-registration"
+			],
+			"reviewed": false
 		}
 	]
 }

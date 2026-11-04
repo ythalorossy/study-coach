@@ -1236,6 +1236,631 @@
 				"inbound-connectivity"
 			],
 			"reviewed": false
+		},
+		{
+			"id": "q_01M6KZRFGK3DV8XKNTXAE2KJZH",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a Standard public Azure Load Balancer named lb-storefront in the subscription contoso-prod that fronts four Windows virtual machines running a storefront API. The load balancing rule sends frontend port 443 to backend port 8443 on those machines, and the rule references an HTTP probe on port 8443 with path /health. The machines have no public IP addresses, and an outbound rule carries their calls to a partner API out of the virtual network. The on-call team is rewriting its troubleshooting runbook so that, for each of the five situations listed below, the runbook names the reading in Azure Monitor that answers it. Match each situation to the reading.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Load balancer",
+							"lb-storefront (Standard, public)"
+						],
+						[
+							"Frontend IP and port",
+							"20.240.6.14, port 443"
+						],
+						[
+							"Backend pool",
+							"4 Windows virtual machines, backend port 8443"
+						],
+						[
+							"Load balancing rule",
+							"frontend port 443 to backend port 8443"
+						],
+						[
+							"Health probe",
+							"HTTP, port 8443, path /health, interval 15 s, threshold 2"
+						],
+						[
+							"Outbound",
+							"outbound rule present; backend machines have no public IP addresses"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "m1",
+						"text": "Data Path Availability"
+					},
+					{
+						"id": "m2",
+						"text": "Health Probe Status"
+					},
+					{
+						"id": "m3",
+						"text": "Used SNAT Ports"
+					},
+					{
+						"id": "m4",
+						"text": "Allocated SNAT Ports"
+					},
+					{
+						"id": "m5",
+						"text": "SNAT Connection Count"
+					},
+					{
+						"id": "m6",
+						"text": "SYN Count"
+					},
+					{
+						"id": "m7",
+						"text": "Byte Count"
+					},
+					{
+						"id": "m8",
+						"text": "Packet Count"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Tell whether the regional platform inside Azure is delivering traffic to the front-end IP of the rule, so that a platform-side fault can be told apart from an application-side one"
+					},
+					{
+						"id": "s2",
+						"label": "Tell which backend instance has stopped answering the check that was configured on the load balancer"
+					},
+					{
+						"id": "s3",
+						"label": "Show how many of a backend instance's outbound port mappings are currently taken"
+					},
+					{
+						"id": "s4",
+						"label": "Show how many outbound port mappings the load balancer gave each backend instance"
+					},
+					{
+						"id": "s5",
+						"label": "Show how many outbound flows were masked to the front-end IP and how many of them failed"
+					}
+				]
+			},
+			"key": {
+				"s1": "m1",
+				"s2": "m2",
+				"s3": "m3",
+				"s4": "m4",
+				"s5": "m5"
+			},
+			"explanation": {
+				"correct": "Each runbook entry is answered by exactly one reading. The regional platform view (Data Path Availability) reflects the health of the regional path that carries traffic to the front end and is what separates a platform-side fault from an application-side one. The per-endpoint view of whether the configured check is being answered (Health Probe Status) identifies the specific backend instance that stopped answering. The two per-instance outbound readings differ only in what they count: Used SNAT Ports reports the port mappings a backend instance has taken, while Allocated SNAT Ports reports the port mappings it was given, and comparing the two shows exhaustion risk. SNAT Connection Count reports the outbound flows masqueraded to the front-end IP together with successful and failed counts. SYN Count, Byte Count and Packet Count are traffic counters that answer none of the five entries.",
+				"perChoice": {
+					"m1": "Belongs in the platform-delivery entry. It judges the regional data plane and the reachability of the front-end IP, so charting it beside the per-instance reading separates a platform fault from a configuration or application fault.",
+					"m2": "Belongs in the backend-instance entry. It provides an aggregate or per-endpoint view of how the load balancer judges each instance according to the check you configured, so it names the instance that stopped answering.",
+					"m3": "Belongs in the entry about the outbound port mappings a backend instance has taken. It reports how many SNAT ports are consumed per backend instance, and with Average aggregation it gives the per-instance value.",
+					"m4": "Belongs in the entry about the outbound port mappings the load balancer gave each backend instance. It reports how many SNAT ports were assigned per backend instance, and comparing it with the consumed figure shows how close each instance is to exhaustion.",
+					"m5": "Belongs in the outbound-flow entry. It counts the outbound flows that were masqueraded to the front-end IP and reports successful and failed flows separately, so it shows both the volume of outbound work and the failures.",
+					"m6": "Fits none of the entries. It reports the number of TCP SYN packets received at the front end, which shows connection attempts rather than platform delivery, per-instance check results, or per-instance outbound port counts.",
+					"m7": "Fits none of the entries. It reports the data processed per front end, and byte counts are not spread evenly across backend instances because the load balancer balances flows, so it cannot be read as a per-instance figure.",
+					"m8": "Fits none of the entries. It reports the packets processed per front end and says nothing about whether a backend instance answers the configured check or about per-instance outbound port mappings."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-diagnostics"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-custom-probe-overview"
+				}
+			],
+			"subtopics": [
+				"load-balancer-metrics",
+				"azure-monitor-diagnostics",
+				"snat-outbound-connections"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6KZW5BXHN3WWB92GHYBDXCZ",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have four Standard internal Azure Load Balancers in the subscription contoso-prod, and clients cannot open new connections to the backends of any of them. The exhibit lists, for each of them, the load balancing rule, the health probe, the backend pool and what the support team observes. The team has drafted one change per load balancer and is allowed to apply only those four changes. You need clients to reach the application through every one of these load balancers again. Which change belongs with each load balancer?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "[\n  {\n    \"loadBalancer\": \"lb-arc\",\n    \"loadBalancingRule\": { \"name\": \"lbrule-arc\", \"frontendPort\": 443, \"backendPort\": 8443, \"protocol\": \"TCP\", \"healthProbe\": \"(none)\" },\n    \"healthProbe\": { \"name\": \"probe-arc\", \"protocol\": \"TCP\", \"port\": 8443, \"intervalSeconds\": 15, \"threshold\": 2, \"usedBy\": \"(none)\" },\n    \"backendPool\": [\"10.20.1.4\", \"10.20.1.5\", \"10.20.1.6\"],\n    \"application\": \"The three servers listen on TCP 8443 and answer normally when contacted from inside the virtual network.\",\n    \"observed\": \"No reading appears for the Health Probe Status metric and no client can open a new connection.\"\n  },\n  {\n    \"loadBalancer\": \"lb-bore\",\n    \"loadBalancingRule\": { \"name\": \"lbrule-bore\", \"frontendPort\": 443, \"backendPort\": 8443, \"protocol\": \"TCP\", \"healthProbe\": \"probe-bore\" },\n    \"healthProbe\": { \"name\": \"probe-bore\", \"protocol\": \"HTTP\", \"port\": 8443, \"path\": \"/health\", \"backend\": \"web01.contoso.internal\", \"intervalSeconds\": 15, \"threshold\": 2, \"usedBy\": \"lbrule-bore\" },\n    \"backendPool\": [\"10.20.2.4\", \"10.20.2.5\", \"10.20.2.6\"],\n    \"application\": \"The three servers listen on TCP 8443 and answer HTTP 200 on /health when called from inside the virtual network.\",\n    \"observed\": \"Health Probe Status reads 0 for every backend IP address and no client can open a new connection.\"\n  },\n  {\n    \"loadBalancer\": \"lb-charlie\",\n    \"loadBalancingRule\": { \"name\": \"lbrule-charlie\", \"frontendPort\": 443, \"backendPort\": 8443, \"protocol\": \"TCP\", \"healthProbe\": \"probe-charlie\" },\n    \"healthProbe\": { \"name\": \"probe-charlie\", \"protocol\": \"HTTP\", \"port\": 8443, \"path\": \"/status\", \"intervalSeconds\": 15, \"threshold\": 2, \"usedBy\": \"lbrule-charlie\" },\n    \"backendPool\": [\"10.20.3.4\", \"10.20.3.5\", \"10.20.3.6\"],\n    \"application\": \"The three servers listen on TCP 8443. On the probed path they answer HTTP 403 to every request that carries no sign-in.\",\n    \"observed\": \"Health Probe Status reads 0 for every backend IP address and no client can open a new connection.\"\n  },\n  {\n    \"loadBalancer\": \"lb-delta\",\n    \"loadBalancingRule\": { \"name\": \"lbrule-delta\", \"frontendPort\": 443, \"backendPort\": 8443, \"protocol\": \"TCP\", \"healthProbe\": \"probe-delta\" },\n    \"healthProbe\": { \"name\": \"probe-delta\", \"protocol\": \"TCP\", \"port\": 8443, \"intervalSeconds\": 15, \"threshold\": 2, \"usedBy\": \"lbrule-delta\" },\n    \"backendPool\": [],\n    \"application\": \"The three web servers were taken out of the pool during a subnet migration; they are still running and answer normally when contacted from inside the virtual network.\",\n    \"observed\": \"No reading appears for the Health Probe Status metric, no client can open a new connection, and the alert on the data path availability metric has never fired.\"\n  }\n]"
+				},
+				"items": [
+					{
+						"id": "chg-1",
+						"text": "Select the existing probe in the load balancing rule that has none."
+					},
+					{
+						"id": "chg-2",
+						"text": "Change the probe's backend to the IP address of the instance."
+					},
+					{
+						"id": "chg-3",
+						"text": "Point the probe at a path that answers every request with a success status and needs no sign-in."
+					},
+					{
+						"id": "chg-4",
+						"text": "Put the three servers back into the backend pool."
+					}
+				],
+				"slots": [
+					{
+						"id": "lb-arc",
+						"label": "lb-arc"
+					},
+					{
+						"id": "lb-bore",
+						"label": "lb-bore"
+					},
+					{
+						"id": "lb-charlie",
+						"label": "lb-charlie"
+					},
+					{
+						"id": "lb-delta",
+						"label": "lb-delta"
+					}
+				]
+			},
+			"key": {
+				"lb-arc": "chg-1",
+				"lb-bore": "chg-2",
+				"lb-charlie": "chg-3",
+				"lb-delta": "chg-4"
+			},
+			"explanation": {
+				"correct": "Each load balancer is failing for a different reason, and the settings in the exhibit point to exactly one of the four drafted changes for each of them. For lb-arc the rule has no probe selected and the probe lists no rule under Used by, so the check never takes effect; selecting that probe in the rule is the change. For lb-bore the HTTP probe names a host rather than an address as its backend, which HTTP probes do not support, so the check never succeeds; the backend must be the instance's IP address. For lb-charlie the probed path answers 403 to requests without a sign-in, and an HTTP probe fails on any status other than 200, so the probe has to ask a path that returns a success status without credentials. For lb-delta the backend pool is empty, which leaves no valid data paths, so nothing can be delivered and the data path availability metric is never produced, which is why the team's alert on that metric has never fired; the servers must be members of the pool again.",
+				"perChoice": {
+					"chg-1": "Belongs with lb-arc. The rule lbrule-arc has healthProbe set to \"(none)\" and probe-arc lists \"(none)\" under usedBy; a probe only takes effect once at least one load balancing rule references it, and every rule needs a probe. Selecting the existing probe in that rule is the only change that makes the check run and lets new connections through, because the servers themselves answer normally.",
+					"chg-2": "Belongs with lb-bore. HTTP probes cannot use a host name as the probe backend, so a check whose backend is \"web01.contoso.internal\" never succeeds. The backend of that probe has to be the IP address of the instance; the path, port and schedule shown for probe-bore are all valid.",
+					"chg-3": "Belongs with lb-charlie. An HTTP probe fails on any status other than 200, and the servers answer 403 on /status to every request without a sign-in, so each check marks the instance down straight away. The probe has to request a path that returns a success status without asking for credentials.",
+					"chg-4": "Belongs with lb-delta. An empty backend pool has no valid data paths, so no traffic can be delivered, the Health Probe Status metric produces no reading and the data path availability metric is never emitted, which is why the alert on that metric has never fired. The three servers have to be members of the pool again; their probe and rule are configured correctly."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-custom-probe-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-troubleshoot"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-diagnostics"
+				}
+			],
+			"subtopics": [
+				"health-probe-configuration",
+				"load-balancing-rules",
+				"backend-pool-members"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6M05TYTAD505VK9WS1BKNRD",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are the on-call engineer for the network team that owns the load balancers in the subscription contoso-prod. Four tickets arrived at the same time, and the exhibit shows what the platform reported for each of them. The team has drafted five candidate actions; a single action is used for each ticket, and one of the five belongs to no ticket at all. You need each ticket to be closed by the action that accounts for what the platform reported. Match each ticket to the action that resolves it.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "TICKET A - lb-fulfil\nSymptom reported: Clients cannot open new connections to the fulfilment API, and the sessions they had already opened keep running. The probe created for this load balancer has not produced a result yet.\nConfiguration and platform observations: Load balancing rule lb-rule-8443 maps frontend port 8443 to backend port 8443 and its probe setting is empty. Probe probe-prod: protocol HTTP, port 8443, path /healthz, interval 15 s, threshold 2, Used by: (none). The backend pool holds three running members, and the service answers normally when it is called from another host in the same virtual network.\n\nTICKET B - lb-billing\nSymptom reported: For three days the probe values shown for the three backends have been 0, no new client connection reaches the billing service, and the sessions clients had already opened keep running.\nConfiguration and platform observations: Load balancing rule lb-rule-8080 maps frontend port 8080 to backend port 8080 and uses probe probe-billing: protocol HTTP, port 8080, path /health, interval 15 s, threshold 2, Used by: lb-rule-8080. The three backends are running and the service answers normally on its business endpoints, but the check endpoint now returns 401 to every request that does not carry the service token.\n\nTICKET C - lb-telemetry\nSymptom reported: The value for one backend address shows a dashed line and an error instead of a number, while the other two backends show 1. New client connections still reach the service.\nConfiguration and platform observations: Machine web-02 was stopped by the nightly shutdown job on 3 November and has stayed in the stopped (powered off) state since. Load balancing rule lb-rule-9090 maps frontend port 9090 to backend port 9090 and uses probe probe-telemetry: protocol TCP, port 9090, interval 15 s, threshold 2, Used by: lb-rule-9090.\n\nTICKET D - lb-portals\nSymptom reported: Since the migration step the load balancer shows no traffic figure on its dashboard, and the page configured to fire when that figure falls to zero has not been sent.\nConfiguration and platform observations: The backend pool of load balancing rule lb-rule-443 has contained no members since the migration step. Its frontend IP configuration 10.20.3.41 carries that rule and no other."
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Attach the probe to the load balancing rule, because a probe that no rule references never takes effect."
+					},
+					{
+						"id": "b",
+						"text": "Have the application answer the probe request with HTTP 200, because a probe fails on any status other than 200."
+					},
+					{
+						"id": "c",
+						"text": "Start the virtual machine that was deallocated, because a deallocated machine is not probed and stops reporting metrics."
+					},
+					{
+						"id": "d",
+						"text": "Put the machines back into the backend pool of the load balancing rule, because an empty pool leaves the application without any valid data path and no reading is produced for it."
+					},
+					{
+						"id": "e",
+						"text": "Raise the probe threshold to 5, so that a single unsuccessful check no longer removes a machine from rotation."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Ticket A - lb-fulfil: clients see no new connections"
+					},
+					{
+						"id": "s2",
+						"label": "Ticket B - lb-billing: every probe gets a refusal code"
+					},
+					{
+						"id": "s3",
+						"label": "Ticket C - lb-telemetry: one address shows no value"
+					},
+					{
+						"id": "s4",
+						"label": "Ticket D - lb-portals: the traffic figure is missing and nobody is paged"
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d"
+			},
+			"explanation": {
+				"correct": "Ticket A is caused by a probe that no load balancing rule references: the rule was re-created with an empty probe setting and the probe's Used by list is empty, so the probe never takes effect and no backend is ever considered healthy. The action that attaches the probe to the rule closes it. Ticket B is caused by the service answering the probe request with 401, and an HTTP probe fails on any status other than 200, so the service has to answer the probe request with HTTP 200. Ticket C is caused by the backend having been left in the powered-off (deallocated) state by the nightly job: a deallocated machine is not probed and stops reporting metrics, which is why its line is dashed while the other two read 1, so the machine has to be started again. Ticket D is caused by the empty backend pool: with no members there is no valid data path, so no traffic figure is produced for the frontend and the page built on that figure can never fire, so members must be put back into the pool. Raising the probe threshold belongs to none of the four tickets.",
+				"perChoice": {
+					"a": "Belongs with Ticket A. The rule was re-created from a template with an empty probe setting and the probe's Used by list shows nothing, and a probe only takes effect once at least one rule references it. Until the probe is attached, no backend is eligible for new connections, while the sessions clients already hold keep running.",
+					"b": "Belongs with Ticket B. The probe is attached and its port, interval and threshold are ordinary, but the service now returns 401 to the probe request, and an HTTP probe fails on any status other than 200, so the answer to the probe request has to be HTTP 200.",
+					"c": "Belongs with Ticket C. The nightly job left web-02 powered off, and a deallocated virtual machine is not probed and stops reporting metrics, so its line appears as a dashed line with an error while the untouched backends read 1. Starting the machine restores both probing and metric reporting.",
+					"d": "Belongs with Ticket D. The backend pool has no members since the migration step, and an empty backend pool means there is no valid data path, so the traffic figure is not produced and the page that watches that figure never fires. Putting members back into the pool restores the reading.",
+					"e": "Fits no ticket. The threshold only counts how many consecutive successes or failures are needed to flip an instance's state; it cannot attach a probe to a rule, cannot turn a 401 into a successful check, cannot bring a powered-off backend back, and cannot put members into an empty pool. On Ticket B an explicit non-200 answer marks the probe down immediately and resets the threshold, so a higher threshold changes nothing there either."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-custom-probe-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-diagnostics"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-troubleshoot"
+				}
+			],
+			"subtopics": [
+				"health-probe-troubleshooting",
+				"load-balancer-diagnostics",
+				"backend-pool-health"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6M0A6WD6F12TSX8TDKS6QNJ",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a Standard internal Azure Load Balancer named lb-insights in the subscription contoso-prod, configured as shown below. The on-call engineer opens the load balancer's Resource health entry under Monitor > Service health and has to decide whether to raise a platform issue with Azure support, to correct the team's own configuration, or to wait because the page cannot yet be trusted. You need the runbook to record what each entry that can appear on that page means. Match each entry to the condition that produces it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"SKU",
+							"Standard"
+						],
+						[
+							"Type",
+							"Internal"
+						],
+						[
+							"Frontend IP configuration",
+							"10.20.4.9 (frontend TCP port 443)"
+						],
+						[
+							"Backend pool",
+							"vm-app-01, vm-app-02, vm-app-03 (backend TCP port 8443)"
+						],
+						[
+							"Load balancing rule",
+							"1 rule: frontend TCP 443 to backend TCP 8443, using an HTTP probe on port 8443"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i_90",
+						"text": "The data path availability metric has reported 90% health or better"
+					},
+					{
+						"id": "i_25_90",
+						"text": "The data path availability metric has reported less than 90% but more than 25% health for at least two minutes"
+					},
+					{
+						"id": "i_lt25",
+						"text": "The data path availability metric has reported less than 25% health for at least two minutes"
+					},
+					{
+						"id": "i_nodata",
+						"text": "No data path availability information has reached the load balancer for the last 10 minutes"
+					}
+				],
+				"slots": [
+					{
+						"id": "s_available",
+						"label": "Available"
+					},
+					{
+						"id": "s_degraded",
+						"label": "Degraded"
+					},
+					{
+						"id": "s_unavailable",
+						"label": "Unavailable"
+					},
+					{
+						"id": "s_unknown",
+						"label": "Unknown"
+					}
+				]
+			},
+			"key": {
+				"s_available": "i_90",
+				"s_degraded": "i_25_90",
+				"s_unavailable": "i_lt25",
+				"s_unknown": "i_nodata"
+			},
+			"explanation": {
+				"correct": "The Resource health entry for a Standard load balancer is recalculated every two minutes from the load balancer's data path availability reading. A reading of 90% or better means the resource is healthy, so the entry reads Available. A reading below 90% but above 25% that has held for at least two minutes means the entry reads Degraded, which points to platform or user-initiated events worth investigating. A reading below 25% held for at least two minutes means the entry reads Unavailable, with inbound connectivity largely lost. When no data path availability information has reached the load balancer for ten minutes the entry reads Unknown, which is a transient state that corrects itself as soon as data arrives.",
+				"perChoice": {
+					"i_90": "This belongs with Available. Resource health is derived from data path availability, and a reading of 90% or better means the load balancer resource is healthy and available.",
+					"i_25_90": "This belongs with Degraded. Data path availability below 90% but above 25% for at least two minutes is the documented trigger for the Degraded status, where moderate to severe effects are expected and support or configuration troubleshooting is needed.",
+					"i_lt25": "This belongs with Unavailable. Data path availability below 25% for at least two minutes is the documented trigger for the Unavailable status, where inbound connectivity is significantly impaired or absent.",
+					"i_nodata": "This belongs with Unknown. When the load balancer has received no data path availability information for the last 10 minutes, the status is Unknown rather than a measured health verdict; it should clear once data arrives."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-diagnostics"
+				}
+			],
+			"subtopics": [
+				"resource-health",
+				"data-path-availability",
+				"load-balancer-troubleshooting"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6M0JP4MH9S14434PZZF1MCS",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have four health checks configured on the Standard Azure Load Balancers in the subscription contoso-prod, and the settings of each one are listed below. The on-call engineer recorded what the platform did with each check, and you need to attach every observation to the right check. Which observation belongs with each configuration?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Configuration",
+						"Protocol",
+						"Port",
+						"Address family",
+						"Interval (seconds)",
+						"Threshold",
+						"Path"
+					],
+					"rows": [
+						[
+							"A",
+							"HTTP",
+							"8080",
+							"IPv4",
+							"120",
+							"2",
+							"/health"
+						],
+						[
+							"B",
+							"HTTP",
+							"8080",
+							"IPv4",
+							"15",
+							"2",
+							"/health"
+						],
+						[
+							"C",
+							"TCP",
+							"9000",
+							"IPv4",
+							"5",
+							"2",
+							"n/a"
+						],
+						[
+							"D",
+							"HTTPS",
+							"8443",
+							"IPv4",
+							"30",
+							"3",
+							"/ready"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a-item",
+						"text": "The check gives up about 30 seconds in, even though the next attempt is 120 seconds away."
+					},
+					{
+						"id": "b-item",
+						"text": "The check gives up when its 15-second period ends with no reply, and the next attempt follows immediately."
+					},
+					{
+						"id": "c-item",
+						"text": "The instance joins the rotation only after two successful replies in a row, and is removed after two failures or timeouts in a row."
+					},
+					{
+						"id": "d-item",
+						"text": "The check succeeds only when the certificate chain on the server is signed with SHA256 or stronger."
+					},
+					{
+						"id": "e1",
+						"text": "The check gives up after the full 120 seconds, exactly as the schedule allows."
+					},
+					{
+						"id": "e2",
+						"text": "The check is refused outright when it is pointed at TCP port 25."
+					},
+					{
+						"id": "e3",
+						"text": "On the retired tier, every established TCP flow to the pool is cut once all checks are down."
+					},
+					{
+						"id": "e4",
+						"text": "The check's traffic arrives from the link-local address fe80::1234:5678:9abc."
+					}
+				],
+				"slots": [
+					{
+						"id": "cfg-a",
+						"label": "Configuration A"
+					},
+					{
+						"id": "cfg-b",
+						"label": "Configuration B"
+					},
+					{
+						"id": "cfg-c",
+						"label": "Configuration C"
+					},
+					{
+						"id": "cfg-d",
+						"label": "Configuration D"
+					}
+				]
+			},
+			"key": {
+				"cfg-a": "a-item",
+				"cfg-b": "b-item",
+				"cfg-c": "c-item",
+				"cfg-d": "d-item"
+			},
+			"explanation": {
+				"correct": "Each observation follows from the timing and protocol rules that apply to the matching configuration. Configuration A runs HTTP on a 120-second interval, which is longer than the 30-second HTTP timeout, so the attempt gives up after about 30 seconds even though the next one is scheduled 120 seconds later. Configuration B runs HTTP every 15 seconds, which is shorter than the timeout, so the attempt fails as soon as that period ends and the next one is sent immediately. Configuration C is a TCP check with a threshold of 2, so two consecutive replies are needed before the instance takes new connections and two consecutive failures or timeouts remove it. Configuration D is an HTTPS check, which only succeeds when the server's certificate chain is signed with SHA256 or stronger.",
+				"perChoice": {
+					"a-item": "Belongs with Configuration A, the HTTP check on port 8080 scheduled every 120 seconds: because that interval is longer than the built-in 30-second timeout, the attempt gives up after about 30 seconds even though the next attempt is 120 seconds away.",
+					"b-item": "Belongs with Configuration B, the HTTP check on port 8080 scheduled every 15 seconds: with an interval shorter than the timeout, the attempt fails when that 15-second period completes with no reply and the next attempt is sent immediately.",
+					"c-item": "Belongs with Configuration C, the TCP check on port 9000 with a threshold of 2: with TCP, two consecutive replies are required before the instance begins receiving traffic, and two consecutive failures or timeouts are required to take it out of rotation.",
+					"d-item": "Belongs with Configuration D, the HTTPS check on port 8443: an HTTPS attempt only succeeds when the server's certificate chain uses a signature hash of at least SHA256, so a weaker chain makes every attempt fail.",
+					"e1": "This observation fits none of the configurations. The only check scheduled every 120 seconds is the HTTP one in Configuration A, and HTTP and HTTPS attempts give up at their built-in 30-second timeout rather than running for the whole schedule, while the only TCP check runs every 5 seconds.",
+					"e2": "This observation fits none of the configurations. The blocked list (19, 21, 25, 70, 110, 119, 143, 220 and 993) applies to HTTP checks, and none of the four checks here is aimed at one of those ports; they target 8080, 9000 and 8443.",
+					"e3": "This observation fits none of the configurations. It describes the retired Basic tier, where every established TCP flow to the pool is cut once all checks are down; all four checks belong to Standard load balancers, where established TCP flows survive a full outage of the pool as long as it holds more than one backend instance.",
+					"e4": "This observation fits none of the configurations. That link-local source address is used by IPv6 checks, while every check in the exhibit runs over IPv4, whose probe traffic originates from 168.63.129.16."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-custom-probe-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-diagnostics"
+				}
+			],
+			"subtopics": [
+				"health-probe-configuration",
+				"probe-timeout-and-threshold",
+				"load-balancer-troubleshooting"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6M0SFAK6KMHK8GQRZFZ61SN",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have five entries to add to the troubleshooting report that the platform team keeps for the load balancers in the subscription contoso-prod, and the exhibit lists the readings that report contains. Each entry states something that is true of the estate today, and you need to know what the platform then does, so that the right outcome can be filed next to each entry. Which outcome belongs with each entry?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Reading in the team's monitoring report                | Where the team gets it\n-------------------------------------------------------|----------------------\nData path availability for each frontend IP configuration | Azure Monitor metrics\nWhether each backend server answers its check          | Azure Monitor metrics\nOutbound port consumption per backend server           | Azure Monitor metrics\nOverall service health of the load balancer            | Monitor > Service health"
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "The set of instances that the rule sends traffic to currently contains no member."
+					},
+					{
+						"id": "i2",
+						"text": "One member of that set was deallocated yesterday and has not been started since."
+					},
+					{
+						"id": "i3",
+						"text": "A chart that covers a longer stretch of time is put together with the Sum aggregation."
+					},
+					{
+						"id": "i4",
+						"text": "Clients reach the internal load balancer through a firewall that the routing table sends them to first."
+					},
+					{
+						"id": "i5",
+						"text": "A load balancer was created or changed a short while ago."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "The load balancer's own data plane value is missing, so the alarms built on it stay silent."
+					},
+					{
+						"id": "s2",
+						"label": "The instance is never contacted and its figures show up as a dashed line."
+					},
+					{
+						"id": "s3",
+						"label": "The plotted number comes out as a multiple of the true total."
+					},
+					{
+						"id": "s4",
+						"label": "The counters for bytes, packets and connection attempts leave out everything that arrives by way of another network device."
+					},
+					{
+						"id": "s5",
+						"label": "No value is reported for the load balancer until enough data has been gathered, which can take up to ten minutes."
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "Each entry describes a situation whose effect on the recorded readings is documented behaviour for Standard load balancers. With no members in the backend pool there is no valid data path, so the data path availability reading is missing and alerts built on it never fire. A deallocated virtual machine is not probed and its metrics stop being reported, so it appears as a dashed line or an error in the portal. Because metrics are sampled once per minute, a window longer than one minute aggregated with Sum displays the true total multiplied by the number of samples collected. Bandwidth metrics such as byte count, packet count and SYN count do not include traffic that reaches an internal load balancer through a user-defined route, for example from a firewall appliance. Finally, after a load balancer is created or updated, the data path availability reading can take up to ten minutes to appear once enough data has been gathered.",
+				"perChoice": {
+					"i1": "Belongs with the slot about the load balancer's own data plane value being missing and the alarms built on it staying silent. An empty backend pool means there are no valid data paths, so data path availability is not produced and alerts on that metric never fire.",
+					"i2": "Belongs with the slot about an instance that is never contacted and whose figures appear as a dashed line. Deallocated virtual machines are not probed, their metrics stop being reported, and the portal draws them as a dashed line or an error.",
+					"i3": "Belongs with the slot about the plotted number coming out as a multiple of the true total. Metrics are sampled once per minute, so a time aggregation longer than one minute that uses Sum shows the total multiplied by the number of samples in the window.",
+					"i4": "Belongs with the slot about the counters leaving out everything that arrives by way of another network device. Byte count, packet count and SYN count miss traffic that reaches an internal load balancer via a user-defined route, such as traffic handed over by a firewall appliance.",
+					"i5": "Belongs with the slot about nothing being reported until enough data has been gathered, which can take up to ten minutes. After a load balancer is created or updated, the data path availability reading only appears in Azure Monitor once enough data has been collected, which can take up to ten minutes."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-diagnostics"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-custom-probe-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-troubleshoot"
+				}
+			],
+			"subtopics": [
+				"azure-monitor-metrics",
+				"load-balancer-diagnostics",
+				"backend-pool-health"
+			],
+			"reviewed": false
 		}
 	]
 }

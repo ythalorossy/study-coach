@@ -1520,6 +1520,445 @@
 				"storage-service-endpoints"
 			],
 			"reviewed": false
+		},
+		{
+			"id": "q_01M6KZW17NCFMGXW96WDJ5GM24",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a virtual network vnet-clinic in the East US region with a single subnet, snet-app, that runs the Linux virtual machines of a clinical records application. The application uploads images into the storage account stimages01, writes its reports into the storage account strecords01, and queries the Azure SQL Database sqlreports01. Every PaaS resource in the exhibit accepts requests from any source, and nothing on the subnet limits which storage accounts the virtual machines may reach. The current state of the objects is shown below.\n\nThe team has drafted four configuration changes. Drag each drafted change into the box that describes the outcome it delivers. One of the drafted changes delivers none of the listed outcomes.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Object",
+						"Type",
+						"Region",
+						"Current configuration",
+						"Approved for this application"
+					],
+					"rows": [
+						[
+							"vnet-clinic (snet-app)",
+							"Virtual network and subnet",
+							"East US",
+							"Microsoft.Storage service endpoint enabled; Microsoft.Sql service endpoint not enabled",
+							"-"
+						],
+						[
+							"strecords01",
+							"Storage account, general purpose v2",
+							"West Europe",
+							"Public network access: Enabled from all networks",
+							"Yes"
+						],
+						[
+							"stimages01",
+							"Storage account, general purpose v2",
+							"East US",
+							"Public network access: Enabled from all networks",
+							"Yes"
+						],
+						[
+							"stlegacy01",
+							"Storage account, general purpose v2",
+							"East US",
+							"Public network access: Enabled from all networks",
+							"No"
+						],
+						[
+							"sqlreports01",
+							"Azure SQL Database",
+							"West Europe",
+							"Public network access: Enabled",
+							"Yes"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Add vnet-clinic/snet-app to the allowed virtual networks of the storage account strecords01 and set the account's public network access to enabled from selected virtual networks and IP addresses only, so that traffic to the account comes from the private address of the virtual network."
+					},
+					{
+						"id": "i2",
+						"text": "Move the database sqlreports01 into the region where vnet-clinic sits, then enable the Microsoft.Sql service endpoint on snet-app and add vnet-clinic/snet-app to its virtual network rule."
+					},
+					{
+						"id": "i3",
+						"text": "Create a service endpoint policy that names the storage accounts strecords01 and stimages01 and attach it to snet-app."
+					},
+					{
+						"id": "i4",
+						"text": "Add vnet-clinic/snet-app to the virtual network rule of the database sqlreports01 so that the account takes traffic only from this virtual network, and leave the database in the West Europe region."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "strecords01 receives traffic only from the virtual network and the application continues to write its data"
+					},
+					{
+						"id": "s2",
+						"label": "sqlreports01 receives traffic only from the virtual network and the reporting job continues to succeed"
+					},
+					{
+						"id": "s3",
+						"label": "The virtual machines in snet-app reach only the storage accounts approved for this application and are denied every other storage account"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3"
+			},
+			"explanation": {
+				"correct": "Adding vnet-clinic/snet-app to the allowed virtual networks of strecords01 and switching that account to accept connections from selected virtual networks and IP addresses only makes the account take traffic from this virtual network, and because the Microsoft.Storage endpoint is already enabled on snet-app the application keeps writing its data even though the account sits in West Europe. For the database, a Microsoft.Sql endpoint applies only to service traffic inside the virtual network's region, so sqlreports01 has to be placed in the region where vnet-clinic sits before the endpoint and the virtual network rule can restrict it, which is why the drafted change that relocates the database, enables the endpoint and adds the rule is the one that delivers the outcome for sqlreports01. Finally, a service endpoint policy is an allow-list: naming strecords01 and stimages01 in it and attaching it to snet-app means only those resources are reachable from the compute in that subnet, so every other storage account is denied. The change that only adds a virtual network rule to the database and leaves it in West Europe delivers none of the three outcomes.",
+				"perChoice": {
+					"i1": "This belongs in the box about strecords01: it adds the subnet to the account's allowed virtual networks and changes the account's public network access so that only selected virtual networks and IP addresses are accepted. Because the Microsoft.Storage endpoint is already enabled on snet-app, traffic leaves the virtual machines with their private addresses, so the account can be locked to a virtual network that sits in another region while the application keeps working.",
+					"i2": "This belongs in the box about sqlreports01: a Microsoft.Sql endpoint applies only to service traffic inside the virtual network's region, so the database must first be moved into the region where vnet-clinic sits. With the endpoint enabled on snet-app and the virtual network rule in place, the database takes traffic only from this virtual network and the reporting job keeps running.",
+					"i3": "This belongs in the box about the storage accounts the application may use: a service endpoint policy works as an allow-list, so naming strecords01 and stimages01 in it and attaching it to snet-app means the virtual machines in that subnet reach those two accounts only and are denied every other storage account.",
+					"i4": "This fits none of the boxes. Leaving the database in the West Europe region keeps it outside the region where a Microsoft.Sql endpoint applies, and without that endpoint the virtual machines would reach the database with their public source address, so the virtual network rule would not match and the reporting job still could not run. It also does nothing to limit which storage accounts the virtual machines in snet-app may reach."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-service-endpoints-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/tutorial-restrict-network-access-to-resources"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-service-endpoint-policies-overview"
+				}
+			],
+			"subtopics": [
+				"service-endpoints",
+				"service-endpoint-policies",
+				"virtual-network-rules"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6M01E428K6AY9ZTY8Q88G15",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a virtual network named vnet-archive in the East US region, and its subnet snet-ingest runs the Linux virtual machines of an archive-ingestion job. The Microsoft.Storage service endpoint is already enabled on snet-ingest, and the security team wants those virtual machines to reach only the storage accounts it has signed off. A service endpoint policy named sep-archive is being created for that subnet, and the team has drafted four candidate entries for the serviceResources array of the policy definition.\n\nDrag each drafted entry into the box that describes the reach it gives the virtual machines in snet-ingest. One of the drafted entries belongs in none of the boxes.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Object",
+						"Configuration"
+					],
+					"rows": [
+						[
+							"Virtual network vnet-archive",
+							"East US; subscription sub-a1; resource group rg-archive"
+						],
+						[
+							"Subnet snet-ingest",
+							"Microsoft.Storage service endpoint enabled; no service endpoint policy attached yet"
+						],
+						[
+							"Service endpoint policy sep-archive",
+							"Being created for snet-ingest; definition service Microsoft.Storage; serviceResources array empty"
+						],
+						[
+							"Storage account starchive01",
+							"General purpose v2; located in rg-archive; accepts requests from vnet-archive"
+						],
+						[
+							"Key vault kv-archive01",
+							"Located in rg-archive; accepts requests from vnet-archive"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "/subscriptions/sub-a1"
+					},
+					{
+						"id": "i2",
+						"text": "/subscriptions/sub-a1/resourceGroups/rg-archive"
+					},
+					{
+						"id": "i3",
+						"text": "/subscriptions/sub-a1/resourceGroups/rg-archive/providers/Microsoft.Storage/storageAccounts/starchive01"
+					},
+					{
+						"id": "i4",
+						"text": "/subscriptions/sub-a1/resourceGroups/rg-archive/providers/Microsoft.KeyVault/vaults/kv-archive01"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Every storage account in the entire subscription"
+					},
+					{
+						"id": "s2",
+						"label": "Every storage account inside one resource group"
+					},
+					{
+						"id": "s3",
+						"label": "Only the single account the entry points to"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3"
+			},
+			"explanation": {
+				"correct": "The allow-list of a storage service endpoint policy can name exactly three things: a whole subscription, a resource group, or one storage account. \"/subscriptions/sub-a1\" is a subscription identifier, so it covers every storage account in sub-a1 and belongs in the subscription-wide box. \"/subscriptions/sub-a1/resourceGroups/rg-archive\" stops at the resource group, so it covers every storage account inside rg-archive and nothing outside it. The full path ending in \"providers/Microsoft.Storage/storageAccounts/starchive01\" names one account, so only starchive01 becomes reachable from snet-ingest. The Key Vault identifier names a vault rather than a storage account or a scope of accounts, and sep-archive governs Microsoft.Storage traffic only, so it grants no reach and belongs in none of the boxes.",
+				"perChoice": {
+					"i1": "This entry is a subscription identifier, so the allow-list covers every storage account in sub-a1 — the widest of the three scopes.",
+					"i2": "The path stops at the resource group, so the allow-list authorizes every storage account in rg-archive and nothing outside that group.",
+					"i3": "The path carries the provider and the account name, so it names exactly one storage account, starchive01, and nothing else.",
+					"i4": "This names a Key Vault, which is neither a storage account nor a scope of storage accounts, and the policy filters Microsoft.Storage traffic only, so it grants no reach and fits none of the boxes."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-service-endpoint-policies-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-service-endpoints-overview"
+				}
+			],
+			"subtopics": [
+				"service-endpoint-policies",
+				"allow-list-granularity"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6M06AFXRRMQNJ138RWRHYDV",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a virtual network named vnet-insights in the East US region with a single subnet, snet-pipeline, where the Linux virtual machines of a telemetry pipeline run. Those machines write log files into the storage account stlogs01 and keep a copy in the storage account stlogs02, and they read a deployment secret from the key vault kvpipeline01. The team has approved only these two storage accounts for the pipeline. The current configuration is shown in the exhibit.\n\nThe operations team has drafted five configuration changes and wants to know what each one actually delivers before anything is applied in the subscription. Drag each drafted change into the box that describes the outcome it produces.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Object",
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Virtual network vnet-insights",
+							"Region",
+							"East US"
+						],
+						[
+							"Subnet snet-pipeline",
+							"Address space",
+							"10.20.0.0/24"
+						],
+						[
+							"Virtual machine vm-pipe01",
+							"Private IP address",
+							"10.20.0.4"
+						],
+						[
+							"Subnet snet-pipeline",
+							"Service endpoints",
+							"None enabled"
+						],
+						[
+							"Subnet snet-pipeline",
+							"Network security group",
+							"nsg-pipeline"
+						],
+						[
+							"Storage account stlogs01",
+							"Public network access",
+							"Enabled from all networks"
+						],
+						[
+							"Storage account stlogs02",
+							"Public network access",
+							"Enabled from selected virtual networks and IP addresses"
+						],
+						[
+							"Storage account stlogs02",
+							"Allowed virtual networks",
+							"vnet-insights / snet-pipeline"
+						],
+						[
+							"Key vault kvpipeline01",
+							"Public network access",
+							"Enabled from all networks"
+						],
+						[
+							"Network security group nsg-pipeline",
+							"Inbound rules",
+							"AllowVnetInbound, AllowAzureLoadBalancerInbound, DenyAllInBound"
+						],
+						[
+							"Network security group nsg-pipeline",
+							"Outbound rules",
+							"AllowVnetOutBound, AllowInternetOutBound"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "it1",
+						"text": "In snet-pipeline, turn on the Microsoft.Storage service endpoint."
+					},
+					{
+						"id": "it2",
+						"text": "On stlogs01, change public network access to Enabled from selected virtual networks and IP addresses and add vnet-insights/snet-pipeline to the list of virtual networks."
+					},
+					{
+						"id": "it3",
+						"text": "Create a service endpoint policy whose serviceResources array lists stlogs01 and stlogs02, and associate that policy with snet-pipeline."
+					},
+					{
+						"id": "it4",
+						"text": "In the network security group on snet-pipeline, add an outbound rule allowing destination service tag Storage on port 445 and a rule denying destination service tag Internet on port *."
+					},
+					{
+						"id": "it5",
+						"text": "Create a private endpoint for stlogs01 in snet-pipeline."
+					}
+				],
+				"slots": [
+					{
+						"id": "sl1",
+						"label": "The uploads travel over the Azure network, the account keeps the address it already has, and the traffic leaves the sending machine with the machine's own address"
+					},
+					{
+						"id": "sl2",
+						"label": "stlogs01 accepts only the pipeline subnet; every other source is refused"
+					},
+					{
+						"id": "sl3",
+						"label": "The pipeline's machines can reach stlogs01 and the second approved account, while every other storage account refuses them"
+					},
+					{
+						"id": "sl4",
+						"label": "Traffic in the subnet can reach the accounts the pipeline writes into, but anything else that would exit Azure is dropped"
+					},
+					{
+						"id": "sl5",
+						"label": "stlogs01 gets a dedicated address inside the virtual network, attached to a network interface in the subnet"
+					}
+				]
+			},
+			"key": {
+				"sl1": "it1",
+				"sl2": "it2",
+				"sl3": "it3",
+				"sl4": "it4",
+				"sl5": "it5"
+			},
+			"explanation": {
+				"correct": "Each drafted change produces a different effect. Turning on the Microsoft.Storage service endpoint on snet-pipeline gives the pipeline an optimized path to the account over the Azure backbone; the account keeps its own public IP address, and the traffic leaves the virtual machine with its private address instead of a public one, which is what the account records as the caller (it1 -> sl1). The account-side network settings on stlogs01 are what make that account answer only the listed virtual network and subnet and refuse every other source (it2 -> sl2). A service endpoint policy attached to the subnet acts as an allow-list of resources: only stlogs01 and stlogs02 remain reachable from that subnet and every other storage account refuses the traffic (it3 -> sl3); such a policy only filters traffic on a subnet where the matching service endpoint is enabled, so it pairs with it1. The network security group rules let the subnet reach the Storage service tag on port 445 while the deny rule for destination service tag Internet on port * overrides the default AllowInternetOutBound rule, so everything else leaving Azure is dropped (it4 -> sl4). A private endpoint places a dedicated IP address and a network interface for the account inside the virtual network (it5 -> sl5).",
+				"perChoice": {
+					"it1": "It belongs in the slot about the path and the caller address of the uploads. Enabling the endpoint on the subnet creates the optimized route over the Azure backbone, the account keeps the public IP address it already has, and the traffic leaves the virtual machine with its private address instead of a public one.",
+					"it2": "It belongs in the slot about which sources may call stlogs01. Setting public network access to Enabled from selected virtual networks and IP addresses and adding vnet-insights/snet-pipeline makes the account answer only that subnet and reject every other network.",
+					"it3": "It belongs in the slot about which accounts the virtual machines can reach. A policy associated with snet-pipeline is an allow-list, so only the resources named in its serviceResources array stay reachable from that subnet and every other storage account refuses the traffic.",
+					"it4": "It belongs in the slot about where the subnet may send traffic. The allow rule for destination service tag Storage on port 445 permits the pipeline's uploads, and the deny rule for destination service tag Internet on port * overrides the default AllowInternetOutBound rule, so anything else leaving Azure is dropped.",
+					"it5": "It belongs in the slot about what appears inside the virtual network. A private endpoint gives the account a dedicated IP address and a network interface in the subnet; unlike the endpoint change, the service then also has an address inside the virtual network."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-service-endpoints-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/tutorial-restrict-network-access-to-resources"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-service-endpoint-policies-overview"
+				}
+			],
+			"subtopics": [
+				"service-endpoint-configuration",
+				"service-endpoint-policies",
+				"private-link-comparison"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6M0AEDWX15YXAGYJJWC9T7X",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a virtual network named vnet-observe in the East US region with a single subnet, snet-app, that runs a Linux virtual machine named vm-app01. An administrator recently switched on the Microsoft.Storage service endpoint for snet-app, and the storage account stdata01 already lists vnet-observe/snet-app among its allowed virtual networks. The operations team captured four requests that vm-app01 made after that change.\n\nDrag each captured request into the box that describes the result it produced.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Object        Property                  Value\n-------------  ------------------------  ------------------------------------------------------\nvm-app01      Private IP address        10.1.0.5\nvm-app01      Boot volume               Managed disk attached, mounted at /\nsnet-app      Service endpoints         Microsoft.Storage\nvnet-observe  User-defined route        0.0.0.0/0 -> 10.0.1.4 (network virtual appliance)\nstdata01      Public network access     Enabled from selected virtual networks and IP addresses\nstdata01      Allowed virtual networks  vnet-observe / snet-app"
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "The upload of a file named november-report.csv into stdata01"
+					},
+					{
+						"id": "i2",
+						"text": "The lookup of stdata01.blob.core.windows.net from vm-app01"
+					},
+					{
+						"id": "i3",
+						"text": "The mount and unmount of the guest disk on vm-app01"
+					},
+					{
+						"id": "i4",
+						"text": "The HTTPS call to a web site hosted outside Azure"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Left the subnet over the Azure backbone, and the account recorded 10.1.0.5 as the calling address"
+					},
+					{
+						"id": "s2",
+						"label": "Returned the public address of the storage account, exactly as it did before the change"
+					},
+					{
+						"id": "s3",
+						"label": "Kept working, because local file activity is not carried over the Azure backbone"
+					},
+					{
+						"id": "s4",
+						"label": "Still traveled through the appliance at 10.0.1.4"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Each captured request matches one recorded result. The Storage upload travels out over the Azure backbone instead of the 0.0.0.0/0 route to the appliance, because the endpoint installs a more specific route for the service address prefix, and the request reaches the account carrying the virtual machine's private address rather than its public one. Name resolution is untouched by the endpoint, so the storage hostname still returns the account's public address. Mount and unmount activity against the machine's own disk is not affected by Storage endpoint routing. Traffic bound for a destination outside Azure matches no service prefix, so it keeps following the user-defined route to the appliance at 10.0.1.4.",
+				"perChoice": {
+					"i1": "Belongs with the result that the request left the subnet over the Azure backbone and that the account saw 10.1.0.5 as the calling address. Switching on the endpoint makes Azure add a more specific route for the service address prefix with next hop type VirtualNetworkServiceEndpoint, which takes precedence over the 0.0.0.0/0 user-defined route, and traffic to the service leaves the virtual machine with its private address instead of its public address.",
+					"i2": "Belongs with the result that the request returned the public address of the storage account exactly as before. Enabling a service endpoint does not change DNS: the hostname continues to resolve to the service's public address, and only the path taken by the traffic and its source address change.",
+					"i3": "Belongs with the result that the activity kept working because local file activity is not carried over the Azure backbone. Storage endpoint routing changes do not affect virtual machine disk traffic for managed or unmanaged disks, so mount and unmount operations behave exactly as they did before.",
+					"i4": "Belongs with the result that the request still traveled through the appliance at 10.0.1.4. The endpoint only creates more specific routes for the prefixes of the service it enables, so a destination outside Azure matches none of them and the 0.0.0.0/0 user-defined route continues to send that traffic to the appliance."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-service-endpoints-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/virtual-network/tutorial-restrict-network-access-to-resources"
+				}
+			],
+			"subtopics": [
+				"service-endpoint-routing",
+				"service-endpoint-source-address",
+				"user-defined-route-precedence"
+			],
+			"reviewed": false
 		}
 	]
 }
