@@ -1,0 +1,65 @@
+---
+skill: monitoring.log-settings
+sources: f75c833c7267bf9f360c2ede22b2269990d0ee539b11dd472cd9553e5b1b4285
+built: 2026-11-05T14:35:24.692Z
+---
+# Configure log settings in Azure Monitor
+
+## Key concepts
+
+- Azure Monitor **diagnostic settings** route resource logs, platform metrics, and activity log entries to destinations; each monitored resource needs its own setting. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings))
+- Metrics and the activity log are collected automatically, so a setting only forwards them; resource logs aren't collected until you configure one. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings))
+- A Log Analytics workspace is the central store: it holds tables that Azure Monitor Logs creates automatically on the first data, and it powers KQL queries, workbooks, and log alerts. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-workspace-overview))
+- Destination types are Log Analytics workspace, Azure Storage account, Azure Event Hubs, and Azure Monitor partner solutions; every endpoint supports TLS 1.2. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings))
+- A destination can sit in another subscription if the person configuring holds RBAC access to both; Azure Lighthouse covers a destination in a different Microsoft Entra tenant. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings))
+- For custom and third-party sources, Azure recommends the Logs Ingestion API paired with DCRs and DCEs; it replaces the old HTTP Data Collector API and adds OAuth authentication, schema governance, and transformations. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-workspace-overview))
+- A workspace transformation DCR filters or reshapes records per table for every source writing to that table, and only some tables support transformations. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-workspace-overview))
+
+## Settings and limits
+
+- In the portal, use the resource's **Monitoring** > **Diagnostic settings**, or Azure Monitor > **Settings** > **Diagnostic settings**; **Add diagnostic setting** creates one, **Edit setting** changes it, and names should be descriptive. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings))
+- Activity log export is configured from **Export activity log**, and management groups use their own management group diagnostic settings. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings))
+- Under **Logs**, tick individual categories or pick a category group; the category list differs by Azure service. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings))
+- Under **Metrics**, select **AllMetrics** to send platform metrics to the chosen destinations. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings))
+- Under **Destination details**, tick each destination and enter its details; a Log Analytics workspace may also require a collection mode. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings))
+- The only category groups are **allLogs** (all categories) and **audit** (logs recording customer interactions with data or service settings); **allLogs** already covers **audit**. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings))
+- Choosing a category group prevents selecting individual category types, and not every service offers category groups at all. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings))
+- Each resource supports up to five diagnostic settings. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings))
+- One setting can include no more than one destination of each type, so two Log Analytics workspaces require two separate settings. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings))
+- The destination resource must exist before you create the setting, and for regional monitored resources the Storage account and Event Hubs must be in that same region. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings))
+- With virtual networks enabled, Storage accounts and Event Hubs namespaces must allow **Allow trusted Microsoft services**, or diagnostic settings can't deliver data. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings))
+- Event Hubs streaming needs `Manage`, `Send`, and `Listen` on the namespace shared access policy; adding that stream to a setting also needs `ListKey` on the Event Hubs authorization rule. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings))
+- Compacted Event Hubs, Premium storage accounts, and Azure DNS zone endpoints (preview) aren't supported destinations; Standard storage accounts are. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings))
+- Data should flow within 90 minutes of creating the setting; workspace tables appear only when the first log records arrive, and nothing within 24 hours points to log generation or routing, so switch the setting off and on. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings))
+- Only metrics marked exportable reach a workspace; multidimensional metrics are flattened and aggregated, and unsupported metrics can be fetched with the Metrics REST API then loaded with the Logs Ingestion API. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings))
+- In Resource Manager templates, the REST API, Azure CLI, or Azure PowerShell, use only **AllMetrics** apart from a few services; other category names fail with a 'Metric category ... is not supported' error. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings))
+- Each table keeps an interactive phase for queries, visualizations, and alerts plus low-cost long-term retention up to 12 years; a search job returns chosen long-term data to interactive retention. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-workspace-overview))
+- Analytics retention starts at 30 days (90 days for Microsoft Sentinel and Application Insights) and extends to two years at a prorated monthly charge; **Basic** and **Auxiliary** have no analytics retention. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-platform-logs))
+- Access control mode is set per workspace: grant explicit access with a built-in or custom role, or let users who can access the Azure resource also reach its collected data. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-workspace-overview))
+- Creating or maintaining a workspace costs nothing directly; you are billed for ingestion and retention according to the table's plan. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-workspace-overview))
+
+## Compare and choose
+
+- Use a Log Analytics workspace destination when you need KQL queries, workbooks, and log alerts over the collected data. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings))
+- Use a Storage account for audit, static analysis, or backup with indefinite retention; immutable storage prevents modification and can be the cheapest option. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings))
+- Use Event Hubs to stream to an external SIEM or custom system, and partner solutions for specialized non-Microsoft integrations. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings))
+- Use one workspace for simplicity, or several when regulatory compliance, data location, split billing, or resilience require separation. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-workspace-overview))
+- Pick **Analytics** for high-value data under continuous monitoring and real-time detection, **Basic** for medium-touch troubleshooting and incident response, **Auxiliary** for verbose audit and compliance logs. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-platform-logs))
+- **Analytics** includes the query price, all table types, resource and workspace query scope, Insights, restore, replication, and export rules; **Basic** excludes the query price and Insights, supports Basic-eligible tables plus DCR-based custom tables, and allows Simple Log Alerts. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-platform-logs))
+- **Auxiliary** has minimal ingestion cost but slower queries, no alerts, no resource query scope, and no export rules, while search jobs and Microsoft Sentinel remain available. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-platform-logs))
+- For custom or third-party sources, choose the newer ingestion API driven by DCRs rather than the old HTTP Data Collector API, because it adds OAuth authentication and DCR-governed schemas. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-workspace-overview))
+- Use a source DCR when the collection flow already uses DCRs; workspace ingestion-time transformations don't apply to DCR-governed flows such as the Azure Monitor agent. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-workspace-overview))
+- Use summary rules for aggregated dashboards and reports: aggregating on arrival improves query performance and cuts errors and timeouts; **Basic** and **Auxiliary** limit them to single-table KQL. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-platform-logs))
+- Control cost by collecting only needed categories, skipping metric export when metrics explorer suffices, and filtering with transformations on supported tables. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings))
+
+## Gotchas
+
+- Delete diagnostic settings when a resource is deleted, renamed, or moved between resource groups or subscriptions, or a recreated resource can inherit them and resume collection. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings))
+- The portal won't send a Storage account's or Event Hubs namespace's own logs or metrics back to itself because of the infinite loop; Azure PowerShell, Azure CLI, the REST API, Resource Manager templates, or an SDK can force it at your own risk. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings))
+- Enabling the **audit** category for Azure SQL Database doesn't enable database auditing; use the database's own auditing pane. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings))
+- Diagnostic settings don't support resource IDs with non-ASCII characters such as **Preproduccón**; create a clean replacement resource and move it to a new group if needed. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings))
+- For Application Insights, the destination can't be the workspace the resource is based on, and the user shouldn't reach both; set **Requires workspace permissions** and limit RBAC, or records duplicate. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings))
+- Workspace transformations apply to diagnostic-settings data for the target table, but not to DCR-governed data such as Azure Monitor agent telemetry. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-workspace-overview))
+- Inactive resources exporting only zero-value metrics back off to 15-minute intervals after one hour and a two-hour maximum after seven days, returning to three-minute latency once nonzero values appear; metric alerts and autoscale are unaffected. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings))
+- A Microsoft Sentinel workspace is a Log Analytics workspace enabled for Sentinel, and all data in it is billed at Microsoft Sentinel pricing. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-workspace-overview))
+- **Basic** and **Auxiliary** aren't available for workspaces on legacy pricing tiers, and **Auxiliary** isn't offered in Qatar Central. ([Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-platform-logs))
