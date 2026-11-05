@@ -1556,6 +1556,164 @@
 				"logs-ingestion-api"
 			],
 			"reviewed": false
+		},
+		{
+			"id": "q_01M6PP5BPSQP9CENYAZHJNG0RC",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You administer the monitoring workspace law-vendor in resource group rg-fin of subscription sub-fin. A third-party SaaS application called LedgerSync, which runs outside Azure, sends its records straight to that workspace, as shown in the exhibit. The vendor's own team wants the records to keep flowing but no longer wants to depend on a long-lived shared secret, and your platform team wants the incoming record types to be separated into their own tables under a schema that is controlled in Azure instead of by whatever the vendor happens to send. You need LedgerSync's records to keep arriving in law-vendor. Which mechanism should the vendor use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Current state"
+					],
+					"rows": [
+						[
+							"Source application",
+							"LedgerSync, a third-party SaaS application hosted outside Azure"
+						],
+						[
+							"Records sent",
+							"JSON batches of application events, one batch per minute"
+						],
+						[
+							"Connection today",
+							"Direct HTTPS posts to the workspace collection URL, authenticated with the shared key issued for the workspace"
+						],
+						[
+							"Target",
+							"The same workspace law-vendor must keep receiving the records"
+						]
+					]
+				},
+				"statement": "To keep LedgerSync's records arriving in law-vendor under a configuration that Azure supports, the vendor should {{mechanism}}.",
+				"slots": [
+					{
+						"id": "mechanism",
+						"options": [
+							{
+								"id": "a",
+								"text": "Send LedgerSync's records with the Logs Ingestion API, and use a data collection rule together with a data collection endpoint."
+							},
+							{
+								"id": "b",
+								"text": "Send LedgerSync's records with the legacy HTTP Data Collector API, and use a shared key that the vendor holds."
+							},
+							{
+								"id": "c",
+								"text": "Send LedgerSync's records with the Azure Monitor agent, and use a data collection rule that targets the workspace."
+							},
+							{
+								"id": "d",
+								"text": "Send LedgerSync's records with Event Hubs streaming, and use an Event Hubs namespace and a shared access policy."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"mechanism": "a"
+			},
+			"explanation": {
+				"correct": "For custom and third-party sources, the recommended path is the Logs Ingestion API used with a data collection rule and a data collection endpoint. It supersedes the legacy HTTP Data Collector API and adds OAuth-based authentication, DCR-governed schema control, and transformations. That satisfies both requirements at once: the vendor authenticates with a token instead of a long-lived shared secret, the data collection rule governs the schema and separates the record types into their own tables, and the records continue to land in the same workspace, law-vendor.",
+				"perChoice": {
+					"mechanism:b": "The HTTP Data Collector API is the older mechanism that the Logs Ingestion API replaces. It authenticates with a shared key and offers no schema governance, so it fails both requirements: dropping the long-lived shared secret and controlling the incoming record types in Azure.",
+					"mechanism:c": "The Azure Monitor agent gathers telemetry from the machines where it is installed; it gives a hosted third-party application no way to push its own records into a workspace. LedgerSync's records originate outside Azure, so the agent is not the mechanism for this source.",
+					"mechanism:d": "Event Hubs streaming is used to forward data to external systems such as a SIEM. It gives the vendor neither token-based authentication for its connection nor a schema controlled in Azure for records landing directly in the workspace, so it does not satisfy the requirements for this source."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-workspace-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings"
+				}
+			],
+			"subtopics": [
+				"logs-ingestion-api",
+				"data-collection-rules",
+				"custom-log-sources"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6PP9WGXASE5P4RG0WV6PMPB",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Log Analytics workspace named law-shared in group rg-mon that holds the diagnostic data of the applications run by four separate business units. The engineers of each unit already hold the Reader role on the applications they own, and each of them must query only the data of the applications they own. At the moment law-shared demands its own explicit grants before anybody can query anything it holds, so the engineers receive a permission error when they open the Logs menu of their own application. You need law-shared set up so that the permissions the engineers already hold on their applications are enough, and no new rights on law-shared are to be handed out. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Current state"
+					],
+					"rows": [
+						[
+							"Workspace",
+							"law-shared in rg-mon"
+						],
+						[
+							"Who may query the data",
+							"Only accounts with explicit grants on law-shared"
+						],
+						[
+							"Data held",
+							"Diagnostic data of the applications of four business units"
+						],
+						[
+							"Engineer rights today",
+							"Reader on their own application only"
+						]
+					]
+				},
+				"statement": "To let every engineer query the data of the applications they own with the rights they already hold, you should {{workspaceConfig}}.",
+				"slots": [
+					{
+						"id": "workspaceConfig",
+						"options": [
+							{
+								"id": "a",
+								"text": "Switch the workspace access control mode to Use resource or workspace permissions"
+							},
+							{
+								"id": "b",
+								"text": "Grant the engineers the Log Analytics Reader role with query permissions on the workspace"
+							},
+							{
+								"id": "c",
+								"text": "Grant the engineers the Monitoring Reader role with query permissions on the workspace"
+							},
+							{
+								"id": "d",
+								"text": "Grant the engineers a custom role with query permissions on the workspace"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"workspaceConfig": "a"
+			},
+			"explanation": {
+				"correct": "Because law-shared currently evaluates who may query it only against grants made on the workspace itself, the read permission the engineers already hold on their applications is never considered, so they get a permission error. Switching the workspace access control mode to Use resource or workspace permissions makes the workspace honor the existing read permission on the monitored resources, so each engineer can reach the data of the applications they own from the Logs menu of that application, with no new role assignment on law-shared.",
+				"perChoice": {
+					"workspaceConfig:b": "Assigning the Log Analytics Reader role on law-shared is a new grant on the shared workspace, which the requirement rules out, and it grants full read access to all data in that workspace, including the applications of the other three business units, rather than only the applications each engineer owns. The rights already held on the applications are only honored once the workspace's own permission-handling setting is changed.",
+					"workspaceConfig:c": "Granting the Monitoring Reader role is still an extra grant on law-shared, which the requirement forbids, and it lets every engineer read the monitoring data of all four business units instead of only their own applications. It also does not change the way the workspace decides who may query the data of a given application.",
+					"workspaceConfig:d": "A custom role with query permissions on law-shared is another new grant on the shared workspace and would expose each engineer to the data of all four business units. The requirement is that the permissions the engineers already hold on their applications become sufficient, which is achieved by the workspace's permission-handling setting, not by adding roles to the workspace."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-workspace-overview"
+				}
+			],
+			"subtopics": [
+				"workspace-access-control",
+				"log-analytics-workspace"
+			],
+			"reviewed": false
 		}
 	]
 }

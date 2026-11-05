@@ -1698,6 +1698,115 @@
 				"alert-notification-control"
 			],
 			"reviewed": false
+		},
+		{
+			"id": "q_01M6PP1MSPCP7PWQZZTW8D1KV3",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You maintain the alerting for an order-processing platform that runs in subscription SUB1. An action group named AG-OPS is attached to a metric alert rule, and one of the actions in that group calls an Azure Function named ProcessPayments so that a ticket is raised in the ticketing system. Last week the platform team regenerated that function's access key, and since then the action has failed on every alert, so no ticket is created any more. You need to get this notification path working again without changing the alert rule, and you also want to confirm that the target function is set up in a way this kind of action can actually use. Which action should you take, and what must the target function support?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Action group",
+							"AG-OPS, attached to the metric rule CPU-High-PROD"
+						],
+						[
+							"Failing action",
+							"Open ticket — Azure Function ProcessPayments"
+						],
+						[
+							"What the action holds",
+							"The function's HTTP trigger URL and the function's access key"
+						],
+						[
+							"Recent change",
+							"The access key for ProcessPayments was regenerated on 12 October"
+						],
+						[
+							"Observed result",
+							"The action returns an error every time an alert fires and no ticket is created"
+						]
+					]
+				},
+				"statement": "To fix the failing notification, you should {{fix}} in the action group, and the target function must {{requirement}}.",
+				"slots": [
+					{
+						"id": "fix",
+						"options": [
+							{
+								"id": "a",
+								"text": "Remove and re-create the action so it stores the function's current endpoint and access key"
+							},
+							{
+								"id": "b",
+								"text": "Change the short name of the action group so the action is rebuilt with the function's new endpoint and access key"
+							},
+							{
+								"id": "c",
+								"text": "Move the action group to the Global region so the action picks up the function's new endpoint and access key"
+							},
+							{
+								"id": "d",
+								"text": "Add a second action of the same type to the action group so the function's new endpoint and access key are used"
+							}
+						]
+					},
+					{
+						"id": "requirement",
+						"options": [
+							{
+								"id": "a",
+								"text": "accept HTTP POST on its endpoint and have access to a storage account"
+							},
+							{
+								"id": "b",
+								"text": "accept HTTP GET on its endpoint and have access to a storage account"
+							},
+							{
+								"id": "c",
+								"text": "accept HTTP PUT on its endpoint and have access to a storage account"
+							},
+							{
+								"id": "d",
+								"text": "accept HTTP PATCH on its endpoint and have access to a storage account"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"fix": "a",
+				"requirement": "a"
+			},
+			"explanation": {
+				"correct": "The Functions action stores the function's HTTP trigger endpoint and access key inside the action definition (for example https://azfunctionurl.azurewebsites.net/api/httptrigger?code=<access_key>), so the values are captured when the action is defined. When the access key for ProcessPayments was regenerated, the copy held by the action became stale and every invocation fails. Because those values are baked into the action definition, the action has to be removed and re-created so it picks up the function's present endpoint and key; editing the alert rule is neither needed nor helpful. The target function also has to meet two conditions for this action to work at all: its endpoint must support the HTTP POST method, and the function must have access to its storage account — without storage account access the keys aren't available and the function URI isn't reachable, so the action still fails.",
+				"perChoice": {
+					"fix:b": "The short name of an action group is only a short display label; changing it doesn't rebuild the actions inside the group, so the action keeps the stale key and continues to fail.",
+					"fix:c": "The processing region of an action group controls where notifications are processed. Moving the group between Global and a regional option doesn't update the endpoint and key embedded in its actions, so the failing call remains.",
+					"fix:d": "Adding a second action of the same type leaves the original action with the stale key in place, so the group still attempts the broken call on every alert.",
+					"requirement:b": "The action invokes the function's HTTP trigger with an HTTP POST request, so an endpoint that only accepts HTTP GET will not be called successfully.",
+					"requirement:c": "The action invokes the function's HTTP trigger with an HTTP POST request, so an endpoint that only accepts HTTP PUT will not be called successfully.",
+					"requirement:d": "The action invokes the function's HTTP trigger with an HTTP POST request, so an endpoint that only accepts HTTP PATCH will not be called successfully."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/action-groups"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-overview"
+				}
+			],
+			"subtopics": [
+				"action-groups",
+				"azure-functions"
+			],
+			"reviewed": false
 		}
 	]
 }

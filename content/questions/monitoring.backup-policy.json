@@ -1,0 +1,836 @@
+{
+	"skill": "monitoring.backup-policy",
+	"questions": [
+		{
+			"id": "q_01M6PPBM4GP9226WBZZ2KD1RVY",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Recovery Services vault that protects a production Linux virtual machine with an Azure Virtual Machine backup policy. The VM was created from a Trusted Launch image and has Ultra Disk and Premium SSD v2 data disks attached; the scheduled backup jobs are failing because those disk types are not supported by the current configuration. The business wants the workload protected more than once a day and wants rapid restore points to remain available for a full week. You need to update the backup policy in the vault. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Recovery Services vault                : rsv-prod-01\nProtected item                        : vm-app-01 (Linux, Trusted Launch image)\nAttached data disks                   : 2 x Ultra Disk (512 GiB each), 1 x Premium SSD v2\nPolicy subtype                        : Standard\nBackup frequency                      : Daily\nRetention range (daily recovery pts)  : 180 days\nInstant Restore snapshot retention    : 7 days"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Change the policy subtype to Enhanced and change the backup frequency to Hourly"
+					},
+					{
+						"id": "b",
+						"text": "Change the policy subtype to Enhanced and change the Instant Restore snapshot retention to 1 day"
+					},
+					{
+						"id": "c",
+						"text": "Keep the policy subtype as Standard and change the backup frequency to Hourly"
+					},
+					{
+						"id": "d",
+						"text": "Keep the policy subtype as Standard and change the retention range for daily recovery points to 10 years"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The failing jobs are caused by the disk types on the VM: the Standard policy subtype cannot protect Ultra Disk or Premium SSD v2, while the Enhanced subtype adds support for Ultra Disks, Premium SSD v2 and Trusted Launch VMs, and it also brings zone-redundant Instant Restore snapshots plus the ability to schedule backups as often as every 4 hours. Moving the frequency to Hourly therefore both clears the unsupported-disk failures and delivers more than one backup per day, and it leaves the existing 7-day Instant Restore snapshot retention untouched, which already satisfies the one-week rapid restore requirement. Note also that once a VM is protected with the Enhanced subtype, it cannot be moved back to Standard.",
+				"perChoice": {
+					"b": "Changing the subtype to Enhanced fixes the unsupported disk types, but shortening the Instant Restore snapshot retention from 7 days to 1 day breaks the requirement that rapid restore points stay available for a week, and the frequency is left unchanged, so the workload is still protected only once a day. Instant Restore snapshot retention can be set anywhere from 1 to 30 days and already defaults to 7 days, so no reduction is needed here.",
+					"c": "Keeping the Standard subtype leaves the backup jobs failing, because Standard cannot protect Ultra Disk or Premium SSD v2. Backing up Trusted Launch VMs with Standard is only possible through Azure CLI 2.73.0 or later, PowerShell Az 14.0.0 or later, or the REST API 2025-01-01 or later, and none of that changes the unsupported disk types. Changing the frequency alone does not resolve the failures.",
+					"d": "Retention length governs how long recovery points are kept; it does not change which disk types can be protected. With the Standard subtype the Ultra Disk and Premium SSD v2 remain uncovered and the jobs keep failing, and the once-a-day schedule is left in place. Longer retention also does not create extra backup runs per day."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-vms-enhanced-policy"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-architecture"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-manage-vms"
+				}
+			],
+			"subtopics": [
+				"backup-policy-subtype",
+				"backup-schedule-frequency",
+				"instant-restore-retention"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6PPEA6DMD2FGRAY41W46DAA",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Recovery Services vault that protects several Azure virtual machines with an Azure Virtual Machine backup policy. The business rule for this workload requires that daily recovery points are kept for three months, and the application team wants the recovery points that support a fast restore to remain available for two weeks after each backup. You need to update the policy in the vault so that both requirements are met. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Policy property",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Policy subtype",
+							"Enhanced"
+						],
+						[
+							"Backup schedule",
+							"Daily"
+						],
+						[
+							"Instant Restore retention",
+							"7 days"
+						],
+						[
+							"Retention range for daily recovery points",
+							"7 days"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Raise the retention range for daily recovery points to 90 days and then set Instant Restore retention to 14 days."
+					},
+					{
+						"id": "b",
+						"text": "Set Instant Restore retention to 14 days while leaving the retention range for daily recovery points at 7 days."
+					},
+					{
+						"id": "c",
+						"text": "Raise the retention range for daily recovery points to 90 days and set Instant Restore retention to 45 days."
+					},
+					{
+						"id": "d",
+						"text": "Raise the retention range for daily recovery points to 14 days and leave Instant Restore retention at 7 days."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "For an Enhanced policy the Instant Restore snapshot retention can be set from 1 to 30 days (default 7 days), but it can never exceed the vault retention duration. The retention range for the daily recovery points is currently only 7 days, so it has to be raised to 90 days (three months) first, and only then can the Instant Restore retention be raised to the 14 days the application team needs for fast restores. Lengthening the retention range also applies retroactively, so the recovery points already stored in the vault keep the longer retention instead of being pruned.",
+				"perChoice": {
+					"b": "While the retention range for the daily recovery points stays at 7 days, an Instant Restore retention of 14 days is not allowed, because the Instant Restore retention duration can never exceed the vault retention duration. It also leaves the workload short of the required three months of daily recovery points.",
+					"c": "The Enhanced policy allows an Instant Restore retention of 1 to 30 days, so a value of 45 days is outside the supported range even though the daily point retention of 90 days would otherwise cover it.",
+					"d": "This combination is a valid configuration, but it does not satisfy the requirements: daily recovery points would be kept for only 14 days instead of three months, and fast restores would remain available for only the 7 days that are already configured."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-vms-enhanced-policy"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-architecture"
+				}
+			],
+			"subtopics": [
+				"backup-policy-retention",
+				"instant-restore-retention",
+				"recovery-services-vault"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6PPJ6MRY2MCCMG7V6Z2AVN2",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Recovery Services vault that protects a production virtual machine with an Azure Virtual Machine backup policy. The compliance team now limits how long the platform team may keep this workload's recovery points to 90 days, and the points already stored in the vault that are older than that limit must no longer be retained. The workload must continue to be backed up every day. You need to update the backup policy in the vault. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Policy setting",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Backup frequency",
+							"Daily"
+						],
+						[
+							"Retention for daily recovery points",
+							"180 days"
+						],
+						[
+							"Instant Restore retention",
+							"7 days"
+						],
+						[
+							"Oldest recovery point stored in the vault",
+							"176 days old"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Reduce the retention for daily recovery points to 90 days"
+					},
+					{
+						"id": "b",
+						"text": "Set the Instant Restore retention to 90 days and leave the 180-day retention for daily recovery points unchanged"
+					},
+					{
+						"id": "c",
+						"text": "Change the backup frequency from Daily to Weekly and keep the 180-day retention"
+					},
+					{
+						"id": "d",
+						"text": "Enable Long Term Retention for monthly recovery points and keep the daily retention at 180 days"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A retention change is applied retroactively to the recovery points that are already stored. Lowering the retention for daily recovery points from 180 days to 90 days therefore cleans up the points that are older than 90 days, while the schedule stays at Daily so the workload is still backed up every day.",
+				"perChoice": {
+					"b": "Instant Restore retention controls how long the zone-redundant snapshot copies that support fast restores are kept; it does not determine how long the recovery points stored in the vault are kept. With the daily retention left at 180 days, the points older than 90 days would remain in the vault.",
+					"c": "Switching the schedule from daily to weekly removes the existing daily recovery points, including the ones that are still inside the allowed 90-day window, and it stops the daily backup runs that this workload still requires.",
+					"d": "Long Term Retention governs the monthly and yearly backup points. It does not cap the daily points, so the daily recovery points older than 90 days would still be kept in the vault."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-architecture"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-vms-enhanced-policy"
+				}
+			],
+			"subtopics": [
+				"retention-change",
+				"recovery-point-retention",
+				"backup-policy-edit"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6PPMN9CX3ZB9EW7CZX745R7",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Recovery Services vault that protects a production Linux virtual machine named app-prod-01 with an Azure Virtual Machine backup policy. The policy takes one backup every day at 02:00 and keeps recovery points for 180 days, and the vault already holds a series of daily recovery points for that machine. The workload owner has decided that a single backup each week is enough and asks you to switch the policy to a weekly schedule. You need to modify the backup policy in the vault and report to the owner what happens to the recovery points that are already stored. Which option correctly describes the result of saving this change?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting or item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Backup policy type",
+							"Azure Virtual Machine (Standard)"
+						],
+						[
+							"Backup frequency",
+							"Daily"
+						],
+						[
+							"Backup start time",
+							"02:00"
+						],
+						[
+							"Retention range",
+							"180 days"
+						],
+						[
+							"Protected item",
+							"app-prod-01 (Linux, running)"
+						],
+						[
+							"Recovery points stored for app-prod-01",
+							"2026-11-04, 2026-11-03, 2026-11-02, 2026-11-01, 2026-10-31, 2026-10-30"
+						],
+						[
+							"Requested change",
+							"Backup frequency: Daily to Weekly (retention range unchanged)"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "The daily recovery points already stored in the vault are cleaned up when the policy is changed to a weekly frequency."
+					},
+					{
+						"id": "b",
+						"text": "The daily recovery points already stored in the vault are kept until they expire under the current retention range when the policy is changed to a weekly frequency."
+					},
+					{
+						"id": "c",
+						"text": "The daily recovery points already stored in the vault are moved into long-term retention when the policy is changed to a weekly frequency."
+					},
+					{
+						"id": "d",
+						"text": "The daily recovery points already stored in the vault are converted into weekly recovery points when the policy is changed to a weekly frequency."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Switching the backup frequency of an Azure Virtual Machine policy from daily to weekly cleans up the daily recovery points that are already stored in the vault. They are not carried over to the new schedule, so the VM can no longer be restored to any of those earlier daily dates, and after the change only the new weekly runs create recovery points. This is a destructive consequence the owner must be told about before the policy is saved.",
+				"perChoice": {
+					"b": "Letting the stored points age out under the current retention range is the behavior that applies when only the schedule days or tags change while the retention range stays the same, and when a policy moves from weekly to daily. A move from daily to weekly instead cleans up the existing daily recovery points rather than letting them expire gradually.",
+					"c": "Long Term Retention is the concept used for monthly and yearly recovery points. Changing the backup frequency does not move the stored daily recovery points into long-term retention; they are cleaned up when the schedule moves from daily to weekly.",
+					"d": "Azure Backup never converts existing daily recovery points into weekly ones. After the frequency change, the vault holds only the recovery points that the new weekly runs create, so the earlier daily dates are lost."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-architecture"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-manage-vms"
+				}
+			],
+			"subtopics": [
+				"policy-schedule-change",
+				"recovery-point-retention"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6PPQAZE8385QTQ1H5GR1RAV",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Recovery Services vault named rsvault-prod that protects several Azure virtual machines with the Azure Virtual Machine policies listed below. The business wants app-vm-01 protected every 6 hours with recovery points kept for 30 days, while every other virtual machine in the vault must keep the schedule and retention it runs today. You need to change the backup policy applied to app-vm-01 only. Which option should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Backup policy",
+						"Backup frequency",
+						"Start time / interval",
+						"Retention",
+						"Virtual machines assigned"
+					],
+					"rows": [
+						[
+							"DefaultPolicy",
+							"Daily",
+							"23:00",
+							"180 days",
+							"vm-sandbox-01, vm-sandbox-02"
+						],
+						[
+							"HourlyBackup",
+							"Hourly",
+							"Every 4 hours",
+							"90 days",
+							"app-vm-01, app-vm-03, app-vm-07"
+						],
+						[
+							"NightlyCore",
+							"Daily",
+							"02:00",
+							"30 days",
+							"app-vm-05"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Create an Azure Virtual Machine policy with an hourly interval of 6 hours and a retention of 30 days, then assign it to app-vm-01 from the vault item dashboard and choose Save, which applies the schedule immediately."
+					},
+					{
+						"id": "b",
+						"text": "Open the HourlyBackup policy with Modify, change its hourly interval to 6 hours and its retention to 30 days, and save it, which applies the schedule immediately to app-vm-01 and to the other virtual machines assigned to HourlyBackup."
+					},
+					{
+						"id": "c",
+						"text": "Assign the existing NightlyCore Azure Virtual Machine policy to app-vm-01 from the vault item dashboard and then choose Save, which applies the schedule immediately to that machine."
+					},
+					{
+						"id": "d",
+						"text": "Run Backup Now for app-vm-01 and set Retain Backup Till to 30 days to create an extra recovery point with the required retention, which applies the schedule immediately to that machine."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "app-vm-01 currently shares the HourlyBackup policy with app-vm-03 and app-vm-07, so changing that policy in place would alter the schedule and retention of machines that must stay as they are. The right move is to set up a separate Azure Virtual Machine policy carrying the hourly 6-hour interval and the 30-day retention, then assign it to app-vm-01 from the vault item dashboard and select Save, which applies the assignment immediately to that machine only.",
+				"perChoice": {
+					"b": "Modify edits the existing policy itself, so every virtual machine assigned to HourlyBackup (app-vm-01, app-vm-03 and app-vm-07) would start running the 6-hour interval with 30-day retention. That violates the requirement that the other machines keep their current schedule and retention.",
+					"c": "The NightlyCore policy is a daily policy that runs at 02:00, so assigning it to app-vm-01 would produce one backup per day rather than one every 6 hours. Its 30-day retention matches the requirement, but its frequency does not, and the change would still not deliver the required 6-hour schedule.",
+					"d": "Backup Now runs an extra on-demand job and the Retain Backup Till field sets the retention of that single on-demand recovery point only. Neither of them changes the schedule or the retention of the policy assigned to app-vm-01, so the machine would keep running every 4 hours with 90-day retention."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-manage-vms"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-vms-enhanced-policy"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-architecture"
+				}
+			],
+			"subtopics": [
+				"policy-assignment",
+				"backup-schedule",
+				"backup-retention"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6PPXV8EYMBQYZH4BQK5XWCV",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Recovery Services vault named rsvault-prod that protects a group of Azure virtual machines with an Enhanced Azure Virtual Machine backup policy called CorpPolicy. The audit team now requires the policy to produce a recovery point on a specific day of every month that is kept for seven years and a recovery point on a specific day of every year that is kept for ten years, in addition to the daily points the policy produces today. You need to update the backup policy in the vault so that both requirements are met. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Policy subtype",
+							"Enhanced"
+						],
+						[
+							"Backup schedule",
+							"Daily at 02:00"
+						],
+						[
+							"Retention range",
+							"180 days"
+						],
+						[
+							"Instant Restore retention",
+							"7 days"
+						],
+						[
+							"Monthly retention rule",
+							"Not configured"
+						],
+						[
+							"Yearly retention rule",
+							"Not configured"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add a monthly retention rule that runs on a chosen day of the month with a retention range of 84 months, and a yearly retention rule that runs on a chosen day of the year with a retention range of 10 years, keeping the daily schedule and its 180-day retention as they are."
+					},
+					{
+						"id": "b",
+						"text": "Add a monthly retention rule that runs on a chosen day of the month with a retention range of 60 months, and a yearly retention rule that runs on a chosen day of the year with a retention range of 10 years, keeping the daily schedule and its 180-day retention as they are."
+					},
+					{
+						"id": "c",
+						"text": "Add a monthly retention rule that runs on a chosen day of the month with a retention range of 84 months, and a yearly retention rule that runs on a chosen day of the year with a retention range of 5 years, keeping the daily schedule and its 180-day retention as they are."
+					},
+					{
+						"id": "d",
+						"text": "Extend the daily retention range to 2,555 days and add a yearly retention rule that runs on a chosen day of the year with a retention range of 10 years, without adding a monthly rule."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Retention can be defined separately for daily, weekly, monthly and yearly backup points, and the monthly and yearly ones are the long-term retention rules: a monthly rule fires on a chosen day of the month and a yearly rule on a chosen day of the year. Both ranges are editable, and their defaults are 60 months for monthly points and 10 years for yearly points. Seven years of monthly points therefore needs the monthly rule set to 84 months, and the ten-year audit requirement is met by a yearly rule of 10 years, while the daily schedule and its 180-day retention stay untouched so the daily points the policy produces today are unaffected.",
+				"perChoice": {
+					"b": "60 months is only five years - it is the default for monthly points - so the monthly points would be cleaned up after five years instead of the required seven. The yearly rule in this option is right, but the monthly rule is not.",
+					"c": "The monthly rule of 84 months satisfies the seven-year requirement, but the yearly rule of 5 years keeps the yearly point for only half of the ten years the audit team asked for.",
+					"d": "Lengthening the daily retention range only changes how long the daily points are kept; it adds no rule that fires on a chosen day of the month, so the monthly requirement is not met. It would also store every daily point for seven years, which increases vault storage cost."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-architecture"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-vms-enhanced-policy"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-manage-vms"
+				}
+			],
+			"subtopics": [
+				"long-term-retention",
+				"backup-policy-retention",
+				"recovery-point-lifecycle"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6PQ38CYGDWDBEA1WEGZPD56",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Recovery Services vault named rsvault-westus that protects a Windows virtual machine named svc-vm-14 with the Azure Virtual Machine backup policy shown below. The business wants the per-snapshot cost for this virtual machine lowered, the read-only reference data that is mounted by eight other virtual machines and the scratch logs that are regenerated every hour left out of the recovery points produced from now on, and the customer and order records on Data disk 1 still protected. You need to update how this workload is backed up in the vault. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"vault\": \"rsvault-westus\",\n  \"backupPolicy\": {\n    \"name\": \"NightlyPolicy\",\n    \"policyType\": \"AzureVirtualMachine\",\n    \"policySubtype\": \"Enhanced\",\n    \"schedule\": { \"frequency\": \"Daily\", \"startTime\": \"02:00\" },\n    \"retentionRange\": { \"daily\": 30 },\n    \"instantRestoreRetentionDays\": 7\n  },\n  \"protectedItem\": {\n    \"vmName\": \"svc-vm-14\",\n    \"osType\": \"Windows\",\n    \"attachedDataDisks\": [\n      { \"name\": \"Data disk 1\", \"lun\": 0, \"sizeGb\": 512, \"contents\": \"Customer and order records\" },\n      { \"name\": \"Data disk 2\", \"lun\": 1, \"sizeGb\": 256, \"contents\": \"Read-only reference data, mounted read-only by eight other virtual machines\" },\n      { \"name\": \"Data disk 3\", \"lun\": 2, \"sizeGb\": 128, \"contents\": \"Scratch logs regenerated every hour\" }\n    ]\n  },\n  \"lastJob\": { \"startedOn\": \"2026-11-04 02:00\", \"status\": \"Failed\", \"note\": \"Every job since the shared disk was attached has failed\" }\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Enable selective disk backup for the Azure Virtual Machine backup policy and deselect Data disk 2 and Data disk 3"
+					},
+					{
+						"id": "b",
+						"text": "Enable selective disk backup for the Azure Virtual Machine backup policy in the MARS console so that Data disk 2 and Data disk 3 are skipped"
+					},
+					{
+						"id": "c",
+						"text": "Raise the Instant Restore snapshot retention of the Azure Virtual Machine backup policy to 30 days and set the daily retention range to 30 days"
+					},
+					{
+						"id": "d",
+						"text": "Keep the Azure Virtual Machine backup policy as it is and detach Data disk 2 and Data disk 3 from the virtual machine before every scheduled backup, reattaching them when the job ends"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Selective disk backup is the documented way to protect only a subset of the data disks attached to a virtual machine: noncritical or shared disks are left out of the backup, the snapshot cost is cut, and each recovery point then contains only the included disks, which can be restored from Instant Restore or from the vault tier. Turning it on for the Azure Virtual Machine backup policy and deselecting Data disk 2 (the read-only data mounted by eight other virtual machines) and Data disk 3 (the hourly scratch logs) leaves Data disk 1 with the customer and order records, along with the OS disk, as the protected content of every new recovery point.",
+				"perChoice": {
+					"b": "The file and folder settings for the MARS agent are specified in the MARS console, and the MARS agent covers files, folders and system state on on-premises Windows servers and on Azure VMs. It has no knowledge of which disks are attached to an Azure virtual machine, so a MARS configuration cannot decide which of those disks are written into the recovery points of svc-vm-14.",
+					"c": "Extending the Instant Restore snapshot retention only keeps more snapshots in the snapshot tier and adds to the cost of the policy; it removes nothing from the recovery points. Data disk 2 and Data disk 3 would still be captured in every backup, so the snapshot cost would not fall.",
+					"d": "The backup service does not detach or reattach data disks for you, and taking the shared reference data and the scratch disk offline around every job would disrupt the workload that reads them and still require manual work each night. The disks stay attached and are kept out of the recovery points by the backup configuration itself."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-vms-enhanced-policy"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-architecture"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-manage-vms"
+				}
+			],
+			"subtopics": [
+				"selective-disk-backup",
+				"azure-vm-backup-policy",
+				"backup-cost-reduction"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6PQ8T97NB1V30WGCQW4W36M",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Recovery Services vault that protects an Azure Linux virtual machine with an Azure Virtual Machine backup policy. The platform team wants the snapshot copies that support a fast restore to remain available for the whole period that the vault holds recovery points, and the workload owner accepts that the platform could lose up to half a day of changes if it fails. The policy runs on the schedule shown in the exhibit. You need to update the backup policy so that both requirements are met. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Backup policy            : CorpPolicy\nPolicy subtype           : Enhanced\nBackup frequency         : Hourly\nStart time               : 08:00\nRepeat every             : 4 hours\nDuration                 : 24 hours\nInstant Restore retention: 7 days\nRecovery point retention in the vault : 30 days"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Keep the backup frequency on Hourly, set the repeat interval to 4 hours, and set Instant Restore retention to 30 days."
+					},
+					{
+						"id": "b",
+						"text": "Keep the backup frequency on Hourly, set the repeat interval to 6 hours, and set Instant Restore retention to 30 days."
+					},
+					{
+						"id": "c",
+						"text": "Keep the backup frequency on Hourly, set the repeat interval to 12 hours, and set Instant Restore retention to 30 days."
+					},
+					{
+						"id": "d",
+						"text": "Keep the backup frequency on Hourly, set the repeat interval to 24 hours, and set Instant Restore retention to 30 days."
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "The hourly frequency can use a repeat interval of 4, 6, 8, 12 or 24 hours, and the recovery point objective on an hourly schedule ranges from a 4-hour floor to a 24-hour ceiling. The workload owner tolerates at most half a day of loss, so the 24-hour interval is out. The number of snapshots taken per day also caps the allowed Instant Restore retention: every 4 hours over a 24-hour duration means six scheduled snapshots, and the more snapshots per day, the fewer days of retention are permitted. That rules out the 4-hour and 6-hour intervals when the requirement is the full 30 days the vault holds recovery points. The 12-hour interval is the one that lets snapshot retention rise to 30 days, and 30 days is both the maximum Instant Restore retention and equal to the vault's retention duration, which it can never exceed.",
+				"perChoice": {
+					"a": "Six scheduled snapshots a day (every 4 hours across the 24-hour duration) reduce the maximum allowed Instant Restore retention below the full 30 days the vault keeps its recovery points, so the required window is not delivered even though the recovery point objective is the tightest of the four.",
+					"b": "A 6-hour interval still schedules four snapshots a day, more than the 12-hour interval, so the maximum allowed Instant Restore retention stays below 30 days and the requirement for the whole vault retention period is not met.",
+					"d": "A 24-hour repeat interval pushes the recovery point objective to the 24-hour ceiling, which exceeds the half-day loss the workload owner accepts, even though it produces the fewest snapshots and therefore the most generous retention allowance."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-vms-enhanced-policy"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-architecture"
+				}
+			],
+			"subtopics": [
+				"hourly-backup-schedule",
+				"instant-restore-retention",
+				"recovery-point-objective"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6PQBF3STBW246CWB9PX54Z8",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a Recovery Services vault named rsvault-prod that protects a group of Azure Linux virtual machines with an Azure Virtual Machine backup policy called CorpPolicy. The exhibit shows how this workload is protected today. The business has approved five changes to how this workload is protected, and you need every one of them to take effect in the vault. Which single setting or action satisfies each approved requirement? Match each requirement to the setting or action you would use.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Policy in use",
+							"CorpPolicy"
+						],
+						[
+							"Protected virtual machines",
+							"app-vm-01, app-vm-02, db-vm-07"
+						],
+						[
+							"Captures produced per day",
+							"one, at 02:00"
+						],
+						[
+							"Time each recovery point is kept in the vault",
+							"180 days"
+						],
+						[
+							"Time a snapshot copy that supports a fast recovery is kept",
+							"7 days"
+						],
+						[
+							"Storage used for the snapshot copies",
+							"not spread across availability zones"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "freq",
+						"text": "Backup frequency"
+					},
+					{
+						"id": "instr",
+						"text": "Instant Restore retention"
+					},
+					{
+						"id": "range",
+						"text": "Retention range"
+					},
+					{
+						"id": "subtype",
+						"text": "Policy subtype"
+					},
+					{
+						"id": "now",
+						"text": "Backup Now"
+					},
+					{
+						"id": "selective",
+						"text": "Selective disk backup"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "The snapshot copies that support a fast recovery must survive the failure of a single availability zone."
+					},
+					{
+						"id": "s2",
+						"label": "Each snapshot copy that supports a fast recovery must remain available for a fortnight after the capture it belongs to."
+					},
+					{
+						"id": "s3",
+						"label": "No recovery point that is more than one year old may be kept in the vault."
+					},
+					{
+						"id": "s4",
+						"label": "The workload must be captured every six hours so that no more than six hours of work is lost when a machine fails."
+					},
+					{
+						"id": "s5",
+						"label": "The operations team wants two extra captures of each machine every day, triggered by hand at times they choose, with each of those captures kept until a date they name."
+					}
+				]
+			},
+			"key": {
+				"s1": "subtype",
+				"s2": "instr",
+				"s3": "range",
+				"s4": "freq",
+				"s5": "now"
+			},
+			"explanation": {
+				"correct": "Each requirement is satisfied by exactly one setting or action on the policy: the goal of surviving a single availability zone failure is met by moving to the Enhanced policy subtype, whose snapshot storage is zone-redundant; the fourteen-day life of the fast-recovery snapshot copies is set with the Instant Restore retention value (1 to 30 days, 7 days by default) and stays well under the vault retention duration; the point at which recovery points are dropped from the vault is governed by the retention range, which the exhibit shows as 180 days today and which can be set to 365 days; a repeating capture every six hours comes from the schedule frequency, where Hourly can repeat at 4, 6, 8, 12 or 24 hours across a 24-hour duration; and two hand-started extra captures with an operator-chosen end date are produced with the on-demand Backup Now action and its Retain Backup Till field. Selective disk backup belongs in no slot because it only leaves disks out of a capture and none of the five requirements asks for that.",
+				"perChoice": {
+					"freq": "Backup frequency is where the repeating schedule is configured, with Hourly, Daily and Weekly choices; setting it to Hourly repeating every 6 hours over a 24-hour duration produces the required capture every six hours. The zone-resilience goal is met by the subtype instead, and the hand-started extra captures are an on-demand action rather than a schedule.",
+					"instr": "Instant Restore retention controls how long each recovery snapshot stays available for a fast recovery; 14 days is inside the 1 to 30 day range, is longer than the 7 days in the exhibit, and does not exceed the duration for which points are kept in the vault.",
+					"range": "The retention range decides how long recovery points are kept in the vault; setting it to 365 days satisfies the one-year limit, and the value that is saved is imposed on the points already stored, so any point beyond that age is removed.",
+					"subtype": "Only the Enhanced subtype stores the Instant Restore snapshots redundantly across availability zones, so this requirement is met by changing the policy subtype; remember that a VM once protected with the Enhanced subtype cannot be moved back to Standard.",
+					"now": "Backup Now is the on-demand action: the operator triggers each extra capture by hand and names the date up to which that copy is kept in the Retain Backup Till field. It produces copies outside the scheduled run and does not alter the schedule itself.",
+					"selective": "Selective disk backup excludes disks from the recovery points to reduce snapshot cost, and none of the five requirements asks for any disk to be left out, so it fits no slot."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-vms-enhanced-policy"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-manage-vms"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-architecture"
+				}
+			],
+			"subtopics": [
+				"backup-policy-configuration",
+				"instant-restore",
+				"policy-subtype"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6PQNW2W1X0TNB3SNYM95EZY",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have two Recovery Services vaults in the East US region: one that already protects workloads which are being retired, and one that is being prepared for a new workload. The exhibit shows their current settings. You need to onboard app-vm-21, decide how its recovery points are stored, and wind down the two retired virtual machines. Which option should you use for each requirement?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Resource",
+						"Current state"
+					],
+					"rows": [
+						[
+							"Recovery Services vault rsvault-new",
+							"Region: East US. Redundancy: GRS (the default). No workload is protected by it yet."
+						],
+						[
+							"Recovery Services vault rsvault-prod",
+							"Policy CorpPolicy: subtype Standard, schedule daily at 02:00, recovery points kept for 180 days."
+						],
+						[
+							"app-vm-07",
+							"Protected by CorpPolicy in rsvault-prod. Scheduled runs finish successfully. The workload is being retired."
+						],
+						[
+							"app-vm-08",
+							"Protected by CorpPolicy in rsvault-prod. Scheduled runs finish successfully. The workload is being retired."
+						],
+						[
+							"app-vm-21",
+							"Not yet protected. Uses a Trusted Launch image. One Ultra Disk and one Premium SSD v2 data disk attached."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Create a new Azure Virtual Machine backup policy with the Enhanced subtype"
+					},
+					{
+						"id": "i2",
+						"text": "Set the vault redundancy to ZRS"
+					},
+					{
+						"id": "i3",
+						"text": "Set the backup schedule frequency to Hourly with a 6-hour repeat interval"
+					},
+					{
+						"id": "i4",
+						"text": "Stop protection and retain backup data"
+					},
+					{
+						"id": "i5",
+						"text": "Stop protection and delete backup data"
+					},
+					{
+						"id": "i6",
+						"text": "Set the vault redundancy to LRS"
+					},
+					{
+						"id": "i7",
+						"text": "Create a new Azure Virtual Machine backup policy with the Standard subtype"
+					},
+					{
+						"id": "i8",
+						"text": "Set the backup schedule frequency to Daily"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "app-vm-21 must be covered several times a day, and its Trusted Launch image and Ultra Disk must be supported"
+					},
+					{
+						"id": "s2",
+						"label": "app-vm-21 must receive exactly four recovery points each day"
+					},
+					{
+						"id": "s3",
+						"label": "Everything stored for app-vm-21 must survive the loss of an availability zone in East US without being copied to another region"
+					},
+					{
+						"id": "s4",
+						"label": "app-vm-07 is being retired: no further scheduled runs, its stored recovery points stay restorable, and scheduled runs can start again later"
+					},
+					{
+						"id": "s5",
+						"label": "app-vm-08 is being retired and the business has decided that restoring this workload must no longer be possible"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i3",
+				"s3": "i2",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "app-vm-21 is not yet protected and must be covered several times a day with support for its Trusted Launch image, Ultra Disk and Premium SSD v2, so it needs a new policy with the Enhanced subtype, with an Hourly schedule repeating every 6 hours to yield four recovery points each day. Its recovery points must survive an availability-zone failure in East US without leaving that region, which is what ZRS provides (the vault's current GRS setting instead replicates to a paired secondary region). app-vm-07 must keep its stored recovery points restorable with the ability to resume runs later, which is 'Stop protection and retain backup data'. app-vm-08 must no longer be restorable, which is 'Stop protection and delete backup data'.",
+				"perChoice": {
+					"i1": "app-vm-21 uses a Trusted Launch image and has Ultra Disk and Premium SSD v2 data disks, and it must be covered several times a day. Standard cannot protect Ultra Disk or Premium SSD v2 and does not offer multiple backups per day, while Enhanced supports both; because app-vm-21 is not yet protected, a new policy with the Enhanced subtype applies it.",
+					"i2": "ZRS keeps the stored recovery points across availability zones while keeping them in the same region, so an availability-zone failure in East US does not lose them and they never leave that region. GRS, the vault's current setting, instead replicates to a paired secondary region.",
+					"i3": "An hourly schedule repeating every 6 hours produces four recovery points across the day, which matches the coverage requested for app-vm-21. Hourly intervals of 4, 6, 8, 12 or 24 hours can be chosen, and the 4-hour interval would give six points a day instead.",
+					"i4": "This action halts future scheduled runs while keeping the stored recovery points, so app-vm-07's recovery points remain restorable and protection can be started again later, because Resume backup stays available.",
+					"i5": "This action halts future scheduled runs and wipes the stored recovery points, so restoring app-vm-08 is no longer possible and Resume backup is not offered; the data is kept in a soft-delete state for 14 days.",
+					"i6": "LRS keeps three copies in a single datacenter, which protects against rack or drive failure but not against the loss of an availability zone, so it does not meet the zone-resilience requirement.",
+					"i7": "Standard is the cheaper, established behavior, but it cannot protect Ultra Disk or Premium SSD v2 and it does not provide several backups per day, so it does not meet the requirements for app-vm-21.",
+					"i8": "A daily schedule produces a single recovery point each day, so it cannot deliver the four points a day that app-vm-21 needs; only an hourly schedule with a 6-hour repeat interval gives four."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-vms-enhanced-policy"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-architecture"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-manage-vms"
+				}
+			],
+			"subtopics": [
+				"policy-type-selection",
+				"vault-redundancy",
+				"protection-lifecycle"
+			],
+			"reviewed": false
+		}
+	]
+}

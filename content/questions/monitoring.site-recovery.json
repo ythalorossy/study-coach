@@ -1,0 +1,442 @@
+{
+	"skill": "monitoring.site-recovery",
+	"questions": [
+		{
+			"id": "q_01M6PPSZTJ11TDHM7CAH3KB9D5",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a three-tier application running on Windows Server 2022 virtual machines in East US, and you use Azure Site Recovery to protect them for Azure-to-Azure disaster recovery. The three tiers are configured for multi-VM consistency so that they come back at one shared recovery point. After protection starts, each virtual machine publishes only its own crash-consistent recovery points, and the tiers never publish a combined recovery point. The network security group on the subnet that hosts the tiers contains only the rules listed below. You need the tiers to fail over to a common, consistent recovery point. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Rule name",
+						"Direction",
+						"Destination",
+						"Protocol and port",
+						"Action"
+					],
+					"rows": [
+						[
+							"Allow-Storage-Egress",
+							"Outbound",
+							"Storage.EastUS",
+							"TCP 443",
+							"Allow"
+						],
+						[
+							"Allow-AAD-Egress",
+							"Outbound",
+							"AzureActiveDirectory",
+							"TCP 443",
+							"Allow"
+						],
+						[
+							"Allow-EventHub-Egress",
+							"Outbound",
+							"EventHub.EastUS",
+							"TCP 443",
+							"Allow"
+						],
+						[
+							"Allow-SiteRecovery-Egress",
+							"Outbound",
+							"AzureSiteRecovery",
+							"TCP 443",
+							"Allow"
+						],
+						[
+							"Allow-KeyVault-Egress",
+							"Outbound",
+							"AzureKeyVault",
+							"TCP 443",
+							"Allow"
+						],
+						[
+							"Allow-GuestHybrid-Egress",
+							"Outbound",
+							"GuestAndHybridManagement",
+							"TCP 443",
+							"Allow"
+						],
+						[
+							"Deny-Remaining-Egress",
+							"Outbound",
+							"Any",
+							"Any",
+							"Deny"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add an outbound rule that allows TCP port 20004 to the other virtual machines in the deployment."
+					},
+					{
+						"id": "b",
+						"text": "Add an outbound rule that allows TCP port 20004 to the Azure Site Recovery service tag."
+					},
+					{
+						"id": "c",
+						"text": "Add an outbound rule that allows TCP port 20004 to the cache storage account."
+					},
+					{
+						"id": "d",
+						"text": "Add an inbound rule that allows TCP port 20004 to the other virtual machines in the deployment."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Members that share a recovery point exchange data with each other over TCP port 20004. The listed network security group permits only HTTPS 443 to the documented service tags and denies every other outbound flow, so the traffic between the tier members is dropped and each machine can publish only its own crash-consistent recovery point. Adding an outbound allowance for TCP port 20004 to the other virtual machines in the deployment restores the member-to-member exchange, letting the tiers publish a combined, consistent recovery point and fail over together.",
+				"perChoice": {
+					"a": "Correct. Multi-VM consistency members exchange data over port 20004 with each other, and a firewall that blocks that internal traffic breaks the consistency between group members. The traffic is outbound and travels between the member virtual machines, so an outbound rule for TCP port 20004 to those machines is the change that unblocks the shared recovery point.",
+					"b": "The service tag allowances in the documented pattern are HTTPS on port 443, and HTTPS 443 to the Azure Site Recovery service tag is already permitted in the exhibit. The consistency exchange between tier members is not sent to that service tag; it runs directly between the members on port 20004, so opening 20004 to the service tag does not fix the missing shared recovery point.",
+					"c": "The cache storage account in the source region buffers replicated disk writes so production impact stays low; it is not the peer for the exchange between consistency members. Opening port 20004 to it therefore leaves the member-to-member exchange blocked and the combined recovery point unpublished.",
+					"d": "Site Recovery requires outbound connectivity only and never needs inbound connectivity to the protected virtual machine, and the consistency exchange is outbound as well. An inbound allowance changes nothing about the blocked outbound flow, so the tiers would still not publish a shared recovery point."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-enable-replication"
+				}
+			],
+			"subtopics": [
+				"multi-vm-consistency",
+				"network-security-group-rules",
+				"azure-to-azure-replication"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6PPW2SCRKETVFMMS9SF7PQJ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a SQL Server virtual machine in West Europe that is protected with Azure Site Recovery for Azure-to-Azure disaster recovery. Your recovery objective requires that the database can be restored to a point no more than 30 minutes before the incident, and that transactions which were already committed but not yet written to the data files are still present in the recovered database. The replication policy that is currently assigned to the virtual machine is shown below. You need to update the policy so that both conditions are satisfied. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Azure Site Recovery - replication policy \"rp-sql-prod\" (assigned to VM sql-prod-01)\n\n  Recovery point retention ................. 1 day\n  App-consistent snapshot frequency ........ 0 hours (disabled)\n  Crash-consistent recovery point interval . 5 minutes"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set the app-consistent snapshot frequency to 15 minutes and keep the recovery point retention at one day"
+					},
+					{
+						"id": "b",
+						"text": "Set the app-consistent snapshot frequency to 12 hours and keep the recovery point retention at one day"
+					},
+					{
+						"id": "c",
+						"text": "Set the recovery point retention to 30 minutes and leave the app-consistent snapshot frequency disabled"
+					},
+					{
+						"id": "d",
+						"text": "Set the crash-consistent recovery point interval to one minute and leave the app-consistent snapshot frequency disabled"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Setting the app-consistent snapshot frequency to 15 minutes creates an app-consistent recovery point every 15 minutes, so the worst-case gap between the incident and the newest usable recovery point stays inside the 30-minute recovery objective, and each of those points also captures the in-memory state through VSS, which is what carries the transactions that were committed but not yet written to disk. The snapshot frequency remains lower than the one-day recovery point retention, so the retention value can stay as it is and no extra recovery points need to be stored.",
+				"perChoice": {
+					"b": "Twelve hours is a legal value because it is still lower than the one-day retention, but it leaves the database up to 12 hours behind the incident, far outside the 30-minute recovery objective.",
+					"c": "Shortening the recovery point retention only limits how long recovery points are kept. With the app-consistent snapshot frequency still disabled, no recovery point contains the in-memory transaction data, so the requirement that committed transactions survive the failover is not met.",
+					"d": "The five-minute crash-consistent interval is fixed and cannot be changed, and crash-consistent points hold only data that was already written to disk, so they never carry the committed-but-unflushed transactions that the recovery objective requires."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-enable-replication"
+				}
+			],
+			"subtopics": [
+				"replication-policy-settings",
+				"recovery-point-objectives"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6PPY5QQKV0WFNRTXF9NHMFD",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You protect a write-intensive Azure virtual machine in East US 2 with Azure Site Recovery for Azure-to-Azure disaster recovery. Since the protection was enabled, the replicated copy in the recovery region keeps falling behind the source, so an unplanned failover would recover a copy that is minutes stale. The application cannot be changed to write less, and the storage configuration for the replication can still be adjusted. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Observed value"
+					],
+					"rows": [
+						[
+							"Protected virtual machine",
+							"vm-orders-01 (Windows Server 2022)"
+						],
+						[
+							"Source region",
+							"East US 2"
+						],
+						[
+							"Recovery region",
+							"West Europe"
+						],
+						[
+							"Sustained data change rate on the source disks",
+							"about 70 MB/s"
+						],
+						[
+							"Churn for the VM",
+							"Normal Churn"
+						],
+						[
+							"Cache storage account used by replication",
+							"Standard general-purpose v2 (asr-cache01)"
+						],
+						[
+							"Replication status",
+							"Replica lags behind the source; pending replication data keeps growing"
+						],
+						[
+							"Age of the latest recovery point",
+							"Several minutes behind the source data"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set churn for the VM to High Churn and use a Premium Block Blob cache storage account in the source region"
+					},
+					{
+						"id": "b",
+						"text": "Set churn for the VM to Normal Churn and use a Premium Block Blob cache storage account in the source region"
+					},
+					{
+						"id": "c",
+						"text": "Set churn for the VM to High Churn and use a Standard general-purpose v2 cache storage account in the source region"
+					},
+					{
+						"id": "d",
+						"text": "Set churn for the VM to Normal Churn and use a Standard general-purpose v2 cache storage account in the source region"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The virtual machine writes about 70 MB/s continuously, which is a data change rate above what the churn path currently in place sustains — that is why the replica keeps falling behind and the recovery points age behind the source data. The option intended for write rates beyond the default path is the higher churn level, and it is used together with a Premium Block Blob cache storage account, which buffers the writes in the source region; when that churn level is selected, the cache storage list offers only Premium Block Blob accounts. Site Recovery supports up to 100 MB/s per virtual machine with that option, and up to 500 MB/s in configurations that meet the documented requirements, so this workload's write volume is covered.",
+				"perChoice": {
+					"b": "Normal Churn is the default setting and the cache storage list for it contains only Standard accounts, so a Premium Block Blob account is not a valid pairing for it. Keeping the default churn level also keeps the write volume that the replication path already fails to sustain for this workload, so the replica would stay behind the source.",
+					"c": "When the higher churn level is selected, the cache storage list contains only Premium Block Blob accounts, so a Standard general-purpose v2 account cannot be paired with it. A Standard cache account also lacks the throughput needed to absorb this workload's sustained writes.",
+					"d": "This repeats the configuration that is already in place — the default churn level with a Standard cache storage account — so the replica would keep lagging behind the source and recovery points would keep aging, which fails the requirement."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-enable-replication"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/site-recovery-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				}
+			],
+			"subtopics": [
+				"high-churn",
+				"cache-storage-account",
+				"azure-to-azure-replication"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6PQ1ATFGJSKTYZ5FV0CGK05",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have two Linux virtual machines, vm-web-01 and vm-app-01, in the North Europe region that you want to protect with Azure Site Recovery for Azure-to-Azure disaster recovery. Each machine is protected on its own, without a replication group. When you enable replication, the Mobility service reports that it cannot contact Azure and the machines never reach a protected state. The network team filters the traffic these machines send to public endpoints using the rules shown below. You need to change the network configuration so that the Mobility service can register and replication can start. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Rule",
+						"Destination",
+						"Protocol and port",
+						"Applies to"
+					],
+					"rows": [
+						[
+							"Fwd-AllowAzureServices",
+							"*.azure.com",
+							"TCP 443",
+							"vm-web-01, vm-app-01"
+						],
+						[
+							"Fwd-AllowManagement",
+							"*.management.azure.com",
+							"TCP 443",
+							"vm-web-01, vm-app-01"
+						],
+						[
+							"Fwd-DenyRemainder",
+							"Any other destination",
+							"Any",
+							"vm-web-01, vm-app-01"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Allow HTTPS on TCP 443 from the virtual machines to *.blob.core.windows.net, *.hypervrecoverymanager.windowsazure.com, *.servicebus.windows.net, and login.microsoftonline.com."
+					},
+					{
+						"id": "b",
+						"text": "Allow HTTPS on TCP 443 from the virtual machines to *.vault.azure.net, *.automation.ext.azure.com, and login.microsoftonline.com."
+					},
+					{
+						"id": "c",
+						"text": "Allow HTTPS on TCP 443 from the AzureSiteRecovery service tag to the virtual machine subnet."
+					},
+					{
+						"id": "d",
+						"text": "Allow TCP 20004 between vm-web-01 and vm-app-01 in both directions."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Azure Site Recovery works with traffic the protected virtual machine sends outward, and it never needs a connection initiated toward the machine. For the Mobility service to register and for replicated data to reach the recovery region, the machine must be able to reach *.blob.core.windows.net, *.hypervrecoverymanager.windowsazure.com, *.servicebus.windows.net, and login.microsoftonline.com over HTTPS on TCP 443. The current filter list permits only Azure service and management destinations, so the endpoints blocked by the deny rule are what prevent registration and replication from starting.",
+				"perChoice": {
+					"b": "*.vault.azure.net is required for ADE-enabled virtual machines when replication is enabled through the portal, and *.automation.ext.azure.com is used for Mobility service auto-upgrade through the portal. Those two destinations do not cover the endpoints needed to register the service and replicate the workload, so the reported failure would persist.",
+					"c": "The direction is reversed. Site Recovery depends on the virtual machine making outbound calls, and inbound connectivity to the virtual machine is never required, so permitting traffic from a service tag toward the subnet does not fix the failed registration.",
+					"d": "Port 20004 carries consistency traffic exchanged between virtual machines that are grouped for multi-VM consistency. These two machines are protected individually, and Site Recovery service access does not use port 20004, so opening it between them leaves the missing service endpoints blocked."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-enable-replication"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/site-recovery-overview"
+				}
+			],
+			"subtopics": [
+				"azure-to-azure-replication",
+				"network-connectivity",
+				"mobility-service"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6PQQBN71S8GZHGV60B4QDWX",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have two Azure virtual machines that run a line-of-business application in East US 2. They are protected with Azure Site Recovery for Azure-to-Azure disaster recovery, and West Europe is the recovery region. The current replication configuration is shown below. The cloud provider has announced a regional outage window for East US 2 that starts on Saturday, and the business wants the application to run from West Europe during that window with no committed transactions lost. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Source region",
+							"East US 2"
+						],
+						[
+							"Recovery region",
+							"West Europe"
+						],
+						[
+							"vm-app-01 replication status",
+							"Protected"
+						],
+						[
+							"vm-app-02 replication status",
+							"Protected"
+						],
+						[
+							"Replication health, both virtual machines",
+							"Healthy"
+						],
+						[
+							"App-consistent snapshot frequency",
+							"Every 30 minutes"
+						],
+						[
+							"Recovery point retention",
+							"24 hours"
+						],
+						[
+							"Most recent recovery point",
+							"App-consistent, 4 minutes old"
+						],
+						[
+							"Announced outage window for East US 2",
+							"Saturday 02:00-06:00 UTC"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Run a planned failover to West Europe."
+					},
+					{
+						"id": "b",
+						"text": "Run an unplanned failover to West Europe."
+					},
+					{
+						"id": "c",
+						"text": "Wait for the next app-consistent recovery point, then run an unplanned failover to West Europe."
+					},
+					{
+						"id": "d",
+						"text": "Restore the virtual machine disks with Azure Backup in West Europe and start the application manually."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The outage window is announced in advance, so this is an expected event rather than an unexpected disaster, and a planned failover is the Site Recovery path for that situation. Running a planned failover moves the protected virtual machines into the recovery region and preserves everything captured in the replicated copy, so the application can run from West Europe during the window without losing committed transactions. The table confirms both virtual machines are protected and healthy, and that app-consistent snapshots are being taken every 30 minutes, so the move can be carried out as described.",
+				"perChoice": {
+					"b": "An unplanned failover is meant for unexpected disasters, where the recovered copy contains only the data captured up to the last recovery point. With app-consistent snapshots every 30 minutes, anything committed after that point can be lost, which does not meet the requirement of running in West Europe without losing committed transactions.",
+					"c": "Waiting for a fresher app-consistent recovery point only narrows the gap. Because the move is still an unplanned failover, data accrued after the last recovery point can still be lost. The expected-outage path that keeps the copied data intact is the planned failover.",
+					"d": "Azure Backup in a Recovery Services vault protects and restores data only; it doesn't reproduce the protected virtual machines or orchestrate a virtual machine failover, and no backup policy is configured for these machines here. It therefore can't deliver the application running from West Europe with no committed transactions lost."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/site-recovery-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				}
+			],
+			"subtopics": [
+				"planned-failover",
+				"unplanned-failover",
+				"azure-to-azure-disaster-recovery"
+			],
+			"reviewed": false
+		}
+	]
+}

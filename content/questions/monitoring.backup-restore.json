@@ -1,0 +1,1162 @@
+{
+	"skill": "monitoring.backup-restore",
+	"questions": [
+		{
+			"id": "q_01M6PPDV3M846C75TCTGBE6XSC",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You accidentally deleted the Windows Server virtual machine vm-erp-01. You have to bring it back with exactly the network setup and the licensing arrangement it had, as recorded in the exhibit, and it must run in the same Azure region where it was running. Which Azure Backup operation should you use?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"virtualMachine\": \"vm-erp-01\",\n  \"operatingSystem\": \"Windows Server\",\n  \"deploymentModel\": \"Azure Resource Manager\",\n  \"networkInterfaces\": 2,\n  \"loadBalancer\": \"Internal, 1 instance\",\n  \"reservedIPAddresses\": 1,\n  \"licenseType\": \"Windows_Server (Azure Hybrid Use Benefit)\",\n  \"primaryRegionStatus\": \"Fully operational\",\n  \"protectedBy\": \"Recovery Services vault rsvault-prod (East US 2)\",\n  \"lastBackupStatus\": \"Completed\"\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Restore disk"
+					},
+					{
+						"id": "b",
+						"text": "Create a new VM"
+					},
+					{
+						"id": "c",
+						"text": "Replace existing"
+					},
+					{
+						"id": "d",
+						"text": "Cross Region Restore"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Restore disk is the operation that covers this configuration. The documented cases it handles include machines with multiple NICs, internal or external load balancing, multiple reserved IP addresses, and Hybrid Use Benefit licensing where the license type is set to Windows_Server - vm-erp-01 matches every one of them. The job copies the virtual hard disks into the staging account and produces a template you can edit and deploy (or drive with PowerShell), so the machine can be rebuilt with the same load balancing, multiple NICs, reserved IPs and Windows_Server licensing.",
+				"perChoice": {
+					"b": "Create a new VM quickly brings up a basic machine from the recovery point and places it in the same region as the source, but the special cases that belong to this VM (multiple NICs, internal load balancing, reserved IPs and the Windows_Server license type) are exactly the ones handled by Restore disk, and a machine created this way comes back with no availability set and no way to pick one.",
+					"c": "Replace existing restores a recovery point over a disk on a machine that is still present: Azure Backup snapshots that machine first, stores the snapshot in the vault under the retention policy, then swaps the disks and leaves the original disk in the resource group. vm-erp-01 has already been deleted, so this operation cannot be used.",
+					"d": "Cross Region Restore copies vault-tier data into the region the vault treats as secondary and is intended for a full or partial outage of the primary region; the primary region in this scenario is fully operational. It also offers only Create a VM and Restore Disks and does not support replacing an existing machine."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-arm-restore-vms"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-vms-first-look-arm"
+				}
+			],
+			"subtopics": [
+				"vm-restore-operations",
+				"azure-backup"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6PPEX9P12YRB6RZR7PFW5GQ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Recovery Services vault that stores recovery points for production virtual machines. You need to bring a protected virtual machine back up in a different location because its home region has suffered a full outage. Which staging storage account should you select for that restore job?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Vault name",
+							"rsvault-prod-01"
+						],
+						[
+							"Vault location",
+							"East US 2"
+						],
+						[
+							"Redundancy setting",
+							"Geo-Redundancy"
+						],
+						[
+							"Protected virtual machine",
+							"vm-order-07 (managed disk)"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "A storage account in West US 2"
+					},
+					{
+						"id": "b",
+						"text": "A storage account in Central US"
+					},
+					{
+						"id": "c",
+						"text": "A storage account in West Europe"
+					},
+					{
+						"id": "d",
+						"text": "A storage account in North Europe"
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "When a restore runs into a different location because of an outage in the vault's home region, the staging storage account has to be placed in the region the vault treats as its paired region, and the portal only offers accounts that live there. For a Geo-Redundant vault located in East US 2, that paired region is Central US, so the account in Central US is the one the restore job can use.",
+				"perChoice": {
+					"a": "This account is in the vault's own home region rather than in the region it pairs with, so it is not offered for a restore that targets the paired region.",
+					"c": "This account is in a region that the East US 2 Geo-Redundant vault does not pair with, so it cannot be used as the staging account for this restore.",
+					"d": "This account is in a region that the East US 2 Geo-Redundant vault does not pair with, so it cannot be used as the staging account for this restore."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-arm-restore-vms"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-vms-first-look-arm"
+				}
+			],
+			"subtopics": [
+				"cross-region-restore",
+				"staging-storage-account"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6PPH2ZD6A5GZYB7DAWBYA1G",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You protect the zone-pinned virtual machine vm-app-01 with the Recovery Services vault rsvault-app. After an application outage you want to recover it into a different availability zone in the same region where it currently runs, using the Create new restore option and one of the recovery points that already exist for it. Which change should you make to the vault before you start the restore job?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Protected virtual machine",
+							"vm-app-01"
+						],
+						[
+							"Disk type",
+							"Managed disks (Resource Manager deployment)"
+						],
+						[
+							"Pinned availability zone",
+							"Zone 1"
+						],
+						[
+							"Disk encryption",
+							"None"
+						],
+						[
+							"Recovery point type",
+							"Vault tier"
+						],
+						[
+							"Restore option",
+							"Create new"
+						],
+						[
+							"Vault storage redundancy",
+							"Locally redundant (LRS)"
+						],
+						[
+							"Vault cross-region restore",
+							"Disabled"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Change the vault storage redundancy to ZRS"
+					},
+					{
+						"id": "b",
+						"text": "Change the vault storage redundancy to GRS"
+					},
+					{
+						"id": "c",
+						"text": "Change the vault storage redundancy to LRS"
+					},
+					{
+						"id": "d",
+						"text": "Keep the vault storage redundancy as it is and enable cross-region restore on the vault"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Restoring a zone-pinned virtual machine into another zone of the same region is only offered when the Recovery Services vault stores its data with zone-redundant storage. Every other condition shown in the exhibit is already satisfied: managed disks, a zone-pinned and unencrypted source, a recovery point held in the vault tier, and the Create new restore option. The vault therefore has to be switched to zone-redundant storage so that the restore configuration lets you pick the zone to restore into.",
+				"perChoice": {
+					"b": "Changing the vault storage redundancy to GRS keeps the vault's copies in the paired region but provides no zone redundancy inside the region, so the restore still cannot offer a zone target for an in-region restore.",
+					"c": "Changing the vault storage redundancy to LRS leaves the vault in the state it is already in, and locally redundant storage does not meet the redundancy requirement for restoring into a different zone in the same region.",
+					"d": "Cross-region restore only opens a zone choice when the virtual machine or disks are created in the vault's paired region, and it additionally requires that paired region to support zones. It does nothing for a restore that stays inside the vault's own region, so the zone target stays unavailable."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-arm-restore-vms"
+				}
+			],
+			"subtopics": [
+				"cross-zonal-restore",
+				"vault-storage-redundancy"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6PPJ01KN1GQAM86RPXYF7VC",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have used the Azure Backup file-recovery capability to pull a single configuration file out of a recovery point of vm-hr-01 onto a helper machine, and that session is still open on the helper. The next scheduled backup of vm-hr-01 then failed. You need vm-hr-01's scheduled backups to succeed again without discarding any of its recovery points. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Observation",
+						"Value"
+					],
+					"rows": [
+						[
+							"Protected virtual machine",
+							"vm-hr-01 (Ubuntu Server 22.04)"
+						],
+						[
+							"Helper machine running the recovery script",
+							"vm-tools-01 (Ubuntu Server 22.04)"
+						],
+						[
+							"Latest scheduled backup job for vm-hr-01",
+							"Failed"
+						],
+						[
+							"Failure reason reported for that job",
+							"UserErrorUnableToOpenMount"
+						],
+						[
+							"Amount of data pulled back in the open session",
+							"4.6 GB"
+						],
+						[
+							"System locale on the helper machine",
+							"English (United States)"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Leave the mounted volumes in place and close the File Recovery session without detaching them"
+					},
+					{
+						"id": "b",
+						"text": "Run `mount -a` on the script host to reattach every logical volume, then close the File Recovery session"
+					},
+					{
+						"id": "c",
+						"text": "Run the File Recovery script's clean command on the Linux host to clear orphaned mount points, but keep the mounted volumes available"
+					},
+					{
+						"id": "d",
+						"text": "Select Unmount Disks in the File Recovery menu and run the File Recovery script's clean command on the Linux host to clear orphaned mount points"
+					}
+				]
+			},
+			"key": {
+				"optionId": "d"
+			},
+			"explanation": {
+				"correct": "A file-recovery session that is left mounted keeps the backup agent from opening the source volumes, which is exactly what the UserErrorUnableToOpenMount failure on the following backup job indicates. The remedy documented for Azure Backup is to finish the session by choosing Unmount Disks in the File Recovery menu, and because the helper machine in this scenario runs Linux, to also run the recovery script's clean command (python scriptName.py clean) to clear orphaned mount points. Doing both lets the next scheduled backup of vm-hr-01 complete while every existing recovery point is retained.",
+				"perChoice": {
+					"a": "Closing the session while the volumes are still mounted is what caused the follow-up backup job to fail with UserErrorUnableToOpenMount. The session must be ended by detaching the mounted volumes, not by simply closing it.",
+					"b": "`mount -a` is explicitly called out as the wrong way to work with these mounts; each logical volume should be mounted individually with `sudo mount <LV path> <mountpath>`. In any case, reattaching volumes without detaching them from the session leaves the original failure condition in place.",
+					"c": "Running the clean command on a Linux helper only clears orphaned mount points left over from earlier runs; it does not release the volumes that are still attached by the open session. The mounted volumes also have to be detached through the File Recovery menu before the next backup can succeed."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-restore-files-from-vm"
+				}
+			],
+			"subtopics": [
+				"item-level-recovery",
+				"mount-cleanup"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6PPKSK9EZ3JWFZ6V65ANJXH",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your team protects the Linux virtual machine vm-sales-01 with the Recovery Services vault rsvault-sales using the backup policy shown in the exhibit. The business now requires that a recovery point exist every four hours, while the daily recovery points are still kept for 30 days. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Backup policy setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Protected item",
+							"vm-sales-01"
+						],
+						[
+							"Recovery Services vault",
+							"rsvault-sales"
+						],
+						[
+							"Policy name",
+							"sales-daily"
+						],
+						[
+							"Policy sub type",
+							"Standard"
+						],
+						[
+							"Schedule frequency",
+							"Once per day"
+						],
+						[
+							"Scheduled backup time",
+							"03:00"
+						],
+						[
+							"Daily backup point retention",
+							"30 days"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Change the policy sub type to Enhanced"
+					},
+					{
+						"id": "b",
+						"text": "Keep the policy sub type as Standard and change the schedule frequency to every four hours"
+					},
+					{
+						"id": "c",
+						"text": "Keep the policy sub type as Standard and trigger an on-demand backup every four hours"
+					},
+					{
+						"id": "d",
+						"text": "Keep the policy sub type as Standard and change the daily backup point retention to 90 days"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The sub type of the backup policy is what sets the cadence. With Standard, the virtual machine is backed up once a day at the time you choose and recovery points are kept for 30 days; with Enhanced, a backup runs every four hours at that time and the daily backup points are kept for 30 days. The exhibit shows the policy still uses the Standard sub type with a once-daily schedule, so the change that satisfies the requirement is to edit the policy in the vault and switch its sub type to Enhanced, which yields a recovery point every four hours while keeping 30 days of daily points.",
+				"perChoice": {
+					"b": "The sub type, not a free-form schedule field, determines how often recovery points are created: Standard runs one backup a day at the time you pick, and only the Enhanced sub type adds the every-four-hours runs. Changing the frequency while the sub type stays Standard leaves the daily cadence in place.",
+					"c": "An on-demand backup (Backup now) creates a recovery point only when someone triggers it and sets its retention with the calendar control. Nothing in the policy runs it on a schedule, so the machine would still have just the one daily scheduled recovery point for most of the day.",
+					"d": "Retention controls how long a recovery point is kept, not how often backups run. The exhibit shows the machine already keeps 30 days of daily points, and widening that window would still leave a single recovery point per day rather than one every four hours."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-vms-first-look-arm"
+				}
+			],
+			"subtopics": [
+				"backup-policy",
+				"backup-cadence",
+				"vm-protection"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6PPQJH1MAB111CXDAEF9HC0",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You enabled backup for vm-fin-01 from the virtual machine blade, and the portal generated a Recovery Services vault for you automatically. The exhibit lists the resulting configuration. Your compliance team requires that this workload's backup data be kept in a vault located in West Europe and in a resource group named RG-Compliance. What should you do?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Vault name",
+							"rsvault-fin"
+						],
+						[
+							"Vault region",
+							"East US 2"
+						],
+						[
+							"Vault resource group",
+							"RG-Prod"
+						],
+						[
+							"Redundancy",
+							"Geo-redundant"
+						],
+						[
+							"Virtual machine in scope",
+							"vm-fin-01"
+						],
+						[
+							"How the vault was set up",
+							"Generated automatically during backup setup on the virtual machine blade"
+						],
+						[
+							"Backup policy sub type",
+							"Standard"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Create another Recovery Services vault in West Europe and RG-Compliance, and then protect the virtual machines from that vault"
+					},
+					{
+						"id": "b",
+						"text": "Edit the Recovery Services vault in the exhibit, and then change its region to West Europe and its resource group to RG-Compliance"
+					},
+					{
+						"id": "c",
+						"text": "Move the Recovery Services vault in the exhibit into RG-Compliance, and then change its region to West Europe"
+					},
+					{
+						"id": "d",
+						"text": "Turn on Cross Region Restore for the Recovery Services vault in the exhibit, and then restore the virtual machines from that vault in a paired region"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The vault in the exhibit came into being when backup was enabled from the vm-fin-01 blade, so it inherited that machine's region and resource group. For a vault generated that way, neither the region nor the resource group can be changed once backup is enabled. The only way to satisfy the compliance requirement is therefore to build a Recovery Services vault yourself in West Europe and RG-Compliance and then configure backup for the virtual machines from that vault, instead of repeating the per-VM backup flow.",
+				"perChoice": {
+					"b": "Editing the vault's properties will not work here: a vault generated by enabling backup from the virtual machine blade takes the VM's region and resource group, and neither of them can be changed once backup is enabled that way.",
+					"c": "The same restriction blocks this path. For a vault set up through the virtual machine blade, the resource group and the region are both fixed afterwards, so relocating the vault into RG-Compliance and then editing its region does not meet the requirement.",
+					"d": "Cross Region Restore copies vault-tier data to the region the vault treats as secondary so protected machines can be recovered during a regional outage; it does not relocate the vault itself, and for a Geo-redundant vault in East US 2 that secondary region is Central US rather than West Europe."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-vms-first-look-arm"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-arm-restore-vms"
+				}
+			],
+			"subtopics": [
+				"backup-vault-configuration",
+				"recovery-services-vault",
+				"backup-setup"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6PPSBJ8VGSXWNVEGDYVTEC8",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You protect the Linux virtual machine vm-lin-01 with the Recovery Services vault rsvault-lin, and you now need to bring its disks back from one of the existing recovery points into a resource group called RG-Recovery. The restore job writes the generated template and the VHD files into a staging storage account that you pick while configuring the restore. The exhibit lists what is known about this workload. Which staging storage account configuration should you choose for the job?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Protected virtual machine",
+							"vm-lin-01 (managed disks, deployed with Azure Resource Manager)"
+						],
+						[
+							"Virtual machine size",
+							"Standard_D2s_v5"
+						],
+						[
+							"Disk type of the protected machine",
+							"Standard SSD LRS"
+						],
+						[
+							"Recovery Services vault",
+							"rsvault-lin"
+						],
+						[
+							"Vault region",
+							"East US 2"
+						],
+						[
+							"Restore option being used",
+							"Restore disks into RG-Recovery"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "A Standard_LRS account in East US 2 with public access from all networks"
+					},
+					{
+						"id": "b",
+						"text": "A Premium_LRS account in East US 2 with access allowed only from selected networks"
+					},
+					{
+						"id": "c",
+						"text": "A Standard_ZRS account in West Europe with public access from all networks"
+					},
+					{
+						"id": "d",
+						"text": "A Premium_LRS account in East US 2 with public access from all networks"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The staging account has to be one of the accounts offered for the vault's region, which for rsvault-lin is East US 2, so the West Europe account cannot be selected. The protected machine's disks are Standard SSD, so this is a non-premium restore and a Premium account is not an option; a managed VM restore also rules out a Premium account that has network rules configured. A Standard account located in East US 2 with public access from all networks satisfies every one of these conditions, so it is the account to pick for the restore job.",
+				"perChoice": {
+					"b": "Premium storage accounts are not supported when restoring non-premium VMs, and the protected machine's disks are Standard SSD, so a Premium account cannot stage this restore. In addition, a Premium account configured with network rules is not supported for managed VM restores, and this account allows access only from selected networks, so it breaks that condition as well.",
+					"c": "The staging storage account must be in the same region as the Recovery Services vault, and only accounts in that region are offered for the job. The vault rsvault-lin sits in East US 2, so an account in West Europe is not an available choice, even though zone-redundant storage is otherwise supported for staging.",
+					"d": "Premium storage accounts are not supported when restoring non-premium VMs. Because vm-lin-01 uses Standard SSD disks, the Premium account cannot be used to stage this restore; choose a Standard account in the vault's region instead."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-arm-restore-vms"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-vms-first-look-arm"
+				}
+			],
+			"subtopics": [
+				"staging-storage-account",
+				"vm-restore"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6PPW2BP7R4W2FH3RZ13VFHS",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Linux virtual machine vm-db-02 that is protected by the Recovery Services vault rsvault-db. Its file system is corrupted, and clients connect to it through the private IP address that is already registered with them. The virtual machine is still deployed, and you need to bring the machine back to a good state on that same instance, in the same subscription and region, without changing its address. The exhibit lists what is known about the workload. Which Azure Backup operation should you use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Deployment model",
+							"Resource Manager"
+						],
+						[
+							"Disk handling",
+							"Managed disks"
+						],
+						[
+							"Image state",
+							"Not generalized"
+						],
+						[
+							"Protected subscription",
+							"Sub-Prod"
+						],
+						[
+							"Vault region",
+							"East US 2"
+						],
+						[
+							"Recovery point tier",
+							"Vault-Standard"
+						],
+						[
+							"Machine state",
+							"Deployed and running"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Create a new VM from the recovery point"
+					},
+					{
+						"id": "b",
+						"text": "Replace existing"
+					},
+					{
+						"id": "c",
+						"text": "Restore disk"
+					},
+					{
+						"id": "d",
+						"text": "Cross Subscription Restore"
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "Replace existing is the operation that brings a virtual machine back in place: Azure Backup first captures a snapshot of the machine and stores it in the vault under the retention policy, then swaps the disks of the virtual machine that is still deployed, so the network interface, private IP address, resource group, and subscription stay as they were. The previous disk is left in the resource group for you to delete once the machine is verified. The exhibit confirms this workload is eligible, because it is a Resource Manager virtual machine using managed disks and its image is not generalized. Continue only after the job's \"Transfer Data to Vault\" subtask reports success; otherwise bring the latest recovery point back with Create a new VM.",
+				"perChoice": {
+					"a": "Create a new VM builds a separate machine from the recovery point and leaves the corrupted virtual machine and its private IP address in place, so the clients that already point at that address would still reach the broken instance. The new machine also has to be created in the source region and would need its own address.",
+					"c": "Restore disk writes the recovered disks plus an editable ARM template into the staging storage account for you to deploy yourself, typically for configurations such as multiple NICs, reserved IPs, availability sets, or a specific licensing arrangement. It does not put the recovered disks back into the deployed virtual machine, so the machine would have to be rebuilt.",
+					"d": "Cross Subscription Restore is used when the target subscription differs from the subscription that holds the protected virtual machine. It does not swap the disks of the running virtual machine, and the requirement here is to recover the instance inside its own subscription and region, so this operation does not meet the goal."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-arm-restore-vms"
+				}
+			],
+			"subtopics": [
+				"replace-existing-restore",
+				"vm-restore-operations"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6PQ5F2XAQQVJ4YHRAP7ZBH7",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Your team protects the virtual machines listed below with Azure Backup. Each request below needs its own Azure Backup operation. Drag each operation to the request it satisfies.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Machine",
+						"Vault",
+						"Point tier",
+						"Home location",
+						"Current state",
+						"Network setup"
+					],
+					"rows": [
+						[
+							"web-01",
+							"rsvault-core",
+							"Vault tier",
+							"East US",
+							"Removed by mistake",
+							"Standard NIC"
+						],
+						[
+							"api-02",
+							"rsvault-core",
+							"Vault tier",
+							"East US",
+							"Still deployed, storage damaged",
+							"Standard NIC"
+						],
+						[
+							"sql-03",
+							"rsvault-core",
+							"Vault tier",
+							"East US",
+							"Removed by mistake",
+							"Reserved address with internal load balancer"
+						],
+						[
+							"cfg-04",
+							"rsvault-core",
+							"Vault tier",
+							"East US",
+							"Still deployed, configuration document deleted",
+							"Standard NIC"
+						],
+						[
+							"fin-05",
+							"rsvault-core",
+							"Vault tier",
+							"East US",
+							"Still deployed, healthy",
+							"Standard NIC"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Create a new VM"
+					},
+					{
+						"id": "i2",
+						"text": "Restore disk"
+					},
+					{
+						"id": "i3",
+						"text": "Replace existing"
+					},
+					{
+						"id": "i4",
+						"text": "File recovery"
+					},
+					{
+						"id": "i5",
+						"text": "Cross Region Restore"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "web-01: deleted server must run again under team-chosen name, in Azure location where it previously ran"
+					},
+					{
+						"id": "s2",
+						"label": "api-02: still-deployed machine must return to previous good state without changing private address"
+					},
+					{
+						"id": "s3",
+						"label": "sql-03: machine's storage must come back on its own so team can rebuild its network setup using editable deployment template"
+					},
+					{
+						"id": "s4",
+						"label": "cfg-04: single configuration document must come back from one stored point without touching machine itself"
+					},
+					{
+						"id": "s5",
+						"label": "fin-05: machine must come back in secondary location after home location suffers full outage"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i3",
+				"s3": "i2",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "Each request is matched to the restore operation that satisfies its constraint. web-01 must come back as a running machine under a name the team chooses and stay in its original Azure location, which is what Create a new VM produces. api-02 is still deployed and must keep its address, so Replace existing snapshots it and swaps its disks in place. sql-03 has a reserved address and an internal load balancer, which are the special configurations that Restore disk is meant for, and that operation hands back an editable template. cfg-04 needs only one document, so File recovery mounts the stored point read-only and copies the document out. fin-05 must be recovered after a full outage of its home location, so Cross Region Restore applies to its vault-tier points.",
+				"perChoice": {
+					"i1": "Fits the web-01 request: this operation produces a running machine whose name, resource group and virtual network you set, and the machine must be placed in the same Azure location as the source, which matches what web-01 requires.",
+					"i2": "Fits the sql-03 request: reserved addresses and load balancer configurations are among the special setups this operation is suited for, and it produces a downloadable ARM template that can be edited or used with PowerShell before the machine is rebuilt.",
+					"i3": "Fits the api-02 request: this operation requires the machine to still exist, takes a snapshot of it into the vault, then swaps the disks, so the instance and its private address remain in place.",
+					"i4": "Fits the cfg-04 request: this operation mounts a stored point read-only so a single document can be copied out, and no machine or disk restore is required.",
+					"i5": "Fits the fin-05 request: this operation is intended for a full or partial outage of the home location and works with vault-tier points, such as the point held for fin-05, recovering the machine in a secondary location."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-arm-restore-vms"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-restore-files-from-vm"
+				}
+			],
+			"subtopics": [
+				"vm-restore-options",
+				"file-recovery",
+				"cross-region-restore"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6PQCHXWT1RF0MDQ2M8BVDDK",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Your team protects the virtual machines listed in the exhibit with the vault rsvault-prod. Five requests have come in, and each one needs a different Azure Backup operation. Drag each operation to the request it satisfies.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Virtual machine | Current state                   | Network and configuration facts\nvm-a01          | Deleted, has to be rebuilt      | Two network interfaces, a reserved address, no public IP. It has to run inside availability set A, and the portal gives no way to pick a set.\nvm-b02          | Deleted, has to be brought back | Single network interface, no special configuration. The SKU it used is no longer offered in the region.\nvm-c03          | Still running, serving clients  | Its private address is already registered with those clients. A user-assigned identity and a link to an external secret vault are attached to it.\nvm-d04          | Still running                   | Uses spanned and RAID-5 volumes, so nothing can be mounted on the machine itself. A couple of documents are missing from its latest saved copy.\nvm-e05          | Deleted, has to be rebuilt      | Its saved copies are held only at vault tier. A completely separate organization with its own identity directory has to run the workload, both vaults are already mapped to each other, and only the alternate location path is on offer."
+				},
+				"items": [
+					{
+						"id": "restore-disk",
+						"text": "Restore disk"
+					},
+					{
+						"id": "create-new",
+						"text": "Create new"
+					},
+					{
+						"id": "replace-existing",
+						"text": "Replace existing"
+					},
+					{
+						"id": "file-recovery",
+						"text": "File Recovery"
+					},
+					{
+						"id": "cross-tenant-restore",
+						"text": "Cross Tenant Restore"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "vm-a01 - The rebuilt workload has to sit in availability set A, and the portal gives no way to pick a set."
+					},
+					{
+						"id": "s2",
+						"label": "vm-b02 - The team wants the workload running again as quickly as possible in the region where it used to run, with the name, resource group and virtual network of their choosing."
+					},
+					{
+						"id": "s3",
+						"label": "vm-c03 - The machine is still deployed, its clients already reach it on the private address registered with them, and the links to the user-assigned identity and to the external secret vault must stay in place."
+					},
+					{
+						"id": "s4",
+						"label": "vm-d04 - Only a couple of documents are missing from one saved copy; they must be opened read-only, the pull must stay at 10 GB or less, and about 1 GB per hour is expected."
+					},
+					{
+						"id": "s5",
+						"label": "vm-e05 - The workload has to end up running for a completely separate organization with its own identity directory; both vaults are already mapped to each other, and only the alternate location path is on offer."
+					}
+				]
+			},
+			"key": {
+				"s1": "restore-disk",
+				"s2": "create-new",
+				"s3": "replace-existing",
+				"s4": "file-recovery",
+				"s5": "cross-tenant-restore"
+			},
+			"explanation": {
+				"correct": "Each request is satisfied by the operation whose documented behaviour matches the requirement. vm-a01 needs a configuration that a portal-restored machine cannot offer (availability set, two network interfaces, reserved address), so Restore disk plus its editable template is the right route. vm-b02 wants the quickest path to a running workload with a chosen name, resource group and virtual network in its original region, which is Create new. vm-c03's machine is still deployed and must keep its address and its linked user-assigned identity and Key Vault reference, so Replace existing is used. vm-d04 needs just two documents pulled read-only within the 10 GB ceiling and roughly 1 GB per hour, which is the scope of File Recovery. vm-e05 must run for a separate organization with its own identity directory after the vaults are mapped, and only the alternate location path is offered, which points to Cross Tenant Restore.",
+				"perChoice": {
+					"create-new": "Belongs with vm-b02. This is the fastest route to a running workload from a saved copy: you set the name, resource group and virtual network, and the result stays in the region where the source ran. When the SKU is not offered there, the storage still lands in the resource group you specified.",
+					"cross-tenant-restore": "Belongs with vm-e05. In preview, this operation brings vaulted points of managed machines into a separate organization once the source and target vaults are mapped, and only the alternate location path is supported, which matches what is on offer for vm-e05.",
+					"file-recovery": "Belongs with vm-d04. Pulling individual items out of a saved copy mounts it read-only, keeps the total recovery at 10 GB or less and runs at roughly 1 GB per hour. Because vm-d04 uses spanned and RAID-5 volumes, the script has to run on another machine rather than on the protected one.",
+					"replace-existing": "Belongs with vm-c03. This operation requires the machine to still be present, so the instance and its registered private address are kept, and it works with linked resources such as a user-assigned managed identity and a Key Vault reference. The original storage is left in the resource group for you to delete.",
+					"restore-disk": "Belongs with vm-a01. The fact sheet lists multiple NICs, reserved IPs and availability sets among the special configurations this operation handles, and it produces a downloadable ARM template that can be edited and deployed. It is also the documented answer when a portal-restored machine cannot be placed in an availability set."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-arm-restore-vms"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-restore-files-from-vm"
+				}
+			],
+			"subtopics": [
+				"backup-restore-options",
+				"file-recovery",
+				"cross-tenant-restore"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6PQHGX0X6MVWF1DZMRACJ85",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You protect the machines listed in the exhibit with Azure Backup, and the operations desk has sent in six requests. All of the machines run in East US 2. Each request can be satisfied by a different Azure Backup restore operation. Drag each operation to the request it satisfies.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Machine",
+						"Vault",
+						"Zone pinning",
+						"Encryption",
+						"Where the copies are kept",
+						"Network configuration",
+						"Licensing"
+					],
+					"rows": [
+						[
+							"api02",
+							"rsvault-geo (Geo-redundant)",
+							"Not pinned",
+							"None",
+							"Vault",
+							"3 interfaces, reserved address",
+							"Windows Server with Hybrid Use Benefit"
+						],
+						[
+							"fin04",
+							"rsvault-geo (Geo-redundant)",
+							"Not pinned",
+							"None",
+							"Snapshot",
+							"1 interface, no reserved address",
+							"Linux"
+						],
+						[
+							"int06",
+							"rsvault-geo (Geo-redundant)",
+							"Not pinned",
+							"None",
+							"Vault",
+							"1 interface, no reserved address",
+							"Windows Server"
+						],
+						[
+							"lab05",
+							"rsvault-geo (Geo-redundant)",
+							"Not pinned",
+							"Yes",
+							"Snapshot",
+							"1 interface, no reserved address",
+							"Windows Server"
+						],
+						[
+							"sql03",
+							"rsvault-zrs (Zone-redundant)",
+							"Pinned to Zone 1",
+							"None",
+							"Vault",
+							"1 interface, no reserved address",
+							"Windows Server"
+						],
+						[
+							"web01",
+							"rsvault-geo (Geo-redundant)",
+							"Not pinned",
+							"None",
+							"Vault",
+							"1 interface, no reserved address",
+							"Linux"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "op1",
+						"text": "Create a new VM"
+					},
+					{
+						"id": "op2",
+						"text": "Restore disk"
+					},
+					{
+						"id": "op3",
+						"text": "Replace existing"
+					},
+					{
+						"id": "op4",
+						"text": "Cross Region Restore"
+					},
+					{
+						"id": "op5",
+						"text": "Cross Zonal Restore"
+					},
+					{
+						"id": "op6",
+						"text": "File recovery"
+					}
+				],
+				"slots": [
+					{
+						"id": "req1",
+						"label": "web01 must be running again in the location where it lived before, reconnected to the same virtual network, rebuilt from one of the copies that are already stored for it."
+					},
+					{
+						"id": "req2",
+						"label": "api02 has to come back with its three network interfaces, its reserved address and its licensing entitlement preserved, and the team wants an editable template instead of a running instance."
+					},
+					{
+						"id": "req3",
+						"label": "lab05 is still deployed, the private address registered with the application must keep working, and the contents of its volumes are corrupted."
+					},
+					{
+						"id": "req4",
+						"label": "The location where rsvault-geo sits has suffered a full outage, so int06 has to be started in the paired location using the copies that were already replicated out of the original one."
+					},
+					{
+						"id": "req5",
+						"label": "sql03 is pinned to one availability zone and must come back in a different zone of the same location, running again from one of the copies that are already stored for it."
+					},
+					{
+						"id": "req6",
+						"label": "A single document stored on fin04 has to be pulled out of one of the copies without rebuilding the machine."
+					}
+				]
+			},
+			"key": {
+				"req1": "op1",
+				"req2": "op2",
+				"req3": "op3",
+				"req4": "op4",
+				"req5": "op5",
+				"req6": "op6"
+			},
+			"explanation": {
+				"correct": "The six requests each match the restore operation that matches the machine's configuration and the stated requirement: web01 needs a running machine again in its original location on the same virtual network (Create a new VM); api02 needs its three interfaces, reserved address and licensing entitlement plus an editable template (Restore disk); lab05 is still deployed with an address clients depend on (Replace existing); int06's home location is in outage (Cross Region Restore); sql03 is zone-pinned and unencrypted with copies held in a zone-redundant vault (Cross Zonal Restore); and fin04 needs one document taken out of a copy (File recovery).",
+				"perChoice": {
+					"op1": "web01 is an ordinary machine with a single interface, no reserved address and no special licensing, and the request is for a running machine again in its original location on the same virtual network from a copy that is already stored. Rebuilding the machine from that stored copy is the quickest way to satisfy this.",
+					"op2": "api02 has three network interfaces, a reserved address and a licensing entitlement that a plain rebuild would not reproduce, and the request explicitly asks for an editable template rather than a running instance. Restoring the disks and editing the generated template is the path that carries that configuration over.",
+					"op3": "lab05 is still deployed and the application already uses its registered private address, so the disks can be swapped in place: the same instance and address keep working, the corrupted contents are rolled back, and the old disks are left behind in the resource group for deletion. This operation needs the machine to still be present and cannot move it to another subscription.",
+					"op4": "Because the primary location of rsvault-geo has a full outage, int06 can only come from the copies that were already replicated to the paired location, and this operation rebuilds the machine there from the copies held in the vault. It covers creating a machine or restoring disks in that other location and cannot swap disks in place.",
+					"op5": "sql03 is pinned to Zone 1, is not encrypted, and its copies are kept in the vault of a zone-redundant vault - the conditions that make the availability zone choice available, so the machine comes back in a different zone of the same location.",
+					"op6": "Only one document is needed from fin04, so the copy is mounted read-only and the document is taken out on a helper machine without restoring the machine itself; the whole extraction is capped at about 10 GB and runs at roughly 1 GB per hour."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-arm-restore-vms"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-restore-files-from-vm"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-vms-first-look-arm"
+				}
+			],
+			"subtopics": [
+				"vm-restore-options",
+				"cross-region-restore",
+				"file-recovery"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6PQN493KC29SEGX7HMDRHZM",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Six virtual machines are protected by the Recovery Services vault rsvault-core, and the exhibit lists what is on record for each of them. The operations desk has sent in six requests, and each request has to be handled with a single Azure Backup action. Drag each action onto the request that it satisfies.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Workload",
+						"Location",
+						"Point tier",
+						"Facts on record"
+					],
+					"rows": [
+						[
+							"srv-app-01",
+							"East US 2",
+							"Vault tier",
+							"Vault rsvault-core is Geo-Redundant; no Ultra storage attached"
+						],
+						[
+							"srv-fin-02",
+							"East US 2",
+							"Vault tier",
+							"Protected from SUB-Platform; the desk wants this workload owned by SUB-Finance"
+						],
+						[
+							"srv-web-03",
+							"East US 2",
+							"Snapshot tier",
+							"Two NICs, external load balancer, reserved IP, availability set; Windows Server with Hybrid Use Benefit"
+						],
+						[
+							"srv-sec-04",
+							"East US 2",
+							"Vault tier",
+							"Deployed with the Resource Manager model and not encrypted; about 2 GB of files wanted; workload and helper host both run Windows Server 2022"
+						],
+						[
+							"srv-ops-05",
+							"East US 2",
+							"Snapshot tier",
+							"The same SKU is offered in East US 2"
+						],
+						[
+							"srv-dev-06",
+							"East US 2",
+							"Snapshot tier",
+							"Protected by a daily policy; no policy change requested"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "op-backup-now",
+						"text": "Backup now"
+					},
+					{
+						"id": "op-create-vm",
+						"text": "Create a new VM"
+					},
+					{
+						"id": "op-cross-region",
+						"text": "Cross Region Restore"
+					},
+					{
+						"id": "op-cross-subscription",
+						"text": "Cross Subscription Restore"
+					},
+					{
+						"id": "op-ilr",
+						"text": "Item-level recovery (ILR)"
+					},
+					{
+						"id": "op-restore-disk",
+						"text": "Restore disk"
+					}
+				],
+				"slots": [
+					{
+						"id": "req1",
+						"label": "srv-app-01: rebuild in the vault's secondary location after a full outage at home"
+					},
+					{
+						"id": "req2",
+						"label": "srv-fin-02: the points that already exist must be usable under SUB-Finance instead of SUB-Platform"
+					},
+					{
+						"id": "req3",
+						"label": "srv-web-03: bring the workload back with two NICs, an external load balancer, a reserved IP and an availability set"
+					},
+					{
+						"id": "req4",
+						"label": "srv-sec-04: extract one configuration file from a stored point while the workload keeps running"
+					},
+					{
+						"id": "req5",
+						"label": "srv-ops-05: get the fastest working copy running again in the same location"
+					},
+					{
+						"id": "req6",
+						"label": "srv-dev-06: add one more point on demand before the patch window"
+					}
+				]
+			},
+			"key": {
+				"req1": "op-cross-region",
+				"req2": "op-cross-subscription",
+				"req3": "op-restore-disk",
+				"req4": "op-ilr",
+				"req5": "op-create-vm",
+				"req6": "op-backup-now"
+			},
+			"explanation": {
+				"correct": "Each request is matched to the Azure Backup action whose capabilities fit the facts in the exhibit. A full outage at the home location of a Geo-Redundant vault is handled by Cross Region Restore, which rebuilds the workload in the vault's secondary location from vault-tier points. Points that already exist in a vault tier and must become usable under a different subscription are handled by Cross Subscription Restore, which is enabled by default in the vault properties. A workload that carries several NICs, an external load balancer, a reserved IP and an availability set can only be rebuilt from its disks with Restore disk, which also emits an ARM template. Pulling a single file out of a stored point while the workload keeps running is Item-level recovery, which mounts the point read-only and is suitable for the small, unencrypted Resource Manager workload in the exhibit. The quickest way back to a running copy in the same location is Create a new VM. Finally, an extra point on demand ahead of a patch window is produced by Backup now, where the retention of the new point is set before the job is confirmed.",
+				"perChoice": {
+					"op-backup-now": "Fits Request 6. Backup now triggers an extra point on demand for srv-dev-06, and the retention of that point is set with the calendar control before the job is confirmed. It changes nothing about the daily policy and does not rebuild anything.",
+					"op-create-vm": "Fits Request 5. Create a new VM is the quickest route from a stored point to a running workload, and the new instance has to be placed in the same location as the source, which matches the request for srv-ops-05 and its available SKU. A portal restore of this kind also leaves the availability set unset, so it cannot serve Request 3, and it does not reach another location or another subscription.",
+					"op-cross-region": "Fits Request 1. With the home location fully unavailable, Cross Region Restore rebuilds the workload in the vault's secondary location from vault-tier points; the path covers creating a VM and restoring disks only and does not support Replace existing, so it targets the outage scenario rather than the single-file, template or on-demand requests.",
+					"op-cross-subscription": "Fits Request 2. Cross Subscription Restore makes existing vault-tier points usable in a different subscription; the option is on by default and is switched under the vault properties, whereas points kept in the snapshot tier stay in the subscription of the protected workload. It changes neither location nor the configuration of the workload, so it does not answer Requests 1, 3 or 5.",
+					"op-ilr": "Fits Request 4. Item-level recovery mounts the point read-only and copies single files out of it without restoring the workload, which suits recovering about 2 GB of files from an unencrypted workload that was deployed with the Resource Manager model; the read is capped at about 10 GB and the helper host must match the protected OS generation. It produces no rebuilt machine, so it does not answer Requests 1, 3 or 5.",
+					"op-restore-disk": "Fits Request 3. Restore disk is the path that reproduces configurations a portal create-a-new restore cannot, such as multiple NICs, load balancers, reserved IPs, an availability set and a Hybrid Use Benefit license type, and it writes out an ARM template you can edit and deploy. It does not serve the single-file, on-demand or alternate-location requests."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-arm-restore-vms"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-vms-first-look-arm"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-restore-files-from-vm"
+				}
+			],
+			"subtopics": [
+				"azure-backup",
+				"vm-restore-operations",
+				"item-level-recovery"
+			],
+			"reviewed": false
+		}
+	]
+}

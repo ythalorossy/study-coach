@@ -1595,6 +1595,156 @@
 				"success-threshold"
 			],
 			"reviewed": false
+		},
+		{
+			"id": "q_01M6PP3CE73W3D5TJM9XZH5K3T",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are designing a connection monitor for a multinational company so that every business unit keeps its own path under continuous observation, and the plan gives each business unit its own test group. The finished design has to fit within the capacity that the platform documents for a single monitor, and no business unit's path may go unwatched.\n\nWhich action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Planned connection monitor",
+							"cm-enterprise-we"
+						],
+						[
+							"Subscription",
+							"sub-enterprise-prod"
+						],
+						[
+							"Azure region of the monitor",
+							"West Europe"
+						],
+						[
+							"Test groups in the design",
+							"26 (one per business unit)"
+						],
+						[
+							"Sources per test group",
+							"1 virtual machine created in West Europe"
+						],
+						[
+							"Destinations per test group",
+							"2 endpoints"
+						]
+					]
+				},
+				"statement": "To keep every business unit's path under continuous observation while staying within the documented capacity, you should {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "split the test groups across separate monitors in the same subscription and region"
+							},
+							{
+								"id": "b",
+								"text": "trim the sources and destinations in the test groups so that one monitor holds at most 10 of each"
+							},
+							{
+								"id": "c",
+								"text": "move the surplus test groups into monitors in another region of the same subscription so that each one stays within its documented capacity"
+							},
+							{
+								"id": "d",
+								"text": "create the monitors with the deprecated Connection monitor (classic) experience, which applies no limit on test groups"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "A single connection monitor holds at most 20 test groups, so the 26 test groups in this design cannot all live in one monitor. The endpoint counts are not the constraint: the plan needs 26 sources and 52 destinations, both inside the limit of 100 sources and destinations per monitor. Placing the 26 test groups in two monitors in the same subscription and region leaves 13 test groups per monitor, keeps every business unit's path watched, and stays well below the limit of 100 connection monitors per subscription per region.",
+				"perChoice": {
+					"action:b": "This design is not over capacity on endpoints: it needs 26 sources and 52 destinations, and a monitor allows 100 sources and destinations. Cutting them down to 10 each would leave endpoints unwatched and would not address the constraint that is actually exceeded, which is the number of test groups in one monitor.",
+					"action:c": "The ceiling of 20 test groups applies to every connection monitor in every region, so relocating groups to another region does not let 26 groups fit into one resource. It would also break source selection, because only source virtual machines created in the region of the monitor can be chosen as sources, and all source virtual machines here are in West Europe.",
+					"action:d": "Connection monitor (classic) is deprecated and no longer available, so no new monitor can be created with that experience, and it cannot be used to work around the capacity of the current one."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-create-using-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-overview"
+				}
+			],
+			"subtopics": [
+				"connection-monitor-scale-limits",
+				"test-groups",
+				"monitor-design"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6PP6ZFHS662H6MSRYJP57X2",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are tuning a connection monitor in West Europe that watches the path from a branch office router to an application gateway over TCP. The most recent check is shown with a warning status on the dashboard, even though the operations team still treats that path as healthy and does not want to be woken up for it. They want the warning to begin only once the measured round trip time passes the limit they consider healthy, and they want the check itself to keep counting as broken only when the link is clearly degraded, well above that limit. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Connection monitor:  cm-branch-link (West Europe)\nTest group:          tg-branch-to-appgw\nTest configuration:  tc-branch-tcp, protocol TCP, destination port 443\nRound trip time threshold:                            750 ms\nChecks failed threshold:                               10 percent\nRound trip time the network team treats as healthy:   640 ms\nMost recent measurement:                              620 ms round trip time, 0 percent checks failed\nStatus reported for that check:                       Warning"
+				},
+				"statement": "The change you should apply to the test configuration is {{thresholdChange}}.",
+				"slots": [
+					{
+						"id": "thresholdChange",
+						"options": [
+							{
+								"id": "a",
+								"text": "Set the round trip time threshold to 800 ms"
+							},
+							{
+								"id": "b",
+								"text": "Set the round trip time threshold to 640 ms"
+							},
+							{
+								"id": "c",
+								"text": "Set the checks failed threshold to 20 percent"
+							},
+							{
+								"id": "d",
+								"text": "Set the test frequency to 30 seconds"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"thresholdChange": "a"
+			},
+			"explanation": {
+				"correct": "A test is reported as failed once the measured round trip time breaches the configured threshold, while a warning is raised as soon as the measurement passes 80 percent of that threshold. The team wants the warning to start just above 640 ms, so the threshold has to be 640 divided by 0.8, which is 800 ms. With that value the warning begins above 640 ms and the check only fails above 800 ms, keeping the failure point well above the level the team still regards as healthy. The current 750 ms threshold is what produces the premature warning, because 80 percent of 750 ms is 600 ms, and the measured 620 ms therefore already lands in the warning band.",
+				"perChoice": {
+					"thresholdChange:b": "With the round trip time threshold set to 640 ms, the warning would begin once the measurement passed 512 ms (80 percent of 640 ms) and the check would already be counted as broken at 640 ms, which is exactly the level the operations team still regards as healthy. It therefore warns too early and fails too early.",
+					"thresholdChange:c": "The checks failed threshold controls the tolerated share of unsuccessful probes. Raising it from the default 10 percent to 20 percent has no effect on when the round trip time warning starts or on the point at which the round trip time is treated as a breach.",
+					"thresholdChange:d": "The test frequency controls how often the checks run. Running them every 30 seconds instead of every minute collects more samples but leaves the round trip time threshold, and therefore the point at which the warning and the failure occur, unchanged."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-create-using-portal"
+				}
+			],
+			"subtopics": [
+				"success-threshold",
+				"test-configuration",
+				"test-result-status"
+			],
+			"reviewed": false
 		}
 	]
 }

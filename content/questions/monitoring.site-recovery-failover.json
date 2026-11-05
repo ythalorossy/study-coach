@@ -1,0 +1,410 @@
+{
+	"skill": "monitoring.site-recovery-failover",
+	"questions": [
+		{
+			"id": "q_01M6PQ8VTKTJ1GAEB5D9BSZ2K9",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a single Azure VM named vm-orders01 that is protected by Azure Site Recovery, as shown in the exhibit. The East US region is entering a maintenance window, so you are moving the order-entry workload to the secondary region. You need the workload to resume in East US 2 without losing order transactions that have already been written to the replication cache, and the team accepts the extra minutes that this adds to the cutover. Which recovery point option should you select in the Failover pane?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property or state",
+						"Value"
+					],
+					"rows": [
+						[
+							"Protected VM",
+							"vm-orders01 (Windows Server 2022, managed disks)"
+						],
+						[
+							"Replication status",
+							"Healthy; 2 of 2 disks replicating"
+						],
+						[
+							"Source region",
+							"East US"
+						],
+						[
+							"Secondary region",
+							"East US 2"
+						],
+						[
+							"Replication group",
+							"None; the VM is failed over on its own, with no recovery plan"
+						],
+						[
+							"Recovery point retention",
+							"24 hours"
+						],
+						[
+							"App-consistent snapshot frequency",
+							"Every 2 hours"
+						],
+						[
+							"Cache writes not yet included in any recovery point",
+							"11 minutes of order transactions"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Latest"
+					},
+					{
+						"id": "b",
+						"text": "Latest processed"
+					},
+					{
+						"id": "c",
+						"text": "Latest app-consistent"
+					},
+					{
+						"id": "d",
+						"text": "Custom"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Selecting Latest makes Site Recovery take all of the data it has received, including the writes still sitting in the cache storage account in the source region, and build a recovery point from it for the VM before the failover starts. Because every order transaction already sent to Site Recovery is captured, this is the choice that meets the requirement to avoid losing the transactions that are still in the cache, and it gives the lowest recovery point objective. The trade-off is that this extra work lengthens the cutover, which the team has explicitly accepted.",
+				"perChoice": {
+					"b": "Selecting Latest processed uses the newest recovery point that Site Recovery has already produced, so no time is spent on the outstanding data and the recovery time objective is low. The 11 minutes of order transactions still in the cache are not part of that recovery point, so this choice would lose them and does not meet the requirement.",
+					"c": "Selecting Latest app-consistent restores from an existing application-consistent recovery point, which is built from a snapshot taken at a particular moment. Writes still sitting in the cache were never captured in that snapshot, so the pending order transactions would be missing, and with app-consistent snapshots taken every 2 hours the point can also be close to two hours old.",
+					"d": "Selecting Custom lets you pick one of the recovery points that already exist, such as an application-consistent point or an older crash-consistent point. Those points do not contain the writes that are still in the cache, so picking one would lose the pending order transactions even though this option is available for a single-VM failover with no recovery plan."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-failover-failback"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				}
+			],
+			"subtopics": [
+				"recovery-point-options",
+				"failover-to-secondary-region",
+				"replication-cache"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6PQA4EGAPTHF681VG3QCZAZ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an invoicing VM named vm-invoices05 that is protected by Azure Site Recovery and replicates from West Europe to East US 2. A regional outage in West Europe forced you to fail the VM over, and the workload is now running in East US 2. The exhibit shows the current protection state of that VM. The outage in West Europe has been resolved, and you want the workload running in West Europe again. Which action should you take next?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"VM name",
+							"vm-invoices05"
+						],
+						[
+							"Region the VM is currently running in",
+							"East US 2"
+						],
+						[
+							"Primary region",
+							"West Europe"
+						],
+						[
+							"Replication status",
+							"Failover committed"
+						],
+						[
+							"Replication from East US 2 back to West Europe",
+							"Not started"
+						],
+						[
+							"Permission to create VMs in West Europe",
+							"Granted"
+						],
+						[
+							"Outage in West Europe",
+							"Resolved"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Select Re-Protect on the source VM in West Europe, then fail back to East US 2 once the reverse replication completes."
+					},
+					{
+						"id": "b",
+						"text": "Select Re-Protect on the failed-over VM in East US 2, then fail back to West Europe once the reverse replication completes."
+					},
+					{
+						"id": "c",
+						"text": "Select Commit on the failed-over VM in East US 2, then fail back to West Europe."
+					},
+					{
+						"id": "d",
+						"text": "Select Change recovery point on the VM Essentials page in East US 2, then fail back to West Europe."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "The exhibit shows the failover to East US 2 is already committed, the primary region (West Europe) is available again, and you can create VMs there, but replication from East US 2 back to West Europe has not started. The way to return the workload is to start Re-Protect from the Overview page of the failed-over VM in East US 2: that begins reverse replication (secondary to primary), sending the initial data and then the deltas back to West Europe. Once that replication is running, you can fail back so the workload runs in its original region again.",
+				"perChoice": {
+					"a": "Re-Protect is started from the Overview page of the VM that is currently running in the secondary region, because that is the machine whose data has to be sent back to the primary region. Starting it from the source VM in West Europe would not send the East US 2 data back, and failing back to East US 2 would move the workload away from West Europe, which is the opposite of the goal.",
+					"c": "Commit only finishes a failover: it deletes the recovery points that Site Recovery holds for that VM and does not start any replication toward the primary region. The exhibit shows the failover is already committed, so doing this again would only discard the remaining recovery points and the workload would stay in East US 2.",
+					"d": "Change recovery point, on the Essentials page, only lets you pick a different recovery point for a VM that has already been failed over. It does not start replication toward West Europe and does not move the workload, so the VM would keep running in East US 2."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-failover-failback"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				}
+			],
+			"subtopics": [
+				"site-recovery-failover",
+				"re-protect",
+				"failback"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6PQCJVBKBWC5K3SP27M0MV2",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a payroll VM named vm-payroll01 that is protected by Azure Site Recovery, as shown in the exhibit. When the workload is moved to the secondary region, the payroll database must never come back with a half-written transaction, so the recovery point used at failover has to include the data that was still held in memory together with the transactions that were in flight when that point was taken. Right now the only points you can pick at failover are the ones the service produces on its own every five minutes. You want a point that satisfies that requirement to be available the next time you fail this VM over. Which change should you make to the replication policy?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Replication policy - vm-payroll01\n\nPrimary region:                      East US\nSecondary region:                    West Europe\nRecovery point retention:            24 hours\nApp-consistent snapshot frequency:   0 hours\nCrash-consistent snapshot frequency: Every 5 minutes (fixed interval)"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Increase the recovery point retention window and leave the app-consistent snapshot frequency unchanged."
+					},
+					{
+						"id": "b",
+						"text": "Set the app-consistent snapshot frequency to a value that stays below the recovery point retention window."
+					},
+					{
+						"id": "c",
+						"text": "Set the app-consistent snapshot frequency to a value that exceeds the recovery point retention window."
+					},
+					{
+						"id": "d",
+						"text": "Reduce the recovery point retention window and leave the app-consistent snapshot frequency unchanged."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "The exhibit shows the app-consistent snapshot frequency at 0 hours, which means those snapshots are switched off, so the only points available for failover are the automatically produced crash-consistent ones that capture just what was on disk. Turning this frequency on requires setting it to a value that stays below the recovery point retention window, so the points built from those snapshots (in-memory data and in-flight transactions included) remain inside the 24-hour period for which recovery points are kept.",
+				"perChoice": {
+					"a": "Lengthening the retention window only extends how long the points that already exist are kept. With the app-consistent snapshot frequency still at 0 hours, those snapshots stay disabled and no point that includes in-memory data and in-flight transactions is produced for the failover.",
+					"c": "A frequency set above the recovery point retention window is not a supported configuration: the app-consistent snapshot frequency must be set under the retention period, otherwise the points created would fall outside the window in which recovery points are kept.",
+					"d": "Shortening the retention window reduces how long recovery points are kept, and with the app-consistent snapshot frequency still at 0 hours no app-consistent snapshots are taken at all, so the required point still would not exist at failover time."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-failover-failback"
+				}
+			],
+			"subtopics": [
+				"site-recovery-replication-policy",
+				"app-consistent-snapshots",
+				"recovery-point-retention"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6PQE4YGC5JZKDREJXDGDPQ6",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a payments virtual machine that Azure Site Recovery protects, as shown in the exhibit. You already moved the workload into the secondary region and it is serving traffic there, but the cutover has not been finalized. The application team reports that several transactions written shortly before the cutover are missing, and they want the workload brought up from a different point before anything is made permanent. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Protected item",
+							"vm-pay03"
+						],
+						[
+							"Source region",
+							"East US"
+						],
+						[
+							"Target region",
+							"Central US"
+						],
+						[
+							"Replication health",
+							"Protected"
+						],
+						[
+							"Failover status",
+							"Failover pending commit"
+						],
+						[
+							"Runtime state in target region",
+							"Running"
+						],
+						[
+							"Latest recovery point",
+							"2026-11-05 09:12 UTC"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Use Change recovery point on the vm-pay03 Essentials page in Central US to restart vm-pay03 from the point in time selected by the administrator."
+					},
+					{
+						"id": "b",
+						"text": "Use Re-Protect on the vm-pay03 Overview page in Central US so you can start replication back to East US."
+					},
+					{
+						"id": "c",
+						"text": "Run a test failover for vm-pay03 from East US and review the test instance it creates in Central US."
+					},
+					{
+						"id": "d",
+						"text": "Raise the recovery point retention for vm-pay03 to 30 days in the replication policy, then re-enable replication from East US to Central US."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The failover of vm-pay03 is still pending commit, so the recovery points that Site Recovery holds for the VM are still intact and the workload can be brought up from a different one. On the VM's Essentials page in the target region, Change recovery point lets you pick the point in time to restart from. Committing the failover first would delete those points permanently, so this must be done before the move is finalized.",
+				"perChoice": {
+					"b": "Re-Protect sets up reverse replication from the secondary region back to the primary so the workload can be moved home later. It does not restart the already failed-over instance from a different point in time, and it only becomes available once the failover has been committed, which this VM has not been.",
+					"c": "A test failover is a drill used to confirm that the replication setup works before an outage; it creates a separate test instance and leaves the live workload alone. It is not a way to bring the already failed-over VM up from a different point in time.",
+					"d": "Recovery point retention controls how long the points that Site Recovery generates are kept. Raising it in the replication policy does not alter which point the running instance is using, and re-enabling replication from the primary is not what restores the workload from a chosen point."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-failover-failback"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				}
+			],
+			"subtopics": [
+				"failover-recovery-point",
+				"post-failover-actions"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6PQN1CB7MXAQM30QBC36D10",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a three-VM web tier that Azure Site Recovery protects, with the configuration shown in the exhibit. Before the scheduled maintenance window in East US, the business wants documented proof that this same tier can be brought up in East US 2. The live workload in East US must keep serving customer traffic throughout that proof. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Source region",
+							"East US"
+						],
+						[
+							"Target region",
+							"East US 2"
+						],
+						[
+							"Protected VMs",
+							"vm-web-01, vm-web-02, vm-db-01"
+						],
+						[
+							"Recovery plan",
+							"rp-web-tier, contains all three VMs"
+						],
+						[
+							"Replication status",
+							"Healthy; all three VMs protected"
+						],
+						[
+							"Target region VM quota",
+							"Sufficient for the current VM sizes"
+						],
+						[
+							"Scheduled source outage",
+							"East US, begins in 12 days"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Run a test failover of the protected workload"
+					},
+					{
+						"id": "b",
+						"text": "Run a real failover of the protected workload to East US 2"
+					},
+					{
+						"id": "c",
+						"text": "Run a recovery plan failover of the protected workload to East US 2"
+					},
+					{
+						"id": "d",
+						"text": "Re-Protect the protected workload from East US 2 back to East US"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The requirement is to prove the replicated configuration works in the secondary region before the outage while the production VMs in East US remain live, which is exactly what a disaster recovery drill (test failover) is for: it verifies that everything works as expected without impacting the production environment. The exhibit also shows the workload is protected and healthy and that the target region has enough quota, so the validation can be carried out before the 12-day outage.",
+				"perChoice": {
+					"b": "A real Failover is the action taken for an actual outage: it moves the production workload into the secondary region and the source location stops serving. That contradicts the requirement that the East US workload keep serving customer traffic while the proof is produced, and it leaves no opportunity to validate first.",
+					"c": "A recovery plan orchestrates the failover of the grouped VMs, but this is still the real failover of the production workload into East US 2, which is the action reserved for the outage itself. The plan is not what keeps production untouched while the setup is validated; the drill is.",
+					"d": "Re-Protect starts reverse replication from the secondary region back to the primary and is used after the workload has already been failed over into East US 2, where its status is Failover committed. It cannot be used to validate a setup whose VMs are still running only in East US."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-failover-failback"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				}
+			],
+			"subtopics": [
+				"test-failover",
+				"disaster-recovery-drill"
+			],
+			"reviewed": false
+		}
+	]
+}
