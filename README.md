@@ -96,7 +96,7 @@ Home lists every exam area with its weight and its own Ready badge; the top show
 npm run docs:sync
 ```
 
-This downloads the Markdown of the Microsoft documentation the skills use, from [MicrosoftDocs/azure-docs](https://github.com/MicrosoftDocs/azure-docs) and [MicrosoftDocs/entra-docs](https://github.com/MicrosoftDocs/entra-docs), into `data/docs/` (about 100 MB, no images). Rerun it to pick up Microsoft's updates. The azure-docs content is licensed CC BY 4.0 and the entra-docs content MIT; each page in the Docs screen names its source and license. A few skill pages live in other Microsoft repositories; the app reads those live from Learn.
+This downloads the Markdown of the Microsoft documentation the skills use, from [MicrosoftDocs/azure-docs](https://github.com/MicrosoftDocs/azure-docs), [MicrosoftDocs/azure-monitor-docs](https://github.com/MicrosoftDocs/azure-monitor-docs) and [MicrosoftDocs/entra-docs](https://github.com/MicrosoftDocs/entra-docs), into `data/docs/` (about 100 MB, no images). Rerun it to pick up Microsoft's updates. The azure-docs and azure-monitor-docs content is licensed CC BY 4.0 and the entra-docs content MIT; each page in the Docs screen names its source and license. A few skill pages live in other Microsoft repositories; the app reads those live from Learn.
 
 To check that every Learn page the skills link to still loads, run `npm run check:doc-urls`. It lists the failures and exits with an error if any link is dead.
 
@@ -184,4 +184,4 @@ To restore, stop the servers and copy the backup back to `data/`.
 
 The code is released under the [MIT License](LICENSE).
 
-The fact sheets in `content/fact-sheets/` are original summaries of Microsoft Learn documentation, and every fact links to its source page. The source documentation belongs to Microsoft: [azure-docs](https://github.com/MicrosoftDocs/azure-docs) is licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) and [entra-docs](https://github.com/MicrosoftDocs/entra-docs) is licensed MIT. This project is not affiliated with or endorsed by Microsoft. Microsoft, Azure and AZ-104 are trademarks of Microsoft Corporation.
+The fact sheets in `content/fact-sheets/` are original summaries of Microsoft Learn documentation, and every fact links to its source page. The source documentation belongs to Microsoft: [azure-docs](https://github.com/MicrosoftDocs/azure-docs) and [azure-monitor-docs](https://github.com/MicrosoftDocs/azure-monitor-docs) are licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) and [entra-docs](https://github.com/MicrosoftDocs/entra-docs) is licensed MIT. This project is not affiliated with or endorsed by Microsoft. Microsoft, Azure and AZ-104 are trademarks of Microsoft Corporation.

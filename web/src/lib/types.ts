@@ -102,7 +102,9 @@ export type InstructorId =
 	| "app-service"
 	| "virtual-networks"
 	| "network-security"
-	| "dns-load-balancing";
+	| "dns-load-balancing"
+	| "azure-monitor"
+	| "backup-recovery";
 
 export const NODE_TYPES = [
 	"tenant",
@@ -213,5 +215,5 @@ export type DocsPage = {
 	title: string;
 	/** Sanitized on the server. */
 	html: string;
-	source: { repo: "azure-docs" | "entra-docs"; githubUrl: string; license: string };
+	source: { repo: "azure-docs" | "azure-monitor-docs" | "entra-docs"; githubUrl: string; license: string };
 };

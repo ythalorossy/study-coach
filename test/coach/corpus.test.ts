@@ -17,6 +17,17 @@ describe("Learn URL to repo path", () => {
 		});
 	});
 
+	it("sends Azure Monitor URLs to the azure-monitor-docs repo and back", () => {
+		expect(learnUrlToRepoPath("https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-overview")).toEqual({
+			repo: "azure-monitor-docs",
+			path: "articles/azure-monitor/alerts/alerts-overview.md",
+		});
+		expect(repoPathToLearnUrl("azure-monitor-docs", "articles/azure-monitor/alerts/alerts-overview.md")).toBe(
+			"https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-overview",
+		);
+		expect(learnUrlToRepoPath("https://learn.microsoft.com/en-us/azure/monitor-something/x")?.repo).toBe("azure-docs");
+	});
+
 	it("refuses other hosts, locales, products and traversal", () => {
 		for (const u of [
 			"https://example.com/en-us/azure/x",
@@ -48,7 +59,7 @@ describe("Learn URL to repo path", () => {
 				"https://learn.microsoft.com/en-us/azure/governance/management-groups/overview",
 				"https://learn.microsoft.com/en-us/entra/identity/users/groups-dynamic-membership",
 			]),
-		).toEqual({ "azure-docs": ["articles/governance", "includes"], "entra-docs": ["docs/identity", "includes"] });
+		).toEqual({ "azure-docs": ["articles/governance", "includes"], "azure-monitor-docs": ["includes"], "entra-docs": ["docs/identity", "includes"] });
 	});
 });
 
