@@ -1,0 +1,678 @@
+{
+	"skill": "monitoring.recovery-vault",
+	"questions": [
+		{
+			"id": "q_01M6P4NEBJX259R3X9BHTA1YN4",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an Azure subscription that runs production virtual machines in the East US and West US regions. You need to protect those virtual machines with Azure Backup and run a scheduled audit in which the backup data is recovered from the paired region on demand, without waiting for a disaster to be declared. Which vault configuration should you create?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Environment item",
+						"Observed value"
+					],
+					"rows": [
+						[
+							"Subscription",
+							"Contoso Production"
+						],
+						[
+							"Protected workload batch 1",
+							"12 Linux virtual machines in East US"
+						],
+						[
+							"Protected workload batch 2",
+							"8 Windows virtual machines in West US"
+						],
+						[
+							"Audit requirement",
+							"Recover backup data from the paired region on demand, without waiting for a service incident"
+						],
+						[
+							"Key management preference",
+							"Platform-managed keys with no extra setup"
+						],
+						[
+							"Planned sequence",
+							"Finish vault configuration before starting protection of any virtual machine"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Create a separate vault in each protected region and enable Cross Region Restore with Geo-redundant storage"
+					},
+					{
+						"id": "b",
+						"text": "Create a single vault in one protected region and enable Cross Region Restore with Geo-redundant storage"
+					},
+					{
+						"id": "c",
+						"text": "Create a separate vault in each protected region and enable Cross Region Restore with Zone-redundant storage"
+					},
+					{
+						"id": "d",
+						"text": "Create a separate vault in each protected region and enable Cross Region Restore with Locally-redundant storage"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A vault's region must match the region of the data source it protects, so the East US and West US virtual machines require one vault per region, with the vault in the first location created before any other. Cross Region Restore is what makes the paired secondary region available for an on-demand restore during the audit, and that capability is offered only with Geo-redundant (GRS) replication, which is also the default replication type. Because replication settings are chosen before protection starts, this configuration should be settled before any virtual machine is added to a vault.",
+				"perChoice": {
+					"b": "One vault cannot cover sources in two different regions, because the vault's region must match the region of the data source it protects. With virtual machines in East US and West US, one vault per region is required, so a single vault in one region leaves the other batch unprotected.",
+					"c": "Zone-redundant storage keeps data available across availability zones within a region, but it does not provide the paired-region copy that Cross Region Restore depends on. The on-demand recovery in the paired region required by the audit is therefore not delivered by this configuration.",
+					"d": "Locally-redundant storage has no copy in the paired region and is intended for cases where Azure is not the primary backup storage endpoint and lower regional durability is accepted. Cross Region Restore is offered only with Geo-redundant replication, so this combination does not satisfy the audit requirement."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-create-recovery-services-vault"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-recovery-services-vault-overview"
+				}
+			],
+			"subtopics": [
+				"recovery-services-vault",
+				"cross-region-restore",
+				"storage-replication"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P4S67E5YG2S9MD238WBMKB",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Recovery Services vault that protects no items yet and an Azure Key Vault that already holds the RSA key you want the vault to use. You need the vault's backup data protected with that key, and you want to be able to revoke the vault's access to it later. You will also protect the virtual machines with Azure Backup once the key is in place. Which sequence of steps should you follow?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"recoveryServicesVault\": {\n    \"managedIdentity\": \"Disabled\",\n    \"itemsProtected\": 0,\n    \"encryptionKeyAssigned\": false\n  },\n  \"keyVault\": {\n    \"softDelete\": \"Disabled\",\n    \"purgeProtection\": \"Disabled\",\n    \"vaultPermissionToReachKey\": \"Not granted\"\n  }\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Enable the vault's managed identity, assign permissions so the vault can reach the key, enable soft delete and purge protection in the Key Vault, then assign the encryption key to the vault."
+					},
+					{
+						"id": "b",
+						"text": "Assign the encryption key to the vault, then enable the vault's managed identity, assign permissions so the vault can reach the key, and enable soft delete and purge protection in the Key Vault."
+					},
+					{
+						"id": "c",
+						"text": "Enable the vault's managed identity, assign the encryption key to the vault, then assign permissions so the vault can reach the key, and enable soft delete and purge protection in the Key Vault."
+					},
+					{
+						"id": "d",
+						"text": "Enable the vault's managed identity, assign permissions so the vault can reach the key, and enable soft delete and purge protection in the Key Vault, but assign the encryption key to the vault only after the virtual machines are protected."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The documented order for customer-managed key encryption is: enable the vault's managed identity, assign permissions so the vault can reach the key in Azure Key Vault, enable soft delete and purge protection in that Key Vault, and only then assign the encryption key to the vault. The exhibit shows that every prerequisite is still missing (managed identity disabled, no permission granted, Key Vault protections off) and that no items are protected, so the key can still be assigned; afterwards the key can be disabled or the vault's access to it revoked.",
+				"perChoice": {
+					"b": "This assigns the encryption key first, which cannot work: the vault's managed identity is not enabled yet, it has no permissions to reach the key, and the Key Vault still lacks soft delete and purge protection. The identity, the permissions, and the Key Vault protections must all be in place before the key is assigned.",
+					"c": "This assigns the encryption key before the vault's managed identity has been granted permissions to reach it and before soft delete and purge protection are enabled in the Key Vault, which reverses the required order. Assigning the key is the final step, after the identity, the permissions, and the Key Vault protections.",
+					"d": "Customer-managed key encryption cannot be enabled once items are protected, so postponing the key assignment until after the virtual machines are protected permanently rules out this configuration. The key has to be assigned while the vault still has no protected items."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-create-recovery-services-vault"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-recovery-services-vault-overview"
+				}
+			],
+			"subtopics": [
+				"recovery-services-vault",
+				"customer-managed-keys",
+				"encryption"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P4TMBFEKABC5CJMYN79426",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Recovery Services vault that protects several Azure virtual machines, and the storage cost of the backup data is now a concern. Leadership accepts that the backup data might not survive the loss of an entire Azure region, but the recovery points that are still inside their retention window must remain available for restore. Which approach should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Vault name",
+							"contoso-prod-backup"
+						],
+						[
+							"Storage replication type",
+							"Geo-redundant"
+						],
+						[
+							"Protected items",
+							"3 Azure virtual machines"
+						],
+						[
+							"Soft delete",
+							"Enabled"
+						],
+						[
+							"Backup policy",
+							"Daily schedule, 30-day retention"
+						],
+						[
+							"Recovery points available",
+							"4 points inside the retention window"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Stop protection with retained data on the current vault, restore the unexpired recovery points from it, and protect the virtual machines again in a new vault with locally redundant storage."
+					},
+					{
+						"id": "b",
+						"text": "Disable soft delete on the current vault, then change the storage replication type to locally redundant in the Backup Configuration pane."
+					},
+					{
+						"id": "c",
+						"text": "Delete the current protection and backup data from the geo-redundant vault, then protect the virtual machines again in a new locally redundant vault."
+					},
+					{
+						"id": "d",
+						"text": "Stop protection with retained data on the current vault and change the storage replication type of that same vault to locally redundant, then restore the unexpired recovery points into it."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Once a vault has backups configured, the portal no longer offers the choice to modify the storage replication type, so a geo-redundant vault cannot simply be switched to locally redundant in place. To keep the data, you stop protection on the existing vault with the data retained, which leaves the existing recovery points in that geo-redundant vault at ongoing cost, restore only the points that have not expired from it, and then protect the virtual machines again in a new vault that uses locally redundant storage, where the initial replica is created.",
+				"perChoice": {
+					"b": "The Backup Configuration pane stops offering a modify choice for the storage replication type after any backup has been configured, so the replication type of this vault cannot be edited in place. Turning soft delete off also belongs to the destructive conversion route, which permanently erases the protected server's backup data and backup items with no undo.",
+					"c": "Deleting the current protection and backup data from the vault permanently discards the existing recovery points, so the points that are still inside the retention window could no longer be restored. That route is only appropriate when you are willing to discard the old data entirely.",
+					"d": "Stopping protection with retained data is the correct starting point, but the storage replication type of the existing vault cannot be modified once backups are configured, and a virtual machine can be added to only one vault at a time. The locally redundant target therefore has to be a new vault that holds the restored points and the recreated protection."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-create-recovery-services-vault"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-recovery-services-vault-overview"
+				}
+			],
+			"subtopics": [
+				"recovery-services-vault",
+				"storage-replication-type",
+				"backup-data-migration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P4XXPFQ9KE7WZKJ8RSBMHG",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You back up virtual machines that run in the East US and West US regions with Azure Backup, and your compliance team wants a drill in which the backup data of both regions is recovered from the paired region on demand. One vault already exists and protects nothing yet, and the exhibit shows the current state. What should you do next?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Vault name",
+							"contoso-backup"
+						],
+						[
+							"Vault region",
+							"East US"
+						],
+						[
+							"Storage replication type",
+							"Geo-redundant"
+						],
+						[
+							"Cross Region Restore",
+							"Off"
+						],
+						[
+							"Soft delete",
+							"Enabled"
+						],
+						[
+							"Protected items",
+							"None"
+						],
+						[
+							"Virtual machines to protect",
+							"app-vm-01 (East US), db-vm-01 (East US), web-vm-01 (West US)"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Create a second vault in West US with Geo-redundant storage, enable Cross Region Restore in both vaults, and protect the virtual machines in each region with the vault in that region."
+					},
+					{
+						"id": "b",
+						"text": "Enable Cross Region Restore in contoso-backup in East US and protect all three virtual machines with that single vault."
+					},
+					{
+						"id": "c",
+						"text": "Create a second vault in West US with Geo-redundant storage, enable Cross Region Restore only in the new vault, and protect all three virtual machines with that new vault."
+					},
+					{
+						"id": "d",
+						"text": "Create a second vault in West US with Locally-redundant storage, enable Cross Region Restore in both vaults, and protect the virtual machines in each region with the vault in that region."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A vault must sit in the same region as the data source it protects, and when data sources span several regions you create one vault per region, creating the vault in the first location before any other. contoso-backup in East US already exists, so the West US vault is the second one to be created. The paired-region restore option is switched on at the vault level in Backup Configuration and is supported only for a vault that uses Geo-redundant storage, so the new vault must use Geo-redundant storage and the setting must be enabled in both vaults for the drill to reach the East US and the West US recovery points. Each region's virtual machines are then protected with the vault located in that same region.",
+				"perChoice": {
+					"b": "web-vm-01 runs in West US, and a vault must be in the same region as the data source it protects, so the East US vault cannot hold the West US recovery points. When data sources are in several regions, you create one vault per region and create the vault in the first location before any other.",
+					"c": "This breaks the rule that a vault must be in the same region as the data source it protects, since app-vm-01 and db-vm-01 are in East US and would be backed up by the West US vault. It also leaves the paired-region restore setting disabled in the vault that holds the East US recovery points, and that setting is switched on per vault, so each vault whose data must be recoverable from the paired region needs it enabled.",
+					"d": "The paired-region restore option is supported only for a vault that uses Geo-redundant storage. With Locally-redundant storage the backup data is held in the vault's own region, so it cannot be recovered from the paired region on demand. Locally-redundant storage is the option when Azure is not the primary backup storage endpoint and lower storage cost matters more than regional durability."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-create-recovery-services-vault"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-recovery-services-vault-overview"
+				}
+			],
+			"subtopics": [
+				"cross-region-restore",
+				"vault-region-planning",
+				"storage-replication"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P5289MCY9Q9SWDZ7MCSZJ8",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Recovery Services vault in your production Microsoft Entra tenant that protects three Azure virtual machines. A ransomware attack has blocked every administrator sign-in in that tenant, and your company also controls a second Microsoft Entra tenant that has its own subscription and one new Recovery Services vault. You need the protected workloads running again in that second tenant, and you cannot wait for administrator access to be restored in the production tenant. What should you do?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Source vault",
+							"rs-vault-prod, East US"
+						],
+						[
+							"Protected items",
+							"3 Azure virtual machines"
+						],
+						[
+							"Production tenant",
+							"Contoso-Prod; all administrator sign-ins blocked after a ransomware attack"
+						],
+						[
+							"Second tenant",
+							"Contoso-DR; own subscription; one new Recovery Services vault with no protected items"
+						],
+						[
+							"Backup data",
+							"Stored in a Microsoft-managed subscription and tenant"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Use the cross-tenant restore (preview) capability: create a mapping between the source vault and the vault in the second tenant, then restore the protected items from that vault."
+					},
+					{
+						"id": "b",
+						"text": "Enable Cross Subscription Restore on the source vault and restore the backup data to a subscription of the second tenant."
+					},
+					{
+						"id": "c",
+						"text": "Enable Cross Region Restore on the source vault and recover the backup data from the paired region, so the protected items can be restored in that region without waiting for a declared disaster."
+					},
+					{
+						"id": "d",
+						"text": "Turn on Enhanced soft delete for the source vault so the deleted recovery points stay recoverable for a custom number of days and the setting cannot be switched off."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The cross-tenant restore capability (currently in preview) is built for exactly this situation: it lets vaulted backup data be restored from a source tenant into a different tenant by mapping the vault that holds the data to a vault in the target tenant, and it is documented for tenant lockout and ransomware scenarios. Because the backup data itself is kept in a Microsoft-managed subscription and tenant, the protected items can be surfaced through the mapping and restored from the vault in the second tenant, even though no administrator can sign in to the production tenant. The other three approaches all remain inside the compromised tenant and therefore cannot deliver the workload into the tenant you control.",
+				"perChoice": {
+					"b": "Cross Subscription Restore only restores into a different subscription within the same tenant as the source, so it cannot place the protected data in a second tenant. It is also enabled on the Properties pane of the source vault, which nobody can administer while every administrator sign-in is blocked.",
+					"c": "Cross Region Restore recovers the replicated copy that sits in the Azure paired region, and that paired region belongs to the same tenant as the source vault. It is intended for drills, audit and regional outage scenarios rather than for moving protected data into a different tenant, and enabling the toggle on the Backup Configuration pane also requires access to the source vault.",
+					"d": "Enhanced soft delete keeps deleted recovery points recoverable for a customized number of days and makes the setting always-on so it cannot be disabled, but it only protects data that stays in the vault. It neither relocates backup data into another tenant nor restores access to the locked-out tenant."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-recovery-services-vault-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-create-recovery-services-vault"
+				}
+			],
+			"subtopics": [
+				"recovery-services-vault",
+				"cross-tenant-restore"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P53NVTE3JT0VVAHM2TWNGC",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You use Azure Backup to protect production virtual machines. The exhibit lists the virtual machines, the region each one runs in, and the recovery points that exist today. One of the virtual machines has no recovery points at all, and you need it covered by Azure Backup while the recovery points you already hold stay available for restore. What should you do?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Virtual machine",
+						"Region",
+						"Recovery points"
+					],
+					"rows": [
+						[
+							"vm-app-prod-01",
+							"East US",
+							"Held in rsvault-useast"
+						],
+						[
+							"vm-app-prod-02",
+							"East US",
+							"Held in rsvault-useast"
+						],
+						[
+							"vm-fin-01",
+							"West Europe",
+							"None"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Create a second Recovery Services vault in the West Europe region and back up the West Europe virtual machines to that second vault."
+					},
+					{
+						"id": "b",
+						"text": "Enable Cross Region Restore in the existing East US vault and back up the West Europe virtual machines to that vault."
+					},
+					{
+						"id": "c",
+						"text": "Add the West Europe virtual machines to the existing East US vault so that one vault holds every recovery point."
+					},
+					{
+						"id": "d",
+						"text": "Create a second Recovery Services vault in the East US region and back up the West Europe virtual machines to the existing East US vault."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A vault only protects data sources that sit in the same region as the vault itself, and when workloads are spread across several regions you run one vault per region. The unprotected West Europe virtual machine therefore needs its own vault built in West Europe, while the existing East US vault continues to serve the East US virtual machines and keeps the recovery points that are already in it. Nothing has to be moved, deleted, or re-pointed.",
+				"perChoice": {
+					"b": "Cross Region Restore is a restore capability of a geo-redundant vault: it lets you recover replicated data in the paired region on demand. It does not change which vault is allowed to hold the recovery points of a given workload, so switching it on does not let an East US vault protect a West Europe virtual machine.",
+					"c": "Adding the West Europe virtual machines to the East US vault conflicts with the rule that a vault protects workloads located in its own region, so this configuration is not supported even though it would consolidate the backup policies in one place.",
+					"d": "The region is the problem here, so creating another vault in East US repeats the mismatch, and pointing the West Europe virtual machines at the existing East US vault is not a valid arrangement. The vault that holds those recovery points has to be created in the region where the workloads run."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-create-recovery-services-vault"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-recovery-services-vault-overview"
+				}
+			],
+			"subtopics": [
+				"vault-creation",
+				"region-requirements",
+				"backup-configuration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P57Q8T9R3BGRF22TT4RF7G",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Recovery Services vault in the West Europe region that protects three Azure virtual machines under a 90-day backup policy. During a review you found that a recovery point was removed inside its retention window by a person who holds owner rights on the vault. You need recovery points to stay in place for the whole retention window so that they cannot be removed at all, and you need that control to be impossible for a malicious insider to switch off. Which setting should you configure on the vault?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Vault property            | Current value\n--------------------------|-------------------------------\nVault name                | rsv-prod-weu-01\nRegion                   | West Europe\nStorage replication type | Geo-redundant\nSoft delete              | Enabled\nEnhanced soft delete     | Disabled\nCross Region Restore     | Enabled\nProtected items          | 3 Azure virtual machines\nBackup policy retention  | 90 days"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Enable immutability on the vault"
+					},
+					{
+						"id": "b",
+						"text": "Enable Enhanced soft delete on the vault"
+					},
+					{
+						"id": "c",
+						"text": "Enable Cross Region Restore on the vault"
+					},
+					{
+						"id": "d",
+						"text": "Enable Cross Subscription Restore on the vault"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The scenario needs a control that keeps recovery points from being deleted before their backup-policy expiry and that cannot be disabled by a malicious actor. Azure Backup immutable vaults do exactly this: once recovery points are created they cannot be deleted before their expiry according to the backup policy, and the immutability can be made irreversible to protect the backup data from threats such as ransomware and malicious actors. Applying that control on this vault addresses both the deletion found in the review and the requirement that the control itself be impossible to switch off.",
+				"perChoice": {
+					"b": "Enhanced soft delete lets you customize the soft delete retention period and makes soft delete always-on so it cannot be disabled by a malicious actor, but it still allows a backup to be deleted and only keeps the deleted data recoverable for the chosen period. It therefore does not stop a recovery point from being removed inside its 90-day retention window, so it does not satisfy the requirement that recovery points stay in place and cannot be removed at all.",
+					"c": "Cross Region Restore is already enabled on this vault, and it is used to recover data from the Azure paired region on demand for audit, compliance, or outage scenarios. It changes where data can be restored from; it has no effect on whether a recovery point can be deleted or on the retention window of the protected items, so it cannot prevent the deletion seen in the review.",
+					"d": "Cross Subscription Restore is configured under Properties and allows data to be restored from the vault into a different subscription within the same tenant. It changes the destination of a restore rather than the ability to delete a recovery point, so it does nothing to protect recovery points from being removed inside their retention window."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-create-recovery-services-vault"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-recovery-services-vault-overview"
+				}
+			],
+			"subtopics": [
+				"recovery-services-vault",
+				"immutable-vault",
+				"soft-delete"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P5AACGRYJQDA0SSBQRA3MA",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Recovery Services vault in your production Microsoft Entra tenant that protects six Azure virtual machines with Azure Backup. A subscription consolidation is planned, and the business wants those protected workloads to be available in a second subscription of the same tenant. You need the recovery points to stay usable so the virtual machines can be brought back there. Which change should you make to the vault?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Item                                          Value\n--------------------------------------------  ----------------------------------------\nRecovery Services vault                       prod-backup-vault\nVault region                                  East US\nStorage replication type                      Geo-redundant\nCross Region Restore                          On\nProtected items                               6 Azure virtual machines (Azure Resource Manager)\nSubscription holding the vault                sub-prod-001, tenant contoso.onmicrosoft.com\nOther subscription in the same tenant         sub-dev-002, tenant contoso.onmicrosoft.com"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Turn on Cross Region Restore in the vault's Backup Configuration and restore the protected virtual machines into the paired Azure region of the current subscription."
+					},
+					{
+						"id": "b",
+						"text": "Turn on Cross-tenant restore (preview) for the source vault and map it to the Recovery Services vault in the other Microsoft Entra tenant."
+					},
+					{
+						"id": "c",
+						"text": "Create a storage account in the second subscription of the same tenant and point the vault at it, so that the backup data for the protected virtual machines is written there."
+					},
+					{
+						"id": "d",
+						"text": "Turn on Enable Cross Subscription Restore in the vault's Properties and select Update, then restore the protected virtual machines into the second subscription of the same Microsoft Entra tenant."
+					}
+				]
+			},
+			"key": {
+				"optionId": "d"
+			},
+			"explanation": {
+				"correct": "Cross Subscription Restore is switched on from the vault's Settings > Properties pane, where you choose Update and then select Enable Cross Subscription Restore > Update. Once it is on, a recovery point can be restored into a subscription other than the one that holds the source vault, as long as the target subscription belongs to the same Microsoft Entra tenant. That matches this consolidation: prod-backup-vault keeps protecting the six virtual machines in sub-prod-001, while their data can be recovered into sub-dev-002, and no mapping across tenants is needed. The feature currently covers Azure VMs, SQL Server running in Azure VMs, SAP ASE and SAP HANA hosted in Azure VMs, and Azure Files, so the protected virtual machines are within scope.",
+				"perChoice": {
+					"a": "Cross Region Restore pulls the replicated copy held in the Azure paired secondary region, so it recovers the workload into the paired region of the current subscription rather than into the second subscription of the same tenant. It also works only with Geo-redundant replication, and the exhibit shows that replication type is already in place with the toggle already on, so this setting is not what is missing.",
+					"b": "Cross-tenant restore (preview) maps the source vault to a target vault so that data can be restored into a different Microsoft Entra tenant, and it is aimed at situations such as tenant lockout or a ransomware attack. Here both subscriptions belong to contoso.onmicrosoft.com, so a mapping across tenants does not address the requirement.",
+					"c": "Azure Backup provisions and manages the vault's backup storage itself, so you do not create or specify a storage account for backup data, and the data itself is kept in a Microsoft-managed subscription and tenant that guests and external users cannot reach directly. A customer-owned storage account cannot be used to make the protected workloads recoverable in the second subscription."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-create-recovery-services-vault"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-recovery-services-vault-overview"
+				}
+			],
+			"subtopics": [
+				"recovery-services-vault",
+				"cross-subscription-restore",
+				"vault-properties"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P5DCQN47KD5WT1XD7X4DPS",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are creating a separate Recovery Services vault for each of the four teams described in the exhibit, and each team's vault needs a different configuration. Drag each configuration into the slot for the team whose requirement it satisfies.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Team",
+						"Workloads to protect",
+						"Requirement"
+					],
+					"rows": [
+						[
+							"Retail",
+							"40 Linux virtual machines in the East US Azure location",
+							"The protected items must be copied to a second Azure location so that they survive the loss of the entire primary location."
+						],
+						[
+							"Logistics",
+							"SQL Server on a virtual machine in the North Europe Azure location",
+							"Keeping the protected items cheap matters most, and the business accepts that losing the whole Azure location would destroy the copies."
+						],
+						[
+							"Health",
+							"An Azure file share and 10 Linux virtual machines in the West Europe Azure location",
+							"The protected items must stay inside the country and must remain available if a single datacenter fails."
+						],
+						[
+							"Finance",
+							"80 Linux virtual machines in the East US 2 Azure location",
+							"A recovery point removed by mistake must be bringable back for 14 days at no extra charge, and the team must not have to depend on someone remembering to switch a protection on."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "grs",
+						"text": "Storage replication type: Geo-redundant (GRS)"
+					},
+					{
+						"id": "lrs",
+						"text": "Storage replication type: Locally-redundant (LRS)"
+					},
+					{
+						"id": "zrs",
+						"text": "Storage replication type: Zone-redundant (ZRS)"
+					},
+					{
+						"id": "sdel",
+						"text": "Soft delete: enabled by default"
+					}
+				],
+				"slots": [
+					{
+						"id": "slot_retail",
+						"label": "Retail team"
+					},
+					{
+						"id": "slot_logistics",
+						"label": "Logistics team"
+					},
+					{
+						"id": "slot_health",
+						"label": "Health team"
+					},
+					{
+						"id": "slot_finance",
+						"label": "Finance team"
+					}
+				]
+			},
+			"key": {
+				"slot_retail": "grs",
+				"slot_logistics": "lrs",
+				"slot_health": "zrs",
+				"slot_finance": "sdel"
+			},
+			"explanation": {
+				"correct": "Each team's stated requirement maps to exactly one vault configuration. Retail needs its protected items to survive the loss of the whole primary location, which is what Geo-redundant (GRS) storage provides because a replicated copy is kept in a paired Azure location (it is also the default). Logistics wants the lowest cost and accepts the loss of an entire location, which is Locally-redundant (LRS) storage. Health needs in-country data that stays available when a single datacenter fails, which is Zone-redundant (ZRS) storage. Finance needs recovery points removed by mistake to be recoverable for 14 days at no extra charge without anyone having to configure anything, which the Soft delete setting delivers because it is enabled by default on newly created vaults.",
+				"perChoice": {
+					"grs": "Belongs in the Retail slot. GRS keeps a replicated copy of the backup data in a paired Azure location, so the items are still there after the whole primary location is lost, and it is the default replication type for a new vault.",
+					"lrs": "Belongs in the Logistics slot. LRS keeps the data in one location only, which reduces the storage cost of the protected items, and it accepts lower regional durability — exactly the trade-off this business agreed to.",
+					"zrs": "Belongs in the Health slot. ZRS spreads the protected data across availability zones inside the region, so the data remains available if a single datacenter fails while the data stays inside the country.",
+					"sdel": "Belongs in the Finance slot. Soft delete is enabled by default on newly created vaults and keeps a removed backup item recoverable for 14 extra days at no charge, so no one has to switch a protection on for the team to get that safety net."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-create-recovery-services-vault"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-recovery-services-vault-overview"
+				}
+			],
+			"subtopics": [
+				"storage-replication",
+				"soft-delete",
+				"vault-configuration"
+			],
+			"reviewed": false
+		}
+	]
+}

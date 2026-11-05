@@ -1,0 +1,1561 @@
+{
+	"skill": "monitoring.log-settings",
+	"questions": [
+		{
+			"id": "q_01M6P2ZK0W6495W2QNPN64QJE1",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You created the diagnostic setting shown below so that an application's logs and metrics are archived in a storage account and streamed to an external SIEM through Event Hubs. Ninety minutes after creating it, neither destination has received any data. You need the setting to deliver data to both destinations. What should you do?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Monitored resource",
+							"App Service contoso-web (West Europe)"
+						],
+						[
+							"Diagnostic setting",
+							"contoso-web-diag - Logs: allLogs category group; Metrics: AllMetrics"
+						],
+						[
+							"Destination (archive)",
+							"Storage account diagstore (West Europe); public network access disabled; virtual network enabled"
+						],
+						[
+							"Destination (streaming)",
+							"Event Hubs namespace diaghubs (West Europe); public network access disabled; virtual network enabled"
+						],
+						[
+							"Shared access policy on diaghubs",
+							"Manage, Send and Listen granted"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Enable 'Allow trusted Microsoft services' on diagstore and diaghubs."
+					},
+					{
+						"id": "b",
+						"text": "Enable 'Allow trusted Microsoft services' on contoso-web only."
+					},
+					{
+						"id": "c",
+						"text": "Move diagstore and diaghubs to East US and recreate contoso-web-diag there."
+					},
+					{
+						"id": "d",
+						"text": "Add a Log Analytics workspace as an extra destination in contoso-web-diag and keep the current two destinations."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The diagnostic setting can be created successfully and still deliver nothing when a destination Storage account or Event Hubs namespace has virtual network access enabled: those destination resources must allow 'Allow trusted Microsoft services', otherwise Azure Monitor cannot push data into them. Both diagstore and diaghubs are virtual-network enabled with public network access disabled, which is exactly the condition described. Enabling that exception on the two destination resources unblocks delivery of the allLogs and AllMetrics data to the archive and the SIEM stream. Nothing else is blocking the flow: both destinations already sit in West Europe, the same region as contoso-web, and the shared access policy on diaghubs already grants Manage, Send and Listen for streaming.",
+				"perChoice": {
+					"b": "Enabling the exception only on contoso-web does not help, because contoso-web is the monitored resource that pushes data out; the setting that permits delivery must be turned on for the destination resources (diagstore and diaghubs). With it left off on both destinations, neither would receive any records.",
+					"c": "For a regional monitored resource, the Storage account and Event Hubs namespace destinations must be in the same region as that resource. Both destinations are already in West Europe with contoso-web, so relocating them to East US would break the same-region requirement instead of fixing delivery.",
+					"d": "A Log Analytics workspace is a valid destination type and one of each type may be included, but adding it does not remove the network restriction on diagstore and diaghubs. Logs would reach the workspace while the two required destinations would still receive nothing."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-workspace-overview"
+				}
+			],
+			"subtopics": [
+				"diagnostic-settings",
+				"destination-requirements"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P31FBQF4CN5AYWJB0V0G05",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a virtual machine app01 in resource group rg-app that must send its resource logs and platform metrics to the Log Analytics workspace law-central. You manage this environment with an infrastructure-as-code pipeline and deploy the ARM template shown below as part of it. The deployment fails and reports that the metric category 'Percentage CPU' isn't supported, so nothing gets configured for the machine. You need the deployment to succeed and the machine's platform metrics to reach law-central. Which change should you make to the template?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"type\": \"Microsoft.Insights/diagnosticSettings\",\n  \"apiVersion\": \"2021-05-01-preview\",\n  \"name\": \"diag-app01\",\n  \"properties\": {\n    \"workspaceId\": \"/subscriptions/sub1/resourceGroups/rg-app/providers/Microsoft.OperationalInsights/workspaces/law-central\",\n    \"logs\": [\n      { \"category\": \"AuditLogs\", \"enabled\": true },\n      { \"category\": \"InformationLogs\", \"enabled\": true }\n    ],\n    \"metrics\": [\n      { \"category\": \"Percentage CPU\", \"enabled\": true }\n    ]\n  }\n}"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Replace the metric category in the template with AllMetrics and redeploy the template"
+					},
+					{
+						"id": "b",
+						"text": "Add a second metrics entry that uses AllMetrics while keeping the Percentage CPU entry, then redeploy the template"
+					},
+					{
+						"id": "c",
+						"text": "Remove the metrics array from the template and redeploy the template"
+					},
+					{
+						"id": "d",
+						"text": "Replace the metric category in the template with the allLogs category group and redeploy the template"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Diagnostic settings deployed through a Resource Manager template (likewise the REST API, Azure CLI, or Azure PowerShell) accept only the AllMetrics metric category, apart from a limited number of Azure services. The 'Percentage CPU' entry in the metrics array is what the deployment rejects, so replacing that entry with AllMetrics both fixes the deployment and causes the machine's platform metrics to be exported to law-central, while the two log categories continue to be collected as written.",
+				"perChoice": {
+					"b": "Adding an extra entry leaves the unsupported 'Percentage CPU' category in the template, so the deployment still fails. Every metric category other than AllMetrics has to be removed from the metrics array, not merely supplemented.",
+					"c": "Dropping the metrics array lets the deployment succeed, but the setting then requests no platform metrics at all, so nothing metric-related would ever arrive in law-central. The requirement is that the machine's platform metrics reach the workspace, so metric collection must stay in the setting.",
+					"d": "allLogs is a log category group used in the Logs section, not a valid metric category. A metrics entry named with a category group is still rejected, so the deployment would continue to fail and the platform metrics would not be sent."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings"
+				}
+			],
+			"subtopics": [
+				"diagnostic-settings",
+				"metric-categories",
+				"arm-templates"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P331MM3SS789YB81QPE9VX",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You need the resource logs of a Linux virtual machine vm-report in resource group rg-ops to reach the corporate SIEM, which consumes events from Event Hubs. The diagnostic setting shown below is in place on the virtual machine, but the event hub holds no events at all and the SIEM dashboard stays empty. You need the Event Hubs destination to actually deliver the logs. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Diagnostic setting on vm-report",
+							"send-to-siem"
+						],
+						[
+							"Log categories selected",
+							"allLogs category group"
+						],
+						[
+							"Metrics selected",
+							"AllMetrics"
+						],
+						[
+							"Destination",
+							"Event Hubs namespace evh-ns-prod, event hub evh-diag"
+						],
+						[
+							"Shared access policy on evh-ns-prod",
+							"siem-send — rights granted: Send, Listen"
+						],
+						[
+							"Authorization rule used for evh-diag",
+							"hub-rule — rights granted: none"
+						],
+						[
+							"Region",
+							"vm-report, evh-ns-prod and evh-diag all in region northeurope"
+						],
+						[
+							"Network restrictions on evh-ns-prod",
+							"Disabled (public network access allowed)"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add the Manage right to the shared access policy siem-send and grant the ListKey right on the authorization rule hub-rule."
+					},
+					{
+						"id": "b",
+						"text": "Add the Manage right to the shared access policy siem-send and leave the authorization rule hub-rule unchanged."
+					},
+					{
+						"id": "c",
+						"text": "Add the Listen right to the shared access policy siem-send and grant the ListKey right on the authorization rule hub-rule."
+					},
+					{
+						"id": "d",
+						"text": "Add the Send right to the shared access policy siem-send and grant the Listen right on the authorization rule hub-rule."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Two separate permission gaps block this stream. The shared access policy on the namespace defines what the streaming mechanism may do, and streaming to Event Hubs through a diagnostic setting requires the Manage, Send, and Listen rights — siem-send currently grants only Send and Listen, so Manage is missing. In addition, updating a diagnostic setting so that it includes the Event Hubs stream requires the ListKey right on the Event Hubs authorization rule, and hub-rule grants no rights at all. Granting Manage on siem-send and ListKey on hub-rule clears both gaps, so the setting can be updated and the logs can flow. Region placement and firewall settings are already satisfied, so neither is the cause.",
+				"perChoice": {
+					"b": "Adding Manage to the shared access policy only fixes the policy side. The authorization rule hub-rule still grants no rights, so the ListKey permission needed to add or update the Event Hubs stream in the diagnostic setting is still missing and the destination still can't be configured.",
+					"c": "Listen is already granted on siem-send, so granting it again changes nothing, and the right actually missing from that policy is Manage. Even with ListKey added to hub-rule, the streaming mechanism would still lack the permissions it needs.",
+					"d": "Send is already granted on siem-send, and granting Listen on the authorization rule doesn't satisfy the ListKey permission required to update the diagnostic setting with the Event Hubs stream. The policy would also still be missing Manage."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings"
+				}
+			],
+			"subtopics": [
+				"diagnostic-settings",
+				"event-hubs-destination",
+				"shared-access-policy-permissions"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P35WMG6AJ9RY0ZKHJMCZ32",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Linux virtual machine vm-app01 in resource group rg-app. The resource logs of the machine must be queryable in two Log Analytics workspaces, law1 and law2, and the platform metrics must continue to be delivered to law1. The current configuration of the machine is shown below. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Diagnostic settings on vm-app01",
+							"1 (named diag-law1)"
+						],
+						[
+							"Log categories",
+							"allLogs, enabled"
+						],
+						[
+							"Metric categories",
+							"AllMetrics, enabled"
+						],
+						[
+							"Log Analytics workspace destinations",
+							"law1 (subscription sub-prod)"
+						],
+						[
+							"Storage account destinations",
+							"None"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Create a second diagnostic setting on vm-app01 that sends the resource logs to law2, and add the platform metrics to the existing diagnostic setting for law1."
+					},
+					{
+						"id": "b",
+						"text": "Add law2 to the existing diagnostic setting that sends the resource logs and the platform metrics to both workspaces."
+					},
+					{
+						"id": "c",
+						"text": "Create a second diagnostic setting on vm-app01 that sends the resource logs to law2, and move the platform metrics from the existing diagnostic setting to the new one."
+					},
+					{
+						"id": "d",
+						"text": "Configure a workspace transformation rule on law1 that reshapes the incoming resource logs and routes a copy of them to law2."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A diagnostic setting can carry no more than one destination of each type, so law1 and law2 have to be attached to separate diagnostic settings on vm-app01. A resource accepts up to five diagnostic settings, so adding a second one is within the limit. The new setting carries the resource log categories to law2, while the existing diag-law1 setting keeps its AllMetrics export, so law1 continues to receive the platform metrics and both workspaces hold the resource logs.",
+				"perChoice": {
+					"b": "A single diagnostic setting can reference only one Log Analytics workspace, one storage account and one Event Hubs namespace, so law2 cannot be added as a second workspace destination in diag-law1. The addition is rejected and law2 receives nothing.",
+					"c": "Moving the AllMetrics export into the new setting means law1 stops receiving the platform metrics, which the requirement still demands. Enabling metric export in both settings is allowed, but then the metrics are collected and billed twice.",
+					"d": "A workspace transformation DCR filters or reshapes records per table for the sources that write to that table in that workspace; it cannot forward records into a different workspace. Since law2 would not be a destination of any diagnostic setting, its tables stay empty."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-workspace-overview"
+				}
+			],
+			"subtopics": [
+				"diagnostic-settings",
+				"log-analytics-workspace",
+				"monitoring-destinations"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P37Z855HQ7K299HA4NNB98",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an Azure SQL Database sqlb-sales in resource group rg-data. To satisfy a compliance requirement you added a diagnostic setting to the database and routed it to the Log Analytics workspace law-sec, as shown below. The compliance team reports that the database captures no events at all, and the workspace holds nothing for this database. You need the database's auditing turned on so that its events are recorded and reach law-sec. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Configuration item",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Monitored resource",
+							"Azure SQL Database sqlb-sales (rg-data)"
+						],
+						[
+							"Diagnostic setting",
+							"sql-compliance"
+						],
+						[
+							"Logs selection",
+							"Category group: audit"
+						],
+						[
+							"Metrics selection",
+							"Not selected"
+						],
+						[
+							"Destination",
+							"Log Analytics workspace law-sec"
+						],
+						[
+							"Event rows for this database in law-sec",
+							"None"
+						],
+						[
+							"Auditing state of the database",
+							"Off"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Enable auditing from the auditing pane of the Azure SQL Database."
+					},
+					{
+						"id": "b",
+						"text": "Enable the SQLAuditLogs category on the Azure SQL Database by adding a second diagnostic setting that sends the logs to a storage account instead of the workspace."
+					},
+					{
+						"id": "c",
+						"text": "Change the diagnostic setting from the audit category group to allLogs so that every category of the Azure SQL Database is collected to law-sec."
+					},
+					{
+						"id": "d",
+						"text": "Enable auditing in the transformation rules of the law-sec workspace so that audit entries from every source are preserved."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Choosing the audit category group in a diagnostic setting only tells Azure Monitor which resource log categories to forward to the destinations you chose; it does not switch on the database's auditing feature. For Azure SQL Database, auditing must be enabled from the database's auditing pane, where the audit targets are configured. Because the database's auditing is currently off, it produces no audit records, so no destination, including law-sec, can receive anything. Once auditing is enabled, the audit records are collected as resource logs and the existing diagnostic setting forwards them to law-sec.",
+				"perChoice": {
+					"b": "Adding a diagnostic setting that sends the SQLAuditLogs category to a storage account only chooses another route for logs the database already produces. With auditing switched off in the database there are no audit records to forward, so the compliance requirement still wouldn't be met.",
+					"c": "Switching the category group from audit to allLogs widens the set of categories that Azure Monitor forwards once the resource is producing data. It does not enable the database's auditing, so the database would still emit no audit events.",
+					"d": "Workspace transformation rules filter or reshape records that already arrive for a table in a workspace. They cannot switch on a resource feature or decide which categories a resource produces, and the audit category group is already selected in the diagnostic setting shown."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-workspace-overview"
+				}
+			],
+			"subtopics": [
+				"diagnostic-settings",
+				"category-groups",
+				"azure-sql-auditing"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P3A8ZQC5M9DTHP1518KYZV",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Log Analytics workspace law-sec in resource group rg-sec that collects two high-volume tables from a Windows virtual machine fleet and a Linux web tier. The security operations center wants alerts raised on these logs as new events arrive, and auditors must be able to query the last 400 days of both tables interactively in Azure Monitor Logs. The current configuration of the workspace is shown below. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Table",
+						"Current plan",
+						"Ingested per week",
+						"Content"
+					],
+					"rows": [
+						[
+							"SecurityEvent",
+							"Auxiliary",
+							"310 GB",
+							"Windows security events"
+						],
+						[
+							"CommonSecurityEvent",
+							"Auxiliary",
+							"140 GB",
+							"Endpoint detection and response events"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Move both tables to the Analytics plan and set the analytics retention to 400 days."
+					},
+					{
+						"id": "b",
+						"text": "Move both tables to the Basic plan and set the analytics retention to 400 days."
+					},
+					{
+						"id": "c",
+						"text": "Keep both tables on the Auxiliary plan and set the analytics retention to 400 days."
+					},
+					{
+						"id": "d",
+						"text": "Move both tables to the Analytics plan, leave the retention at 30 days, and copy older records to a storage account with an export rule."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The two tables need both alerting on incoming events and a long window of interactively queryable data. Analytics is the table plan suited to continuous monitoring and real-time detection: it supports all table types, enables log alerts, and its analytics retention starts at 30 days and can be extended up to two years at a prorated monthly charge, so setting it to 400 days satisfies the audit requirement. Moving both tables to Analytics and raising the retention to 400 days therefore meets both goals.",
+				"perChoice": {
+					"b": "Basic tables have no analytics retention at all, so no setting can make the last 400 days interactively queryable on that plan. Basic also allows only Simple Log Alerts, so it is aimed at medium-touch troubleshooting and incident response rather than continuous detection on verbose security data.",
+					"c": "Auxiliary is built for verbose audit and compliance archiving with minimal ingestion cost, but it has no alerts and no analytics retention. Keeping the tables there and asking for 400 days of analytics retention is not possible, so the SOC alerting goal and the auditor query goal both fail.",
+					"d": "Moving the tables to the Analytics plan is the right direction, but leaving retention at 30 days keeps the interactive query window at its starting value. An export rule copies records to a storage account for long-term archiving; it does not make the last 400 days queryable in Azure Monitor Logs, so the auditors' requirement is still unmet."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-platform-logs"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-workspace-overview"
+				}
+			],
+			"subtopics": [
+				"workspace-table-plans",
+				"retention",
+				"log-alerts"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P3E272HEENMCR305P970P1",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a web app app-portal in resource group rg-app, and you need its resource logs archived long term in a storage account and streamed to the corporate SIEM, which consumes events from Event Hubs. Your team prepared four candidate destinations, listed below, and chose stl-arch for the archive and eh-compact for the stream. When you try to save the diagnostic setting with that pair, the save fails with an error and the app ends up with no diagnostic setting at all, so nothing is routed to either destination. You need the diagnostic setting to be created and to deliver data to both a storage account and an Event Hubs namespace. Which pair of destinations should you select?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Candidate",
+						"Kind",
+						"Details",
+						"Region"
+					],
+					"rows": [
+						[
+							"stl-std",
+							"Storage account",
+							"SKU Standard_LRS, general purpose v2, hot tier",
+							"East US 2"
+						],
+						[
+							"stl-arch",
+							"Storage account",
+							"SKU Premium_LRS, block blob storage, hierarchical namespace enabled",
+							"East US 2"
+						],
+						[
+							"eh-plain",
+							"Event Hubs namespace",
+							"Standard tier, Standard partitioning, compaction disabled",
+							"East US 2"
+						],
+						[
+							"eh-compact",
+							"Event Hubs namespace",
+							"Standard tier, Standard partitioning, compaction enabled on all hubs",
+							"East US 2"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Use stl-std as the archive destination and eh-plain as the streaming destination in the diagnostic setting."
+					},
+					{
+						"id": "b",
+						"text": "Use stl-arch as the archive destination and eh-plain as the streaming destination in the diagnostic setting."
+					},
+					{
+						"id": "c",
+						"text": "Use stl-std as the archive destination and eh-compact as the streaming destination in the diagnostic setting."
+					},
+					{
+						"id": "d",
+						"text": "Use stl-arch as the archive destination and eh-compact as the streaming destination in the diagnostic setting."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Only Standard storage accounts are accepted as a Storage account destination in a diagnostic setting; Premium storage accounts are not supported destinations. Compacted Event Hubs namespaces are not supported destinations either, while a namespace without compaction is. In the candidate list, stl-std is the only Standard storage account and eh-plain is the only namespace that does not have compaction enabled, so selecting stl-std for the archive and eh-plain for the stream lets the setting be created and deliver logs to both destinations.",
+				"perChoice": {
+					"b": "The streaming destination eh-plain is acceptable, but stl-arch is a Premium storage account, and Premium storage accounts are not supported diagnostic setting destinations, so the setting still cannot be created with this pair.",
+					"c": "The archive destination stl-std is acceptable, but eh-compact has compaction enabled on its hubs, and compacted Event Hubs are not supported destinations, so this pair is rejected as well.",
+					"d": "Both candidates are unsuitable: stl-arch is a Premium storage account and eh-compact is a compacted Event Hubs namespace. Neither can be used as a diagnostic setting destination, so nothing gets configured."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings"
+				}
+			],
+			"subtopics": [
+				"diagnostic-settings",
+				"storage-account-destinations",
+				"event-hubs-destinations"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P3GYFXHK0TWJKKJVPBG03A",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an Azure SQL Database sqldb-orders in resource group rg-data (subscription sub-app) whose location is Sweden Central. A compliance rule requires the database's resource logs and platform metrics to be archived for seven years in a Storage account and streamed to the corporate SIEM through Event Hubs. Your team selected the two destinations listed below and attempted to save a single diagnostic setting on the database, but the portal refuses the save and reports an error about the location of a destination, so neither the archive nor the stream receives any data. You need the diagnostic setting to be created and to deliver the database's logs and metrics to both destinations. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Monitored resource",
+							"Azure SQL Database sqldb-orders (rg-data, sub-app)"
+						],
+						[
+							"Monitored resource location",
+							"Sweden Central"
+						],
+						[
+							"Archive candidate",
+							"Storage account stlogs-archive (rg-ops, sub-platform), Standard tier"
+						],
+						[
+							"Archive candidate location",
+							"West Europe"
+						],
+						[
+							"Stream candidate",
+							"Event Hubs namespace ns-telemetry (rg-ops, sub-platform)"
+						],
+						[
+							"Stream candidate location",
+							"Sweden Central"
+						],
+						[
+							"Your access",
+							"Diagnostic settings writer on sqldb-orders; Reader on sub-app and sub-platform"
+						],
+						[
+							"Setting being created",
+							"Name diag-sqldb-orders; Logs: allLogs; Metrics: AllMetrics; Destinations: stlogs-archive and ns-telemetry"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Create the archive storage account in Sweden Central and use it with ns-telemetry as the destinations."
+					},
+					{
+						"id": "b",
+						"text": "Use the existing archive storage account stlogs-archive in West Europe with ns-telemetry in Sweden Central as the destinations."
+					},
+					{
+						"id": "c",
+						"text": "Create an Event Hubs namespace in West Europe and use it with the existing archive storage account stlogs-archive as the destinations."
+					},
+					{
+						"id": "d",
+						"text": "Move stlogs-archive into rg-data in sub-app and use the storage account with ns-telemetry as the destinations."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "For a regional monitored resource such as an Azure SQL Database, the Storage account and Event Hubs namespace used as diagnostic setting destinations must be located in the same region as the monitored resource. sqldb-orders sits in Sweden Central, so the archive Storage account has to be provisioned in Sweden Central; ns-telemetry is already there. With the account created in Sweden Central, the setting can be saved and both destinations receive the database's resource logs and platform metrics.",
+				"perChoice": {
+					"b": "stlogs-archive stays in West Europe, which is not the database's region, so the portal keeps rejecting the save and no logs or metrics reach either destination.",
+					"c": "A new Event Hubs namespace in West Europe still leaves the stream outside the database's Sweden Central region, and stlogs-archive is in West Europe as well, so the save would continue to fail.",
+					"d": "Relocating stlogs-archive to a different resource group and subscription leaves it in West Europe; the constraint concerns the destination's region, not its subscription or resource group, so the setting would remain invalid."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-workspace-overview"
+				}
+			],
+			"subtopics": [
+				"diagnostic-settings",
+				"destination-regions"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P3KJ8GRFRN5ZA3B6RBJJ58",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have twelve Azure resources in resource group rg-app of subscription sub-app, all deployed in the West Europe region, and you create one diagnostic setting per monitored resource. The operations team needs four outcomes for the data Azure Monitor collects from those resources, listed in the slots below. Six candidate destinations are available to the subscription, all of them already created, and they are described in the table. You need each outcome to be met by a candidate that the portal accepts and that actually receives the data. Which candidate should you place in each slot?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Candidate",
+						"Kind",
+						"Notes",
+						"Region"
+					],
+					"rows": [
+						[
+							"law-central",
+							"Log Analytics workspace",
+							"Workspace-based plan",
+							"West Europe"
+						],
+						[
+							"stg-central",
+							"Storage account",
+							"Standard tier, general purpose v2",
+							"West Europe"
+						],
+						[
+							"stg-eastus",
+							"Storage account",
+							"Standard tier, general purpose v2",
+							"East US"
+						],
+						[
+							"evh-central",
+							"Event Hubs namespace",
+							"Standard tier, streaming enabled",
+							"West Europe"
+						],
+						[
+							"evh-alt",
+							"Event Hubs namespace",
+							"Compaction enabled",
+							"West Europe"
+						],
+						[
+							"vendor-conn",
+							"Azure Monitor partner solution",
+							"Specialized non-Microsoft integration",
+							"West Europe"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "law-central",
+						"text": "law-central"
+					},
+					{
+						"id": "stg-central",
+						"text": "stg-central"
+					},
+					{
+						"id": "stg-eastus",
+						"text": "stg-eastus"
+					},
+					{
+						"id": "evh-central",
+						"text": "evh-central"
+					},
+					{
+						"id": "evh-alt",
+						"text": "evh-alt"
+					},
+					{
+						"id": "vendor-conn",
+						"text": "vendor-conn"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Query the collected data with KQL, build workbooks, and raise log alerts against it"
+					},
+					{
+						"id": "s2",
+						"label": "Keep the collected data as an archive that can be retained indefinitely and analyzed offline"
+					},
+					{
+						"id": "s3",
+						"label": "Deliver the collected data to the corporate SIEM as a continuous feed"
+					},
+					{
+						"id": "s4",
+						"label": "Hand the collected data to a specialized non-Microsoft product integration"
+					}
+				]
+			},
+			"key": {
+				"s1": "law-central",
+				"s2": "stg-central",
+				"s3": "evh-central",
+				"s4": "vendor-conn"
+			},
+			"explanation": {
+				"correct": "A Log Analytics workspace is the destination that holds the collected data so you can run KQL queries, build workbooks, and raise log alerts on it, so law-central serves the first outcome. A Standard Storage account keeps the data for indefinite retention, audit and static analysis, and stg-central sits in West Europe, the same region as the monitored resources, so it serves the archive outcome. An Event Hubs namespace streams the data to an external SIEM, and evh-central is in the same region as the monitored resources, so it serves the SIEM outcome. An Azure Monitor partner solution is the destination type used for specialized non-Microsoft integrations, so vendor-conn serves the last outcome. The remaining candidates cannot be used at all.",
+				"perChoice": {
+					"law-central": "It belongs in the query, workbooks and log alerts slot. A Log Analytics workspace stores the collected data and provides KQL queries, workbooks and log alerts over it, and the workspace sits in West Europe with the monitored resources.",
+					"stg-central": "It belongs in the indefinite archive slot. A Standard storage account can receive the collected data for long-term retention, audit and static analysis, and this one is in West Europe, the same region as the monitored resources, so a diagnostic setting can deliver to it.",
+					"stg-eastus": "It fits no slot. It is a Standard storage account, so its kind is right for archiving, but it is in East US while the monitored resources are in West Europe, and for a regional resource the storage account must be in the same region, so no diagnostic setting can deliver to it here.",
+					"evh-central": "It belongs in the SIEM slot. An Event Hubs namespace is the destination used to stream collected data to an external SIEM or custom system, and this namespace is in West Europe, the same region as the monitored resources.",
+					"evh-alt": "It fits no slot. Event Hubs namespaces with compaction enabled are not supported as diagnostic settings destinations, so no setting can send data to it.",
+					"vendor-conn": "It belongs in the non-Microsoft integration slot. Azure Monitor partner solutions are the destination type for specialized integrations with products from vendors other than Microsoft."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-workspace-overview"
+				}
+			],
+			"subtopics": [
+				"diagnostic-settings",
+				"destination-selection",
+				"log-analytics-workspace"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P3TQYW2RPWZ1VJ8V1ZXXDT",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a Linux virtual machine vm-orders in resource group rg-orders of subscription sub-retail, and you are creating a diagnostic setting for it in the Azure portal. The change request from the platform team lists four clauses that the setting has to satisfy, and everything the setting collects must end up in the Log Analytics workspace law-retail. Match each clause to the selection you make in the diagnostic setting that satisfies it.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Clause | Applies to                                  | Requirement\nPC-1   | Resource log categories of vm-orders          | Every category the virtual machine emits has to be captured.\nPC-2   | Resource log categories of vm-orders          | Only the categories capturing how customers used the data and how the service configuration was changed may be collected.\nPC-3   | Resource log categories of vm-orders          | Only the SecurityLog category may be captured.\nPC-4   | Platform performance counters of vm-orders    | The machine's platform performance counters have to be forwarded to law-retail."
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "allLogs category group"
+					},
+					{
+						"id": "i2",
+						"text": "audit category group"
+					},
+					{
+						"id": "i3",
+						"text": "individual category types"
+					},
+					{
+						"id": "i4",
+						"text": "AllMetrics metric category"
+					},
+					{
+						"id": "i5",
+						"text": "Export activity log"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "PC-1 - every category the virtual machine emits"
+					},
+					{
+						"id": "s2",
+						"label": "PC-2 - only the categories capturing how customers used the data and how the service configuration was changed"
+					},
+					{
+						"id": "s3",
+						"label": "PC-3 - the one category named in the change request"
+					},
+					{
+						"id": "s4",
+						"label": "PC-4 - the machine's platform performance counters"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Each clause is matched with the selection inside the diagnostic setting that satisfies it. The clause asking for every category the machine emits is met by the allLogs category group, which takes all categories in one selection and already includes the categories that record customer interactions with data and with service settings. The clause that permits only the customer-interaction and service-configuration categories is met by the audit category group, which holds exactly those records and leaves the remaining categories out. The clause naming a single category is met by ticking individual category types, because once a category group is chosen the portal blocks picking categories one by one. The clause about the machine's platform performance counters is met by AllMetrics under the Metrics tab, the selection that forwards platform metrics to the chosen destinations.",
+				"perChoice": {
+					"i1": "This belongs with the clause that requires every category the virtual machine emits: the allLogs group captures all categories at once and already includes the categories that record customer interactions with data and with service settings.",
+					"i2": "This belongs with the clause that allows only the categories capturing how customers used the data and how the service configuration was changed: that group contains exactly those records and nothing further.",
+					"i3": "This belongs with the clause that names a single category, because choosing a category group prevents selecting categories one by one, so a named category has to be ticked on its own.",
+					"i4": "This belongs with the clause about the machine's platform performance counters: AllMetrics is the choice under the Metrics tab that sends platform metrics to the chosen destinations.",
+					"i5": "This fits no clause: Export activity log is the portal path used to forward the subscription's activity log, which Azure gathers automatically, and it is not a choice of resource log categories or platform counters inside the virtual machine's diagnostic setting."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-workspace-overview"
+				}
+			],
+			"subtopics": [
+				"diagnostic-settings",
+				"log-categories",
+				"metric-export"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P45749RQTJY3CZYW41WT9A",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have two Azure Key Vaults, kv-prod and kv-billing, in resource group rg-sec (West Europe), and neither of them has any diagnostic setting yet. You need the vaults' resource logs and platform metrics collected and routed to the destination resources in the exhibit. The platform team's change request lists four clauses, each labeled with the vault it applies to. Match each clause to the selection or step that satisfies it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Resource property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Vaults",
+							"kv-prod and kv-billing, resource group rg-sec, West Europe"
+						],
+						[
+							"Destination resources available in rg-sec",
+							"law-sec (Log Analytics workspace), law-ops (Log Analytics workspace), stl-archive (Storage account, West Europe, Standard), eh-siem (Event Hubs namespace, West Europe)"
+						],
+						[
+							"Existing diagnostic settings",
+							"None on either vault"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Under Logs, select the allLogs category group"
+					},
+					{
+						"id": "i2",
+						"text": "Under Logs, select the audit category group"
+					},
+					{
+						"id": "i3",
+						"text": "Under Metrics, select AllMetrics"
+					},
+					{
+						"id": "i4",
+						"text": "Create a second diagnostic setting and give each setting one workspace"
+					},
+					{
+						"id": "d1",
+						"text": "Under Logs, select AllMetrics"
+					},
+					{
+						"id": "d2",
+						"text": "Under Metrics, select the audit category group"
+					},
+					{
+						"id": "d3",
+						"text": "Add law-sec and law-ops as destinations in the same setting"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "kv-prod: every log category the vault emits must be delivered, and the team should not tick categories one at a time"
+					},
+					{
+						"id": "s2",
+						"label": "kv-prod: its platform measurements must reach the same destinations as its logs"
+					},
+					{
+						"id": "s3",
+						"label": "kv-prod: its log data must be queryable in law-sec and in law-ops"
+					},
+					{
+						"id": "s4",
+						"label": "kv-billing: only the log categories that record customer interactions with data or changes to the service's settings should be delivered; its other categories aren't wanted"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i3",
+				"s3": "i4",
+				"s4": "i2"
+			},
+			"explanation": {
+				"correct": "For kv-prod, choosing the allLogs category group under Logs collects every category the vault emits without selecting categories one at a time, and choosing AllMetrics under Metrics is what forwards platform measurements to the selected destinations. Since one diagnostic setting can include no more than one destination of each type, getting the log data into both law-sec and law-ops requires a separate setting for each workspace. For kv-billing, the audit category group under Logs covers the categories that record customer interactions with data or the settings of the service, which is exactly the narrower set the clause asks for; allLogs would also pull in the categories the clause rules out.",
+				"perChoice": {
+					"i1": "Selecting the allLogs category group under Logs collects every category the vault emits and replaces picking categories one by one, which matches the kv-prod clause. It already includes the audit categories as well.",
+					"i2": "The audit category group under Logs collects the categories that record customer interactions with data or the settings of the service, which matches kv-billing's clause that its remaining categories stay out of the collection.",
+					"i3": "AllMetrics is the choice under Metrics that sends platform measurements to the destinations you picked, so it satisfies the kv-prod clause about measurements reaching the same destinations as the logs.",
+					"i4": "A diagnostic setting can hold only one destination of each type, so the way to reach both workspaces is to create a separate setting for each one and point each at a single workspace.",
+					"d1": "AllMetrics is the selection under Metrics; putting it under Logs doesn't forward platform measurements, so it meets none of the clauses.",
+					"d2": "The audit category group is chosen under Logs, not under Metrics, so it can't deliver the platform measurements that the kv-prod clause calls for.",
+					"d3": "A single setting accepts only one destination of each type, so adding law-sec and law-ops in the same setting isn't accepted and the second workspace wouldn't receive the data."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-workspace-overview"
+				}
+			],
+			"subtopics": [
+				"diagnostic-settings",
+				"log-category-groups",
+				"metric-export"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P4BYTVYQJZ7B8Z1W2RXQGP",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You administer Azure Monitor across the subscriptions that sit under the container described in the exhibit. The platform team has sent four requests, and each request must be met by exactly one of the changes listed below without disrupting the telemetry that is already flowing. Match each request to the change that satisfies it.",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "{\n  \"managementGroup\": {\n    \"name\": \"mg-contoso\",\n    \"subscriptions\": [\"sub-it\", \"sub-fin\"],\n    \"diagnosticSettings\": [],\n    \"archivedActivityLog\": \"none\"\n  },\n  \"virtualMachine\": {\n    \"name\": \"vm-web-01\",\n    \"resourceGroup\": \"rg-web\",\n    \"subscription\": \"sub-it\",\n    \"diagnosticSetting\": {\n      \"name\": \"ds-web-01\",\n      \"logs\": [\"every log category the service offers\"],\n      \"metrics\": [],\n      \"destinations\": [\"law-it\"]\n    }\n  },\n  \"logAnalyticsWorkspace\": {\n    \"name\": \"law-it\",\n    \"accessControlMode\": \"anyone who can access the Azure resource can also query the records collected in the workspace\"\n  },\n  \"thirdPartySource\": {\n    \"name\": \"ContosoPay\",\n    \"description\": \"payment platform running outside Azure\",\n    \"connectedToAzureMonitor\": false\n  }\n}"
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Create a diagnostic setting on the management group"
+					},
+					{
+						"id": "i2",
+						"text": "Select AllMetrics in the diagnostic setting"
+					},
+					{
+						"id": "i3",
+						"text": "Publish ContosoPay's events with the Logs Ingestion API through a data collection rule"
+					},
+					{
+						"id": "i4",
+						"text": "Switch the workspace access control mode so that only explicitly granted readers, using a built-in or custom role, can query its data"
+					},
+					{
+						"id": "i5",
+						"text": "Publish ContosoPay's events with the HTTP Data Collector API"
+					},
+					{
+						"id": "i6",
+						"text": "Enable the allLogs category group in the virtual machine's diagnostic setting"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Activity recorded anywhere under mg-contoso must be retained for compliance."
+					},
+					{
+						"id": "s2",
+						"label": "The measurements Azure publishes about vm-web-01 must reach the same destinations as its records."
+					},
+					{
+						"id": "s3",
+						"label": "The events of ContosoPay must become analyzable in law-it."
+					},
+					{
+						"id": "s4",
+						"label": "The named analysts must be the sole people able to see what has already been collected; being able to administer vm-web-01 must no longer be enough."
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Each request maps to exactly one change. Activity for the whole hierarchy is captured with management group diagnostic settings, because management groups have their own diagnostic settings for activity log entries, so one setting covers sub-it and sub-fin. The platform measurements of the virtual machine are added with the AllMetrics selection, which is the option that sends platform metrics to the destinations already chosen in the setting; ds-web-01 currently sends no platform metrics. ContosoPay's events reach the workspace through the Logs Ingestion API driven by a data collection rule, the recommended route for custom and third-party sources, which also adds OAuth authentication and schema governance. Limiting what has already been collected to the named analysts means switching the workspace access control mode to explicit grants with a built-in or custom role, because the workspace currently lets anyone who can access the Azure resource reach its collected records. The allLogs category group is not needed because ds-web-01 already sends every log category, and the HTTP Data Collector API is the superseded mechanism.",
+				"perChoice": {
+					"i1": "Fits the hierarchy-wide activity request: management groups use their own management group diagnostic settings, so a single setting captures activity log entries for every subscription in the hierarchy.",
+					"i2": "Fits the platform-measurements request: AllMetrics is the selection under Metrics that sends the resource's platform metrics to the destinations already chosen.",
+					"i3": "Fits the ContosoPay request: for custom and third-party sources Azure recommends the Logs Ingestion API paired with data collection rules and endpoints.",
+					"i4": "Fits the analysts request: switching the access control mode to explicit grants with a built-in or custom role stops people who merely can access the Azure resource from reaching the collected records.",
+					"i5": "Fits no slot: the HTTP Data Collector API is the older ingestion mechanism that the Logs Ingestion API replaces, so it is not the recommended way to bring ContosoPay's events into the workspace.",
+					"i6": "Fits no slot: ds-web-01 already sends every log category, so enabling the allLogs category group changes nothing, and selecting a category group prevents choosing individual category types."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-workspace-overview"
+				}
+			],
+			"subtopics": [
+				"diagnostic-settings",
+				"activity-log",
+				"log-ingestion"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P4N19WYPH5P0X8935V2B6Y",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You manage how data reaches a Log Analytics workspace from several places. The platform team has provided four requirements, and each requirement must be met by exactly one of the configuration changes listed below. Match each requirement to the change that satisfies it.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Data path                                          How it reaches the workspace today\n-----------------------------------------------   -----------------------------------------------\nSoftware vendor application on vendor hardware    Telemetry delivered straight into the workspace\nVirtual machine fleet vm-fleet                    Collected by the Azure Monitor agent with a data collection rule\nProduction resources that carry diagnostic settings   Records delivered by the diagnostic settings of each resource\nVirtual machine platform metrics                  Most of them are included in the export, one is not"
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Send the source records with the Logs Ingestion API through a data collection endpoint and rule"
+					},
+					{
+						"id": "b",
+						"text": "Extend the source-side data collection rule that the flow already uses, so its metrics keep flowing"
+					},
+					{
+						"id": "c",
+						"text": "Apply an ingestion-time transformation to the table that receives the records"
+					},
+					{
+						"id": "d",
+						"text": "Fetch the unsupported metrics with the Metrics REST API and write them into a table with the Logs Ingestion API"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "A software vendor's on-premises application delivers telemetry into Azure; the team needs OAuth-based access and centrally managed schemas, and the vendor application cannot be modified."
+					},
+					{
+						"id": "s2",
+						"label": "Telemetry from the virtual machine fleet is governed by a data collection rule, and the team wants entries filtered out before they are saved."
+					},
+					{
+						"id": "s3",
+						"label": "Data delivered by a diagnostic setting arrives in one table, and the team wants the noisy entries dropped before anyone queries the data."
+					},
+					{
+						"id": "s4",
+						"label": "One of the platform metrics published by the virtual machine cannot be exported by the diagnostic setting, and the team needs it queryable next to the other data."
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d"
+			},
+			"explanation": {
+				"correct": "The vendor application is a custom, third-party source, so its records are pushed with the Logs Ingestion API together with a data collection endpoint and a data collection rule, which is what provides OAuth authentication and schema governance without touching the source system. The virtual machine fleet already runs under a data collection rule, and ingestion-time transformations are not applied to flows governed that way, so the filtering has to be added to the rule at the source. The data that arrives through diagnostic settings lands in a table and can be reshaped by an ingestion-time transformation for that table, which is where the noisy entries are dropped. The platform metric that is not exported cannot be reshaped into existence: unsupported metrics are read with the Metrics REST API and then loaded with the Logs Ingestion API so they become queryable.",
+				"perChoice": {
+					"a": "Belongs with the software vendor requirement: for custom and third-party sources the recommended path is the Logs Ingestion API paired with a data collection endpoint and a data collection rule, because it adds OAuth authentication, schema governance and transformations while the source application stays untouched.",
+					"b": "Belongs with the virtual machine fleet requirement: that collection flow already runs under a data collection rule, and ingestion-time transformations do not apply to flows governed that way, so the rule at the source is where the filtering has to be added.",
+					"c": "Belongs with the diagnostic settings requirement: an ingestion-time transformation filters or reshapes records per table for the sources writing to that table, and it does apply to data delivered through diagnostic settings, so the noisy entries can be dropped there before anyone queries them.",
+					"d": "Belongs with the platform metrics requirement: only metrics marked exportable reach a workspace, and unsupported metrics are read with the Metrics REST API and then loaded with the Logs Ingestion API, which is the only way to make the missing metric queryable."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-workspace-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings"
+				}
+			],
+			"subtopics": [
+				"logs-ingestion-api",
+				"data-collection-rules",
+				"workspace-transformations"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P4WWW55EYTZ5SW9PAC498Z",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are responsible for the telemetry paths in the retail Azure environment shown in the exhibit. The four requirements in the exhibit map one-to-one onto the approaches below, and each approach is applied once. Which approach belongs with each requirement?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Request",
+						"Approved requirement"
+					],
+					"rows": [
+						[
+							"R1",
+							"Every entry recorded in the activity log of subscription sub-retail must be archived in the Storage account stl-retail."
+						],
+						[
+							"R2",
+							"Every entry recorded at the level of mg-retail must be searchable by the operations team in the Log Analytics workspace law-retail."
+						],
+						[
+							"R3",
+							"The resource logs and the platform metrics produced by virtual machine vm-retail must both arrive in law-retail, so the on-call team can query and alert on them together."
+						],
+						[
+							"R4",
+							"The custom logs emitted by the third-party application contoso-orders must reach law-retail through a currently supported collection path whose incoming schema the platform team can govern centrally."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Configure a diagnostic setting on vm-retail that sends its resource logs and AllMetrics to law-retail."
+					},
+					{
+						"id": "i2",
+						"text": "Use the activity log export of subscription sub-retail to send its activity log entries to stl-retail."
+					},
+					{
+						"id": "i3",
+						"text": "Configure a diagnostic setting on mg-retail that sends its activity log entries to law-retail."
+					},
+					{
+						"id": "i4",
+						"text": "Create a data collection rule and a data collection endpoint, then send the custom records through the Logs Ingestion API."
+					},
+					{
+						"id": "i5",
+						"text": "Configure a workspace transformation data collection rule that filters records after they arrive in a supported table."
+					}
+				],
+				"slots": [
+					{
+						"id": "req-r1",
+						"label": "Request R1"
+					},
+					{
+						"id": "req-r2",
+						"label": "Request R2"
+					},
+					{
+						"id": "req-r3",
+						"label": "Request R3"
+					},
+					{
+						"id": "req-r4",
+						"label": "Request R4"
+					}
+				]
+			},
+			"key": {
+				"req-r1": "i2",
+				"req-r2": "i3",
+				"req-r3": "i1",
+				"req-r4": "i4"
+			},
+			"explanation": {
+				"correct": "R1 asks for the subscription's activity log, which is gathered automatically and only has to be forwarded, so it is handled with the activity log export (Export activity log) pointing at stl-retail. R2 concerns entries recorded at the management group level, and management groups use their own management group diagnostic settings, so a diagnostic setting on mg-retail sends those entries to law-retail. R3 concerns a single resource's own telemetry, so a diagnostic setting is created on the virtual machine, with its log categories and AllMetrics selected so that platform metrics travel to law-retail as well. R4 comes from a third-party application, for which the recommended path is the Logs Ingestion API together with a data collection rule and data collection endpoint, replacing the old HTTP Data Collector API and adding OAuth authentication and schema governance. The workspace transformation rule only filters or reshapes records that other sources have already delivered to a supported table, so it starts no collection and satisfies none of the four requirements.",
+				"perChoice": {
+					"i1": "This belongs with Request R3. Each monitored resource needs its own diagnostic setting, and on that setting AllMetrics is the selection that forwards platform metrics to the chosen destinations, so a setting on vm-retail carries both its resource logs and its platform metrics to law-retail.",
+					"i2": "This belongs with Request R1. The activity log is collected automatically, so a setting only forwards the entries; for a subscription that forwarding is configured from Export activity log, which can target the Storage account stl-retail.",
+					"i3": "This belongs with Request R2. Management groups use their own management group diagnostic settings, so the entries recorded at the level of mg-retail reach law-retail through a diagnostic setting placed on the management group rather than on any resource inside it.",
+					"i4": "This belongs with Request R4. Custom and third-party sources are recommended to use the Logs Ingestion API paired with a data collection rule and a data collection endpoint; this path replaces the old HTTP Data Collector API and adds OAuth authentication, schema governance, and transformations.",
+					"i5": "This fits no request. A workspace transformation data collection rule only filters or reshapes records for every source already writing to a supported table, so it cannot forward subscription or management group activity log entries, cannot begin collecting the virtual machine's logs and metrics, and cannot ingest records from the third-party application."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-workspace-overview"
+				}
+			],
+			"subtopics": [
+				"diagnostic-settings",
+				"activity-log-export",
+				"log-ingestion-api"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P522XRHM0DRSYF705VF072",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You administer a Linux virtual machine named vm-app01 in resource group rg-app of subscription sub-app, deployed in West Europe. The machine already carries the five diagnostic settings listed below, and the portal rejects any attempt to create one more setting for it. The platform team requires that every resource log the machine produces is kept for seven years in a new storage account stl-arch, also in West Europe, and that the machine's platform metrics keep arriving in the Log Analytics workspace law-central. The telemetry that is already flowing must not be interrupted. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "json",
+					"text": "Diagnostic settings currently on vm-app01:\nA  logs=allLogs    metrics=AllMetrics  destination=law-central (Log Analytics workspace)\nB  logs=audit      metrics=none        destination=law-sec (Log Analytics workspace)\nC  logs=audit      metrics=none        destination=eh-siem (Event Hubs namespace)\nD  logs=allLogs    metrics=none        destination=stl-backup (Storage account)\nE  logs=none       metrics=AllMetrics  destination=law-finops (Log Analytics workspace)"
+				},
+				"statement": "To satisfy the platform team's request without interrupting the telemetry that is already flowing, you should {{slot1}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "add stl-arch as an additional destination on the setting that already collects allLogs and AllMetrics for law-central"
+							},
+							{
+								"id": "b",
+								"text": "add stl-arch as an additional destination on the setting that already collects allLogs for stl-backup"
+							},
+							{
+								"id": "c",
+								"text": "add stl-arch as an additional destination on the setting that already collects the audit category for law-sec"
+							},
+							{
+								"id": "d",
+								"text": "create a sixth diagnostic setting on the virtual machine that sends allLogs to stl-arch and AllMetrics to law-central"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a"
+			},
+			"explanation": {
+				"correct": "A resource supports at most five diagnostic settings, so no new setting can be created for vm-app01. A single diagnostic setting may include one destination of each type, so a storage account can be added to an existing setting that already targets a Log Analytics workspace. Setting A sends the allLogs category group, which covers every log category the machine produces, plus AllMetrics to law-central, and it has no storage account destination yet, so adding stl-arch there archives all resource logs while law-central keeps receiving the platform metrics and the other settings stay untouched.",
+				"perChoice": {
+					"slot1:b": "Setting D already targets the storage account stl-backup, and one diagnostic setting can include no more than one destination of each type, so the save that adds a second storage account to it is rejected.",
+					"slot1:c": "Setting B collects only the audit category group, so stl-arch would receive just those records while the remaining log categories never reach the archive, and the request covers every resource log the machine produces.",
+					"slot1:d": "A resource supports up to five diagnostic settings, so the portal refuses to create a sixth one on vm-app01 and no archive is configured."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-workspace-overview"
+				}
+			],
+			"subtopics": [
+				"diagnostic-settings-limits",
+				"destination-types"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P545WBP5FXB7SF7HKNV76F",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Linux virtual machine vm-web in resource group rg-app, deployed in West Europe, and a Storage account stl-audit in the same resource group and region. The storage account is reachable only from the corporate network range 10.20.0.0/16, and the security baseline for this environment forbids opening it up to all networks. The team added a diagnostic setting on the virtual machine, shown below, and it saved without errors, yet the container logs-vm-web in stl-audit stays empty after a full day while the same records arrive normally in the Log Analytics workspace law-app. You need the archived logs to reach stl-audit while keeping the storage account's network exposure as it is today. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Diagnostic setting",
+							"ds-vm-web"
+						],
+						[
+							"Monitored resource",
+							"vm-web (rg-app, West Europe)"
+						],
+						[
+							"Logs",
+							"Category group: allLogs"
+						],
+						[
+							"Metrics",
+							"AllMetrics"
+						],
+						[
+							"Destination 1",
+							"Log Analytics workspace law-app"
+						],
+						[
+							"Destination 2",
+							"Storage account stl-audit, container logs-vm-web"
+						],
+						[
+							"Storage account location",
+							"West Europe"
+						],
+						[
+							"Storage account networking",
+							"Selected networks (virtual network rules on)"
+						],
+						[
+							"Storage account firewall rules",
+							"10.20.0.0/16 (corporate range)"
+						],
+						[
+							"Data received in law-app",
+							"All logs and metrics, normal volume"
+						],
+						[
+							"Data received in stl-audit",
+							"Nothing after 24 hours"
+						]
+					]
+				},
+				"statement": "You should {{change}}.",
+				"slots": [
+					{
+						"id": "change",
+						"options": [
+							{
+								"id": "a",
+								"text": "In the storage account's networking settings, enable 'Allow trusted Microsoft services'"
+							},
+							{
+								"id": "b",
+								"text": "In the storage account's networking settings, set public network access to 'Enabled (from all networks)'"
+							},
+							{
+								"id": "c",
+								"text": "In the storage account's networking settings, add a firewall rule for the virtual machine's outbound IP address"
+							},
+							{
+								"id": "d",
+								"text": "In the storage account's networking settings, disable public network access"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"change": "a"
+			},
+			"explanation": {
+				"correct": "Diagnostic settings can't write to a storage account whose networking restricts traffic to selected networks. Microsoft's documented requirement is to enable 'Allow trusted Microsoft services' on the storage account so the Azure Monitor diagnostic settings service can bypass the firewall and deliver the data. Everything else in the exhibit is already in order: the destination resource exists, it sits in the same region as the regional virtual machine, the setting saved without error, and the same logs and metrics are arriving in law-app, which shows the machine is producing data and the routing works. Only the storage-side authorization is missing, and turning on the trusted-services exception keeps the account limited to the approved corporate range while letting the archived logs reach stl-audit.",
+				"perChoice": {
+					"change:b": "Setting public network access to 'Enabled (from all networks)' removes the restriction so the data could arrive, but it exposes the archive to the public internet and breaks the stated security baseline, which keeps stl-audit reachable only from the approved corporate range. The supported configuration is to keep the firewall and permit trusted Microsoft services instead.",
+					"change:c": "Azure Monitor's diagnostic settings service doesn't deliver data from the monitored virtual machine's own IP address, so a firewall rule for that address doesn't authorize the write and the container stays empty.",
+					"change:d": "Turning public network access off removes the endpoint that the trusted-services exception depends on, so nothing could be written to stl-audit at all; the diagnostic settings service needs the account's public endpoint with the trusted-services bypass."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-workspace-overview"
+				}
+			],
+			"subtopics": [
+				"diagnostic-settings",
+				"storage-account-destination",
+				"virtual-network-firewall"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P58SXHM6DN3JJWH5QQ61PT",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Linux virtual machine vm-app01 in resource group rg-app of subscription sub-app, and a Log Analytics workspace law-central in subscription sub-central. Both subscriptions belong to the same Microsoft Entra tenant. The central monitoring team administers law-central and wants the machine's resource logs and platform metrics delivered there, and the workload must stay in its current subscription and resource group. When the application administrator adds a diagnostic setting on the virtual machine and picks law-central as the destination, the portal reports an authorization error and saves nothing, so the central team sees no telemetry from the machine. The central team has confirmed that law-central already exists and needs no further provisioning. You need the machine's logs and metrics to reach law-central, with the configuration performed by the application administrator. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Details"
+					],
+					"rows": [
+						[
+							"Virtual machine",
+							"vm-app01, resource group rg-app, subscription sub-app, West Europe"
+						],
+						[
+							"Log Analytics workspace",
+							"law-central, subscription sub-central, West Europe"
+						],
+						[
+							"eng-app (application administrator)",
+							"Owner on rg-app in sub-app; no role assignments in sub-central"
+						],
+						[
+							"eng-central (central monitoring team)",
+							"Contributor on law-central in sub-central; no role assignments in sub-app"
+						],
+						[
+							"Microsoft Entra tenant",
+							"Both subscriptions belong to contoso.onmicrosoft.com"
+						]
+					]
+				},
+				"statement": "The change you should make is to {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "grant the application administrator access to the destination subscription"
+							},
+							{
+								"id": "b",
+								"text": "move the virtual machine vm-app01 to the destination subscription"
+							},
+							{
+								"id": "c",
+								"text": "have an administrator in the destination subscription with access to the central workspace create the diagnostic setting for vm-app01"
+							},
+							{
+								"id": "d",
+								"text": "enable Azure Lighthouse for the destination subscription so the application administrator can create the diagnostic setting"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "A diagnostic setting may forward to a destination that lives in a different subscription, but only when the person performing the configuration holds role-based access to both the monitored resource's subscription and the destination subscription. Here the save was refused because the application administrator can act on vm-app01 in sub-app but has no permissions in sub-central, where law-central lives. Extending that administrator's access to the destination subscription lets the same administrator create the setting themselves and route the machine's resource logs and platform metrics to law-central, while the virtual machine stays in its current subscription and resource group.",
+				"perChoice": {
+					"action:b": "This change is unnecessary and breaks the stated constraint. A diagnostic setting can already point at a workspace in another subscription, and the requirement is that the workload remains in its current subscription and resource group. The refused save is caused by the missing permissions on the destination, not by where the virtual machine is located.",
+					"action:c": "Whoever configures the setting needs permissions on both the monitored resource and the destination. The central administrator has permissions on law-central but none on sub-app, so they cannot create a setting for vm-app01, and the requirement is that the application administrator performs this configuration.",
+					"action:d": "Azure Lighthouse is the mechanism for reaching a destination in a different Microsoft Entra tenant. Here both subscriptions sit in the same tenant, so delegating the destination subscription with Lighthouse does not supply the permissions the application administrator is missing on the destination."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-workspace-overview"
+				}
+			],
+			"subtopics": [
+				"diagnostic-settings",
+				"cross-subscription-destination"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P5CP9MTCXRPMFXVP7B04ZB",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Storage account stl-data in resource group rg-data that backs a line-of-business application, and a diagnostic setting named to-law-data sends the account's logs and platform metrics to the Log Analytics workspace law-data. The workspace table for that account holds a single aggregated row per hour for the account's Transactions metric instead of a breakdown per operation name or per authentication type, and the capacity team needs that breakdown to plan for growth. You need the per-operation figures to be queryable in the workspace. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Diagnostic setting",
+							"to-law-data"
+						],
+						[
+							"Monitored resource",
+							"Storage account stl-data (rg-data)"
+						],
+						[
+							"Log categories",
+							"allLogs"
+						],
+						[
+							"Metric categories",
+							"AllMetrics"
+						],
+						[
+							"Destination",
+							"Log Analytics workspace law-data"
+						],
+						[
+							"Transactions metric rows in the workspace table",
+							"one aggregated row per hour, no per-operation breakdown"
+						]
+					]
+				},
+				"statement": "The change you should make is to {{fix}}.",
+				"slots": [
+					{
+						"id": "fix",
+						"options": [
+							{
+								"id": "a",
+								"text": "fetch the metric with the Metrics REST API and load it into the workspace with the Logs Ingestion API"
+							},
+							{
+								"id": "b",
+								"text": "tick the individual metric in the diagnostic setting's Metrics tab and let the platform export it to the workspace as a separate series"
+							},
+							{
+								"id": "c",
+								"text": "add a transformation in Azure Monitor Logs that splits the aggregated metric rows into one row per dimension value"
+							},
+							{
+								"id": "d",
+								"text": "enable the audit category group in the diagnostic setting so the caller activity reaches the workspace as logs"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"fix": "a"
+			},
+			"explanation": {
+				"correct": "Diagnostic settings don't support multidimensional metrics: a metric that carries dimensions is exported as a flattened single-dimensional metric and aggregated across its dimension values, so the per-operation breakdown the capacity team needs never reaches the workspace and no change to the diagnostic setting can bring it back. The documented way to work around this limitation is to extract the metric manually with the Metrics REST API and then import it into the Log Analytics workspace with the Logs Ingestion API, which makes the figures queryable next to the rest of the telemetry.",
+				"perChoice": {
+					"fix:b": "Ticking a single metric by name does not restore the detail: a metric with dimensions is still exported flattened and aggregated across its dimension values, and beyond AllMetrics only a limited number of Azure services accept individual metric category names in templates, the REST API, the CLI or PowerShell.",
+					"fix:c": "A transformation only filters or reshapes the records that already arrive for a target table, and only some tables support transformations. It cannot reconstruct dimension values that the export never captured, so the aggregated row stays aggregated.",
+					"fix:d": "The audit category group gathers resource logs that record customer interactions with data or the settings of the service; it carries no dimensional platform metric figures, and choosing a category group also prevents selecting individual categories."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/diagnostic-settings"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-workspace-overview"
+				}
+			],
+			"subtopics": [
+				"diagnostic-settings",
+				"metric-export",
+				"logs-ingestion-api"
+			],
+			"reviewed": false
+		}
+	]
+}

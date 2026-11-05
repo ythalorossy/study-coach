@@ -1,0 +1,1703 @@
+{
+	"skill": "monitoring.alerts",
+	"questions": [
+		{
+			"id": "q_01M6P31FWGBX9SY1GRABW4S39N",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your company runs a weekly patching window for a virtual machine scale set. While the window is open, on-call staff must stop getting SMS and email notifications for high CPU readings on that scale set, and the same must apply to backup job failures on a storage account in the same resource group, because those failures come from the Azure Backup service rather than from a rule you own. Alerts for slow disk queues on other virtual machines in that resource group must keep paging on-call, and every alert raised during the window must stay listed in the portal so the change can be audited afterwards. Which configuration should you use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Details"
+					],
+					"rows": [
+						[
+							"Metric alert rule 'CPU high'",
+							"Scope: virtual machine scale set vmss-prod in resource group RG1. Attached action groups: ag-ops"
+						],
+						[
+							"Metric alert rule 'Disk queue high'",
+							"Scope: virtual machine scale set vmss-worker in resource group RG1. Attached action groups: ag-ops"
+						],
+						[
+							"Azure Backup alerts for storage account stg-prod",
+							"Raised by the Azure Backup service. No action groups are attached."
+						],
+						[
+							"Patching window",
+							"Every Saturday 22:00 to 02:00, repeating while the rollout continues"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Create an alert processing rule scoped to the resource group that removes the action groups from the alerts matching the filter, during the maintenance window"
+					},
+					{
+						"id": "b",
+						"text": "Disable the 'CPU high' metric alert rule for the duration of the maintenance window so that no alerts are produced"
+					},
+					{
+						"id": "c",
+						"text": "Detach the SMS and email actions from the 'ag-ops' action group for the duration of the maintenance window"
+					},
+					{
+						"id": "d",
+						"text": "Create an alert processing rule scoped to the subscription that removes all action groups from every alert in the resource group, during the maintenance window"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "An alert processing rule is the object that fits this requirement, because it changes alerts that have already fired instead of creating new ones: its suppression action removes the action groups from the affected fired alerts, its scope can run from a single resource up to a whole subscription in the same subscription, its filters (for example alert rule name, monitor service, resource type) narrow down which alerts it affects, and its scheduling tab can be set to a one-time or recurring window such as the weekly patching slot. Filtering on the 'CPU high' rule and on the Azure Backup alerts leaves 'Disk queue high' paging as the business requires, and because only the action groups are stripped, the fired alerts remain visible in the portal, Azure Resource Graph, the API and PowerShell, preserving the audit trail. Processing rules are also the documented way to act on alert sources such as Azure Backup that cannot select their own action groups. Keep in mind that a new or updated processing rule can take up to 30 minutes to take effect, and suppressed alerts skip the end-of-window resolved notification.",
+				"perChoice": {
+					"b": "Turning the metric alert rule off means the rule never fires, so no alert instance is created for the CPU readings and nothing appears in the portal for the audit. It also has no effect on the backup job failures, because those alerts are not produced by that rule, and disabling and re-enabling a rule by hand every week is impractical when many rules cover the resource.",
+					"c": "Action group edits are not time-bound: once the SMS and email actions are detached, every rule that uses 'ag-ops' stops notifying, including the disk queue rule that must keep paging, and re-attaching them by hand when the window closes is error-prone. Action group actions offer no schedule, so they cannot be limited to a recurring window.",
+					"d": "This is too broad. Scoping the rule to the subscription and stripping the action groups from every alert in the resource group also silences the disk queue alerts, so the on-call team would no longer be paged for a condition the business wants reported. The scope and filters need to be narrowed to the intended alerts so the remaining rules keep notifying."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-processing-rules"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/action-groups"
+				}
+			],
+			"subtopics": [
+				"alert-processing-rules",
+				"alert-suppression",
+				"action-groups"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P34E4RE097Q4AF13XEZB1V",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an action group that opens a ticket in the company's ticketing system and pages the on-call engineer whenever the payment API breaches its latency threshold. After running the built-in test for the group, the ticketing endpoint answers every request with a server error while the page reaches the engineer. You need to know what happens to the ticketing call each time an alert fires. Which behavior should you expect?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Action group ........................ ag-payments\nAction type ........................ Webhook\nEndpoint ........................... https://tickets.contoso.example/azure-monitor-hook\nCredentials ........................ basic auth passed in the URI\nEndpoint reply ..................... HTTP 500 Internal Server Error\nSecond action in same group\n  (SMS page to on-call engineer) ..... Delivered successfully"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "The endpoint is called again up to five times, with delays of 5, 20, 5, 40 and 5 seconds, because an HTTP 500 response is among the failures that Azure Monitor retries."
+					},
+					{
+						"id": "b",
+						"text": "The webhook action fails and the endpoint is not called again, since an HTTP 500 response is not among the failures Azure Monitor retries."
+					},
+					{
+						"id": "c",
+						"text": "The webhook action fails on the first call, but the endpoint is called again five times after that because an HTTP 500 response is among the failures that Azure Monitor retries; the endpoint is then left alone for 15 minutes."
+					},
+					{
+						"id": "d",
+						"text": "The webhook action is retried on every alert evaluation until the endpoint returns a success code; an HTTP 500 response is among the failures that Azure Monitor retries, so the notification keeps failing and is not dropped."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "Azure Monitor only retries a webhook call for a specific set of failures: the status codes 408, 429, 503 and 504, or the HttpRequestException, WebException and TaskCancellationException exceptions. A 500 response is not in that list, so the webhook action fails on the single call that was made and the endpoint is not contacted again for that notification. The multi-attempt schedule (up to five retries with delays of 5, 20, 5, 40 and 5 seconds, followed by no calls to the endpoint for 15 minutes) applies only to the failures that Azure Monitor can retry, so it does not apply here.",
+				"perChoice": {
+					"a": "The retry schedule itself is described correctly (up to five further attempts with delays of 5, 20, 5, 40 and 5 seconds), but it only applies to the failures that Azure Monitor can retry: status codes 408, 429, 503 and 504, or HttpRequestException, WebException and TaskCancellationException. An HTTP 500 response is outside that list, so the endpoint is not called again.",
+					"c": "The five retries and the subsequent 15-minute pause belong to the failures that Azure Monitor can retry. Since a 500 response is not one of them, the webhook action fails on the first call and no further calls are made to the endpoint for that notification.",
+					"d": "There is no repeating retry loop for a 500 response. Only the listed status codes and exceptions allow another call, so the action is simply failed for that notification instead of being retried until the endpoint recovers."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/action-groups"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-overview"
+				}
+			],
+			"subtopics": [
+				"webhook-retry-behavior",
+				"action-groups"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P383TXHK0XDWHG7472SR33",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a metric alert rule that watches the percentage CPU metric on a production virtual machine, and the on-call rotation wants to know how many pings they will get during a long CPU spike, plus what the portal will display for the alert. The rule configuration is shown below. Which behavior should the on-call engineer expect?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Resource",
+							"vm-web-01 (production)"
+						],
+						[
+							"Signal",
+							"Percentage CPU"
+						],
+						[
+							"Threshold",
+							"Dynamic, sensitivity Medium"
+						],
+						[
+							"Check every",
+							"1 minute"
+						],
+						[
+							"Lookback period",
+							"5 minutes"
+						],
+						[
+							"Enable upon creation",
+							"Enabled"
+						],
+						[
+							"Automatically resolve alerts",
+							"Enabled"
+						],
+						[
+							"Action group",
+							"AG-CPU (email and SMS)"
+						],
+						[
+							"Severity",
+							"Sev 2"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Each check interval in which the CPU reading is above the learned band produces its own alert instance and its own notification, so the on-call engineer receives a repeating ping somewhere between one and six minutes."
+					},
+					{
+						"id": "b",
+						"text": "The alert fires once, stays in the fired state while the condition keeps being met, and becomes resolved after the condition fails for three consecutive checks, at which point a resolved notification is sent."
+					},
+					{
+						"id": "c",
+						"text": "The alert instance is removed from the portal 30 days after it was created even though the CPU reading is still above the learned band, and the rule then fires the same alert again."
+					},
+					{
+						"id": "d",
+						"text": "Changing the user response from New to Acknowledged or Closed in the portal marks the alert as resolved and clears the alert condition, so the rule can fire again for the same CPU spike without any other action."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "The rule has Automatically resolve alerts enabled, so it is stateful: it fires a single time, its alert condition stays fired for as long as the CPU reading remains outside the learned band, and no further actions run in the meantime. For metric alerts the alert is treated as resolved only once the condition has failed on three checks in a row, and at that point the rule emits a resolved notification and the alert condition changes to resolved.",
+				"perChoice": {
+					"a": "This describes a stateless rule. Because Automatically resolve alerts is enabled, the rule fires one time and stops triggering actions until the alert is resolved, so the engineer gets a single notification rather than a repeating stream. The one-to-six-minute repetition cadence belongs to stateless metric rules whose frequency is under five minutes.",
+					"c": "Alert instances are dropped from the portal after the 30-day retention window, but for a stateful alert the condition is retained until the alert resolves, precisely so the rule cannot fire the same alert again. The instance can disappear while the rule still refuses to re-fire for that condition, so the conclusion in this option is wrong.",
+					"d": "The user response (New, Acknowledged, or Closed) is maintained separately from the alert condition and only changes when someone changes it. Changing it neither resolves the alert nor resets the rule; a metric alert ends on its own once the condition has failed for three checks in a row."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-create-metric-alert-rule"
+				}
+			],
+			"subtopics": [
+				"stateful-alerts",
+				"automatic-resolution",
+				"notification-cadence"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P3AAW813N5N8Z7T42034VR",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an action group that must notify the order-processing service described below whenever an alert fires. The service has no public endpoint, and the notification must travel over the service's private network path. You need an action type that can deliver the notification to that service without making it reachable from the public internet. Which action type should you configure?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Action group",
+							"ag-orders-prod"
+						],
+						[
+							"Target service",
+							"Order-processing service running inside an Azure virtual network"
+						],
+						[
+							"Network path from Azure Monitor",
+							"Azure Private Link only"
+						],
+						[
+							"Public endpoint on the service",
+							"None"
+						],
+						[
+							"Accepted payload",
+							"Default Azure Monitor notification payload"
+						],
+						[
+							"On-call notifications",
+							"Email and SMS to the operations team"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Webhook"
+					},
+					{
+						"id": "b",
+						"text": "Secure webhook"
+					},
+					{
+						"id": "c",
+						"text": "Event hubs"
+					},
+					{
+						"id": "d",
+						"text": "Logic apps"
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "Event hubs is the only action type that supports Azure Private Link (and network security perimeter), so it is the way to deliver a notification to a target that is reachable only over a private network path and has no public endpoint. The target accepts the default Azure Monitor payload, so no payload reshaping is required.",
+				"perChoice": {
+					"a": "A Webhook calls an endpoint over the public internet and carries basic auth in the URI. Because the order-processing service has no public endpoint, a Webhook cannot deliver the notification to it.",
+					"b": "A Secure webhook authenticates to a protected API with a Microsoft Entra ID service principal and does not use basic auth in the URI, but it does not support Azure Private Link, so it cannot reach a service available only over a private network path.",
+					"d": "Logic apps is appropriate when the payload has to be reshaped into a schema the target expects. Here the default Azure Monitor payload is accepted, and Logic apps does not provide Private Link support for delivering to the target."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/action-groups"
+				}
+			],
+			"subtopics": [
+				"action-group-action-types",
+				"private-link"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P3C2NSJYEKM77XV83MC111",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a metric alert rule that watches the percentage CPU metric on a production virtual machine, configured as shown below. The rule already fired earlier today, and the average CPU dropped back under the threshold at 14:20 and stayed there. The on-call rotation wants to know when the portal will flip this alert over to a resolved state and send the resolved notification, so they can size the follow-up window. Which timing should they expect?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Rule type                : Metric alert\nTarget                   : vm-prod-web-01 (Virtual Machine)\nSignal                   : Percentage CPU\nCondition                : Average greater than 90%\nCheck every              : 5 minutes\nLookback period          : 5 minutes\nEnable upon creation     : Yes\nAutomatically resolve alerts : Yes"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "After one check finds the condition unmet — about 5 minutes later, at 14:25"
+					},
+					{
+						"id": "b",
+						"text": "After three consecutive checks find the condition unmet — about 15 minutes later, at 14:35"
+					},
+					{
+						"id": "c",
+						"text": "After two checks find the condition unmet — about 10 minutes later, at 14:30"
+					},
+					{
+						"id": "d",
+						"text": "After the lookback window closes with no further checks — about 5 minutes later, at 14:25"
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "Because Automatically resolve alerts is enabled, this metric rule is stateful: it fires once, stays in the Fired state, and only clears once the condition is no longer met. A metric alert resolves after three consecutive checks that find the condition unmet. With Check every set to 5 minutes, that covers about three evaluation intervals, so the alert moves to Resolved and the resolved notification is sent at roughly 14:35, about 15 minutes after the condition stopped being met at 14:20.",
+				"perChoice": {
+					"a": "One evaluation that no longer meets the condition does not clear a stateful metric alert. The alert remains fired until the condition has stayed unmet across three consecutive checks, so it would still be open at 14:25.",
+					"c": "Two evaluations are not enough for a metric alert to resolve; the documented behavior is that it stays fired until the condition is unmet for three consecutive checks, which at a 5-minute interval lands at about 14:35, not 14:30.",
+					"d": "The lookback period only determines which data points each evaluation considers — it does not terminate an alert. The alert still has to pass through the consecutive-check requirement before it is marked resolved and the resolved notification is sent."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-create-metric-alert-rule"
+				}
+			],
+			"subtopics": [
+				"metric-alert-rules",
+				"alert-resolution",
+				"stateful-alerts"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P3ERMKF7EQFHYPCQ4AMC8K",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an alert rule on a storage account that must page on-call when the latency of either the GetBlob or the PutBlob operation exceeds 200 ms. You added a condition for each operation and filtered the ApiName dimension to the matching operation in each condition, but the portal refuses to save the rule. You need the paging to cover both operations, and you do not want the rule to evaluate operations that the team does not own. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Condition",
+						"Signal",
+						"Dimension filter",
+						"Threshold",
+						"Operator"
+					],
+					"rows": [
+						[
+							"1",
+							"Blob service latency",
+							"ApiName = GetBlob",
+							"200 ms",
+							"Greater than"
+						],
+						[
+							"2",
+							"Blob service latency",
+							"ApiName = PutBlob",
+							"200 ms",
+							"Greater than"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Create a separate alert rule for each operation value"
+					},
+					{
+						"id": "b",
+						"text": "Keep both conditions in the same alert rule and remove the ApiName dimension filter so the rule covers alerts for every operation"
+					},
+					{
+						"id": "c",
+						"text": "Keep both conditions in the same alert rule, set the ApiName dimension to GetBlob in both conditions, and add the wildcard value for all current and future values"
+					},
+					{
+						"id": "d",
+						"text": "Keep both conditions in the same alert rule and switch to a dynamic threshold so each condition can use a different dimension value"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A metric alert rule can carry only one value per dimension, and when two conditions share a dimension, both conditions must use the same value for it. GetBlob in the first condition and PutBlob in the second therefore cannot be saved together. Giving each operation its own alert rule with a single condition keeps the 200 ms threshold for that operation value, avoids paging for operations the team does not own, and both rules can carry the same action groups so paging is unchanged.",
+				"perChoice": {
+					"b": "Dropping the ApiName dimension leaves both conditions scoped to the blob latency signal as a whole, so the rule can no longer target the GetBlob or PutBlob operation specifically and the two conditions become duplicates. Paging would then cover every blob operation, including ones outside the team's scope.",
+					"c": "The wildcard that stands for all current and future values cannot be used on a rule that has multiple conditions, and the shared ApiName dimension still has to carry one identical value in both conditions, so this configuration is not accepted.",
+					"d": "Dynamic thresholds cannot be used on a rule with multiple conditions, and even with a static threshold the shared dimension must carry the same value in both conditions, so changing the threshold type does not remove the restriction that caused the rejection."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-create-metric-alert-rule"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-overview"
+				}
+			],
+			"subtopics": [
+				"multi-condition-metric-rules",
+				"dimension-filters",
+				"alert-rule-configuration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P3GGECRTN86C5DK32JYA7X",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an Azure subscription in the Microsoft Azure public cloud that hosts the company's payment platform in Germany, and a policy that every notification raised for those workloads has to be processed inside Germany. The subscription owner also wants to be told about Azure Service Health events affecting the subscription. You need a set of action groups that satisfies both requirements. Which configuration should you create?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Subscription",
+							"Contoso-Payments-Prod (Microsoft Azure public cloud)"
+						],
+						[
+							"Workload deployment region",
+							"Germany West Central"
+						],
+						[
+							"Data-residency policy",
+							"Notifications raised for workloads in this subscription must be processed inside Germany"
+						],
+						[
+							"Platform events to notify on",
+							"Azure Service Health subscription alerts"
+						],
+						[
+							"Regional processing locations offered",
+							"East US, West US, East US2, West US2, South Central US, North Central US, Sweden Central, Germany West Central, India Central, India South"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Two action groups: one Regional in Germany West Central for the subscription's workloads, and one Global for the Service Health events."
+					},
+					{
+						"id": "b",
+						"text": "One action group Regional in Germany West Central, handling both the subscription's workloads and the Service Health events."
+					},
+					{
+						"id": "c",
+						"text": "One action group Global, handling both the subscription's workloads and the Service Health events."
+					},
+					{
+						"id": "d",
+						"text": "Two action groups Regional in Germany West Central and East US, handling both the subscription's workloads and the Service Health events."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "An action group's region is fixed when the group is created, and the two requirements pull it in opposite directions. The residency rule means the notifications for the German workloads must be handled by a group whose processing stays inside that geography, which is the Regional option in Germany West Central (a location where Regional processing is offered). Service Health alerts, on the other hand, only respond properly when the action group's region is set to Global, and they exist only in the public cloud. One group cannot be both Regional in Germany and Global, so two groups are required: a Regional one in Germany West Central for the workload alerts and a Global one for the Service Health events.",
+				"perChoice": {
+					"b": "A single group set to Regional in Germany West Central keeps workload notifications inside the required geography, but Service Health alerts only respond properly when the action group's region is set to Global, so the platform events would not be handled as required.",
+					"c": "A single Global group would handle the Service Health events correctly, but a Global group is persisted in at least two regions and processed anywhere, so notifications for the German workloads could be processed outside Germany, violating the data-residency policy.",
+					"d": "Both groups are Regional, so no group has the Global region that Service Health alerts require, and East US lies outside the geography the policy mandates, so the second group adds nothing useful."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/action-groups"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-overview"
+				}
+			],
+			"subtopics": [
+				"action-groups",
+				"service-health-alerts"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P3NXWVYXE0NWYZGS6Q1SHJ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have two alert processing rules in subscription SUB1 that both match alerts raised for the payments resource group. Their current settings are shown in the exhibit. A Critical metric alert fires in that resource group, and the on-call engineer is expected to be reached by the action group AG-PAY-ONCALL. You need to know whether the on-call engineer is actually contacted and whether the raised alert can still be audited afterwards. Which outcome should you expect?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Rule 1",
+						"Rule 2"
+					],
+					"rows": [
+						[
+							"Name",
+							"payments-routing",
+							"payment-alerts-paused"
+						],
+						[
+							"Scope",
+							"/subscriptions/SUB1",
+							"/subscriptions/SUB1"
+						],
+						[
+							"Filters",
+							"Severity equals Critical; Resource group equals RG-PAY",
+							"Resource group equals RG-PAY"
+						],
+						[
+							"Action",
+							"Apply action group AG-PAY-ONCALL",
+							"Suppress notifications"
+						],
+						[
+							"Schedule",
+							"Always on",
+							"Always on"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Notifications are suppressed and the action group AG-PAY-ONCALL is skipped."
+					},
+					{
+						"id": "b",
+						"text": "Notifications are delivered and the action group AG-PAY-ONCALL is run as well."
+					},
+					{
+						"id": "c",
+						"text": "The action group AG-PAY-ONCALL is run, and notifications are suppressed only until the next alert fires."
+					},
+					{
+						"id": "d",
+						"text": "Both rules take effect, so the action group AG-PAY-ONCALL is run and notifications are delivered."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "When a fired alert matches both a rule that suppresses notifications and a rule that applies an action group, suppression wins on priority. The suppress rule strips the action groups from the fired alert, so AG-PAY-ONCALL is not invoked and the on-call engineer is not contacted. The alert itself is still raised and stays visible in the portal, Azure Resource Graph, the API, and PowerShell, so it can still be audited afterwards; because every action group was removed, the end-of-maintenance resolved notification is skipped as well.",
+				"perChoice": {
+					"b": "This outcome assumes the applied action group runs and the notifications go out, but when the same fired alert matches a suppress-notifications rule and an apply-action-group rule, suppression takes priority, so the added group is not invoked.",
+					"c": "Suppressing notifications is not a one-alert or short-lived effect: when the suppress rule matches, every action group is removed from the fired alert, so AG-PAY-ONCALL is not invoked for this alert or for later alerts that match the same rule.",
+					"d": "The two rules do not both take effect on the same fired alert. Suppression takes priority over applying an action group, so the notifications are suppressed instead of AG-PAY-ONCALL being applied."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-processing-rules"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-overview"
+				}
+			],
+			"subtopics": [
+				"alert-processing-rules",
+				"notification-suppression"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P3SCXM2HCVAX046TGCEHRD",
+			"body": {
+				"format": "drag-drop",
+				"stem": "A bank operates a payments platform and is assembling a single action group that all of its monitoring rules will share. Five separate targets have to be reached from that group, and for each one there is a constraint on how the request must be delivered. Drag the element you would configure in the group onto each requirement so that the constraint is met.",
+				"items": [
+					{
+						"id": "i1",
+						"text": "Webhook"
+					},
+					{
+						"id": "i2",
+						"text": "Secure webhook"
+					},
+					{
+						"id": "i3",
+						"text": "Logic apps"
+					},
+					{
+						"id": "i4",
+						"text": "Automation Runbook"
+					},
+					{
+						"id": "i5",
+						"text": "SMS"
+					},
+					{
+						"id": "i6",
+						"text": "Event hubs"
+					},
+					{
+						"id": "i7",
+						"text": "ITSM"
+					},
+					{
+						"id": "i8",
+						"text": "Functions"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "A ticket-system API on the public internet that expects the caller to present a username and password inside the request address"
+					},
+					{
+						"id": "s2",
+						"label": "A partner API that rejects basic authentication and only accepts a caller represented by a service principal in Microsoft Entra ID"
+					},
+					{
+						"id": "s3",
+						"label": "A team chat endpoint that only accepts a message after the payload is converted into the chat format it expects"
+					},
+					{
+						"id": "s4",
+						"label": "A prepared remediation workflow that must start unattended every time an alert fires and can also be started by hand"
+					},
+					{
+						"id": "s5",
+						"label": "A short message on an on-call engineer's personal phone that the engineer can answer to pause the pages during a maintenance window"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "Each requirement maps to a different element of the action group. The publicly reachable ticket-system API that expects a username and password in the request address takes the Webhook action, because that action can carry basic authentication in the URI. The partner API that refuses basic authentication and authenticates with a Microsoft Entra ID service principal takes the Secure webhook action, which signs the request as the service principal and never uses basic auth. The team chat endpoint that only accepts its own message format takes Logic apps, which reshape the payload into the schema the endpoint expects before delivery. The prepared remediation workflow that must start unattended on every fired alert takes the Automation Runbook action, which runs a stored workflow in an Automation account and that workflow can also be started manually. The short message on an engineer's phone that the engineer can answer to pause the pages takes the SMS notification, because SMS is the notification type that supports reply commands such as DISABLE, ENABLE, STOP, START and HELP.",
+				"perChoice": {
+					"i1": "This belongs on the requirement for the publicly reachable ticket-system API: the Webhook action posts the payload to a public endpoint and can carry basic authentication credentials in the request URI.",
+					"i2": "This belongs on the requirement for the partner API: the Secure webhook action authenticates with a Microsoft Entra ID service principal and does not use basic auth, so it suits a protected endpoint that rejects basic credentials.",
+					"i3": "This belongs on the requirement for the team chat endpoint: Logic apps are used when the target expects a particular schema, because they convert the payload into the expected message format first.",
+					"i4": "This belongs on the requirement for the prepared remediation workflow: an Automation Runbook runs a stored workflow unattended when the alert fires, and the same workflow can also be started by hand.",
+					"i5": "This belongs on the requirement for the engineer's phone: SMS delivers a short message to a phone, and that message can be answered with DISABLE, ENABLE, STOP, START or HELP to control the pages.",
+					"i6": "This fits none of the requirements here. Event hubs is the only action type that supports Azure Private Link and network security perimeter, so it is the choice for a target with no public endpoint; none of the five requirements describes such a target.",
+					"i7": "This fits none of the requirements here. ITSM creates work items in an incident or service management system, and none of the requirements points at a service-management destination.",
+					"i8": "This fits none of the requirements here. The Functions action posts to an HTTP trigger endpoint together with its access key, which suits a serverless endpoint rather than the ticket system, partner API, chat endpoint, remediation workflow or phone requirement."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/action-groups"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-overview"
+				}
+			],
+			"subtopics": [
+				"action-groups",
+				"action-types",
+				"notification-types"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P3X2PEYH262N429C88QWHW",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a production subscription in the public cloud where the operations team wants Azure Monitor to behave in five different ways, and several of those behaviors have to come from a different part of the alerting setup rather than from the same one. You need to know which Azure Monitor component delivers each behavior, so you can build the right configuration the first time. Drag each component onto the requirement it satisfies.",
+				"items": [
+					{
+						"id": "i1",
+						"text": "Metric alert rule"
+					},
+					{
+						"id": "i2",
+						"text": "Log search alert rule"
+					},
+					{
+						"id": "i3",
+						"text": "Simple log search alert"
+					},
+					{
+						"id": "i4",
+						"text": "Activity log alert rule"
+					},
+					{
+						"id": "i5",
+						"text": "Action group"
+					},
+					{
+						"id": "i6",
+						"text": "Alert processing rule"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "One alert for every row a saved workspace query returns, delivered as close to real time as the platform allows"
+					},
+					{
+						"id": "s2",
+						"label": "One alert per virtual machine of the same type in a single region when a numeric value crosses a set limit"
+					},
+					{
+						"id": "s3",
+						"label": "A notification for every subscription write operation, such as a role assignment or a deletion, repeated on each occurrence"
+					},
+					{
+						"id": "s4",
+						"label": "The choice of who is told when something is raised and what runs automatically, such as paging on-call and opening a ticket"
+					},
+					{
+						"id": "s5",
+						"label": "A change to alerts that have already been raised, such as sending them to an extra destination, without editing the definition that raised them"
+					}
+				]
+			},
+			"key": {
+				"s1": "i3",
+				"s2": "i1",
+				"s3": "i4",
+				"s4": "i5",
+				"s5": "i6"
+			},
+			"explanation": {
+				"correct": "The row-by-row requirement belongs to a simple log search alert, because a simple log search alert evaluates each row a Log Analytics query returns individually, which supports near-real-time alerting at scale. The per-machine numeric requirement belongs to a metric alert rule: one metric alert rule can monitor resources of the same type that exist in the same Azure region, and an individual notification is sent for each monitored resource. The repeat-on-every-write-operation requirement belongs to an activity log alert rule, which is triggered when a new activity log event matches the conditions, and all activity log alerts are stateless, so they fire each time the condition is met. Deciding who is told when something is raised and what runs automatically belongs to an action group, the reusable collection of notification methods and automated actions that runs with the alert. Changing alerts that have already been raised, without editing the definition that raised them, belongs to an alert processing rule, which modifies fired alerts as they are being fired, for example by adding or suppressing action groups.",
+				"perChoice": {
+					"i1": "Metric alert rule fits the requirement for a separate alert per virtual machine of the same type in one region when a numeric value crosses a limit. A single metric alert rule can monitor resources of the same type in the same region, and an individual notification is sent for each monitored resource, which is exactly the per-machine behavior described.",
+					"i2": "Log search alert rule fits none of the listed requirements. A log search rule evaluates a Log Analytics query at a chosen frequency, and by splitting on dimensions it can produce one alert per resource, but it does not evaluate every row of the result set, does not report subscription write operations, does not decide who is notified or what runs, and does not alter alerts after they are raised.",
+					"i3": "Simple log search alert fits the requirement for one alert per row returned by a saved workspace query. A simple log search alert evaluates each row individually, which is the mechanism used for faster, near-real-time alerting at scale.",
+					"i4": "Activity log alert rule fits the requirement about being told about every subscription write operation such as a role assignment or a deletion. Activity log alerts are triggered when a new activity log event matches the defined conditions, and because all activity log alerts are stateless, each occurrence is notified rather than a single alert staying open until handled.",
+					"i5": "Action group fits the requirement that defines who is told when something is raised and what runs automatically, such as paging on-call and opening a ticket. An action group is the reusable bundle of notification preferences and automated actions that is triggered when an alert fires, and the same group can be reused by many rules.",
+					"i6": "Alert processing rule fits the requirement about changing alerts that have already been raised without editing the definition that raised them. Alert processing rules modify fired alerts as they are being fired, so they can add or suppress action groups, apply filters, or follow a schedule, while the rule that raised the alert stays untouched."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/action-groups"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-processing-rules"
+				}
+			],
+			"subtopics": [
+				"alert-types",
+				"action-groups",
+				"alert-processing-rules"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P40JBCS4KCQJQJQV4TND84",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a subscription that runs a customer-facing web tier on about forty Linux virtual machines, and the operations team is building a new metric rule for that tier in the Azure portal. The lead on the rota has written down six separate expectations about how the rule must behave, and several of them are decided by fields on the same page of the creation wizard. You need to configure the rule so that every expectation is met. Drag each setting you would configure onto the expectation it satisfies.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Context",
+						"Detail"
+					],
+					"rows": [
+						[
+							"Workload",
+							"Customer-facing web tier on about forty Linux virtual machines"
+						],
+						[
+							"Signal",
+							"Percentage CPU reported by the platform for each machine"
+						],
+						[
+							"Paging destination",
+							"AG-WEB-ONCALL, which emails and texts the on-call rota"
+						],
+						[
+							"Demand pattern",
+							"Two predictable spikes each day, otherwise a flat baseline"
+						],
+						[
+							"Incident definition",
+							"A sustained CPU reading above 85 percent is treated as a customer incident"
+						],
+						[
+							"Coverage today",
+							"No metric rule watches this tier"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Automatically resolve alerts: On"
+					},
+					{
+						"id": "b",
+						"text": "Enable upon creation: On"
+					},
+					{
+						"id": "c",
+						"text": "Threshold: Static, threshold value 85, aggregation type Average"
+					},
+					{
+						"id": "d",
+						"text": "Threshold: Dynamic, threshold sensitivity High"
+					},
+					{
+						"id": "e",
+						"text": "Threshold: Dynamic, threshold sensitivity Medium"
+					},
+					{
+						"id": "f",
+						"text": "Threshold: Dynamic, threshold sensitivity Low"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "The rule should raise a single notification the first time the condition is met and later report that the condition has cleared."
+					},
+					{
+						"id": "s2",
+						"label": "The rule should begin evaluating the signal as soon as it is saved, with no later step from an administrator."
+					},
+					{
+						"id": "s3",
+						"label": "The rule should fire when the reading crosses a number the business agreed on in advance."
+					},
+					{
+						"id": "s4",
+						"label": "The rule should fire on the very first sign of a departure from the reading's own recent behaviour, however small that departure is."
+					},
+					{
+						"id": "s5",
+						"label": "The rule should fire on a noticeable departure from the reading's own recent behaviour, while tolerating the normal swings of this workload."
+					},
+					{
+						"id": "s6",
+						"label": "The rule should fire only when the reading strays a long way from its own recent behaviour, and small swings are ignored."
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d",
+				"s5": "e",
+				"s6": "f"
+			},
+			"explanation": {
+				"correct": "Each expectation lines up with one field of the metric rule wizard. 'Automatically resolve alerts' makes the rule stateful, so it fires once, stays fired while the condition holds and then sends a resolved notification. 'Enable upon creation' starts the rule running as soon as the wizard is finished, with no later action needed. The expectation about a number the business agreed on in advance is met by a static threshold, which evaluates the aggregated reading against the configured threshold value (85 percent, with Average as the aggregation function). The three remaining expectations compare the reading with the metric's own recent behaviour, so they need a dynamic threshold, and the amount of deviation tolerated decides the sensitivity level: High triggers on the smallest deviation, Medium is the balanced default that still fires on a noticeable departure, and Low fires only on large deviations, so small swings are ignored.",
+				"perChoice": {
+					"a": "Selecting 'Automatically resolve alerts' makes the rule stateful: it fires once when the condition is first met, stays fired while the condition holds, and then a resolved notification is sent. That is exactly the single notification followed later by a report that the condition has cleared.",
+					"b": "'Enable upon creation' starts the rule running as soon as you finish creating it, so the metric is evaluated straight away and nobody has to come back later to turn it on. It has no effect on how many notifications are sent while the condition holds.",
+					"c": "A static threshold evaluates the rule against the threshold value configured in the rule, so the averaged CPU reading is compared with 85 percent, the level the business treats as a customer incident. The aggregation type Average is what produces the reading the threshold is applied to.",
+					"d": "High sensitivity sets tight thresholds close to the behaviour pattern the rule has learned, so the rule triggers on the smallest deviation from that pattern. That matches the expectation of paging on the very first sign of a departure, however small it is.",
+					"e": "Medium sensitivity is the balanced default: the thresholds sit a little further from the learned pattern than with High, so there are fewer pages, but they are still tight enough to fire on a noticeable departure while normal swings are tolerated.",
+					"f": "Low sensitivity sets loose thresholds that allow greater deviation from the learned pattern, so the rule is triggered only on large deviations and small swings are ignored."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-create-metric-alert-rule"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-overview"
+				}
+			],
+			"subtopics": [
+				"metric-alert-rules",
+				"threshold-sensitivity",
+				"stateless-and-stateful-alerts"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P459CXDGHMRDP7HWE2NWRF",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a production subscription that the operations team watches around the clock, and the team needs to be told about five different kinds of change that can occur there. You need each requirement below to be covered by the rule type that is built for that situation, and one of the rule types listed here is not needed. Drag the rule type onto the requirement it satisfies.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Parts of the subscription and what the operations team observed\n\nOrder API running on two Linux virtual machines\n  Processor usage occasionally stays above 90 percent for several minutes\n\nCentral analytics workspace\n  Results of every stored query are kept in this workspace\n\nWeb front end monitored with Application Insights\n  Response times and failure counts occasionally look unusual\n\nSubscription administration history\n  Every administrative change, including resource deletions, is captured\n  in the platform's operation records\n"
+				},
+				"items": [
+					{
+						"id": "i_metric",
+						"text": "Metric alert rule"
+					},
+					{
+						"id": "i_logsearch",
+						"text": "Log search alert rule"
+					},
+					{
+						"id": "i_simplelog",
+						"text": "Simple log search alert rule"
+					},
+					{
+						"id": "i_activity",
+						"text": "Activity log alert rule"
+					},
+					{
+						"id": "i_smart",
+						"text": "Smart detection alert rule"
+					},
+					{
+						"id": "i_prometheus",
+						"text": "Prometheus alert rule"
+					}
+				],
+				"slots": [
+					{
+						"id": "s_threshold",
+						"label": "Raise an alert when a reading on one compute instance goes past a limit you set"
+					},
+					{
+						"id": "s_scheduled_query",
+						"label": "Raise an alert on a fixed interval when a stored query in the shared analytics workspace returns matching records"
+					},
+					{
+						"id": "s_each_row",
+						"label": "Raise an alert for every matching record as it arrives, so the team is told within seconds"
+					},
+					{
+						"id": "s_deletion",
+						"label": "Raise an alert when an administrator deletes a resource in the subscription"
+					},
+					{
+						"id": "s_anomaly",
+						"label": "Raise an alert when a web application shows an unusual failure rate or slow response, with no query to write"
+					}
+				]
+			},
+			"key": {
+				"s_anomaly": "i_smart",
+				"s_deletion": "i_activity",
+				"s_each_row": "i_simplelog",
+				"s_scheduled_query": "i_logsearch",
+				"s_threshold": "i_metric"
+			},
+			"explanation": {
+				"correct": "Each requirement is matched to the rule type designed for that signal and evaluation style: a reading compared with a chosen limit on one compute instance is evaluated by a metric rule; a stored query in the analytics workspace evaluated on a fixed interval is a log search rule; evaluating every matching record individually for notification within seconds is what simple log search rules do for near real-time alerting; a resource deletion recorded by the platform is an activity log event, so an activity log rule fires; and an unusual failure rate or slow response in a web application with nothing to write by hand is what smart detection analyses automatically. The Prometheus rule type is left over because no requirement describes that data source.",
+				"perChoice": {
+					"i_activity": "Fits the requirement about an administrator deleting a resource in the subscription, because activity log rules are triggered when a new activity log event occurs that matches the defined conditions.",
+					"i_logsearch": "Fits the requirement about a stored query in the shared analytics workspace being evaluated on a fixed interval, because log search rules run a Log Analytics query against resource logs at a predefined frequency.",
+					"i_metric": "Fits the requirement about a reading on one compute instance going past a limit you set, because metric rules evaluate resource measurements (platform or custom) at regular intervals and compare them against a threshold you configure.",
+					"i_prometheus": "Fits no requirement in this question: this rule type alerts on Prometheus measurements held in the Azure Monitor managed service for Prometheus using PromQL, and none of the five requirements describes that data source.",
+					"i_simplelog": "Fits the requirement about being told about every matching record within seconds, because simple log search rules evaluate each row individually for faster, near real-time alerting.",
+					"i_smart": "Fits the requirement about a web application showing an unusual failure rate or slow response with no query to write, because smart detection on an Application Insights resource automatically warns about potential performance problems and failure anomalies."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-overview"
+				}
+			],
+			"subtopics": [
+				"alert-types",
+				"log-search-alerts",
+				"activity-log-alerts"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P4AYXXCP4CWA45KGQ4QZ8M",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a platform subscription whose monitoring rules all share one action group, and five different people have to be reached in five different ways. The table below describes what each recipient must get. You need to pick the element to configure in the group for each recipient. Drag the element you would configure in the group onto each recipient so that the stated behaviour is met.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Recipient",
+						"What they need"
+					],
+					"rows": [
+						[
+							"Night-shift responder",
+							"Must be able to stop and later resume repeated pages from the handset itself, with no portal access, and the pages must reach the company-owned number"
+						],
+						[
+							"Duty officer",
+							"Must be reached by an automated call to the handset, because the other channels on that device are muted during high-severity incidents"
+						],
+						[
+							"On-call engineers",
+							"Must get the alert on the corporate handset they carry, including handsets with no cellular messaging plan, and the number of alerts arriving at any one device must be limited so a single noisy workload cannot flood the team"
+						],
+						[
+							"Subscription access holders",
+							"Everyone holding a built-in access level on the subscription (Owner, Contributor, Reader, Monitoring Contributor or Monitoring Reader) must receive mail, a newly granted access level must start receiving mail by itself within about a day, and no address confirmation step may be required"
+						],
+						[
+							"Finance team",
+							"Must receive every alert at a shared mailbox whose address the group owner types into the group, and each newly added recipient must be able to confirm the address with a code within 30 minutes of the group being saved"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Email"
+					},
+					{
+						"id": "i2",
+						"text": "Email Azure Resource Manager role"
+					},
+					{
+						"id": "i3",
+						"text": "SMS"
+					},
+					{
+						"id": "i4",
+						"text": "Voice"
+					},
+					{
+						"id": "i5",
+						"text": "Azure app push notifications"
+					},
+					{
+						"id": "i6",
+						"text": "Webhook"
+					},
+					{
+						"id": "i7",
+						"text": "Event hubs"
+					},
+					{
+						"id": "i8",
+						"text": "Automation Runbook"
+					}
+				],
+				"slots": [
+					{
+						"id": "night",
+						"label": "Night-shift responder"
+					},
+					{
+						"id": "duty",
+						"label": "Duty officer"
+					},
+					{
+						"id": "oncall",
+						"label": "On-call engineers"
+					},
+					{
+						"id": "holders",
+						"label": "Subscription access holders"
+					},
+					{
+						"id": "finance",
+						"label": "Finance team"
+					}
+				]
+			},
+			"key": {
+				"night": "i3",
+				"duty": "i4",
+				"oncall": "i5",
+				"holders": "i2",
+				"finance": "i1"
+			},
+			"explanation": {
+				"correct": "Every row is met by a different notification channel of the group, and the constraints in the table separate them. The night-shift responder needs paging that can be stopped and restarted from the handset itself, which is the reply-command behaviour of SMS (DISABLE/ENABLE to the group short name) delivered to the phone number. The duty officer must be spoken to on a handset whose other channels are muted, which is what the Voice channel does. The on-call engineers need delivery to a device that has no cellular messaging plan plus a per-device cap, which matches Azure app push notifications (push delivery over the data connection, rate limited per device). The access holders must be mailed with no address confirmation and with the recipient list tracking access assignments on its own, which is what the Email Azure Resource Manager role channel provides, and it supports only Owner, Contributor, Reader, Monitoring Contributor and Monitoring Reader, with newly added members starting to receive mail within about a day. The finance team uses an address typed into the group, and each newly added recipient confirms it with a code within 30 minutes of the group being saved, which is plain Email.",
+				"perChoice": {
+					"i1": "Finance team. This is plain Email, where the recipient addresses are typed into the group and every new recipient has to confirm the address with a code within 30 minutes of the group being saved.",
+					"i2": "Subscription access holders. This channel mails the members of the subscription's built-in access levels (only Owner, Contributor, Reader, Monitoring Contributor and Monitoring Reader are supported), needs no address confirmation, and members pick up mail automatically as access assignments are added, though it can take up to 24 hours for a new member to start receiving it.",
+					"i3": "Night-shift responder. This is the only channel whose recipient can control the alerting from the handset by replying with commands to disable and re-enable paging, and it delivers to the phone number the company owns.",
+					"i4": "Duty officer. This channel places an automated spoken call to the handset, so the alert still gets through when the other channels on that device are muted.",
+					"i5": "On-call engineers. This channel reaches the device over the data connection rather than through carrier messaging, so it works on handsets without a cellular messaging plan, and repeated deliveries to one device are rate limited.",
+					"i6": "Fits no slot. This is an action type that posts an alert payload to a publicly reachable endpoint; none of the rows asks for a message to be delivered to a person, and an endpoint that needs basic auth in the URI would still be a public target.",
+					"i7": "Fits no slot. This is an action type that streams the alert payload to a target service and is the only action type with Private Link and network security perimeter support; it is not a way of reaching a responder.",
+					"i8": "Fits no slot. This is an action type that runs a remediation runbook in Azure Automation; none of the rows asks for automatic remediation rather than a message to a person."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/action-groups"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-overview"
+				}
+			],
+			"subtopics": [
+				"action-group-notification-types",
+				"action-group-routing"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P4J46K63KTJGEHES1KGDQ5",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You look after monitoring for a retail platform that runs in subscription SUB1, and you are creating a batch of alert processing rules in that subscription to cut the noise that reaches the night-shift team. Every rule has to act only on the alerts described in the table, and the team has agreed that each filter you add has to match and that a single filter may carry several alternative values. You need to decide which filter to set on each rule. Drag the filter onto the behavior it delivers.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Planned rule",
+						"Value to match on"
+					],
+					"rows": [
+						[
+							"PR-LATENCY",
+							"/subscriptions/SUB1/resourceGroups/RG1/providers/microsoft.insights/metricalerts/MY-API-LATENCY"
+						],
+						[
+							"PR-CHECKOUT",
+							"CHECKOUT"
+						],
+						[
+							"PR-TIER",
+							"Critical and Error"
+						],
+						[
+							"PR-NOTE",
+							"backupfailure"
+						],
+						[
+							"PR-LIVE",
+							"Fired"
+						],
+						[
+							"PR-LOGS",
+							"Log Analytics"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "f_rule_id",
+						"text": "Alert rule ID"
+					},
+					{
+						"id": "f_rule_name",
+						"text": "Alert rule name"
+					},
+					{
+						"id": "f_severity",
+						"text": "Severity"
+					},
+					{
+						"id": "f_description",
+						"text": "Description"
+					},
+					{
+						"id": "f_condition",
+						"text": "Monitor condition"
+					},
+					{
+						"id": "f_service",
+						"text": "Monitor service"
+					},
+					{
+						"id": "f_context",
+						"text": "Alert context (payload)"
+					}
+				],
+				"slots": [
+					{
+						"id": "s_latency",
+						"label": "PR-LATENCY - only the alerts raised by one particular metric rule, singled out by the complete path of that rule"
+					},
+					{
+						"id": "s_checkout",
+						"label": "PR-CHECKOUT - only the alerts raised by any rule whose text label contains a given word"
+					},
+					{
+						"id": "s_tier",
+						"label": "PR-TIER - only the alerts carrying the two most serious urgency values"
+					},
+					{
+						"id": "s_note",
+						"label": "PR-NOTE - only the alerts raised from a rule whose free-text note contains a given word"
+					},
+					{
+						"id": "s_live",
+						"label": "PR-LIVE - only the alerts that are still in the fired state"
+					},
+					{
+						"id": "s_logs",
+						"label": "PR-LOGS - only the alerts whose signal is sent by the component behind custom log search and saved query signals"
+					}
+				]
+			},
+			"key": {
+				"s_latency": "f_rule_id",
+				"s_checkout": "f_rule_name",
+				"s_tier": "f_severity",
+				"s_note": "f_description",
+				"s_live": "f_condition",
+				"s_logs": "f_service"
+			},
+			"explanation": {
+				"correct": "Each planned rule needs one of the documented filters of an alert processing rule. PR-LATENCY matches a single originating rule, so it uses the Alert rule ID filter, whose value is the complete path of the rule. PR-CHECKOUT matches on the text of the rule itself, so it uses the Alert rule name filter, which also works with a Contains operator. PR-TIER matches on the two most serious urgency values, so it uses the Severity filter. PR-NOTE matches on a free-text note carried by the originating rule, so it uses the Description filter, which looks inside the alert rule's description field. PR-LIVE matches on whether the alert is still firing, so it uses the Monitor condition filter, whose values are Fired and Resolved. PR-LOGS matches on the component that sends the signal, so it uses the Monitor service filter, which lists Log Analytics among its values.",
+				"perChoice": {
+					"f_rule_id": "This belongs with PR-LATENCY: the filter matches alerts from one specific alert rule, and the value must be the full path of that rule, for example /subscriptions/SUB1/resourceGroups/RG1/providers/microsoft.insights/metricalerts/MY-API-LATENCY.",
+					"f_rule_name": "This belongs with PR-CHECKOUT: the filter matches alerts whose originating rule carries the given text, and it can also be used with a Contains operator to match part of that text.",
+					"f_severity": "This belongs with PR-TIER: the filter matches alerts by their severity value, so Critical and Error are exactly the kind of values it takes.",
+					"f_description": "This belongs with PR-NOTE: the filter matches the given string inside the description field of the alert rule that raised the alert.",
+					"f_condition": "This belongs with PR-LIVE: the filter matches alerts by their monitor condition, whose two values are Fired and Resolved, so only alerts still in the fired state are selected.",
+					"f_service": "This belongs with PR-LOGS: the filter matches the monitoring service that is sending the signal, and Log Analytics is one of the listed values because it provides the custom log search and saved query signals.",
+					"f_context": "This fits no slot: it matches strings inside the context section of the alert itself, which carries fields specific to each alert type, so it cannot select on the originating rule, its urgency value, its firing state, or the component sending the signal."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-processing-rules"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-overview"
+				}
+			],
+			"subtopics": [
+				"alert-processing-rules",
+				"alert-rule-filters"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P4NCQDCF2PFBF0E3VFANTR",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a metric alert rule on the percentage CPU metric of vm-prod-web-03 that pages the on-call engineer by SMS through the action group attached to it. The platform team now wants the same rule to reach an internal chat integration as well, and it wants that machine-to-machine call to carry two extra values, the change ticket number and the service owner, that the standard alert data does not include. The rule and the planned recipient are described below. You need to know how many action groups the rule can carry and how they run, and which recipients actually receive the two extra values. Which behavior should you expect?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Rule target               : vm-prod-web-03\nSignal                   : Percentage CPU, Average over 5 minutes, greater than 80\nAction groups attached   : AG-ONCALL\nNotification in AG-ONCALL: SMS to the on-call engineer\nRecipient to add         : Internal chat integration, reached by a Webhook action that posts to its public endpoint\nValues to carry          : Change ticket number and service owner"
+				},
+				"statement": "The rule can carry {{actionGroupBehavior}}, and {{customPropertiesDelivery}} will receive the two extra values.",
+				"slots": [
+					{
+						"id": "actionGroupBehavior",
+						"options": [
+							{
+								"id": "a",
+								"text": "up to five action groups, which then run concurrently with no defined order"
+							},
+							{
+								"id": "b",
+								"text": "up to three action groups, which then run one after another in the order listed"
+							},
+							{
+								"id": "c",
+								"text": "up to five action groups, which then run one after another in the order listed"
+							},
+							{
+								"id": "d",
+								"text": "up to ten action groups, which then run concurrently with no defined order"
+							}
+						]
+					},
+					{
+						"id": "customPropertiesDelivery",
+						"options": [
+							{
+								"id": "a",
+								"text": "The webhook, Logic Apps, Azure Functions and Automation runbook actions"
+							},
+							{
+								"id": "b",
+								"text": "Only the webhook action"
+							},
+							{
+								"id": "c",
+								"text": "The email, SMS and Azure app push notification actions"
+							},
+							{
+								"id": "d",
+								"text": "Every action configured in the group"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"actionGroupBehavior": "a",
+				"customPropertiesDelivery": "a"
+			},
+			"explanation": {
+				"correct": "A single alert rule can have up to five action groups attached to it, and those groups execute concurrently in no defined order, so AG-ONCALL and a second group holding the chat integration call can both sit on the same rule without either waiting on the other. The two extra values are set as custom properties on the rule, and custom properties are carried in the payloads delivered by the Webhook, Logic Apps, Azure Functions and Automation runbook actions, but not in email, SMS or Azure app push notifications. So the chat integration receives the ticket number and service owner, while the on-call engineer's SMS message does not.",
+				"perChoice": {
+					"actionGroupBehavior:b": "The ceiling is five action groups per rule, not three, and the attached groups run concurrently with no defined order rather than sequentially in the order they are listed.",
+					"actionGroupBehavior:c": "The limit of five is right, but attached groups run concurrently in no defined order; they are not executed one after another in the order listed.",
+					"actionGroupBehavior:d": "A rule may carry at most five action groups, not ten, although the concurrent and unordered execution described here is correct.",
+					"customPropertiesDelivery:b": "Custom properties also travel with Logic Apps, Azure Functions and Automation runbook payloads, so the webhook is not the only action type that receives them.",
+					"customPropertiesDelivery:c": "Email, SMS and Azure app push notification payloads deliberately exclude custom properties, so these recipients do not get the two extra values.",
+					"customPropertiesDelivery:d": "Not every action in the group receives custom properties; email, SMS and Azure app push notifications leave them out, so blanket delivery to all actions is incorrect."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/action-groups"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-create-metric-alert-rule"
+				}
+			],
+			"subtopics": [
+				"action-groups",
+				"metric-alert-rules",
+				"custom-properties"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P4V35PM967RF4T6BQR1ANP",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a metric alert rule on the production API of a retail platform, and it is connected to an action group configured as shown below. During a traffic spike last night the rule fired 412 times in about two hours. The on-call engineer received only the first handful of emails and text messages, but the incident-tracking Logic App and the Jira webhook each handled all 412 alerts. You need to explain why the two paths that reach the engineer behaved differently from the other two. Which explanation should you give?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Action configured in the group",
+						"What it does"
+					],
+					"rows": [
+						[
+							"Email on-call@contoso.com",
+							"Delivers an alert email to the on-call engineer"
+						],
+						[
+							"Text message to the on-call engineer's number",
+							"Delivers an alert text message to the on-call engineer"
+						],
+						[
+							"Start the incident-tracking Logic App",
+							"Records the alert in the incident tracker"
+						],
+						[
+							"Webhook to the Jira connector",
+							"Opens a ticket for the alert"
+						]
+					]
+				},
+				"statement": "{{cause}}",
+				"slots": [
+					{
+						"id": "cause",
+						"options": [
+							{
+								"id": "a",
+								"text": "Rate limiting suspends email, SMS, voice, and push notifications per phone number, address, or device across all subscriptions, while other action types continue to run."
+							},
+							{
+								"id": "b",
+								"text": "Rate limiting suspends email, SMS, voice, and push notifications per alert rule, while other action types continue to run."
+							},
+							{
+								"id": "c",
+								"text": "Rate limiting suspends email, SMS, voice, and push notifications per phone number, address, or device across all subscriptions, and other action types are suspended as well."
+							},
+							{
+								"id": "d",
+								"text": "The email and messaging providers suspend delivery per phone number, address, or device across all subscriptions, while other action types continue to run."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"cause": "a"
+			},
+			"explanation": {
+				"correct": "Azure Monitor applies rate limiting to the notification elements of an action group. When the limit is reached, email, SMS, voice, and push notifications are suspended per phone number, address, or device, and that suspension spans all subscriptions, which is why the on-call engineer stopped receiving emails and text messages during the spike. Other action types are not rate limited, so the incident-tracking Logic App and the Jira webhook kept processing every one of the 412 alerts.",
+				"perChoice": {
+					"cause:b": "The suspension is not counted per alert rule. Rate limiting is applied per recipient endpoint (phone number, address, or device) across all subscriptions, so every rule that targets the same engineer draws on one shared budget.",
+					"cause:c": "Only the notification elements - email, SMS, voice, and push - are subject to rate limiting. Other action types such as webhooks, Logic apps, Automation runbooks, Event hubs, Functions, and ITSM are not rate limited, which is why the incident tracker and the ticket webhook still processed every alert.",
+					"cause:d": "The suspension is carried out by Azure Monitor's rate limiting, not by the email or messaging providers. The effect applies to email, SMS, voice, and push notifications per phone number, address, or device across all subscriptions."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/action-groups"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-overview"
+				}
+			],
+			"subtopics": [
+				"action-groups",
+				"notification-rate-limits"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P53A1G82E9RE7Q0D5FAN2Z",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You maintain the alerting setup for the payments platform in subscription SUB1 and are finishing the action group definition that the team's ARM template deploys; the properties drafted so far are shown in the exhibit. The group already reaches the on-call mobile numbers by text message, the escalation number by voice call, and a shared payments distribution list by email, and that distribution list is maintained by hand. Two things still have to be settled. First, the group must reach every person in the subscription who holds the assignment shown in the exhibit, without anyone having to maintain the list of recipients by hand, and those people must not be asked to complete a one-time verification before the first message reaches them. Second, the drafted short name is longer than the deployment accepts, so you need the limit in order to correct it. Which notification type should you add to the action group, and what is the maximum number of characters its short name may contain?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Action group name: AG-PAY-OPS\nDrafted short name: AG-PAY-OPS-ALERTS\nNotifications already defined:\n  - Text message to the on-call mobile numbers\n  - Voice call to the escalation number\n  - Email to a shared payments distribution list that is maintained by hand\nAssignment that should drive the new recipients: Monitoring Contributor"
+				},
+				"statement": "The action group should carry {{notificationType}} so that recipients are reached according to the assignment they hold in the subscription with no one-time verification step, and its short name may contain at most {{shortNameLimit}}.",
+				"slots": [
+					{
+						"id": "notificationType",
+						"options": [
+							{
+								"id": "a",
+								"text": "Email"
+							},
+							{
+								"id": "b",
+								"text": "Email Azure Resource Manager role"
+							},
+							{
+								"id": "c",
+								"text": "SMS"
+							},
+							{
+								"id": "d",
+								"text": "Azure app push notifications"
+							}
+						]
+					},
+					{
+						"id": "shortNameLimit",
+						"options": [
+							{
+								"id": "a",
+								"text": "12 characters"
+							},
+							{
+								"id": "b",
+								"text": "8 characters"
+							},
+							{
+								"id": "c",
+								"text": "16 characters"
+							},
+							{
+								"id": "d",
+								"text": "24 characters"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"notificationType": "b",
+				"shortNameLimit": "a"
+			},
+			"explanation": {
+				"correct": "The action group needs the 'Email Azure Resource Manager role' notification. That notification mails the members of the assignment a person holds in the subscription, and Monitoring Contributor is one of the built-in assignments it supports, so the recipient list follows staffing changes without anyone typing addresses in by hand. Unlike plain email notifications, recipients of an ARM-role email do not have to confirm their address with a code before the first message is delivered, which matches the requirement that nobody performs a one-time verification. For the second slot, an action group declared in an ARM template is a Microsoft.Insights/actionGroups resource whose groupShortName may be at most 12 characters, so the drafted AG-PAY-OPS-ALERTS (18 characters) must be shortened to 12 characters or fewer.",
+				"perChoice": {
+					"notificationType:a": "Plain email notifications only reach the addresses typed into the group, so the list of recipients has to be maintained by hand, and every newly added recipient has to confirm their address with a code within 30 minutes of the group being saved. That fails both the 'no manual recipient list' and the 'no one-time verification' parts of the requirement.",
+					"notificationType:c": "Text messages go only to the phone numbers stored in the group and are rate limited per number across all subscriptions; they are never derived from the assignment a person holds in the subscription, so this cannot satisfy the requirement.",
+					"notificationType:d": "Push notifications are delivered to devices registered for the application and are rate limited per device, so they do not reach people identified by the assignment they hold in the subscription.",
+					"shortNameLimit:b": "An 8-character ceiling is stricter than the deployment requires. The short name of an action group in a template may be up to 12 characters, so this limit would needlessly reject valid names such as AG-PAY-OPS.",
+					"shortNameLimit:c": "A 16-character allowance is too permissive. The template accepts a groupShortName of up to 12 characters only, so the drafted AG-PAY-OPS-ALERTS would pass a length check that the deployment actually fails.",
+					"shortNameLimit:d": "A 24-character allowance is too permissive as well. The short name in an ARM template action group must be 12 characters at most, so names of that length would be rejected during deployment."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/action-groups"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-overview"
+				}
+			],
+			"subtopics": [
+				"action-groups",
+				"notification-types",
+				"arm-templates"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P57KA2N00FCPX6Z4QEBD5X",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your team is adding two alert processing rules in subscription SUB1 to quiet night-shift noise. The first one is meant to silence notifications for alerts about the marketing analytics cluster, which is registered in subscription SUB2. The second one silences notifications for the CPU alerts raised in resource group RG-OPS in subscription SUB1. You need to know whether the first rule will affect the notifications for that cluster, and when the second rule will start acting on newly raised alerts. Which outcome should you expect?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Rule 1 - ClusterNoiseOff\n  Created in subscription: SUB1\n  Target: Marketing analytics cluster (registered in SUB2)\n  Filter: Alert rule name = MarketingAnalytics-HighCPU\n  Action: Suppress notifications\n\nRule 2 - OpsCpuNoiseOff\n  Created in subscription: SUB1\n  Target: Resource group RG-OPS (in SUB1)\n  Filter: Alert rule name = OpsWorker-HighCPU\n  Action: Suppress notifications"
+				},
+				"statement": "The notifications for the cluster in the other subscription {{slot1}}, and the rule that targets resource group RG-OPS takes effect {{slot2}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "keep coming through, because coverage stays inside the subscription where the rule is created"
+							},
+							{
+								"id": "b",
+								"text": "stop, because the rule reaches resources in every subscription of the tenant"
+							},
+							{
+								"id": "c",
+								"text": "stop, but only after the rule is also created in the subscription that owns the cluster"
+							}
+						]
+					},
+					{
+						"id": "slot2",
+						"options": [
+							{
+								"id": "d",
+								"text": "up to 30 minutes after the rule is saved"
+							},
+							{
+								"id": "e",
+								"text": "immediately after the rule is saved"
+							},
+							{
+								"id": "f",
+								"text": "up to 5 minutes after the rule is saved"
+							},
+							{
+								"id": "g",
+								"text": "up to 24 hours after the rule is saved"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a",
+				"slot2": "d"
+			},
+			"explanation": {
+				"correct": "Two separate facts decide the outcome. First, a processing rule can only act on resources that belong to the same subscription as the rule, so the rule created in SUB1 has no effect on the marketing analytics cluster that is registered in SUB2 — that cluster's notifications keep coming through, and only a rule created in the subscription that owns the cluster could suppress them. Second, a newly created or updated processing rule can take up to 30 minutes to take effect, and alerts raised during that window may escape it, so the rule for RG-OPS begins acting up to 30 minutes after it is saved rather than instantly.",
+				"perChoice": {
+					"slot1:b": "A processing rule never reaches across subscriptions; it applies only to resources in its own subscription, so the rule in SUB1 leaves the cluster's alerts untouched and their notifications keep coming through.",
+					"slot1:c": "Creating an additional rule in the cluster's own subscription would be the way to suppress those notifications, but it does not change the fact that the rule created in SUB1 has no effect there, so the notifications keep coming through.",
+					"slot2:e": "The change is not instantaneous: a new or updated processing rule can take up to 30 minutes to take effect, and alerts fired in that window may escape it.",
+					"slot2:f": "Five minutes is not the documented propagation window for a processing rule; a new or updated rule can take up to 30 minutes to take effect.",
+					"slot2:g": "Twenty-four hours is far longer than the documented delay; a new or updated processing rule takes up to 30 minutes to take effect."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-processing-rules"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-overview"
+				}
+			],
+			"subtopics": [
+				"alert-processing-rules",
+				"notification-suppression",
+				"processing-rule-scope"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P5CW6BDH3PM5AQPTJQQZWP",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your company runs an Azure platform whose alerting is split across several action groups, one per team, and each group reaches the on-call engineer by text message. During a noisy release window the payments team must go quiet while the web, data, and security teams keep receiving their pages, and once the release finishes the payments team must start receiving pages again. Nobody wants to edit the alert rule or the group definition to achieve this, so the engineer replies from the phone instead. The group details are in the exhibit. Which reply text should be sent in each case?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Action group      Short name   Text message recipients\nAG-PAY-ONCALL     AG-PAY       +1 555 0100, +1 555 0101\nAG-WEB-ONCALL     AG-WEB       +1 555 0200\nAG-DATA-ONCALL    AG-DATA      +1 555 0300\nAG-SEC-ONCALL     AG-SEC       +1 555 0400"
+				},
+				"statement": "During the release the engineer silences the pages for the payments action group only by replying {{slotA}}, after the release the same engineer restores paging for that one group only by replying {{slotB}}, and to obtain the list of replies the service recognises the engineer sends {{slotC}}.",
+				"slots": [
+					{
+						"id": "slotA",
+						"options": [
+							{
+								"id": "a",
+								"text": "DISABLE AG-PAY"
+							},
+							{
+								"id": "b",
+								"text": "STOP AG-PAY"
+							},
+							{
+								"id": "c",
+								"text": "PAUSE AG-PAY"
+							},
+							{
+								"id": "d",
+								"text": "MUTE AG-PAY"
+							}
+						]
+					},
+					{
+						"id": "slotB",
+						"options": [
+							{
+								"id": "a",
+								"text": "ENABLE AG-PAY"
+							},
+							{
+								"id": "b",
+								"text": "RESUME AG-PAY"
+							},
+							{
+								"id": "c",
+								"text": "ACTIVATE AG-PAY"
+							},
+							{
+								"id": "d",
+								"text": "START"
+							}
+						]
+					},
+					{
+						"id": "slotC",
+						"options": [
+							{
+								"id": "a",
+								"text": "HELP"
+							},
+							{
+								"id": "b",
+								"text": "LIST"
+							},
+							{
+								"id": "c",
+								"text": "INFO"
+							},
+							{
+								"id": "d",
+								"text": "COMMANDS"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slotA": "a",
+				"slotB": "a",
+				"slotC": "a"
+			},
+			"explanation": {
+				"correct": "The engineer controls notifications from the phone because the action group accepts reply texts on the text message channel: DISABLE followed by the short name of one action group silences that group only, ENABLE followed by the same short name turns that group's notifications back on, and HELP returns the list of replies the service accepts. Because the requirement is to affect only the payments group (AG-PAY) and leave the web, data, and security groups untouched, the per-group commands carrying that group's short name are the right ones.",
+				"perChoice": {
+					"slotA:b": "STOP is the reply that silences notifications for every action group at once and it takes no group name, so sending it with a group name is not a valid way to target only the payments group.",
+					"slotA:c": "PAUSE is not one of the reply texts the service recognises; the accepted per-group command for silencing notifications is DISABLE.",
+					"slotA:d": "MUTE is not an accepted reply text; the recognised command that silences one action group is DISABLE.",
+					"slotB:b": "RESUME is not an accepted reply text; the reply that turns one action group's notifications back on is ENABLE.",
+					"slotB:c": "ACTIVATE is not an accepted reply text; the recognised command for re-enabling a single group is ENABLE.",
+					"slotB:d": "START resumes notifications for all action groups at once and carries no group name, so it does not target only the payments group.",
+					"slotC:b": "LIST is not an accepted reply text; the reply that returns the available commands is HELP.",
+					"slotC:c": "INFO is not an accepted reply text; the reply that returns the available commands is HELP.",
+					"slotC:d": "COMMANDS is not an accepted reply text; the reply that returns the available commands is HELP."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/action-groups"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-overview"
+				}
+			],
+			"subtopics": [
+				"sms-reply-commands",
+				"action-groups",
+				"alert-notification-control"
+			],
+			"reviewed": false
+		}
+	]
+}

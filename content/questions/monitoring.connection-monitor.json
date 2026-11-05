@@ -1,0 +1,1600 @@
+{
+	"skill": "monitoring.connection-monitor",
+	"questions": [
+		{
+			"id": "q_01M6P2ZAZBYQZZN3DP3WH9MBT5",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You are using the current connection monitor experience to watch reachability and latency for your production application tier, and one monitor is already carrying part of that traffic.\n\n| Item | Value |\n| --- | --- |\n| Connection monitor | cm-hub-prod |\n| Monitor region | West Europe |\n| Test group | tg-app-to-db |\n| Source candidate | vm-app-01 (West Europe) |\n| Source candidate | vm-app-02 (East US) |\n| Destination | vm-db-01 (West Europe), TCP port 1433 |\n\nThe requirement is that both application servers probe the database server continuously, with the database server acting as the destination for each check, so that the East US server also shows up in the collected results.\n\nWhich action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Connection monitor",
+							"cm-hub-prod"
+						],
+						[
+							"Monitor region",
+							"West Europe"
+						],
+						[
+							"Test group",
+							"tg-app-to-db"
+						],
+						[
+							"Source candidate",
+							"vm-app-01 (West Europe)"
+						],
+						[
+							"Source candidate",
+							"vm-app-02 (East US)"
+						],
+						[
+							"Destination",
+							"vm-db-01 (West Europe), TCP port 1433"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add vm-app-02 to the existing West Europe connection monitor as a source after installing the Network Watcher Agent extension on it"
+					},
+					{
+						"id": "b",
+						"text": "Provision a second connection monitor in the East US region and add vm-app-02 as its source"
+					},
+					{
+						"id": "c",
+						"text": "Move the connection monitor to the East US region and pick vm-app-01 as its source instead"
+					},
+					{
+						"id": "d",
+						"text": "Turn on a cross-region source setting for the test group so both source VMs are covered by one connection monitor"
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "A connection monitor is bound to a single region, and the Azure virtual machines and scale sets it can offer as sources are only those created in that same region — that is also why the Azure endpoints list only shows resources tied to the monitor's region. vm-app-02 is created in East US, so it is never offered as a source for a monitor that lives in West Europe, and no extension or test group setting can change that. Standing up a second connection monitor in the East US region lets vm-app-02 act as a source while vm-db-01 remains the destination for the checks, so both application servers end up reporting into the collected results.",
+				"perChoice": {
+					"a": "Installing the Network Watcher Agent extension makes a virtual machine observable, but it does not override the region rule that decides which virtual machines may be chosen as sources. Because vm-app-02 sits in East US while cm-hub-prod is in West Europe, it will not appear in the monitor's Azure endpoints list even after the extension is installed.",
+					"c": "Relocating the monitor simply moves the exclusion to the other server: vm-app-01 is created in West Europe, so after the move it would no longer be eligible as a source. The monitor's region has to line up with the region of the source virtual machines, which is why a monitor per region is needed rather than one relocated monitor.",
+					"d": "There is no cross-region source switch on a test group. Source eligibility is filtered by the region chosen when the monitor was created, so test group configuration alone cannot make two virtual machines in different regions serve as sources of a single monitor."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-create-using-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-overview"
+				}
+			],
+			"subtopics": [
+				"connection-monitor-sources",
+				"region-scope",
+				"test-groups"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P3887JCHCFYAYAT303JBQP",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have moved a hybrid connection monitor over to the current Connection monitor experience. The shared Log Analytics dashboard that the operations team uses every morning now renders its connectivity panels empty, even though the metric alert rule that came across still fires on schedule. You need the dashboard to show the failed-check percentage and the round-trip-time trend again. Which change should you make?\n\n| Item | Value |\n| --- | --- |\n| Connection monitor | cm-hybrid-prod (moved from Connection monitor (classic)) |\n| Data store | Log Analytics workspace law-hybrid (West Europe) |\n| Dashboard panel \"Failed checks over time\" | Metric ProbesFailedPercent - 0 rows returned in the last 24 hours |\n| Dashboard panel \"Round-trip time over time\" | Metric AverageRoundtripMs - 0 rows returned in the last 24 hours |\n| Metric alert rule ar-hybrid-latency | Came across automatically - fired 4 times in the last 24 hours |",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Connection monitor",
+							"cm-hybrid-prod (moved from Connection monitor (classic))"
+						],
+						[
+							"Data store",
+							"Log Analytics workspace law-hybrid (West Europe)"
+						],
+						[
+							"Dashboard panel \"Failed checks over time\"",
+							"Metric ProbesFailedPercent - 0 rows returned in the last 24 hours"
+						],
+						[
+							"Dashboard panel \"Round-trip time over time\"",
+							"Metric AverageRoundtripMs - 0 rows returned in the last 24 hours"
+						],
+						[
+							"Metric alert rule ar-hybrid-latency",
+							"Came across automatically - fired 4 times in the last 24 hours"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Replace ProbesFailedPercent with ChecksFailedPercent and AverageRoundtripMs with RoundTripTimeMs in the dashboard queries"
+					},
+					{
+						"id": "b",
+						"text": "Replace ProbesFailedPercent with AverageRoundtripMs and AverageRoundtripMs with ChecksFailedPercent in the dashboard queries"
+					},
+					{
+						"id": "c",
+						"text": "Replace ChecksFailedPercent with ProbesFailedPercent and RoundTripTimeMs with AverageRoundtripMs in the dashboard queries"
+					},
+					{
+						"id": "d",
+						"text": "Re-create the moved monitor in Connection monitor (classic) so the dashboard queries keep returning rows"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "After the move to the current experience, connectivity data is published through the ChecksFailedPercent and RoundTripTimeMs metrics, and the previous ProbesFailedPercent and AverageRoundtripMs values are remapped onto those metrics (ProbesFailedPercent to ChecksFailedPercent, AverageRoundtripMs to RoundTripTimeMs). Alerts are migrated automatically, which is why the carried-over alert rule still fires, while dashboards and integrations that query the old metric names have to be edited by hand. Rewriting the two dashboard queries to the current metric names restores the trends.",
+				"perChoice": {
+					"a": "Not applicable - this is the keyed answer.",
+					"b": "This pairs the wrong metrics together: the failed-check panel would query a latency metric and the latency panel a percentage metric, so the dashboard would still not show the intended values.",
+					"c": "This turns the mapping around and points the panels at the legacy metric names, which the moved monitor no longer publishes, so the panels would remain empty.",
+					"d": "Connection monitor (classic) is deprecated and no longer available, so nothing can be re-created in it; the fix is to update the dashboard queries to the metric names the current experience publishes."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-create-using-portal"
+				}
+			],
+			"subtopics": [
+				"metric-migration",
+				"connection-monitor-metrics"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P3ATHVMBJRBGDJ359NHFQB",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have attached the Network Watcher Agent VM extension to a virtual machine scale set so that the set can act as a monitored source in a connection monitor, but the members of the set are still running the previously imaged model, so no checks originate from that source. You need the set to start generating the probes toward its destination, and the upgrade mode of the scale set has to stay as it is. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Scale set",
+							"ss-edge-probe (West Europe)"
+						],
+						[
+							"Upgrade mode",
+							"Manual"
+						],
+						[
+							"Network Watcher Agent VM extension",
+							"Added to the scale set model after creation"
+						],
+						[
+							"Model deployed on the running members",
+							"Previous model - extension not applied yet"
+						],
+						[
+							"Connection monitor",
+							"cm-edge (West Europe)"
+						],
+						[
+							"Test group",
+							"tg-edge-origins - source: ss-edge-probe"
+						],
+						[
+							"Destination",
+							"vm-core-01 - TCP port 443"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Upgrade the scale set manually so the Network Watcher Agent extension is applied."
+					},
+					{
+						"id": "b",
+						"text": "Change the scale set's upgrade mode to Automatic so the Network Watcher Agent extension is applied without a manual upgrade."
+					},
+					{
+						"id": "c",
+						"text": "Remove the Network Watcher Agent extension from the scale set and keep the scale set only as a destination endpoint."
+					},
+					{
+						"id": "d",
+						"text": "List the scale set's instance IP addresses as external address endpoints so that the probes are sent to them from the hybrid source."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A virtual machine scale set that uses the Manual upgrade mode keeps running the previously imaged model until an upgrade is performed. Because the Network Watcher Agent extension was added to the model after creation, the running members do not carry it, the set cannot act as an observable source, and no probes are generated from it. The documented fix is to upgrade the scale set after the extension has been installed, which rolls out the new model and makes the extension effective. Scale sets configured for automatic upgrade need no extra step, and consenting to an auto upgrade at creation time would remove the manual task - but here the upgrade mode must remain as it is, so the scale set itself has to be upgraded.",
+				"perChoice": {
+					"b": "Automatic upgrade removes the extra step, but that change alters the scale set's upgrade strategy, which the requirement rules out. With the mode left as Manual, the extension that was added to the model only reaches the running members when the set is upgraded.",
+					"c": "Destinations never need a monitoring extension, so a scale set can legitimately be used as a destination. Here, though, the set has to be the source that sends the checks toward vm-core-01, and deleting the extension removes exactly the capability needed for that role, leaving the test group with no observable source.",
+					"d": "External address endpoints are destination entries added by name plus a URL, IP, or FQDN. Listing the scale set's instance IPs there turns them into targets of checks that originate somewhere else, so the set still does not generate probes; those IPs also change whenever the set is reimaged."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-create-using-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-overview"
+				}
+			],
+			"subtopics": [
+				"connection-monitor-sources",
+				"network-watcher-agent",
+				"scale-set-upgrade"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P3DT0K5S0M2HPNJQJCKBZ8",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You are watching the customer portal front end with a connection monitor, and one test group probes it from a virtual machine in the same region. The front end is served over TLS. The monitor's dashboard reports the check as passing, yet the portal has been answering with 503 Service Unavailable for the past hour and the on-call engineer was never notified. You need the check to report a failure whenever the front end answers with an error reply instead of a healthy one, while keeping the same source and destination endpoints and continuing to publish the round-trip-time metric. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Connection monitor",
+							"cm-portal"
+						],
+						[
+							"Monitor region",
+							"West Europe"
+						],
+						[
+							"Test group",
+							"tg-portal"
+						],
+						[
+							"Test configuration",
+							"portal-check"
+						],
+						[
+							"Protocol of the check today",
+							"TCP"
+						],
+						[
+							"Destination port",
+							"443"
+						],
+						[
+							"Source endpoint",
+							"vm-net-01 (West Europe)"
+						],
+						[
+							"Destination endpoint",
+							"portal.contoso.com"
+						],
+						[
+							"Reply returned by the front end during the last hour",
+							"503 Service Unavailable"
+						],
+						[
+							"Result reported by the check",
+							"Pass"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set the test configuration protocol to HTTP and keep the destination port at 443"
+					},
+					{
+						"id": "b",
+						"text": "Set the test configuration protocol to HTTP and set the destination port to 80"
+					},
+					{
+						"id": "c",
+						"text": "Set the test configuration protocol to TCP and keep the destination port at 443, and enable Listen on port"
+					},
+					{
+						"id": "d",
+						"text": "Set the test configuration protocol to ICMP and remove the destination port"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A check that must judge what the endpoint answers has to run with the HTTP protocol, because that is the protocol whose success criteria are the response status codes the target returns; TCP only proves that the port accepts a connection, which is why the check reported Pass while the portal was returning 503 Service Unavailable. Because this front end is served over TLS, the HTTP check has to keep running against port 443, and the same sources, destinations, success thresholds and round-trip-time metric collection all stay as they are.",
+				"perChoice": {
+					"b": "The protocol is the right one, but port 80 is not where this TLS front end listens, so the check would no longer target the endpoint that is returning the error reply. Moving the port to 80 either finds nothing listening or tests a different, plaintext service, and either way the failing reply from the TLS endpoint stays invisible to the check.",
+					"c": "TCP keeps the check at port-level reachability: it confirms that the destination port accepts a connection but never inspects what the service replies, so a 503 reply would still be recorded as a successful check. Listen on port is a TCP-only setting that opens the destination port for the traffic; it does not make the check evaluate the reply returned by the application.",
+					"d": "ICMP is the ping-style option: it measures reachability and latency for the packets themselves and never reads the reply of the service, so it cannot distinguish a healthy page from an error page. Removing the destination port also discards the endpoint information the check needs."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-create-using-portal"
+				}
+			],
+			"subtopics": [
+				"connection-monitor-protocols",
+				"test-configuration",
+				"http-endpoint-checks"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P3GZS7XC3ZXMBR60HCFRM7",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have created a Connection monitor in West Europe so that a server in your own datacenter can continuously probe an internal application endpoint over HTTPS. The destination is already configured in the test group, but the datacenter server never appears among the selectable sources, so no checks originate from that site. You need the datacenter server to become an eligible source so that the monitor collects results from that location. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Connection monitor",
+							"cm-hybrid-west"
+						],
+						[
+							"Monitor region",
+							"West Europe"
+						],
+						[
+							"Log Analytics workspace",
+							"law-ops (West Europe)"
+						],
+						[
+							"Test group destination",
+							"Internal application endpoint, HTTPS port 443"
+						],
+						[
+							"Source selection result",
+							"No datacenter server is listed"
+						],
+						[
+							"Datacenter server",
+							"Windows Server 2022, no agent from any cloud monitoring service installed"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Install the Log Analytics agent on the datacenter server, then reopen the source selection list."
+					},
+					{
+						"id": "b",
+						"text": "Install the Network Watcher Agent VM extension on the datacenter server, then reopen the source selection list."
+					},
+					{
+						"id": "c",
+						"text": "Install the Azure Monitor Agent on the datacenter server without enrolling it with the Azure Arc agent."
+					},
+					{
+						"id": "d",
+						"text": "Install the Azure Arc agent and the Azure Monitor Agent on the datacenter server, then reopen the source selection list."
+					}
+				]
+			},
+			"key": {
+				"optionId": "d"
+			},
+			"explanation": {
+				"correct": "A source has to be observable before the monitor can run checks from it. For a host in your own datacenter that means running the Azure Arc agent together with the Azure Monitor Agent. Once both are in place, the source picker lists Arc-enabled machines that already run the Azure Monitor Agent, so the server becomes selectable for the test group and its checks appear in the results.",
+				"perChoice": {
+					"a": "The Log Analytics agent is no longer accepted for on-premises sources. A datacenter server needs the Azure Arc agent plus the Azure Monitor Agent, so installing only the older agent leaves the host unlisted and no probes are generated.",
+					"b": "The Network Watcher Agent VM extension is for virtual machines and scale sets in the cloud; it is not installed on on-premises servers and does not make a datacenter host an observable source.",
+					"c": "The Azure Monitor Agent on its own is not enough for a datacenter host. On-premises sources also require the Azure Arc agent, so the machine would still not appear in the source selection list without it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-create-using-portal"
+				}
+			],
+			"subtopics": [
+				"connection-monitor-sources",
+				"hybrid-monitoring-agents"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P3N1VW7GDXKXDW4D9BQH67",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "A support work item asks whether a particular virtual machine can reach a hostname that resolves to an address in another virtual network. Nothing that runs continuously covers this pair today, and the team needs the outcome for the work item now rather than a standing record. You need the quickest way to get that answer from the machine itself. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Work item",
+							"INC-4417 - Can vm-web-03 reach svc-api.contoso.internal?"
+						],
+						[
+							"Source machine",
+							"vm-web-03 (Linux virtual machine, West Europe)"
+						],
+						[
+							"Target",
+							"svc-api.contoso.internal (resolves to 10.20.0.15)"
+						],
+						[
+							"Continuous monitoring in place",
+							"No connection monitor covers this source and target pair"
+						],
+						[
+							"What the team needs",
+							"A single answer for the work item today"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Run Connection troubleshoot from vm-web-03 against the target and use the returned result."
+					},
+					{
+						"id": "b",
+						"text": "Create a Connection monitor in West Europe with vm-web-03 as the source and the target as the destination, then read the first test result."
+					},
+					{
+						"id": "c",
+						"text": "Run IP flow verify on vm-web-03 against the target to see whether the traffic would be allowed or denied."
+					},
+					{
+						"id": "d",
+						"text": "Generate a Topology view for the virtual network that holds vm-web-03 and look for the path to the target."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Connection troubleshoot is the Network Watcher tool that tests a connection at a point in time. It can be run from a virtual machine, a virtual machine scale set, an application gateway or a Bastion host against a virtual machine, an FQDN, a URI or an IPv4 address, and it returns output similar to a connection monitor's. This request matches that exactly: vm-web-03 (a virtual machine) probing a hostname, with a single outcome needed right now and no standing monitoring required.",
+				"perChoice": {
+					"b": "Connection monitor is the continuous, end-to-end service: it needs a monitor resource with a test group, a Log Analytics workspace and an observable source (the Network Watcher Agent on the virtual machine), and it keeps running to trend latency and loss. Setting one up is not the quickest way to settle a single point-in-time question, and the work item does not need ongoing monitoring.",
+					"c": "IP flow verify is the one-shot filtering check. It reports whether a packet to or from an IP address would be allowed or denied and which security rule made that decision, but it does not open a connection to the target, so it cannot confirm that the hostname is actually reachable.",
+					"d": "Topology is for understanding network configuration: it visualizes resources and their relationships across subscriptions, resource groups and locations. A path drawn in the topology view is not proof that traffic currently flows between the two endpoints, and it reports no live reachability or per-hop latency."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/network-watcher-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-overview"
+				}
+			],
+			"subtopics": [
+				"network-watcher-tools",
+				"connection-troubleshoot",
+				"tool-selection"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P3SSBS6BRBQKZS31F4ZAF4",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a connection monitor in West Europe, and its test group checks a server in East US. The test configuration protocol is TCP, the destination port is 443, and 'Listen on port' is enabled. The firewall team has already allowed the source address, yet the destination port is never opened by the checks, so the monitor never confirms the new rule works. You need the check to open the destination port on every run. Which change should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Connection monitor",
+							"cm-edge-prod"
+						],
+						[
+							"Monitor region",
+							"West Europe"
+						],
+						[
+							"Test group",
+							"tg-we-to-eu"
+						],
+						[
+							"Source",
+							"vm-src-01 (West Europe)"
+						],
+						[
+							"Destination",
+							"vm-api-01 (East US)"
+						],
+						[
+							"Test configuration",
+							"tc-tcp-443"
+						],
+						[
+							"Protocol",
+							"TCP"
+						],
+						[
+							"Destination port",
+							"443"
+						],
+						[
+							"Listen on port",
+							"Enabled"
+						],
+						[
+							"Destination firewall rule",
+							"vm-src-01 address allowed since 09:00"
+						],
+						[
+							"Check outcome on every run",
+							"Destination port not opened"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Create a connection monitor whose region matches the destination's region and add the test group to it with a source from that region, so 'Listen on port' opens the destination port on every check."
+					},
+					{
+						"id": "b",
+						"text": "Keep the connection monitor in West Europe and change the test configuration's protocol to HTTP with the destination port set to 443, so 'Listen on port' opens the port over the application protocol."
+					},
+					{
+						"id": "c",
+						"text": "Keep the connection monitor in West Europe and add a virtual machine from the East US region as an additional source on a test group, so 'Listen on port' opens the port from a source inside the destination's region."
+					},
+					{
+						"id": "d",
+						"text": "Keep the connection monitor in West Europe, leave the TCP protocol and 'Listen on port' as they are, and rely on the existing metric alert rule to notify the team on every failed check."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "'Listen on port' is a TCP-only capability, and it cannot work when the source and destination machines sit in different regions. In this case the source is in West Europe while the destination is in East US, so the port is never opened even though the firewall now permits the source address. Building the test group in a connection monitor whose region matches the destination's region and selecting a source from that region puts both ends in one region, which is what the setting requires. The region of a connection monitor also decides which Azure virtual machines and scale sets can be selected as sources, so the source has to come from the destination's region for this test group to work.",
+				"perChoice": {
+					"b": "Port opening belongs to TCP test configurations only. With the protocol set to HTTP, 'Listen on port' is not offered, so the check would send application requests and evaluate response codes instead of opening the TCP port. That still validates the service path but does not meet the requirement to open the destination port.",
+					"c": "A connection monitor can only take Azure virtual machines and scale sets that were created in the monitor's own region as sources, so a machine from the East US region cannot be added as a source to a monitor based in West Europe. The monitor's region has to change instead of the source list.",
+					"d": "Leaving the protocol and the setting unchanged keeps the source and the destination in different regions, which is exactly the condition that stops 'Listen on port' from working. A metric alert rule only reports what the collected measurements show; it does not change which ports get opened or which regions the endpoints live in."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-create-using-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-overview"
+				}
+			],
+			"subtopics": [
+				"listen-on-port",
+				"connection-monitor-regions",
+				"tcp-test-configuration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P3XQ3C6Z5XNHAK1JPGS4ZB",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You built a hybrid connectivity monitor so that a server in your own datacenter continuously probes an internal application endpoint in Azure. The datacenter host is enrolled with Azure Arc and the Azure Monitor Agent is running on it, and the host is already listed as a source in the test group. The checks seem to start, but the Log Analytics workspace that the monitor is configured with returns no records for the past two days, and the dashboard shows that source's tests with an Indeterminate status. You need the measurements from that site to be stored in the workspace and to appear on the monitor dashboard.\n\nWhich action should you take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Connection monitor : cm-hybrid-app (West Europe)\nTest group          : tg-dc-to-app\nSource              : dc-probe-01 (Azure Arc enrolled, Azure Monitor Agent running)\nDestination         : app-internal.contoso.local\nTest configuration  : tc-icmp, interval 30 seconds\nLog Analytics workspace : law-hybrid-ops (West Europe)\nRegistered solutions in the workspace : Log Analytics (core)\nQuery for the monitor's test records : 0 rows returned in the last 48 hours\nDashboard status for the source's tests : Indeterminate"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Enable Network Performance Monitor in the Log Analytics workspace that this connection monitor is configured with"
+					},
+					{
+						"id": "b",
+						"text": "Register the datacenter host with the Log Analytics agent instead of the Azure Monitor Agent, and point the monitor at a workspace where it reports"
+					},
+					{
+						"id": "c",
+						"text": "Attach the Network Watcher Agent VM extension to the datacenter host so that the monitor collects results into the same workspace"
+					},
+					{
+						"id": "d",
+						"text": "Create a new connection monitor in the datacenter's own region that targets a separate Log Analytics workspace"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Measurements produced by a connection monitor are uploaded into the Log Analytics workspace configured for that monitor, and that upload only succeeds once Network Performance Monitor is registered in the target workspace. Here the workspace holds only the core Log Analytics solution, so the probes from the Arc-enabled source run but their results never land in the workspace — which is what the 0-row query and the Indeterminate dashboard status show, since Indeterminate means the Log Analytics workspace holds no data. Register the component from Network Watcher > Monitoring > Connection monitor > + Enable Non-Azure, choosing the subscription and the workspace law-hybrid-ops, then confirm the new entry appears under Classic > Legacy solutions. The agents on the source are already the ones required for an on-premises host (Azure Arc plus Azure Monitor Agent), so no agent change is needed, and moving to another monitor or workspace would leave the current workspace empty as well.",
+				"perChoice": {
+					"b": "On-premises sources require the Azure Arc agent followed by the Azure Monitor Agent; the Log Analytics agent is no longer accepted for on-premises sources, so re-registering the host with it would not create a valid source. Pointing the monitor at a different workspace also does not help, because that new workspace would be missing the same component.",
+					"c": "The Network Watcher Agent VM extension is what makes Azure virtual machines and scale sets observable as sources; an on-premises host cannot use it. The exhibit already shows the Arc agent and the Azure Monitor Agent present on the datacenter host, which is the required combination for that site, so the missing data is not an agent problem.",
+					"d": "Creating a new monitor in another region and a fresh workspace changes where the probes are defined but does not address why no records are uploaded; the newly targeted workspace would still need the same component registered before data could flow into it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-create-using-portal"
+				}
+			],
+			"subtopics": [
+				"network-watcher-connection-monitor",
+				"hybrid-source-monitoring"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P40QFARK56V049NK00GZFM",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You operate a connection monitor in West Europe whose test groups probe a database server over TCP. Every group keeps the built-in success threshold of 10 percent for the share of unsuccessful checks and 750 milliseconds for round-trip time. Over the last day the monitor collected the five checks shown below, and the operations team wants each of them matched to the status the monitor reports for it. Match each check to its status.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Check",
+						"Test group",
+						"Unsuccessful checks",
+						"Round-trip time",
+						"Workspace rows in last 24 hours",
+						"Test group state"
+					],
+					"rows": [
+						[
+							"C1",
+							"tg-app-to-db",
+							"0%",
+							"320 ms",
+							"214",
+							"Enabled"
+						],
+						[
+							"C2",
+							"tg-app-to-db",
+							"9%",
+							"310 ms",
+							"198",
+							"Enabled"
+						],
+						[
+							"C3",
+							"tg-app-to-db",
+							"14%",
+							"300 ms",
+							"175",
+							"Enabled"
+						],
+						[
+							"C4",
+							"tg-app-to-db",
+							"no values",
+							"no values",
+							"0",
+							"Enabled"
+						],
+						[
+							"C5",
+							"tg-batch-window",
+							"no values",
+							"no values",
+							"0",
+							"Disabled"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "pass",
+						"text": "Pass"
+					},
+					{
+						"id": "warning",
+						"text": "Warning"
+					},
+					{
+						"id": "fail",
+						"text": "Fail"
+					},
+					{
+						"id": "indeterminate",
+						"text": "Indeterminate"
+					},
+					{
+						"id": "notrunning",
+						"text": "Not Running"
+					}
+				],
+				"slots": [
+					{
+						"id": "c1",
+						"label": "Check C1"
+					},
+					{
+						"id": "c2",
+						"label": "Check C2"
+					},
+					{
+						"id": "c3",
+						"label": "Check C3"
+					},
+					{
+						"id": "c4",
+						"label": "Check C4"
+					},
+					{
+						"id": "c5",
+						"label": "Check C5"
+					}
+				]
+			},
+			"key": {
+				"c1": "pass",
+				"c2": "warning",
+				"c3": "fail",
+				"c4": "indeterminate",
+				"c5": "notrunning"
+			},
+			"explanation": {
+				"correct": "A check stays inside the configured thresholds, so C1 (0 percent unsuccessful checks, 320 ms) is reported as Pass. C2 sits above 80 percent of the 10 percent limit for unsuccessful checks (9 percent versus a warning band that starts at 8 percent) while its latency is far below the 750 ms limit, so it is reported as Warning rather than Pass. C3 exceeds the 10 percent limit outright, so it is reported as Fail. C4 comes from an enabled test group but its workspace holds no records at all, which is the condition for Indeterminate. C5 belongs to a test group that has been switched off, which is the condition for Not Running.",
+				"perChoice": {
+					"pass": "Check C1 — both measurements are well inside the thresholds (0 percent unsuccessful checks against a 10 percent limit, 320 ms against 750 ms), so the check is reported as Pass.",
+					"warning": "Check C2 — 9 percent unsuccessful checks is above the 80 percent mark of the 10 percent limit where the warning band begins, yet still under the limit itself, so the check is reported as Warning; its 310 ms round-trip time stays far below 750 ms.",
+					"fail": "Check C3 — 14 percent unsuccessful checks breaches the 10 percent success threshold, so the check is reported as Fail.",
+					"indeterminate": "Check C4 — the test group is enabled, yet the Log Analytics workspace holds no data for this check, which is the condition for an Indeterminate result.",
+					"notrunning": "Check C5 — the test group that owns this check is switched off, which is the condition for a Not Running result."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-create-using-portal"
+				}
+			],
+			"subtopics": [
+				"test-result-status",
+				"success-threshold"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P43Q80WW2WGK26DWKQR9NF",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are on call for an Azure estate that mixes virtual machines, scale sets, and an application gateway, and four requests are waiting in the queue. For each request, pick the Network Watcher capability that answers it; not every listed capability fits one of the four.\n\n| Request | What is being asked |\n| --- | --- |\n| A | A one-time look at the filtering rules applied to a scale set and to an application gateway, so the team can find the rule that is blocking traffic. |\n| B | A one-time answer for a single virtual machine: would traffic from a given source address to a given destination port be allowed or dropped? |\n| C | A standing series of end-to-end latency measurements between two endpoints, so the trend can be reviewed and an alert raised when the checks begin failing. |\n| D | How the estate's virtual networks, subnets, and other resources relate to one another across subscriptions and locations. |\n\nMatch each request to the capability you would use.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Request",
+						"What is being asked"
+					],
+					"rows": [
+						[
+							"A",
+							"A one-time look at the filtering rules applied to a scale set and to an application gateway, so the team can find the rule that is blocking traffic."
+						],
+						[
+							"B",
+							"A one-time answer for a single virtual machine: would traffic from a given source address to a given destination port be allowed or dropped?"
+						],
+						[
+							"C",
+							"A standing series of end-to-end latency measurements between two endpoints, so the trend can be reviewed and an alert raised when the checks begin failing."
+						],
+						[
+							"D",
+							"How the estate's virtual networks, subnets, and other resources relate to one another across subscriptions and locations."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "IP flow verify"
+					},
+					{
+						"id": "b",
+						"text": "NSG diagnostics"
+					},
+					{
+						"id": "c",
+						"text": "Connection monitor"
+					},
+					{
+						"id": "d",
+						"text": "Topology"
+					},
+					{
+						"id": "e",
+						"text": "Connection troubleshoot"
+					},
+					{
+						"id": "f",
+						"text": "Packet capture"
+					}
+				],
+				"slots": [
+					{
+						"id": "req-a",
+						"label": "Request A — scale set and application gateway rules"
+					},
+					{
+						"id": "req-b",
+						"label": "Request B — allowed or dropped for one virtual machine"
+					},
+					{
+						"id": "req-c",
+						"label": "Request C — ongoing latency series with alerting"
+					},
+					{
+						"id": "req-d",
+						"label": "Request D — relationships between resources"
+					}
+				]
+			},
+			"key": {
+				"req-a": "b",
+				"req-b": "a",
+				"req-c": "c",
+				"req-d": "d"
+			},
+			"explanation": {
+				"correct": "Request A is answered by NSG diagnostics, the one-shot filtering capability that covers scale sets and application gateways (as well as virtual machines), so it is the only listed option that can report the applicable filtering rules for those resources. Request B is answered by IP flow verify, the one-shot check scoped to a virtual machine that states whether traffic between a specific source address and a specific destination port would be allowed or dropped. Request C is answered by Connection monitor, which keeps probing on a schedule, aggregates latency and failed-check measurements into a standing series, and can raise metric alerts when a test result degrades. Request D is answered by Topology, which maps how resources relate to one another across subscriptions, resource groups, and locations; it describes configuration and relationships rather than measuring performance. Connection troubleshoot and Packet capture are not placed: the first gives a single point-in-time reachability result from one host, and the second records packets for later traffic analysis, so neither answers any of the four requests.",
+				"perChoice": {
+					"a": "Belongs in request B. It is the one-shot check scoped to a virtual machine that returns an allowed-or-dropped answer for traffic between a given source address and a given destination port.",
+					"b": "Belongs in request A. It produces a one-time look at the filtering rules applied to the target resources, and it is the option among the one-shot filtering checks that covers scale sets and application gateways.",
+					"c": "Belongs in request C. It keeps running checks on a schedule, aggregates latency and failed-check measurements into a standing series, and supports metric alerts on the test result.",
+					"d": "Belongs in request D. It maps the relationships between resources across subscriptions, resource groups, and locations, so it answers the relationship question rather than measuring performance.",
+					"e": "Fits no request here. It returns a single point-in-time reachability result from one host to a virtual machine, FQDN, URI, or IP address, which is not a filtering rule lookup, not a standing series, and not a relationship map.",
+					"f": "Fits no request here. It records packets for a period of time so the traffic itself can be analysed, which answers none of the four requests."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/network-watcher-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-overview"
+				}
+			],
+			"subtopics": [
+				"network-watcher-tools",
+				"connectivity-verification"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P4660TET5J2HBNBTXJMBYF",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have finished configuring a connection monitor in the Azure portal for an estate that spans Azure and an on-premises datacenter, and the operations team logged the effects that showed up in the collected data afterwards. You need to attribute each recorded effect to the single setup choice that produced it. Which setup choice belongs with each observation?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Observation",
+						"Effect recorded on the monitor"
+					],
+					"rows": [
+						[
+							"A",
+							"The group's checks run far more often than once per minute, but each stored metric point covers a whole minute, with the individual probes inside it folded together."
+						],
+						[
+							"B",
+							"Every run over TCP leaves the destination service accepting the incoming connection, so the check's own traffic succeeds even though the firewall team had opened nothing for it."
+						],
+						[
+							"C",
+							"The results contain no path details and no per-hop timing values, even though the group's protocol is one of the two that are able to collect them."
+						],
+						[
+							"D",
+							"The group ends up holding two configurations, and the extra one repeats the same sources and destinations as the first and carries a name generated from the first one's."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Test frequency set to 30 seconds"
+					},
+					{
+						"id": "i2",
+						"text": "Listen on port enabled on a TCP configuration"
+					},
+					{
+						"id": "i3",
+						"text": "Disable traceroute selected on an ICMP configuration"
+					},
+					{
+						"id": "i4",
+						"text": "Create TCP test configuration selected"
+					}
+				],
+				"slots": [
+					{
+						"id": "obsA",
+						"label": "Observation A"
+					},
+					{
+						"id": "obsB",
+						"label": "Observation B"
+					},
+					{
+						"id": "obsC",
+						"label": "Observation C"
+					},
+					{
+						"id": "obsD",
+						"label": "Observation D"
+					}
+				]
+			},
+			"key": {
+				"obsA": "i1",
+				"obsB": "i2",
+				"obsC": "i3",
+				"obsD": "i4"
+			},
+			"explanation": {
+				"correct": "Each recorded effect traces back to one specific setup choice. A: a 30-second test frequency makes the checks run more often than the one-minute minimum granularity of the metrics store, so the sub-minute probes are aggregated into a single point. B: Listen on port is a TCP-only option that opens the destination port on each run, which is why the destination service starts accepting the probe's own traffic. C: Disable traceroute applies to TCP and ICMP only and suppresses both topology and hop-by-hop round-trip discovery, so no path or per-hop timings appear. D: Create TCP test configuration, offered when HTTP is the protocol, clones the same sources and destinations into a second configuration whose name is derived from the first one.",
+				"perChoice": {
+					"i1": "Belongs with Observation A: the one-minute minimum granularity of the metrics store aggregates sub-minute probes, so a 30-second test frequency yields metric points that each cover a full minute.",
+					"i2": "Belongs with Observation B: Listen on port is available for TCP only, opens the destination port so the check's traffic is accepted, and cannot work across regions.",
+					"i3": "Belongs with Observation C: Disable traceroute applies to TCP and ICMP only and stops the collection of topology and hop-by-hop round-trip data, so the path and per-hop values are missing.",
+					"i4": "Belongs with Observation D: Create TCP test configuration is offered when HTTP is selected and clones the sources and destinations into a second configuration named <name of test configuration>_networkTestConfig."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-create-using-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-overview"
+				}
+			],
+			"subtopics": [
+				"connection-monitor-test-configuration",
+				"connection-monitor-portal-setup"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P49ZQEQ70SZ6CAFFY69G5V",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a connection monitor that probes your customer portal from two on-premises sites, and you are adding an alert rule so that the on-call engineers hear by email as soon as one of the checks stops passing. You are working through the Create Alerts pane of the monitor, where every control has to do exactly one job. Match each control to the job it is responsible for.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Connection monitor",
+							"cm-portal-prod"
+						],
+						[
+							"Monitor region",
+							"West Europe"
+						],
+						[
+							"Sources",
+							"Two on-premises servers enrolled with Azure Arc"
+						],
+						[
+							"Destination endpoint",
+							"https://portal.contoso.com"
+						],
+						[
+							"Test configuration protocol",
+							"HTTP"
+						],
+						[
+							"Notification target agreed with operations",
+							"Email to noc-oncall@contoso.com"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Create alert"
+					},
+					{
+						"id": "i2",
+						"text": "Condition name"
+					},
+					{
+						"id": "i3",
+						"text": "Action group name"
+					},
+					{
+						"id": "i4",
+						"text": "Enable rule upon creation"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "The extra fields for building a notification on the measured values become available for editing."
+					},
+					{
+						"id": "s2",
+						"label": "The measured value that the notification watches, so that it fires when a check stops passing."
+					},
+					{
+						"id": "s3",
+						"label": "The recipients of the notification, given either as an email address or as a set that already exists."
+					},
+					{
+						"id": "s4",
+						"label": "Whether the notification is active as soon as it has been saved."
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "The four controls on the Create Alerts pane each cover one part of the setup. The Create alert checkbox is the one that turns on the metric-alert fields so they can be edited at all. Condition name carries the measurement the rule watches: the alert is created on the Test Result(preview) metric, so it fires when a connection monitor test fails. Action group name takes the notification recipients: you can type an email address directly, in which case an action group named NPM Email ActionGroup is created for you, or you can pick an action group that already exists. Enable rule upon creation decides whether the rule is switched on as soon as it is created.",
+				"perChoice": {
+					"i1": "This control belongs with the slot about the extra fields becoming available: selecting it enables the metric-alert fields on the pane, and only then can the other settings be edited.",
+					"i2": "This control belongs with the slot about the measured value that the rule watches: the alert is built on the Test Result(preview) metric, so the rule fires when a connection monitor test fails.",
+					"i3": "This control belongs with the slot about the notification recipients: you can enter an email address, which creates an action group named NPM Email ActionGroup with that address in it, or select an action group that was created earlier.",
+					"i4": "This control belongs with the slot about whether the notification is active right after it is saved: the checkbox enables the alert rule immediately, and clearing it leaves the rule inactive."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-create-using-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-overview"
+				}
+			],
+			"subtopics": [
+				"connection-monitor-alerting",
+				"network-watcher"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P4GVM5VXCM714QFTMF81V3",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are building the check definition for a new connection monitor in West Europe that follows the path from an order-processing front end to an order-processing database. The operations team agreed on five requirements for the new setup, and each requirement is met by exactly one of the controls you can set. Match each requirement to the control that delivers it.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Connection monitor : cm-order-eu\nRegion            : West Europe\nSource            : vm-front-01 (Network Watcher Agent installed)\nDestination       : sql-order.contoso.internal on TCP 1433\nProtocol chosen   : TCP"
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Test Frequency"
+					},
+					{
+						"id": "i2",
+						"text": "Success Threshold"
+					},
+					{
+						"id": "i3",
+						"text": "Listen on port"
+					},
+					{
+						"id": "i4",
+						"text": "Disable traceroute"
+					},
+					{
+						"id": "i5",
+						"text": "Disable test group"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Checks must run at least once every 30 seconds"
+					},
+					{
+						"id": "s2",
+						"label": "A check must fail once the share of lost probes goes above 10 percent, and the round-trip time must stay under 750 ms"
+					},
+					{
+						"id": "s3",
+						"label": "Each run should make the destination accept the connection so that a firewall change can be validated"
+					},
+					{
+						"id": "s4",
+						"label": "Hop-by-hop timing data should not be collected"
+					},
+					{
+						"id": "s5",
+						"label": "The checks for one business unit have to be suspended for now, and their setup must be kept so it can be resumed later"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "The five requirements each line up with one control on the current Connection monitor experience: the 30-second cadence is set with Test Frequency (a 30-second value means at least one check per period); the failure share and latency limit are set with Success Threshold (its documented defaults are 10 percent failed checks and 750 ms round-trip time for TCP and ICMP); making the destination accept the connection on every run is Listen on port, a TCP-only control that opens the destination's port; suppressing the topology and hop-by-hop round-trip data is Disable traceroute, which applies to TCP and ICMP; and suspending the checks of one business unit while keeping its setup is Disable test group, the checkbox on the test groups pane that stops all monitoring in that group.",
+				"perChoice": {
+					"i1": "Belongs with the 30-second cadence requirement: Test Frequency is the control that sets how often the probes run, and 30 seconds is one of the offered values, meaning at least one check per period.",
+					"i2": "Belongs with the failure and latency limits: Success Threshold holds the share of unsuccessful checks and the round-trip time in milliseconds that decide whether a check passes, and its defaults are 10 percent failed checks and 750 ms.",
+					"i3": "Belongs with the firewall validation requirement: Listen on port is the TCP-only control that opens the destination's port during every run, which is how a new firewall allowance gets confirmed. The protocol chosen for this configuration is TCP, so the control applies.",
+					"i4": "Belongs with the requirement to avoid per-hop timings: Disable traceroute stops topology and hop-by-hop round-trip discovery for TCP and ICMP checks, so it is the control that matches this requirement.",
+					"i5": "Belongs with the requirement to suspend one business unit: Disable test group is the checkbox on the test groups pane that stops all monitoring for that group while the configuration stays in place for later."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-create-using-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-overview"
+				}
+			],
+			"subtopics": [
+				"connection-monitor-configuration",
+				"network-watcher-tools"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P4M38EMKBDZ1QWVRPNDW8X",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have been running a connection monitor in the portal for several weeks, and the operations team has logged five behaviours of that monitor that look like faults at first sight. You need to account for each behaviour with one underlying cause so that the team stops re-raising the same concerns every week. Match each observation in the table to the explanation that belongs with it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"ID",
+						"Observation"
+					],
+					"rows": [
+						[
+							"A",
+							"A virtual machine that was switched off two hours ago is still reported as Indeterminate for its source-destination pair instead of a failure, while the other sources in the same test group keep returning records."
+						],
+						[
+							"B",
+							"For two connected gateways, one of them outside the region where the monitored source sits, the monitor reports 'no route learned', yet the traffic between the endpoints flows normally."
+						],
+						[
+							"C",
+							"For one monitored pair, the per-hop path is listed, but the hops that sit inside Azure report no round-trip figures while the hops beyond Azure do."
+						],
+						[
+							"D",
+							"Immediately after the monitor was created in the portal, it did not appear on the dashboard for its region."
+						],
+						[
+							"E",
+							"The review pane of the new monitor shows no monthly cost estimate, even though the month-end invoice changed noticeably after the monitor went live."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Endpoint status is reevaluated only once every 24 hours, so a host that changed state keeps its previous status until the cycle ends."
+					},
+					{
+						"id": "i2",
+						"text": "This behaviour is a known display defect in the product and does not indicate a routing problem."
+					},
+					{
+						"id": "i3",
+						"text": "The per-hop view merges the traceroute results with an internal logical route, so hops inside Azure can come back without latency values."
+					},
+					{
+						"id": "i4",
+						"text": "A newly created monitor takes about five minutes to appear on the dashboard."
+					},
+					{
+						"id": "i5",
+						"text": "Ingestion into Log Analytics and Azure Monitor alert charges still apply even though the portal shows no estimate."
+					}
+				],
+				"slots": [
+					{
+						"id": "A",
+						"label": "Observation A"
+					},
+					{
+						"id": "B",
+						"label": "Observation B"
+					},
+					{
+						"id": "C",
+						"label": "Observation C"
+					},
+					{
+						"id": "D",
+						"label": "Observation D"
+					},
+					{
+						"id": "E",
+						"label": "Observation E"
+					}
+				]
+			},
+			"key": {
+				"A": "i1",
+				"B": "i2",
+				"C": "i3",
+				"D": "i4",
+				"E": "i5"
+			},
+			"explanation": {
+				"correct": "Each observation pairs with the explanation that states its actual cause. Observation A matches the explanation about endpoint status being reevaluated only every 24 hours, so a switched-off or deallocated host keeps its previous status until the cycle ends. Observation B matches the explanation that this is a known display defect which does not reflect a routing problem; it appears when two connected gateways are involved and one of them sits outside the source's region, and connectivity is unaffected. Observation C matches the explanation that the per-hop view merges traceroute data with an internal logical route, so Azure-side hops often come back without latency values. Observation D matches the explanation that a newly created monitor takes about five minutes to appear on the dashboard. Observation E matches the explanation that the portal shows no cost estimate for a connection monitor while Log Analytics ingestion and Azure Monitor alert charges still apply.",
+				"perChoice": {
+					"i1": "Belongs with Observation A. Endpoint status is reevaluated only every 24 hours, so a virtual machine that is switched off or deallocated mid-cycle keeps its previous status (Indeterminate) until the cycle ends, even though the other sources in the group keep producing records.",
+					"i2": "Belongs with Observation B. When two connected gateways are involved and one of them lies outside the source's region, the topology output reports 'no route learned'; this is a documented display defect and the connectivity between the endpoints is unaffected.",
+					"i3": "Belongs with Observation C. The per-hop view combines traceroute data with an internal logical route, which is why the hops inside Azure frequently appear with no latency values while the remaining hops carry them.",
+					"i4": "Belongs with Observation D. A newly created monitor takes roughly five minutes to appear on the Connection Monitor dashboard, so looking for it immediately after creation can look like the deployment failed.",
+					"i5": "Belongs with Observation E. The review pane for a connection monitor shows no monthly cost figure, but the Log Analytics ingestion and the Azure Monitor alert charges are still billed once the monitor is running, which is why the invoice changes after the monitor goes live."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-create-using-portal"
+				}
+			],
+			"subtopics": [
+				"connection-monitor-status",
+				"network-watcher-topology",
+				"connection-monitor-portal"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P4QD48XFYEPW1HRVPAMR4V",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "A test group in your connection monitor checks the playback manifest of a video-on-demand service over TLS. The group holds two test configurations: tc-playback-http, whose protocol is HTTP and whose destination port is 443, and tc-playback-icmp, whose protocol is ICMP. The HTTP one is the configuration that confirms the service answers with a valid response, and the team also wants port-level results for the very same endpoints, without adding a further test configuration to the group by hand. Which action should you take?\n\n| Setting | Value |\n| --- | --- |\n| Connection monitor | cm-vod (West Europe) |\n| Test group | tg-playback |\n| Test configuration | tc-playback-http |\n| Protocol of that configuration | HTTP |\n| Destination port of that configuration | 443 |\n| Other test configuration in the group | tc-playback-icmp (protocol ICMP) |\n| Sources in the group | vm-edge-01, vm-edge-02 |\n| Destination in the group | cdn-playback.contoso.com |",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Connection monitor",
+							"cm-vod (West Europe)"
+						],
+						[
+							"Test group",
+							"tg-playback"
+						],
+						[
+							"Test configuration",
+							"tc-playback-http"
+						],
+						[
+							"Protocol of that configuration",
+							"HTTP"
+						],
+						[
+							"Destination port of that configuration",
+							"443"
+						],
+						[
+							"Other test configuration in the group",
+							"tc-playback-icmp (protocol ICMP)"
+						],
+						[
+							"Sources in the group",
+							"vm-edge-01, vm-edge-02"
+						],
+						[
+							"Destination in the group",
+							"cdn-playback.contoso.com"
+						]
+					]
+				},
+				"statement": "To meet the requirement, you should {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Open tc-playback-http and turn on the Create TCP test configuration setting"
+							},
+							{
+								"id": "b",
+								"text": "Open tc-playback-icmp and turn on the Create TCP test configuration setting"
+							},
+							{
+								"id": "c",
+								"text": "Open tc-playback-http and turn on the Listen on port setting"
+							},
+							{
+								"id": "d",
+								"text": "Open tc-playback-http and change the protocol from HTTP to TCP"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "The Create TCP test configuration setting is offered only on a test configuration whose protocol is HTTP. Turning it on for tc-playback-http clones the same sources and destinations into a second test configuration named tc-playback-http_networkTestConfig, so the port-level check is produced for the same endpoints without a further configuration being added to the group by hand, and the HTTP check that validates the service response stays exactly as it is.",
+				"perChoice": {
+					"action:b": "This setting appears only when HTTP is selected. tc-playback-icmp uses ICMP, so the control is not offered on it, and editing the ICMP configuration would not add the port-level results to the HTTP configuration.",
+					"action:c": "Listen on port applies to TCP (and ICMP) configurations only, and it opens the destination port for the checks rather than producing a port-level companion from the HTTP configuration, so it is not the control that fits an HTTP configuration.",
+					"action:d": "Changing the protocol to TCP replaces the HTTP check, so the validation of the service response is lost. The extra configuration that clones the sources and destinations is only produced from a configuration that is still set to HTTP."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-create-using-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-overview"
+				}
+			],
+			"subtopics": [
+				"test-configuration",
+				"protocol-selection"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P4W3J07285954HN42PTJ0C",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have been running a connection monitor for the path between your branch office router and an Azure application gateway, and the operations team reviews the collected results in the platform's Azure Monitor Metrics view every day. That view only exposes about a month of history, but the compliance team now needs twelve months of history for the same link and must be able to analyze and export it well after that month has passed. Which action should you take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Connection monitor                        : cm-branch-to-gw\nMonitor region                           : West Europe\nTest group                               : tg-branch-gw\nSource                                   : Branch office router (Azure Arc enabled, Azure Monitor Agent running)\nDestination                              : app-gw-prod-01 (HTTP, destination port 443)\nData store configured for the monitor     : law-netops (West Europe)\nPlatform metric view                     : Azure Monitor Metrics - 30 days of history available\nCompliance requirement                   : 12 months of history, analyzable and exportable from the platform"
+				},
+				"statement": "To satisfy the compliance requirement, the team should {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Query the Log Analytics workspace and extend its retention so the twelve months of history stay available"
+							},
+							{
+								"id": "b",
+								"text": "Configure the Azure Monitor Metrics view and extend its retention so the twelve months of history stay available"
+							},
+							{
+								"id": "c",
+								"text": "Set the test frequency to 30 seconds with one-minute granularity so the twelve months of history stay available"
+							},
+							{
+								"id": "d",
+								"text": "Create an alert rule on the Test Result metric and enable the rule upon creation so the twelve months of history stay available"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "The measurements produced by a connection monitor are delivered to the Log Analytics workspace that is configured for that monitor, and that store keeps the records for as long as its retention is set, which is where long-retention analysis, correlation and export belong. Azure Monitor Metrics is the right place for metric alerting, but its metric window is only 30 days by default, so it cannot be stretched to twelve months. Changing the test frequency or the aggregation granularity changes how many samples are produced, not how long they are kept, and an alert rule evaluates each check and notifies an action group instead of storing the measurement history. Because the compliance team needs twelve months of history that can still be analyzed and exported, the retention of the Log Analytics workspace holding the monitor's records is the setting that has to change.",
+				"perChoice": {
+					"action:b": "Azure Monitor Metrics holds the metric series for a 30-day window by default, so configuring that view cannot produce the twelve months of history the compliance team asks for; the long-lived copy of the same measurements lives in the Log Analytics workspace.",
+					"action:c": "The test frequency and the granularity decide how often the checks run and how the samples are aggregated (the one-minute granularity actually folds sub-minute probes together), not how long the stored data is kept, so the history would still end at the configured retention of the data store.",
+					"action:d": "An alert rule built on the Test Result metric evaluates every check and notifies the action group, but it does not retain the measurement records, so the team would still have no twelve months of data to analyze or export."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-create-using-portal"
+				}
+			],
+			"subtopics": [
+				"connection-monitor-data-retention",
+				"log-analytics-records",
+				"azure-monitor-metrics"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P5973H1VYGXBN2R5WC0DFX",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have designed a connection monitor for the West Europe region whose test group should use every one of the 240 virtual machines in a large compute pool as a probe origin. You need each machine in the pool to contribute measurements so that the operations team has one combined view of the path to the shared database. Which action should you take?\n\n| Item | Value |\n| --- | --- |\n| Planned probe origins for the design | 240 virtual machines |\n| Other test groups planned in the same connection monitor | 4 |\n| Target region for the design | West Europe |",
+				"statement": "The action you should take is to {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Create extra connection monitors and place the machines across them"
+							},
+							{
+								"id": "b",
+								"text": "Keep one connection monitor and add extra test groups to hold the machines"
+							},
+							{
+								"id": "c",
+								"text": "Keep one connection monitor and move some machines into its destination list"
+							},
+							{
+								"id": "d",
+								"text": "Keep one connection monitor and reduce the number of test groups it contains"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "The documented limit is 100 sources and destinations per connection monitor, and this design names 240 virtual machines as probe origins, so they cannot all be hosted on a single monitor. Putting the machines onto further connection monitors keeps every monitor within the cap, and because the monitors can all write to the same Log Analytics workspace, the operations team still gets one combined view of the path to the shared database.",
+				"perChoice": {
+					"action:b": "Adding test groups does not add capacity: the ceiling of 100 sources and destinations applies to the whole connection monitor rather than to each group, so 240 named probe origins still exceed it. Test groups carry a separate limit of 20 per monitor, which this design does not reach, so extra groups cannot solve the problem.",
+					"action:c": "The destination list holds the endpoints that are being probed, so shifting probe origins there changes what is being measured instead of raising capacity, and the 100 sources and destinations ceiling for the monitor still applies.",
+					"action:d": "Reducing the number of test groups does not change the ceiling of 100 sources and destinations for the monitor, so the 240 named machines still overrun it. The planned four test groups are well inside the separate limit of 20 per monitor, so that count was never the obstacle."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-create-using-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-overview"
+				}
+			],
+			"subtopics": [
+				"connection-monitor-limits",
+				"source-capacity"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P5F2W9R0VYCBH8F0Z8MPJR",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a connection monitor in West Europe that watches the path from two application servers to an internal order-processing API over TCP. The operations team has approved two changes to the measurement settings of the test configuration, and both changes must be applied without touching the sources, the destination, or the protocol.\n\nFirst, the incident process expects each check to run 45 seconds after the previous one, so that a broken link surfaces well inside the team's one-minute response window.\n\nSecond, the team wants engineers to see a warning state as soon as the measured round-trip time goes above 600 ms, so that they get a heads-up rather than a hard failure at that point.\n\n| Setting | Value |\n| --- | --- |\n| Connection monitor | cm-order-api (West Europe) |\n| Test group | tg-order-api |\n| Test configuration | tc-order-api |\n| Protocol | TCP |\n| Destination port | 443 |\n| Sources | vm-order-a, vm-order-b |\n| Destination | api-order.internal.contoso.com |\n| Test frequency (current) | 1 minute |\n| Success threshold - checks failed (current) | 10% |\n| Success threshold - round trip time (current) | 500 ms |\n\nWhich two settings should you change?",
+				"statement": "The two changes are to set the test frequency to {{frequency}} and to set the round-trip-time success threshold to {{rtt}}.",
+				"slots": [
+					{
+						"id": "frequency",
+						"options": [
+							{
+								"id": "f1",
+								"text": "Custom"
+							},
+							{
+								"id": "f2",
+								"text": "30 seconds"
+							},
+							{
+								"id": "f3",
+								"text": "1 minute"
+							},
+							{
+								"id": "f4",
+								"text": "5 minutes"
+							}
+						]
+					},
+					{
+						"id": "rtt",
+						"options": [
+							{
+								"id": "r1",
+								"text": "450 ms"
+							},
+							{
+								"id": "r2",
+								"text": "600 ms"
+							},
+							{
+								"id": "r3",
+								"text": "750 ms"
+							},
+							{
+								"id": "r4",
+								"text": "900 ms"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"frequency": "f1",
+				"rtt": "r3"
+			},
+			"explanation": {
+				"correct": "The test frequency is taken either from the fixed choices 30 seconds, 1 minute, 5 minutes, 15 minutes and 30 minutes, or from a user-entered value that may run from 30 seconds up to 30 minutes. A 45-second spacing is not one of the fixed choices, so it can only be held by a user-entered value; the fixed 30-second, 1-minute and 5-minute choices all produce the wrong spacing. For the round-trip-time limit, a test reports a warning once it passes 80% of the configured limit and reports a failure once it breaches that limit, so a 750 ms limit makes the warning appear from just above 600 ms while only readings above 750 ms count as failures. A 450 ms or a 600 ms limit would already be failing at or below the 600 ms point, and a 900 ms limit would not warn until past 720 ms.",
+				"perChoice": {
+					"frequency:f2": "This is one of the fixed values, so the checks would repeat every 30 seconds instead of the 45-second spacing the incident process expects.",
+					"frequency:f3": "This is one of the fixed values and is the value already in place; it repeats every 60 seconds, so a failure can take up to a minute to appear.",
+					"frequency:f4": "This is one of the fixed values, and its 5-minute spacing is far longer than the response window the incident process works to.",
+					"rtt:r1": "With a 450 ms limit the warning begins past 360 ms and anything beyond 450 ms is already a failure, so the desired warning at the 600 ms point never appears.",
+					"rtt:r2": "With a 600 ms limit a reading above 600 ms is a failure rather than a warning, and the warning would start as early as 480 ms.",
+					"rtt:r4": "With a 900 ms limit the warning does not begin until past 720 ms, so the engineers would get no warning at the 600 ms point."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-create-using-portal"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-monitor-overview"
+				}
+			],
+			"subtopics": [
+				"test-frequency",
+				"success-threshold"
+			],
+			"reviewed": false
+		}
+	]
+}

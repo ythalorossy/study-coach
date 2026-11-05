@@ -1,0 +1,1196 @@
+{
+	"skill": "monitoring.log-queries",
+	"questions": [
+		{
+			"id": "q_01M6P2ZNAN8RQP2MNS3JM8JH75",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your team collects performance counters into a Log Analytics workspace and builds a dashboard that must show the average value of each counter for each computer. The workspace returns the records below for the last hour, and the query you use today reduces them to a single blended figure per machine (web-01 shows 27.15 and db-01 shows 47.75), which mixes incompatible counter types. Which query should you use so that each counter is averaged on its own for every computer?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "TimeGenerated          Computer  CounterName  CounterValue\n2026-11-05 09:10        web-01    Processor    12.5\n2026-11-05 09:10        web-01    Memory       41.2\n2026-11-05 09:15        web-01    Processor    15.1\n2026-11-05 09:15        web-01    Memory       39.8\n2026-11-05 09:10        db-01     Processor    33.0\n2026-11-05 09:10        db-01     Memory       62.5"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "PerformanceCounter | where TimeGenerated > ago(1h) | summarize avg(CounterValue) by Computer, CounterName"
+					},
+					{
+						"id": "b",
+						"text": "PerformanceCounter | where TimeGenerated > ago(1h) | summarize avg(CounterValue) by CounterName"
+					},
+					{
+						"id": "c",
+						"text": "PerformanceCounter | where TimeGenerated > ago(1h) | summarize avg(CounterValue) by Computer"
+					},
+					{
+						"id": "d",
+						"text": "PerformanceCounter | where TimeGenerated > ago(1h) | summarize count() by Computer, CounterName"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Grouping by two dimensions creates one group per unique combination of their values, so grouping by Computer and CounterName averages each counter separately on each machine. With the records shown, web-01 then reports 13.8 for Processor and 40.5 for Memory instead of the meaningless blended 27.15, and db-01 reports 33.0 for Processor and 62.5 for Memory.",
+				"perChoice": {
+					"b": "This query groups only by the counter type, so all computers are folded together for each counter (Processor would show 20.2 across web-01 and db-01) and the per-computer breakdown the dashboard requires is lost.",
+					"c": "This is the query already in use: it produces a single average per computer across every counter type, which mixes units that cannot meaningfully be averaged together.",
+					"d": "This query does produce one row per computer and counter, but it counts records instead of averaging their values, so the dashboard cannot display the average counter value."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/get-started-queries"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-query-overview"
+				}
+			],
+			"subtopics": [
+				"summarize-operator",
+				"group-by-dimensions",
+				"kql-aggregations"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P31N117D6F2A2A6CX9EAWB",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an Application Insights workload whose request telemetry is stored in the AppRequests table of a Log Analytics workspace. You need the 25 most recent request records for an incident report, but the query your team runs today returns 48,213 rows, takes 41 seconds to execute, and floods the results pane with records the browser cannot show. Which query should you run to return exactly the 25 newest request records?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Telemetry table: AppRequests\nQuery currently used:   AppRequests | sort by TimeGenerated desc\nRows returned by query: 48,213\nRows shown in results pane: 1,000 (Show limit)\nExecution time:         41 seconds\nTime range in portal:   Last 24 hours"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "AppRequests | top 25 by TimeGenerated desc"
+					},
+					{
+						"id": "b",
+						"text": "AppRequests | take 25"
+					},
+					{
+						"id": "c",
+						"text": "AppRequests | top 25 by DurationMs desc"
+					},
+					{
+						"id": "d",
+						"text": "AppRequests | sort by TimeGenerated asc | take 25"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "`top 25 by TimeGenerated desc` performs the ordering on the server and returns only the 25 rows that rank highest, so the query hands back precisely the 25 newest request records instead of sorting the whole 48,213-row result set. The records come back newest first, and the workload on the workspace drops because only the needed rows are materialized.",
+				"perChoice": {
+					"b": "`take 25` returns an arbitrary, unordered sample of up to 25 rows. It applies no ordering at all, so the exported records are not guaranteed to be the most recent ones and may be missing entirely from the export.",
+					"c": "`top 25 by DurationMs desc` ranks the records by request duration rather than by recency, so it returns the 25 slowest requests in the window. Sorting on the wrong column changes the meaning of the result even though the row count is right.",
+					"d": "`sort by TimeGenerated asc | take 25` orders the rows from oldest to newest and then keeps the first 25, which yields the 25 oldest requests in the window. It also has to sort every matching record before limiting them, so it repeats the extra work that made the original query slow."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/get-started-queries"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-tutorial"
+				}
+			],
+			"subtopics": [
+				"kql-operators",
+				"result-limit"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P337KKEQAMW9T2WDFVCVC4",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Log Analytics workspace that collects Windows Security events from your domain controllers. You need to return only the events with a severity of 10 or above, such as failed logons and account lockouts, but the filter you apply to that column today fails with a type error instead of returning the matching records. Which filter should you use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Table",
+						"Column",
+						"Data type",
+						"Sample values seen in the workspace"
+					],
+					"rows": [
+						[
+							"SecurityEvent",
+							"Level",
+							"String",
+							"\"4\", \"8\", \"10\", \"11\", \"13\""
+						],
+						[
+							"SecurityEvent",
+							"EventID",
+							"Int",
+							"4624, 4625, 4688, 4776"
+						],
+						[
+							"SecurityEvent",
+							"Activity",
+							"String",
+							"\"An account failed to log on\", \"A new logon session was created\""
+						],
+						[
+							"SecurityEvent",
+							"TimeGenerated",
+							"DateTime",
+							"2026-11-04T08:12:03Z"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "SecurityEvent | where toint(Level) >= 10"
+					},
+					{
+						"id": "b",
+						"text": "SecurityEvent | where Level >= 10"
+					},
+					{
+						"id": "c",
+						"text": "SecurityEvent | where tostring(Level) >= \"10\""
+					},
+					{
+						"id": "d",
+						"text": "SecurityEvent | where Level == \"10\""
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The Level column of SecurityEvent is stored as a String, so numerical operators cannot be applied to it until the value is converted to a numeric type. Wrapping the column in toint performs that conversion, and the >= 10 comparison then returns exactly the events with a severity of 10 or above (10, 11, 13) while leaving the lower-severity events out.",
+				"perChoice": {
+					"b": "This applies a numerical comparison directly to the text column. Because the values are stored as text, the comparison cannot be evaluated and the query fails with a type error instead of returning rows; the value has to be cast to a numeric type first.",
+					"c": "Converting the column to text and comparing it against another text value compares characters rather than numbers, so the ordering no longer reflects severity (for example \"8\" sorts after \"10\"), and the threshold does not select the intended events.",
+					"d": "This matches only the records whose stored text value is exactly 10, so events carrying the other high-severity values (11 and 13) are dropped even though they satisfy the requirement of 10 or above."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/get-started-queries"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-query-overview"
+				}
+			],
+			"subtopics": [
+				"kql-filtering",
+				"type-casting",
+				"security-event-queries"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P34QATBJ3SBTDQFQPVN18G",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your application writes its request telemetry to the AppRequests table of a Log Analytics workspace, and a dashboard tile for the on-call team has to plot the number of failed requests over time as a line chart with a single point per hour. The query you use today returns a grid with one separate row for every individual request, and when you switch the results pane to the Chart view it reports that there is nothing suitable to plot. Which query should you run?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Time range picker: Last 24 hours\n\nQuery in the editor:\nAppRequests\n| where ResultCode >= 400\n| project TimeGenerated, ResultCode\n\nChart view: nothing suitable to plot\n\nFirst rows of the grid:\n2026-11-05 08:03:11.412   503\n2026-11-05 08:17:44.981   404\n2026-11-05 09:02:09.135   500\n2026-11-05 09:41:55.700   500\n2026-11-05 10:06:22.318   503"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "AppRequests | where ResultCode >= 400 | summarize count() by bin(TimeGenerated, 1h)"
+					},
+					{
+						"id": "b",
+						"text": "AppRequests | where ResultCode >= 400 | summarize count() by TimeGenerated"
+					},
+					{
+						"id": "c",
+						"text": "AppRequests | where ResultCode >= 400 | summarize count()"
+					},
+					{
+						"id": "d",
+						"text": "AppRequests | where ResultCode >= 400 | sort by TimeGenerated desc"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "TimeGenerated holds a distinct timestamp for essentially every record, so grouping on the raw column produces one group per request rather than a usable series. Wrapping that column with bin(TimeGenerated, 1h) rounds each timestamp down to the hour inside the summarize clause, so the query returns one row per hour with a count() value that the Chart view can render as a line chart.",
+				"perChoice": {
+					"b": "Grouping on the raw TimeGenerated column creates a group for every distinct timestamp, so the result is still essentially one row per request and the Chart view still has no plottable series. Bucketing the time column is what makes the aggregation meaningful.",
+					"c": "The summarize operator without a by clause folds every matching record into a single row and a single total, so the output carries no time dimension at all and no line can be drawn from it.",
+					"d": "sort only reorders the rows it is given; it performs no aggregation, so the grid still holds one row per failed request and remains unusable as a chart series."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/get-started-queries"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-tutorial"
+				}
+			],
+			"subtopics": [
+				"kql-time-bucketing",
+				"summarize-operator",
+				"charting-log-queries"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P36RZ3NPP7KMZ644BM4F8B",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an Application Insights workload whose request telemetry is stored in the AppRequests table of a Log Analytics workspace. You need to produce a weekly report that lists each request's name together with the first 40 characters of its URL, and that carries only those two values instead of the many other fields that AppRequests records. Which query should you run?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Name",
+						"Url",
+						"DurationMs",
+						"ResultCode",
+						"ClientCity"
+					],
+					"rows": [
+						[
+							"GET /api/orders",
+							"https://shop.contoso.com/api/orders/88213/details?include=totals&currency=EUR&locale=en-GB",
+							"142",
+							"200",
+							"Paris"
+						],
+						[
+							"POST /api/checkout",
+							"https://shop.contoso.com/api/checkout/session/9f12ab34-5c67-4d89-b0e1-77aa2b3c4d5e",
+							"1180",
+							"500",
+							"Berlin"
+						],
+						[
+							"GET /api/catalog",
+							"https://shop.contoso.com/api/catalog/items?category=tools&page=3",
+							"76",
+							"200",
+							"Madrid"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "AppRequests | project Name, Url40 = substring(Url, 0, 40)"
+					},
+					{
+						"id": "b",
+						"text": "AppRequests | extend Url40 = substring(Url, 0, 40)"
+					},
+					{
+						"id": "c",
+						"text": "AppRequests | summarize count() by Name"
+					},
+					{
+						"id": "d",
+						"text": "AppRequests | project Name, Url"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "project keeps only the columns you list and can rename or compute new ones, so `AppRequests | project Name, Url40 = substring(Url, 0, 40)` returns exactly the two values the report needs and shortens the URL to its first 40 characters, leaving the remaining AppRequests fields out of the output.",
+				"perChoice": {
+					"a": "This option is correct: it uses project to emit only the request name and a computed, shortened URL value.",
+					"b": "extend retains every original column and adds the computed one, so the output would still carry all of the other AppRequests fields alongside the shortened URL. That does not meet the requirement to return only the two report values.",
+					"c": "summarize collapses the rows into counts per name and produces no URL values at all, so it cannot supply the shortened URL the report needs.",
+					"d": "project does limit the output to two columns, but it returns the complete URL string rather than the first 40 characters, so the truncated value the report calls for is missing."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/get-started-queries"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-tutorial"
+				}
+			],
+			"subtopics": [
+				"kql-project-vs-extend",
+				"column-projection"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P39KXKWRB02JJ03EFTMJYX",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Log Analytics workspace that holds Windows security events from your domain controllers, and a log search alert rule that must fire whenever an event is recorded by the audit source. The collectors write the source name with different capital letters depending on the host, as the records below show, and the rule you shipped compares the stored text literally, so it only fires for the machine that happens to use exactly the same spelling. You need a filter that matches the audit source no matter how its letters are capitalised, while leaving unrelated sources alone. Which filter should you use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"TimeGenerated",
+						"Computer",
+						"EventSourceName",
+						"EventID"
+					],
+					"rows": [
+						[
+							"2026-11-04 08:14:22",
+							"DC01",
+							"Microsoft-Windows-Security-Auditing",
+							"4672"
+						],
+						[
+							"2026-11-04 08:15:03",
+							"DC02",
+							"microsoft-windows-security-auditing",
+							"4624"
+						],
+						[
+							"2026-11-04 08:16:41",
+							"DC03",
+							"MICRO-WINDOWS-SECURITY-AUDITING",
+							"4688"
+						],
+						[
+							"2026-11-04 08:17:55",
+							"DC04",
+							"Microsoft-Windows-Sysmon/Operational",
+							"1"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "SecurityEvent | where EventSourceName == \"Microsoft-Windows-Security-Auditing\""
+					},
+					{
+						"id": "b",
+						"text": "SecurityEvent | where EventSourceName =~ \"Microsoft-Windows-Security-Auditing\""
+					},
+					{
+						"id": "c",
+						"text": "SecurityEvent | where EventSourceName != \"Microsoft-Windows-Security-Auditing\""
+					},
+					{
+						"id": "d",
+						"text": "SecurityEvent | where EventSourceName == \"Microsoft-Windows-Security-Auditing\" or EventSourceName == \"MICRO-WINDOWS-SECURITY-AUDITING\""
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "The `=~` operator checks equality without regard to letter case, so `SecurityEvent | where EventSourceName =~ \"Microsoft-Windows-Security-Auditing\"` returns the audit records written by all three collectors (Microsoft-Windows-Security-Auditing, microsoft-windows-security-auditing and MICRO-WINDOWS-SECURITY-AUDITING) and still excludes the Sysmon record from DC04. The `==` operator is the case-sensitive form of equality, so it only returns rows whose spelling is identical to the literal. Because a log query can be reused as the basis of a log search alert rule, this is the filter the rule should evaluate.",
+				"perChoice": {
+					"a": "`==` compares the stored text exactly, so it returns only the DC01 row and silently drops the audit records written by DC02 and DC03 with different capitalisation; it is the case-sensitive form of the equality operator.",
+					"c": "`!=` keeps the records whose source is not spelled exactly like the literal, so the rule would fire on the Sysmon row and on every unrelated source while excluding the correctly spelled audit record - the opposite of what is needed.",
+					"d": "Chaining two `==` tests still relies on the case-sensitive comparison, so it matches only two of the three spellings shown and misses the DC02 row; each new capitalisation a collector uses would also have to be added by hand."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/get-started-queries"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-query-overview"
+				}
+			],
+			"subtopics": [
+				"kql-filter-operators",
+				"case-insensitive-comparison",
+				"log-analytics-queries"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P3F8B7R2R2TF8H7D5716MN",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an Application Insights workload whose request telemetry is stored in the AppRequests table of a Log Analytics workspace. You need a report of the slow requests, meaning those that took more than one second, and the report must carry only the request name and its URL. The query your analyst submitted is rejected by the portal with a semantic error, so you rewrite it yourself. Which query should you run?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Schema listed in the Tables pane\n-------------------------------\nTable: AppRequests\n  Columns: TimeGenerated, Name, Url, DurationMs, ClientCity\n\nQuery submitted by the analyst\n-------------------------------\napprequests\n| where durationms > 1000\n| project name, url\n\nPortal response\n---------------\nError - the query could not be prepared, a semantic error was reported."
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "AppRequests | where DurationMs > 1000 | project Name, Url"
+					},
+					{
+						"id": "b",
+						"text": "apprequests | where DurationMs > 1000 | project Name, Url"
+					},
+					{
+						"id": "c",
+						"text": "AppRequests | where DurationMs > 1000 | project name, url"
+					},
+					{
+						"id": "d",
+						"text": "AppRequests | where durationms > 1000 | project Name, Url"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "KQL in Azure Monitor is case sensitive: table and column names have to match the case shown in the schema pane, while the keywords (operators such as where and project) are written in lower case. The schema lists the table as AppRequests and the columns as Name and Url, so only this query resolves every name correctly: the table is spelled as in the schema, the filter uses the DurationMs column, the projection keeps Name and Url, and the operators are lower case. It also satisfies the two requirements: the filter keeps only requests over one second (1000 ms) and the projection carries just the name and URL.",
+				"perChoice": {
+					"b": "This query refers to the table as apprequests in lower case. Because table names are case sensitive, that name does not match the AppRequests table listed in the schema pane, so the query fails to prepare before it can return any rows; the table name must be written exactly as shown in the schema.",
+					"c": "This query spells the projected columns name and url in lower case. Column names are case sensitive and the schema lists them as Name and Url, so the projection cannot be resolved and the portal reports a semantic error.",
+					"d": "This query filters on durationms in lower case while the schema lists the column as DurationMs. The column name in the filter therefore does not match the stored column, and the query fails even though the table name and the projection are correct."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/get-started-queries"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-tutorial"
+				}
+			],
+			"subtopics": [
+				"kql-case-sensitivity",
+				"schema-pane",
+				"project-operator"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P3JVK36HPB42ET2WRKT153",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You are preparing an evidence pack for tonight's change window on a Windows server and must list every audit event recorded for the computer web-01 during the shift, with the most recent event appearing in the first row. The shift produced 18,400 matching records, so none of them may be dropped. The audit data lives in the SecurityEvent table, and the query your team runs today returns the matching records in a jumbled order, as the sample below shows. Which query should you run?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Current query:\n  SecurityEvent\n  | where Computer == \"web-01\"\n\nFirst rows in the results pane (in the order they came back):\n  Computer   EventID   TimeGenerated\n  web-01     4625      2026-11-04 19:58:07\n  web-01     4672      2026-11-04 21:14:52\n  web-01     4625      2026-11-04 22:03:11"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "SecurityEvent | where Computer == \"web-01\" | sort by TimeGenerated desc"
+					},
+					{
+						"id": "b",
+						"text": "SecurityEvent | where Computer == \"web-01\" | top 500 by TimeGenerated desc"
+					},
+					{
+						"id": "c",
+						"text": "SecurityEvent | where Computer == \"web-01\" | take 500"
+					},
+					{
+						"id": "d",
+						"text": "SecurityEvent | where Computer == \"web-01\""
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The `sort` operator arranges the rows by the column you name and, unlike `take` or `top`, it does not reduce how many rows come back, so all 18,400 matching events are returned and TimeGenerated descending puts the newest event first. Descending is the default direction for `sort`, but writing `desc` explicitly documents the intent for the reviewers of the evidence pack.",
+				"perChoice": {
+					"b": "`top 500 by TimeGenerated desc` does return the newest rows first, but it caps the result at 500 rows, so roughly 17,900 of the shift's events would never appear in the evidence pack and the requirement to keep every matching record is not met.",
+					"c": "`take 500` returns an arbitrary, unordered sample of up to 500 rows: it makes no promise about which events are chosen, whether the newest one is included, or that all 18,400 records survive.",
+					"d": "This returns every matching record, but with no clause applied to the row order the events appear in an arbitrary sequence, so the most recent event does not land in the first row the reviewers read from."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/get-started-queries"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-tutorial"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-query-overview"
+				}
+			],
+			"subtopics": [
+				"kql-operators",
+				"result-ordering"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P3PH0F60RYACR3V576DK3N",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a Log Analytics workspace that stores Application Insights request telemetry in the AppRequests table, and you are rebuilding the four queries that feed your support dashboard and the daily handover report. The workspace returns the records shown below. You need each of the four requirements to be met by one of the KQL fragments listed. Match each requirement to the fragment that satisfies it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"TimeGenerated",
+						"Name",
+						"Url",
+						"DurationMs",
+						"ResultCode",
+						"ClientCity"
+					],
+					"rows": [
+						[
+							"2026-11-05 08:14:22",
+							"GET /api/orders",
+							"/api/orders",
+							"820",
+							"200",
+							"Seattle"
+						],
+						[
+							"2026-11-05 08:19:47",
+							"POST /api/checkout",
+							"/api/checkout",
+							"2450",
+							"500",
+							"Austin"
+						],
+						[
+							"2026-11-05 08:41:03",
+							"GET /api/orders",
+							"/api/orders",
+							"310",
+							"200",
+							"Berlin"
+						],
+						[
+							"2026-11-04 17:02:11",
+							"POST /api/checkout",
+							"/api/checkout",
+							"1180",
+							"404",
+							"Seattle"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "AppRequests | where TimeGenerated > ago(30m)"
+					},
+					{
+						"id": "b",
+						"text": "AppRequests | search \"checkout\""
+					},
+					{
+						"id": "c",
+						"text": "AppRequests | summarize count() by ClientCity"
+					},
+					{
+						"id": "d",
+						"text": "AppRequests | extend Slow = DurationMs > 1000"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Limit the result to requests received in the last half hour, no matter which range the portal picker is set to."
+					},
+					{
+						"id": "s2",
+						"label": "Find every request record that mentions a given term wherever it appears in the record, because the value may sit in a field you did not plan to filter on."
+					},
+					{
+						"id": "s3",
+						"label": "Produce one line per place the requests came from, together with how many requests came from each place."
+					},
+					{
+						"id": "s4",
+						"label": "Add one extra field that identifies the requests which took longer than a second, without losing any of the fields the request records already carry."
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d"
+			},
+			"explanation": {
+				"correct": "The requirement for the last half hour is met by the fragment that puts a relative age filter directly after the table name: ago(30m) means 30 minutes ago, so only records generated in the last 30 minutes are returned and the portal range picker no longer matters (a range written into the query also switches the picker to \"Set in query\"). The requirement about finding a term wherever it appears in a record is met by the fragment that uses the search command on the request table, because search matches a value in any column of the table without naming the column, while starting from the table keeps the scope limited. The requirement for one line per place of origin with the number of requests from each is met by the fragment that groups the records with summarize count() by ClientCity, since summarize identifies groups of records and count() returns the number of records in each group. The requirement for one extra field without losing the existing fields is met by the fragment that uses extend, because extend keeps all original columns in the result set and adds the computed one, whereas project would drop the other columns.",
+				"perChoice": {
+					"a": "This belongs with the requirement about limiting the result to the last half hour: the where clause with ago(30m) applies a relative time filter inside the query, placed immediately after the table name as recommended, and it neither groups rows nor adds a column.",
+					"b": "This belongs with the requirement about finding a term wherever it appears in a record: the search command matches a value in any column of the request table without naming the column, and scoping it to the table keeps it from sweeping every table. It does not restrict the period, group the rows, or add a field, so it fits no other slot.",
+					"c": "This belongs with the requirement about one line per place of origin with the number of requests from each: summarize groups the records and count() returns the number of records in each group, with ClientCity as the grouping column. It neither limits the period nor adds a field.",
+					"d": "This belongs with the requirement about adding one extra field while keeping the existing fields: extend retains every original column and adds the computed one. The where clause here only filters on the duration value, so the fragment does not group rows and does not restrict the period."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/get-started-queries"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-query-overview"
+				}
+			],
+			"subtopics": [
+				"kql-operators",
+				"in-query-time-filter",
+				"grouping-and-columns"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P3WP17RX3PNF9G9QFDBABK",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Log Analytics workspace that stores Application Insights request telemetry in the AppRequests table, and a daily handover report must list every request that arrived during the reporting window together with the fields the request records already carry, such as ResultCode and ClientCity. The report must also carry one extra field named DurationSeconds that expresses each request's duration in seconds, but the query your analyst wrote returns a single column, and the result code and the city have disappeared from the output. Which query should you run?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "TimeGenerated          Name             Url                              ResultCode  DurationMs  ClientCity\n2026-11-05 08:12:03    GET Home/Index   https://shop.contoso.com/         200         143         Dallas\n2026-11-05 08:12:07    POST Checkout    https://shop.contoso.com/checkout 500        3180        Seattle\n2026-11-05 08:13:01    GET Products/List https://shop.contoso.com/products 200        97          Austin\n2026-11-05 08:13:44    GET Home/Index   https://shop.contoso.com/         404         12          Dallas"
+				},
+				"statement": "Run {{q1}} to produce the daily handover report.",
+				"slots": [
+					{
+						"id": "q1",
+						"options": [
+							{
+								"id": "a",
+								"text": "AppRequests | extend DurationSeconds = DurationMs / 1000"
+							},
+							{
+								"id": "b",
+								"text": "AppRequests | project DurationSeconds = DurationMs / 1000"
+							},
+							{
+								"id": "c",
+								"text": "AppRequests | summarize DurationSeconds = avg(DurationMs / 1000)"
+							},
+							{
+								"id": "d",
+								"text": "AppRequests | where DurationMs >= 1000 | extend DurationSeconds = DurationMs / 1000"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"q1": "a"
+			},
+			"explanation": {
+				"correct": "The extend operator keeps every original column of the record in the result set and adds the new one, so each AppRequests row still carries Name, Url, ResultCode, DurationMs and ClientCity while also exposing DurationSeconds computed from DurationMs. One row is still produced per request, so the report covers every request in the window and keeps the fields the handover needs.",
+				"perChoice": {
+					"q1:b": "project keeps only the columns you list, so this query returns the single DurationSeconds column and the original fields such as ResultCode and ClientCity are dropped from the output, which is exactly the symptom the team reported.",
+					"q1:c": "summarize aggregates records into groups and applies an aggregation to each group, so this query returns one overall average row instead of one row per request, and the original request fields are not carried over.",
+					"q1:d": "The added field is computed correctly and the original columns survive, but the where filter discards every request that finished in under one second, so the report no longer lists all of the requests that arrived during the window."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/get-started-queries"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-tutorial"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-query-overview"
+				}
+			],
+			"subtopics": [
+				"kql-extend",
+				"kql-project",
+				"log-analytics-queries"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P426Y3CGC3DFXR02C83RJP",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Log Analytics workspace that stores Application Insights request telemetry in the AppRequests table, and each weekday you publish a report listing the requests that arrived from Paris together with how long each request took. The Tables pane of the Logs blade shows the schema available in your workspace as follows. A colleague's statement for this report is rejected by the portal, which says it cannot find one of the columns even though that column is listed in the pane. You need a statement that runs successfully and returns the Paris requests with their duration and no other fields. Which statement should you write?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Table",
+						"Column"
+					],
+					"rows": [
+						[
+							"AppRequests",
+							"TimeGenerated"
+						],
+						[
+							"AppRequests",
+							"Name"
+						],
+						[
+							"AppRequests",
+							"Url"
+						],
+						[
+							"AppRequests",
+							"DurationMs"
+						],
+						[
+							"AppRequests",
+							"ResultCode"
+						],
+						[
+							"AppRequests",
+							"ClientCity"
+						],
+						[
+							"AppTraces",
+							"Message"
+						],
+						[
+							"AppTraces",
+							"SeverityLevel"
+						]
+					]
+				},
+				"statement": "The statement that runs successfully and returns the Paris requests with their duration and no other fields is {{q1}}.",
+				"slots": [
+					{
+						"id": "q1",
+						"options": [
+							{
+								"id": "a",
+								"text": "AppRequests | where clientcity == \"Paris\" | project Name, DurationMs"
+							},
+							{
+								"id": "b",
+								"text": "AppRequests | where ClientCity == \"Paris\" | project Name, DurationMs"
+							},
+							{
+								"id": "c",
+								"text": "AppRequests | where ClientCity == \"Paris\" | project name, durationMs"
+							},
+							{
+								"id": "d",
+								"text": "AppRequests | where ClientCity = \"Paris\" | project Name, DurationMs"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"q1": "b"
+			},
+			"explanation": {
+				"correct": "Azure Monitor Logs runs KQL case-sensitively, so every table and column name has to be typed exactly as the schema pane shows it, while language keywords such as where and project are written in lowercase. The pane lists the city column as ClientCity and the duration column as DurationMs, so the filter has to read `where ClientCity == \"Paris\"` and the two fields that must survive in the output have to be listed as `project Name, DurationMs`. The double-equals operator tests equality, and project keeps only the columns you name, which matches the requirement that the report carry the request name and its duration and nothing else.",
+				"perChoice": {
+					"q1:a": "The schema pane spells the city column with a capital C, so the lowercase spelling used here matches no column and the portal cannot find it.",
+					"q1:c": "The columns kept in the output must match the schema spelling as well; the pane lists Name and DurationMs, so the lowercase spellings used here are not resolved.",
+					"q1:d": "A single equals sign assigns a value instead of comparing two values; equality is tested with the double-equals operator, so this condition is not a valid filter."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/get-started-queries"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-tutorial"
+				}
+			],
+			"subtopics": [
+				"kql-case-sensitivity",
+				"log-query-authoring"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P46VZFFHMP2VE9KZSFK5V2",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Log Analytics workspace that receives Windows security events from your virtual machines through the rule that the Azure Monitor Agent uses, and query results now show each event twice. The affected machines also run the Log Analytics agent, so both place the same records into the workspace. You need the duplication to stop while the events stay in the workspace. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"TimeGenerated",
+						"Computer",
+						"EventID",
+						"Account"
+					],
+					"rows": [
+						[
+							"2026-11-05 09:14:22",
+							"web-01",
+							"4624",
+							"svc-backup"
+						],
+						[
+							"2026-11-05 09:14:22",
+							"web-01",
+							"4624",
+							"svc-backup"
+						],
+						[
+							"2026-11-05 09:14:23",
+							"web-01",
+							"4672",
+							"admin-ea"
+						],
+						[
+							"2026-11-05 09:14:23",
+							"web-01",
+							"4672",
+							"admin-ea"
+						]
+					]
+				},
+				"statement": "You should {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Update the data collection rule so that it no longer collects what the Log Analytics agent already sends."
+							},
+							{
+								"id": "b",
+								"text": "Lower the retention period of the Log Analytics workspace so that the duplicated records age out of the workspace sooner."
+							},
+							{
+								"id": "c",
+								"text": "Add a second data collection rule so that the Azure Monitor Agent writes its records to a different table in the same workspace."
+							},
+							{
+								"id": "d",
+								"text": "Configure summary rules in the Log Analytics workspace so that the repeated records are collapsed into a single row when they are queried."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "When a virtual machine has both the Log Analytics agent and the Azure Monitor Agent installed, the same telemetry can reach the workspace twice, and the results then contain duplicate rows exactly like the ones in the exhibit. The documented remedy for this case is to keep the Log Analytics agent in place but adjust the collection configuration so that the rule used by the Azure Monitor Agent stops gathering data that the Log Analytics agent already delivers. That is precisely what this option does, and the events remain in the workspace for queries and alerts.",
+				"perChoice": {
+					"action:b": "Retention only controls how long records stay in the workspace; it does not prevent a second copy from arriving, so the duplicated rows continue to appear in every query until the retention window expires.",
+					"action:c": "Adding another rule merely gives the incoming data another destination; the same telemetry is still written twice into the workspace, so a query still returns each event two times.",
+					"action:d": "Summary rules aggregate data at ingestion time into their own summary tables for efficient queries; they do not remove repeated rows from the original table, so the duplicated events would still be returned."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/get-started-queries"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-query-overview"
+				}
+			],
+			"subtopics": [
+				"duplicate-log-records",
+				"data-collection-rules",
+				"monitoring-agents"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P4DS8B0SEMMCNHTSKPKBK6",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Log Analytics workspace that collects Windows security events from your servers, and the security team must pull every record of the workspace's Windows security event table whose fields contain the phrase Cryptographic. The result must cover the last seven days, that window has to be written into the query text so that it travels with the query when the team reuses the query in a workbook, and the query has to finish in seconds rather than minutes. Which query should you use?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Workspace tables in scope\n  SecurityEvent   Windows security events collected from the servers\n  SysEvent        Windows system events such as service state changes\n  AppRequests     Application Insights request telemetry\n\nQuery in use today\n  search \"Cryptographic\"\n  | take 10\n\nOutcome of the current query\n  Elapsed time    2 min 41 sec\n  Tables scanned  312\n  Rows returned   10\n"
+				},
+				"statement": "You replace the query in use today with {{query}}.",
+				"slots": [
+					{
+						"id": "query",
+						"options": [
+							{
+								"id": "a",
+								"text": "search in (SecurityEvent) \"Cryptographic\" | where TimeGenerated > ago(7d)"
+							},
+							{
+								"id": "b",
+								"text": "search \"Cryptographic\" | where TimeGenerated > ago(7d)"
+							},
+							{
+								"id": "c",
+								"text": "search in (SecurityEvent) \"Cryptographic\" | take 10"
+							},
+							{
+								"id": "d",
+								"text": "search in (SecurityEvent) \"Cryptographic\" | where TimeGenerated > ago(7h)"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"query": "a"
+			},
+			"explanation": {
+				"correct": "The `in (SecurityEvent)` clause restricts the free-text search to the workspace's Windows security event table, so the engine no longer scans every table and the query finishes in seconds; `where TimeGenerated > ago(7d)` writes the seven-day window into the query text, and `d` is the suffix that means days, so the window travels with the query wherever it is reused, such as in a workbook.",
+				"perChoice": {
+					"query:b": "This statement omits the `in (SecurityEvent)` clause, so the phrase is looked for in every table in the workspace instead of the security event table alone. The search then has to process far more data, which is why the current query takes minutes, and the result can also contain matching records from tables other than the security event table.",
+					"query:c": "Scoping the search to the security event table is right, but `take 10` returns at most ten rows, so the output is still a sample rather than every matching record, and no window is written into the query text at all.",
+					"query:d": "The search is scoped to the correct table, but `ago(7h)` expresses seven hours, not seven days, so only the last seven hours of events are returned. The `d` suffix is the one that means days."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/get-started-queries"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-query-overview"
+				}
+			],
+			"subtopics": [
+				"search-query-scoping",
+				"query-time-filter"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P4FMD2K1CXWCH35R5SEHNG",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an Application Insights workload whose request telemetry is stored in the AppRequests table of a Log Analytics workspace. The workspace returns the records shown below. You need the hourly service report to include every request that either reported the status code 500 or took longer than 10,000 milliseconds, and the health probe requests must be left out of the report entirely. Which statement should you write?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Name",
+						"Url",
+						"DurationMs",
+						"ResultCode",
+						"ClientCity",
+						"TimeGenerated"
+					],
+					"rows": [
+						[
+							"GET /api/orders",
+							"/api/orders",
+							"820",
+							"200",
+							"Paris",
+							"2026-11-05 09:05"
+						],
+						[
+							"GET /api/orders",
+							"/api/orders",
+							"14500",
+							"200",
+							"Paris",
+							"2026-11-05 09:07"
+						],
+						[
+							"POST /api/checkout",
+							"/api/checkout",
+							"3200",
+							"500",
+							"Berlin",
+							"2026-11-05 09:11"
+						],
+						[
+							"GET /api/health",
+							"/api/health",
+							"12500",
+							"200",
+							"Paris",
+							"2026-11-05 09:12"
+						],
+						[
+							"POST /api/checkout",
+							"/api/checkout",
+							"11800",
+							"500",
+							"Paris",
+							"2026-11-05 09:15"
+						],
+						[
+							"GET /api/orders",
+							"/api/orders",
+							"210",
+							"503",
+							"Berlin",
+							"2026-11-05 09:18"
+						]
+					]
+				},
+				"statement": "The query that produces exactly the rows you need for the report is {{query}}.",
+				"slots": [
+					{
+						"id": "query",
+						"options": [
+							{
+								"id": "a",
+								"text": "AppRequests | where ResultCode == 500 and DurationMs > 10000 | where Url != \"/api/health\""
+							},
+							{
+								"id": "b",
+								"text": "AppRequests | where ResultCode == 500 or DurationMs > 10000 | where Url != \"/api/health\""
+							},
+							{
+								"id": "c",
+								"text": "AppRequests | where ResultCode == 500 or DurationMs > 10000 | where Url == \"/api/health\""
+							},
+							{
+								"id": "d",
+								"text": "AppRequests | where ResultCode != 500 and DurationMs > 10000 | where Url != \"/api/health\""
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"query": "b"
+			},
+			"explanation": {
+				"correct": "The query starts from the AppRequests table and chains two where operators, each of which filters the rows produced by the previous one. The first condition uses `or`, so a request qualifies on its own when it either reported the status code 500 or took longer than 10,000 milliseconds; with the sample records this keeps the slow successful orders request (14,500 ms), the failed checkout request (3,200 ms, code 500) and the slow failed checkout request (11,800 ms, code 500). The second condition uses the inequality operator on Url, which removes the health probe row (12,500 ms) that the first condition would otherwise have kept, while leaving every other URL untouched. The table and column names are written exactly as they appear in the workspace schema, because KQL in Azure Monitor is case sensitive.",
+				"perChoice": {
+					"query:a": "Using `and` between the two conditions means a request must have failed with status code 500 and be slower than 10,000 milliseconds at the same time. On the sample data that returns only the 11,800 ms failed checkout row, so the slow successful request and the fast failed request both disappear from the report.",
+					"query:c": "The equality comparison on Url keeps only the rows whose URL is exactly \"/api/health\", which is the opposite of what is needed: the report would contain a single health probe row and lose every order and checkout request.",
+					"query:d": "Negating the status code comparison discards every failed request, so the two checkout rows that reported 500 never reach the report, and the surviving rows are only slow ones that succeeded. The requirement needs the failed requests included, not removed."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/get-started-queries"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-query-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-tutorial"
+				}
+			],
+			"subtopics": [
+				"kql-where-filter",
+				"kql-boolean-operators"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P4KXH125J52GMHXRNH5CE2",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your operations team keeps an Application Insights workload in a Log Analytics workspace, and every morning the on-call analyst runs the same log search against that workspace, landing on a results grid like the one below. Two audiences need what comes back. A colleague who already has access to this workspace wants a single item they can open that brings the same search back up in the portal, so they avoid retyping it. The finance team, whose machines have no Excel installed, needs the records delivered as a file that carries every field of each row, including fields the grid is not currently showing. Which two entries of the Share menu cover these two needs?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Name",
+						"ResultCode",
+						"DurationMs"
+					],
+					"rows": [
+						[
+							"GET Home/Index",
+							"200",
+							"132"
+						],
+						[
+							"GET Home/Index",
+							"200",
+							"95"
+						],
+						[
+							"GET Account/Profile",
+							"404",
+							"61"
+						],
+						[
+							"GET Checkout/Cart",
+							"500",
+							"2210"
+						],
+						[
+							"GET Checkout/Cart",
+							"200",
+							"780"
+						]
+					]
+				},
+				"statement": "Give the colleague a single item that brings the same search back up in the portal: {{slotA}}, and give the finance team a file that carries every field of each row: {{slotB}}.",
+				"slots": [
+					{
+						"id": "slotA",
+						"options": [
+							{
+								"id": "a1",
+								"text": "Copy link to query"
+							},
+							{
+								"id": "a2",
+								"text": "Copy query text"
+							},
+							{
+								"id": "a3",
+								"text": "Export to Power BI (as an M query)"
+							},
+							{
+								"id": "a4",
+								"text": "Copy results"
+							}
+						]
+					},
+					{
+						"id": "slotB",
+						"options": [
+							{
+								"id": "b1",
+								"text": "Export to CSV - all columns"
+							},
+							{
+								"id": "b2",
+								"text": "Export to CSV - displayed columns"
+							},
+							{
+								"id": "b3",
+								"text": "Export to Power BI (new Dataset)"
+							},
+							{
+								"id": "b4",
+								"text": "Open in Excel"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slotA": "a1",
+				"slotB": "b1"
+			},
+			"explanation": {
+				"correct": "The Share menu of the Logs blade contains \"Copy link to query\", which creates a link to the current query that can be shared with people who already have access to the same workspace — exactly what the colleague in this scenario needs, since it brings the same search back up in the portal without retyping it. The same menu contains \"Export to CSV - all columns\", which downloads the data with every field of the records rather than only the fields currently shown in the results grid, so the finance team receives a file that carries the hidden fields too and does not depend on Excel being installed on their machines.",
+				"perChoice": {
+					"slotA:a2": "Copy query text only places the text of the query in the clipboard. It gives the colleague raw text to paste somewhere, not an item that reopens the same search in the portal.",
+					"slotA:a3": "Export to Power BI (as an M query) sends the results to Power BI as an M query for building reports and visuals. It does not produce an item that brings the search back up in the Logs blade.",
+					"slotA:a4": "Copy results puts the rows you select in the results pane on the clipboard for pasting into a spreadsheet or text editor. It covers only the selected rows and never reopens the search in the portal.",
+					"slotB:b2": "Export to CSV - displayed columns downloads only the fields currently shown in the results grid, so the fields the grid is not showing would be missing from the file finance receives.",
+					"slotB:b3": "Export to Power BI (new Dataset) pushes the results into Power BI as a dataset for dashboards and reports, so the finance team would need Power BI rather than a spreadsheet file.",
+					"slotB:b4": "Open in Excel exports the data and opens it in Excel on the machine running Log Analytics, and the option is only offered when Excel is installed there. It cannot serve a finance team whose machines have no Excel installed."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-tutorial"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/get-started-queries"
+				}
+			],
+			"subtopics": [
+				"sharing-query-results",
+				"exporting-results"
+			],
+			"reviewed": false
+		}
+	]
+}

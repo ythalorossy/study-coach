@@ -1,0 +1,523 @@
+{
+	"skill": "monitoring.backup-vault",
+	"questions": [
+		{
+			"id": "q_01M6P51RW2VVF393WPA5AN3H8H",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your team is creating a Backup vault in the Azure portal for an Azure Database for PostgreSQL - Flexible Server, and you are on the Instance details tab of the create wizard. Business continuity requires the recovery points to survive the loss of an entire Azure region, and the team must be able to rehearse a regional recovery during planned drills without waiting for an outage declaration. Which storage redundancy setting and companion toggle should you select?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Requirement or context",
+						"Value"
+					],
+					"rows": [
+						[
+							"Location of the primary copy of the protected database",
+							"Azure"
+						],
+						[
+							"Continuity requirement",
+							"Recovery points must remain available if an entire region is lost"
+						],
+						[
+							"Rehearsal requirement",
+							"Recover from the paired region during scheduled drills while the primary region is healthy"
+						],
+						[
+							"Cost acceptance",
+							"Billing at RA-GRS rates for the PostgreSQL backups held in the vault is acceptable"
+						],
+						[
+							"Timing of the choice",
+							"The redundancy value must be settled at creation time and cannot be changed once items are protected"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Geo-redundant (GRS) with Cross Region Restore enabled"
+					},
+					{
+						"id": "b",
+						"text": "Geo-redundant (GRS) only, keeping the paired region sealed until an outage is declared"
+					},
+					{
+						"id": "c",
+						"text": "Zone-redundant (ZRS) with Cross Region Restore enabled"
+					},
+					{
+						"id": "d",
+						"text": "Locally redundant (LRS) with Cross Region Restore enabled"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Geo-redundant (GRS) keeps a second copy of the recovery points in the Azure paired region, which is what protects against loss of an entire primary region; it is also the recommended setting when Azure holds the primary copy of the data. Turning on Cross Region Restore then makes those secondary-region recovery points available for restores and regional resiliency drills at any time, with no outage declared in the primary region. Enabling Cross Region Restore is billed automatically at RA-GRS rates for the PostgreSQL backups stored in the vault, which the scenario accepts.",
+				"perChoice": {
+					"b": "With Geo-redundant (GRS) alone the backups in the paired region become accessible only after Microsoft declares an outage in the primary region, so the scheduled drill during a healthy primary region cannot be performed. This setting satisfies the regional-outage requirement but not the rehearsal requirement.",
+					"c": "Zone-redundant (ZRS) keeps the redundant copies inside the primary region, spread across availability zones. It does not maintain a copy in the Azure paired region, so it satisfies neither the loss-of-region requirement nor restores from the paired region.",
+					"d": "Locally redundant (LRS) stores copies within the region only and is the recommended choice when Azure is not the primary backup storage endpoint, because it reduces Azure storage cost. It offers no protection against loss of the region and no paired-region recovery points to restore from."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-vault-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/create-manage-backup-vault"
+				}
+			],
+			"subtopics": [
+				"backup-vault-creation",
+				"storage-redundancy",
+				"cross-region-restore"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P537727NJZKC1MF97KYX1C",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an Azure Backup vault named prod-vault in the East US region that protects an Azure Database for PostgreSQL - Flexible Server. The vault is protected by a key that your organization keeps in the Azure Key Vault kv-backup-keys, and the only principal listed with a role on that Key Vault is the vault's own identity. Since the last key rotation, every scheduled and on-demand backup job fails with a key retrieval error. You need the backup jobs to succeed again while keeping the key under your own control in Azure Key Vault. Which access change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Backup vault",
+							"prod-vault (East US)"
+						],
+						[
+							"Protected workload",
+							"Azure Database for PostgreSQL - Flexible Server"
+						],
+						[
+							"Encryption setting",
+							"Customer Managed Keys"
+						],
+						[
+							"Key Vault / key",
+							"kv-backup-keys / prod-backup-key"
+						],
+						[
+							"Role assignment on kv-backup-keys",
+							"prod-vault (System Assigned Managed Identity) - Key Vault Crypto User"
+						],
+						[
+							"Latest backup job result",
+							"Failed - key retrieval denied"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Grant the vault's System Assigned Managed Identity access to the Key Vault so it can read the key."
+					},
+					{
+						"id": "b",
+						"text": "Grant the Backup Management Service access to the Key Vault so it can read the key."
+					},
+					{
+						"id": "c",
+						"text": "Grant the vault's User Assigned Managed Identity access to the Key Vault so it can read the key."
+					},
+					{
+						"id": "d",
+						"text": "Grant the Backup vault resource itself access to the Key Vault so it can read the key."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "When a Backup vault uses Customer Managed Keys, the key read against Azure Key Vault is performed by the Backup Management Service; the vault's managed identity is not the actor that reaches into the Key Vault. The exhibit shows that only the vault's System Assigned Managed Identity holds a role on kv-backup-keys and that jobs still fail with a key retrieval error, so the missing piece is access for the Backup Management Service. Granting that service access to the Key Vault lets the key be used for the vault's encryption while the key stays under your own control.",
+				"perChoice": {
+					"a": "The vault's System Assigned Managed Identity already holds Key Vault Crypto User on that Key Vault, and permissions given to a vault's managed identity are not what make Customer Managed Keys work, because the key read is carried out by the Backup Management Service.",
+					"c": "A User Assigned Managed Identity can be attached to a vault and outlives the vault, but it is not the principal that reads the encryption key, so granting it a role on kv-backup-keys leaves the failing jobs unchanged; the Backup Management Service needs the access instead.",
+					"d": "The vault resource itself is not the principal that performs the key read either. Only the Backup Management Service reads the key for Customer Managed Keys, so granting the vault resource access in the Key Vault does not resolve the failures."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-vault-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/create-manage-backup-vault"
+				}
+			],
+			"subtopics": [
+				"backup-vault-encryption",
+				"customer-managed-keys",
+				"key-vault-access"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P54GYSMM5JS7JZC4MHKKX3",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Backup vault named fin-vault in resource group rg-backup of the Contoso-prod subscription. It protects an Azure Disk named data-finance01, which sits in resource group rg-data. A backup policy runs from an automation account whose run-as identity is svc-backup-runner, and every attempt to back up the disk ends with an authorization error reporting that access to data-finance01 was denied. The access configuration that is in place today is listed below.\n\nYou need the disk backups to complete with the smallest possible permission footprint, and the automation account must not receive any write or delete permission on data-finance01. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Principal",
+						"Scope",
+						"Role"
+					],
+					"rows": [
+						[
+							"svc-backup-runner",
+							"fin-vault (Backup vault)",
+							"Backup Contributor"
+						],
+						[
+							"svc-backup-runner",
+							"rg-data (resource group containing data-finance01)",
+							"Key Vault Reader"
+						],
+						[
+							"svc-backup-runner",
+							"rg-backup (resource group containing fin-vault)",
+							"Reader"
+						],
+						[
+							"fin-vault System Assigned Managed Identity",
+							"kv-backup-keys (Key Vault)",
+							"Key Vault Crypto User"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Grant the fin-vault System Assigned Managed Identity the Reader role on the Azure Disk data-finance01."
+					},
+					{
+						"id": "b",
+						"text": "Grant the svc-backup-runner run-as identity the Reader role on the Azure Disk data-finance01."
+					},
+					{
+						"id": "c",
+						"text": "Grant the svc-backup-runner run-as identity the Owner role on the resource group rg-data."
+					},
+					{
+						"id": "d",
+						"text": "Grant the svc-backup-runner run-as identity the Key Vault Reader role on the Key Vault kv-backup-keys."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "Whoever creates or updates a backup instance must be able to read the source resources, and that grant has to sit with the user or service identity that performs the work rather than with the vault's managed identity. In this scenario svc-backup-runner is the run-as identity that creates and updates the backup instance for the disk, so handing it the Reader role on data-finance01 is the minimal change that removes the authorization error, and Reader grants no write or delete permission on the disk.",
+				"perChoice": {
+					"a": "The vault's managed identity is not the party that creates or updates the backup instance. The documentation is explicit that the read grant on the source belongs to the user or service identity doing that work, not to the vault's managed identity, so granting Reader to the fin-vault identity does not clear the denial.",
+					"c": "Owner on rg-data hands the automation account full control over every resource in the group, including write and delete rights on the protected disk, which breaks the requirement to keep the footprint minimal and read-only.",
+					"d": "Key Vault Reader on kv-backup-keys governs access to key material stored in that Key Vault. The protected disk lives in rg-data, so this assignment grants nothing on data-finance01 and the backup continues to be denied."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-vault-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/create-manage-backup-vault"
+				}
+			],
+			"subtopics": [
+				"backup-vault-rbac",
+				"source-resource-permissions"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P58G6FBDA4PC14AQZPWDB3",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You are creating two Azure Backup vaults in the Contoso-prod subscription — prod-vault in rg-blue and test-vault in rg-green. The platform team wants one managed identity to carry the access grants for prod-vault and for test-vault, so that the grants are administered in a single place. During the Q1 migration, prod-vault will be deleted and re-created, and the identity that carries the grants must still be usable afterwards. Which managed identity configuration should you use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Detail"
+					],
+					"rows": [
+						[
+							"Subscription",
+							"Contoso-prod"
+						],
+						[
+							"Backup vault prod-vault",
+							"Resource group rg-blue, region West Europe"
+						],
+						[
+							"Backup vault test-vault",
+							"Resource group rg-green, region West Europe"
+						],
+						[
+							"Access model",
+							"Azure RBAC, with the vault's managed identity carrying the grants"
+						],
+						[
+							"Planned Q1 migration step",
+							"prod-vault is deleted and re-created"
+						],
+						[
+							"Role assignments to maintain",
+							"A single set, for prod-vault and for test-vault"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "System Assigned Managed Identity, created with each vault and removed with that vault"
+					},
+					{
+						"id": "b",
+						"text": "User Assigned Managed Identity, created independently and referenced by both vaults"
+					},
+					{
+						"id": "c",
+						"text": "User Assigned Managed Identity, created once for each vault, so each of the vaults keeps a separate identity"
+					},
+					{
+						"id": "d",
+						"text": "System Assigned Managed Identity, created for one vault and reused by the other vault"
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "A User Assigned Managed Identity is a standalone object whose lifecycle is separate from the vaults it is attached to: it can be attached to one or several vaults, it can be shared across vaults, and it outlives the deletion or re-creation of a vault. That lets a single identity and a single set of role assignments serve prod-vault and test-vault, and it keeps working after prod-vault is deleted and re-created during the Q1 migration.",
+				"perChoice": {
+					"a": "The System Assigned Managed Identity is generated together with the vault and is bound to that vault's lifecycle. Each vault would therefore need its own identity and its own set of grants, and the identity of prod-vault would disappear with the vault during the migration, leaving the grants dangling.",
+					"c": "Creating one identity per vault produces two identity objects and two sets of grants, which does not meet the requirement of a single identity and a single set of role assignments covering prod-vault and test-vault. It also states that the identity is removed with its vault, which is not how a user-assigned identity behaves — such an identity survives deletion and re-creation of the vault it is attached to.",
+					"d": "A System Assigned Managed Identity belongs to the vault that generated it and is bound to that vault's lifecycle, so it cannot be attached to a second vault and cannot be reused by test-vault. It also disappears when prod-vault is deleted, so it would not satisfy the requirement that the grants remain usable after the vault is re-created."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-vault-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/create-manage-backup-vault"
+				}
+			],
+			"subtopics": [
+				"managed-identity",
+				"backup-vault-rbac",
+				"vault-creation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P5ABWS97KFBAH7Y70RJJVR",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You are retiring the Backup vault pg-vault in resource group rg-backup of the Contoso-prod subscription. Every attempt to remove it from the portal is refused, and the vault must be gone by the end of the change window. The state reported for the vault is shown below.\n\nYou need the vault removed together with everything it holds, and no backup data may survive in the subscription afterwards. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Vault element",
+						"Name",
+						"Reported state"
+					],
+					"rows": [
+						[
+							"Protected item (Backup instance)",
+							"pg-fin-01",
+							"Azure Database for PostgreSQL - Flexible Server"
+						],
+						[
+							"Protected item (Backup instance)",
+							"data-disk-01",
+							"Azure Disk"
+						],
+						[
+							"Backup policy",
+							"pg-daily-90d",
+							"Attached to 1 protected item"
+						],
+						[
+							"Backup policy",
+							"disk-daily-30d",
+							"Attached to 1 protected item"
+						],
+						[
+							"Recovery points",
+							"pg-fin-01, data-disk-01",
+							"Stored in the vault"
+						],
+						[
+							"Storage redundancy",
+							"Geo-redundant",
+							"Chosen at creation"
+						],
+						[
+							"Delete request (portal)",
+							"pg-vault",
+							"Refused - the vault still holds protected items and stored backup data"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Remove all backup policies from the vault but leave the backup instances in place, then delete the vault."
+					},
+					{
+						"id": "b",
+						"text": "Remove all backup instances and backup policies from the vault, then delete the vault."
+					},
+					{
+						"id": "c",
+						"text": "Remove all backup instances from the vault but leave the backup policies in place, then delete the vault."
+					},
+					{
+						"id": "d",
+						"text": "Change the vault's storage redundancy to Locally redundant and detach the vault's managed identity, then delete the vault."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "A vault is refused for deletion while it still holds protected data sources or backup data, and a Backup vault can hold both backup instances and backup policies, so both kinds of object have to go before the vault itself can be removed. This vault still carries the protected items pg-fin-01 and data-disk-01 together with the policies pg-daily-90d and disk-daily-30d, so the correct change is to remove every entry from the Backup Instances view and every remaining backup policy, then delete the vault. When hunting for leftovers, work through each Datasource type filter, because a single instance or policy hidden under one filter value keeps the vault undeletable. Remember that removal cannot be undone: the recovery points of the protected servers disappear permanently, which matches the requirement that no backup data survive the decommission.",
+				"perChoice": {
+					"a": "Removing only the backup policies leaves the backup instances and the protected data sources with their recovery points inside the vault. The delete request is still refused while any backup instance or backup data remains, so the operation fails.",
+					"c": "Removing only the backup instances leaves the backup policies in the vault. Both backup instances and backup policies must be gone before the vault can be deleted, so the portal keeps refusing the delete request.",
+					"d": "Neither part of this change releases anything: the redundancy level is in fact locked once items are protected, and detaching the vault's managed identity leaves the protected items and their stored recovery points untouched. The vault therefore stays undeletable."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/create-manage-backup-vault"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-vault-overview"
+				}
+			],
+			"subtopics": [
+				"backup-vault-deletion",
+				"backup-instances",
+				"backup-policies"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P5DCZF7HDEBHBA491EB0NM",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Backup vault named contoso-vault in resource group rg-backup of the Contoso-prod subscription, and it protects an Azure Database for PostgreSQL - Flexible Server. A separate company runs its own Microsoft Entra tenant, and after a ransomware incident locks the Contoso side out, that company must bring the PostgreSQL server's vaulted backup data into fabrikam-vault, which it owns and administers. The partner must be able to do this without holding any account in the Contoso-prod subscription, and the Contoso team must not expose the stored backup data to partner users.\n\nYou need the partner to be able to work with the PostgreSQL server's vaulted backup data through fabrikam-vault. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Source vault name",
+							"contoso-vault"
+						],
+						[
+							"Source subscription",
+							"Contoso-prod"
+						],
+						[
+							"Source resource group",
+							"rg-backup"
+						],
+						[
+							"Source vault region",
+							"East US"
+						],
+						[
+							"Protected workload",
+							"Azure Database for PostgreSQL - Flexible Server"
+						],
+						[
+							"Storage redundancy",
+							"Geo-redundant (GRS)"
+						],
+						[
+							"Cross Region Restore",
+							"Enabled"
+						],
+						[
+							"Encryption",
+							"Microsoft managed keys"
+						],
+						[
+							"Partner vault",
+							"fabrikam-vault (owned by the partner, East US)"
+						],
+						[
+							"Partner vault storage redundancy",
+							"Locally redundant (LRS)"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Configure Cross Tenant Restore (preview) on contoso-vault and create a mapping from contoso-vault to fabrikam-vault"
+					},
+					{
+						"id": "b",
+						"text": "Configure Cross Region Restore on contoso-vault so the partner can pull the PostgreSQL recovery points from the paired region to a new server"
+					},
+					{
+						"id": "c",
+						"text": "Create and configure a second Geo-redundant Backup vault named fabrikam-vault inside the Contoso-prod subscription, re-protect the PostgreSQL server with it, and add the partner's guest account as Owner on it"
+					},
+					{
+						"id": "d",
+						"text": "Configure a guest account for the partner in the Contoso-prod tenant with Owner on contoso-vault so their administrators can copy the recovery points into fabrikam-vault themselves"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Cross-tenant restore (preview) is the supported way to bring vaulted data from a source vault into a vault that lives in a different tenant: it recovers the vaulted backup data from the source tenant into the target vault by mapping the source Backup vault to that target vault. You configure it on the source vault (contoso-vault) and create the mapping to the partner's vault (fabrikam-vault), after which the protected items and their recovery points can be worked with from fabrikam-vault. The exhibit fits this capability: Azure Database for PostgreSQL - Flexible Server is one of the workloads the preview feature covers, and fabrikam-vault is owned by the partner in a separate tenant, so it can act as the target vault. Ordinary restores stay inside one tenant, so nothing else in the current configuration brings the data across.",
+				"perChoice": {
+					"b": "Cross Region Restore only replicates the PostgreSQL backups to the paired Azure region and opens the secondary copy so you can rehearse recovery there; it keeps the data within the same tenant, so it cannot make the protected data available through fabrikam-vault in the partner's tenant.",
+					"c": "A second vault created inside the Contoso-prod subscription remains in the same tenant as the source data, and a guest account on it is still an account in the Contoso-prod subscription. Only the cross-tenant capability brings vaulted data into a vault in another tenant.",
+					"d": "The vaulted backup data is kept in a Microsoft-managed subscription and tenant, so partner guests have no direct route to that storage even if they are given an Owner role on contoso-vault. Role assignments made inside the Contoso-prod tenant cannot be used to copy the data into fabrikam-vault themselves."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-vault-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/create-manage-backup-vault"
+				}
+			],
+			"subtopics": [
+				"cross-tenant-restore",
+				"vault-mapping",
+				"backup-data-isolation"
+			],
+			"reviewed": false
+		}
+	]
+}

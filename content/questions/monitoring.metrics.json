@@ -1,0 +1,1336 @@
+{
+	"skill": "monitoring.metrics",
+	"questions": [
+		{
+			"id": "q_01M6P30HN0RP36N6RREBRYX6PR",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your operations team has to explain a virtual machine's CPU behavior from 45 days ago. The readings for that day are still inside the retention period for the machine's platform metrics, and you need them on the chart. What should you do?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Metric",
+							"Percentage CPU (Microsoft.Compute/virtualMachines)"
+						],
+						[
+							"Metric implementation",
+							"Platform metric"
+						],
+						[
+							"Stored values retained for",
+							"93 days"
+						],
+						[
+							"Chart with the last 12 days selected",
+							"Full series drawn"
+						],
+						[
+							"Chart with the last 45 days selected",
+							"Series truncated; only part of the requested period drawn"
+						],
+						[
+							"Chart with the last 60 days selected",
+							"Series truncated; only part of the requested period drawn"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Shorten the chart time range so a single chart can return the older data, then use the pan controls to slide the range backward."
+					},
+					{
+						"id": "b",
+						"text": "Enable advanced platform metrics for the machine, then request the last 60 days in a single chart so that the whole period renders."
+					},
+					{
+						"id": "c",
+						"text": "Move the machine's metric data into an Azure Monitor workspace and run a PromQL query over a range of the last 60 days."
+					},
+					{
+						"id": "d",
+						"text": "Set the chart time granularity to a one-minute grain so that every point across the last 60 days appears in one chart."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A single chart can pull only a 30-day stretch of history in one request, while platform metric data itself is kept for 93 days. That gap is exactly what the exhibit shows: requesting 45 or 60 days returns only part of the series even though the older readings are still stored. To reach the day you need, shorten the chart's time range so it fits inside the span one chart can request, then move that range backward with the pan controls (each press shifts the range by half the chart span) until the older points are on screen.",
+				"perChoice": {
+					"b": "Advanced platform metrics is the paid implementation you opt into per resource for deeper data from supported providers. It is still charted in Metrics explorer, so the same limit on how much history a single chart can request still applies; opting in does not turn a 60-day request into a valid one.",
+					"c": "Metrics kept in an Azure Monitor workspace are raw Prometheus/OpenTelemetry time series queried with PromQL, and a PromQL query is capped at a 32-day span, so a 60-day query is not valid either. Moving data into a workspace also changes where the data lives rather than extending what a chart can retrieve for the existing platform metrics.",
+					"d": "Time granularity only decides how many values are folded into each plotted point — a one-minute grain yields more points per hour, not more history. The amount of time one chart can request is unaffected, so the truncation shown in the exhibit would remain."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/data-platform-metrics"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/analyze-metrics"
+				}
+			],
+			"subtopics": [
+				"chart-time-range",
+				"metrics-explorer",
+				"platform-metrics"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P33CFH3TPDEEQENKTW0MBW",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Metrics explorer chart for a virtual machine's Percentage CPU metric over the last 24 hours, and the daily report template that consumes this chart must receive exactly 48 plotted points. Analysts open the chart on monitors of different sizes, and today the number of points they get differs from one workstation to another. Which change should you make to the chart?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Chart setting",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Scope",
+							"vm-app-01 (Microsoft.Compute/virtualMachines)"
+						],
+						[
+							"Metric",
+							"Percentage CPU"
+						],
+						[
+							"Time range",
+							"Last 24 hours"
+						],
+						[
+							"Time granularity",
+							"Automatic"
+						],
+						[
+							"Aggregation",
+							"Average"
+						],
+						[
+							"Points plotted on a wide monitor",
+							"96"
+						],
+						[
+							"Points plotted on a narrow monitor",
+							"48"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Set Time granularity to 30 minutes"
+					},
+					{
+						"id": "b",
+						"text": "Set Time granularity to 15 minutes"
+					},
+					{
+						"id": "c",
+						"text": "Keep Time granularity at Automatic and reopen the chart on the standard monitor size"
+					},
+					{
+						"id": "d",
+						"text": "Set Time granularity to 60 minutes"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Values captured in each grain of the time range become one plotted point, so a 24-hour range at a 30-minute grain yields 48 points (two grains per hour across 24 hours). That is exactly the number the report template expects. Choosing a fixed grain also removes the variability that comes from the Automatic setting, whose chosen grain can change when the browser window is resized or the screen resolution changes, which is why colleagues currently see different point counts on the same chart.",
+				"perChoice": {
+					"b": "At a 15-minute grain each grain becomes one point, so a 24-hour range produces 96 points — double the number the report template expects, and each point would summarize half as many measurements.",
+					"c": "Automatic picks whichever grain it considers best for the selected range, and that choice can shift when the browser window is resized or the screen resolution changes. The point count therefore stays unpredictable across workstations, and reopening the chart on one screen size does not pin it to the required number.",
+					"d": "At a 60-minute grain each grain becomes one point, so a 24-hour range produces only 24 points — half of what the report template expects."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/analyze-metrics"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/data-platform-metrics"
+				}
+			],
+			"subtopics": [
+				"metric-granularity",
+				"metrics-explorer",
+				"point-aggregation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P38RTCC0VS3W36WKW766AQ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You are reviewing a storage account in Metrics explorer and charting the Available Disk Space metric, which reports a Drive dimension. The chart you have open covers only a much shorter window than the account's reporting history, and one of the volumes does not appear in the list of values you can pick for the dimension, so you cannot restrict the chart to it. You need the chart to show only that one volume. What should you do?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Metric                                    : Available Disk Space\nMetric namespace                          : Microsoft.Storage/storageAccounts\nDimension (property)                      : Drive\nChart time range                          : Last 6 hours\nVolumes that reported during the last 24h  : C:, D:, E:\nValues listed for the Drive dimension\n  in the current chart result              : C:, E:"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Extend the chart's time range so the drive appears in the result and is included in the value list"
+					},
+					{
+						"id": "b",
+						"text": "Reduce the chart's time range so the result holds only the drives that are needed and the value list shrinks"
+					},
+					{
+						"id": "c",
+						"text": "Split the chart by the drive dimension so each drive appears as a separate series in the legend"
+					},
+					{
+						"id": "d",
+						"text": "Clear the metric from the chart and add it again so the list of values is rebuilt"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The list of values offered for a dimension is built from the query result for the window currently selected on the chart, so a volume that produced no measurements inside that window is not offered at all. The exhibit shows the third volume reporting during the last 24 hours while the chart itself covers only the last 6 hours, so widening the chart's window pulls those measurements into the result, the volume becomes selectable, and the chart can then be restricted to it.",
+				"perChoice": {
+					"b": "Shortening the window shrinks the result further. The volume that reported earlier but not inside the current six-hour window produces no measurements in an even shorter window either, so it stays out of the value list and cannot be selected.",
+					"c": "Splitting draws the dimension values that are present in the result as separate series; it does not restrict the chart to a single volume, and a volume missing from the current window would not be drawn at all.",
+					"d": "Removing and re-adding the metric re-runs the same query over the same six-hour window, so the rebuilt value list contains the same two volumes. What has to change is the window covered by the chart, not the metric on it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/analyze-metrics"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/data-platform-metrics"
+				}
+			],
+			"subtopics": [
+				"metric-dimensions",
+				"time-range",
+				"filtering"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P3DE3KXYVHM6VWMKECVKRN",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Linux virtual machine named vm-app-01. Its resource-level metrics, such as Percentage CPU and Network In Total, are already published to Azure Monitor, but you also need the processor time, memory utilization, and disk queue length measured from inside the guest operating system. These guest counters must be captured for the first time and kept in Azure Monitor Metrics for at least 90 days. Which approach should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Signal",
+						"Examples",
+						"State on vm-app-01"
+					],
+					"rows": [
+						[
+							"Resource-level metrics",
+							"Percentage CPU, Network In Total",
+							"Published automatically"
+						],
+						[
+							"Guest OS performance counters",
+							"CPU usage, memory utilization, disk queue length",
+							"Not present"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Install the Azure Monitor Agent on the virtual machine and configure a data collection rule that routes guest OS performance counters to Azure Monitor Metrics."
+					},
+					{
+						"id": "b",
+						"text": "Install the Log Analytics agent on the virtual machine and configure a data collection rule that routes guest OS performance counters to Log Analytics workspace tables."
+					},
+					{
+						"id": "c",
+						"text": "Enable advanced platform metrics for the virtual machine so that guest OS performance counters are captured automatically into Azure Monitor Metrics."
+					},
+					{
+						"id": "d",
+						"text": "Install the Azure Diagnostics extension (WAD) on the virtual machine and configure it to route guest OS performance counters to a Storage account."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Guest OS metrics of a virtual machine never appear automatically: platform metrics cover the resource only, and the supported way to collect guest OS performance counters is to install the Azure Monitor Agent and configure a data collection rule for them. Sending those counters to Azure Monitor Metrics gives a 93-day retention window, which satisfies the 90-day requirement, and the Azure Monitor Agent has replaced both the classic diagnostics extension and the Log Analytics agent for this routing.",
+				"perChoice": {
+					"b": "The Log Analytics agent reached end of life in August 2024 and should not be used for new metric collection. Its classic path also kept counters for 31 days (extendable to two years) and stored them in Log Analytics workspace tables rather than in Azure Monitor Metrics, so it does not meet the stated requirement.",
+					"c": "Advanced platform metrics are an opt-in, preaggregated extension of resource-level platform metrics. They still describe the resource rather than the operating system running inside it, so guest OS performance counters would remain unavailable without agent-based collection.",
+					"d": "The Azure Diagnostics extension is the classic guest-metrics route that was replaced by the Azure Monitor Agent. Its storage path only guarantees at least 14 days of retention and does not place the counters in Azure Monitor Metrics, so it fails the 90-day requirement."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/data-platform-metrics"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/analyze-metrics"
+				}
+			],
+			"subtopics": [
+				"guest-os-metrics",
+				"azure-monitor-agent"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P3GAQWV7VRWAK0BMT3X2J8",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an Azure storage account whose Transactions metric is already being collected, and every recorded value for that metric is the number of transactions the account handled during that sampling period. You need a per-hour picture of the account's transaction volume so the owning department can be charged for its usage. The chart is already set to a one-hour granularity, and the samples captured during the first two hours are listed in the exhibit. You need one plotted point per hour that reflects the whole hour's transaction volume. Which aggregation should you choose for this metric in Metrics explorer?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Chart configuration - Storage accounts / Transactions\nTime granularity: 60 minutes\nTime range: Last 24 hours\nValues captured 00:00-00:59: 1045; 1120; 990; 1180\nValues captured 01:00-01:59: 1060; 1015; 1090; 1140"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Sum"
+					},
+					{
+						"id": "b",
+						"text": "Count"
+					},
+					{
+						"id": "c",
+						"text": "Average"
+					},
+					{
+						"id": "d",
+						"text": "Max"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Sum adds the values captured inside each interval, so with a 60-minute granularity every plotted point represents the entire hour's transaction volume (1045 + 1120 + 990 + 1180 = 4335 for the first hour, and 4305 for the second). That matches the reporting requirement of one point per hour showing all transactions handled during that hour.",
+				"perChoice": {
+					"b": "Count returns the number of measurements taken in the interval, not the total of their values, so the first hour would be plotted as 4 rather than the hour's volume. Count matches the added value only for metrics that are always captured as 1, and this metric is not one of them.",
+					"c": "Average divides the interval's values by the number of measurements, so it yields a per-sampling-period figure (about 1084 for the first hour) instead of the hour's total volume.",
+					"d": "Max returns only the largest single value captured in the interval (1180 for the first hour), which describes the busiest sampling period and leaves out the rest of the hour's transactions."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/analyze-metrics"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/data-platform-metrics"
+				}
+			],
+			"subtopics": [
+				"metric-aggregation",
+				"metrics-explorer"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P3M16AHK8N4SSRKKET4HBV",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "Your team wants a single Metrics explorer chart that plots Percentage CPU for the virtual machines listed in the inventory below, with a separate line for each machine, and it should cover as many of them as the chart allows. Your account holds the Monitoring Reader role at subscription scope. Which set of machines should you add to the chart?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Resource",
+						"Resource type",
+						"Location",
+						"Subscription"
+					],
+					"rows": [
+						[
+							"vm-01",
+							"Virtual machine",
+							"East US",
+							"Sub-A"
+						],
+						[
+							"vm-02",
+							"Virtual machine",
+							"East US",
+							"Sub-A"
+						],
+						[
+							"vm-03",
+							"Virtual machine",
+							"West Europe",
+							"Sub-A"
+						],
+						[
+							"vm-04",
+							"Virtual machine",
+							"East US",
+							"Sub-B"
+						],
+						[
+							"webapp-05",
+							"App Service",
+							"East US",
+							"Sub-A"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "vm-01 and vm-02"
+					},
+					{
+						"id": "b",
+						"text": "vm-01 and vm-03"
+					},
+					{
+						"id": "c",
+						"text": "vm-02 and vm-04"
+					},
+					{
+						"id": "d",
+						"text": "vm-02 and webapp-05"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "vm-01 and vm-02 are both Virtual machines in East US within Sub-A, so they can share one multi-resource chart: every resource selected for such a chart must have the same resource type, location, and subscription, and the Monitoring Reader role at subscription scope permits access. Splitting the chart by resource ID then gives each machine its own line.",
+				"perChoice": {
+					"b": "vm-03 runs in West Europe, so pairing it with vm-01 violates the location requirement; resources in different locations cannot be selected together in one multi-resource chart.",
+					"c": "vm-04 belongs to Sub-B, so pairing it with vm-02 violates the subscription requirement; a multi-resource chart cannot span subscriptions.",
+					"d": "webapp-05 is an App Service, not a Virtual machine, so pairing it with vm-02 violates the resource type requirement; all resources in one multi-resource chart must be of the same type."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/analyze-metrics"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/data-platform-metrics"
+				}
+			],
+			"subtopics": [
+				"multi-resource-charts",
+				"metrics-explorer",
+				"resource-scope"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P3PJG7QXWP7JSPPFH81596",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a shell script that collects platform metric data for every virtual machine in the company inventory by using the Metrics REST API, issuing one query per machine. The monthly report now takes roughly 40 minutes, and the script regularly receives HTTP 429 responses, so some machines are missing from the report. You need to finish the collection reliably without leaving any machine out. Which approach should you take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "bash",
+					"text": "$ ./collect-vm-metrics.sh --all-subscriptions\nsub-prod-east / eastus      vm-web-01    http=200  rows=142\nsub-prod-east / eastus      vm-web-02    http=429  retry_after=30\nsub-prod-east / eastus      vm-web-03    http=429  retry_after=30\nsub-prod-east / westus2     vm-web-04    http=200  rows=139\nsub-prod-west / eastus2     vm-api-01    http=200  rows=138\nsub-prod-west / eastus2     vm-api-02    http=429  retry_after=30\nsub-prod-west / northeurope vm-job-01    http=200  rows=140\n...\ninventory     : 120 virtual machines\nsubscriptions : 2 (sub-prod-east, sub-prod-west)\nregions       : 3 (eastus, westus2, northeurope)\nelapsed       : 38 minutes"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Use the Azure Monitor Metrics Batch REST API to read a maximum of 50 resource IDs for one subscription and region in one call"
+					},
+					{
+						"id": "b",
+						"text": "Use the Metrics REST API to read one virtual machine at a time in a concurrent loop for a single subscription and region"
+					},
+					{
+						"id": "c",
+						"text": "Use the Prometheus HTTP API of an Azure Monitor workspace to read the same platform metric values in one query"
+					},
+					{
+						"id": "d",
+						"text": "Use the Metrics REST API to read every virtual machine at a coarser time granularity in a concurrent loop for a single subscription and region"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Azure Monitor provides a dedicated endpoint for high-volume metric queries: the Azure Monitor Metrics Batch REST API. A single batch request can carry up to 50 resource IDs, and all IDs in that request must belong to one subscription and one region. Using it improves throughput and reduces the throttling risk that is producing the HTTP 429 responses in your run. Since the inventory in the exhibit is spread over two subscriptions and three regions, you would group the machine IDs into sets that satisfy that one-subscription/one-region constraint and issue one batch request per group.",
+				"perChoice": {
+					"b": "The standard Metrics REST API answers for one resource at a time. Firing many single-machine queries in parallel does not change the service's per-request limits, and high concurrency is a common cause of the HTTP 429 responses you are already seeing.",
+					"c": "The Prometheus HTTP API is the retrieval path for metrics stored in an Azure Monitor workspace, which holds Prometheus and OpenTelemetry data. The virtual machines' platform metrics are not stored there, so this endpoint returns nothing for them.",
+					"d": "A coarser granularity changes how many samples come back per machine, but the script still sends one query per virtual machine. The number of queries stays the same, so the throttling and the roughly 40-minute runtime remain."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/data-platform-metrics"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/analyze-metrics"
+				}
+			],
+			"subtopics": [
+				"batch-metrics-api",
+				"high-volume-queries",
+				"platform-metrics"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P3RQRTC7HAB0D0T9MM1786",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Metrics explorer chart for a virtual machine's Network In Total metric, and the dimension values available for the selected time range are listed in the exhibit. You need the chart to cover only the three source addresses 10.0.1.4, 10.0.1.5, and 10.0.1.6, and you need the inbound and outbound traffic of those addresses drawn on separate lines. Which configuration should you apply to the chart?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Dimension",
+						"Values present in the selected time range"
+					],
+					"rows": [
+						[
+							"IP",
+							"10.0.1.4, 10.0.1.5, 10.0.1.6, 10.0.2.7, 10.0.3.11, 10.0.4.2"
+						],
+						[
+							"Direction",
+							"Inbound, Outbound"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add a filter on the IP dimension for the three addresses, and apply splitting on the Direction dimension."
+					},
+					{
+						"id": "b",
+						"text": "Add a filter on the Direction dimension, and apply splitting on the IP dimension."
+					},
+					{
+						"id": "c",
+						"text": "Apply splitting on the IP and Direction dimensions, and add no filter."
+					},
+					{
+						"id": "d",
+						"text": "Add a filter on the IP dimension for the three addresses only, without applying splitting."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "In Metrics explorer, a filter narrows the set of dimension values that contribute to the chart, while splitting decides whether each remaining value is merged into one line or drawn as its own line. Filtering IP down to the three requested addresses and splitting on Direction therefore produces one line per direction for each of the three addresses, which is exactly what the security team asked for.",
+				"perChoice": {
+					"b": "This applies the filter to the Direction dimension instead of the IP dimension, so every address in the range stays in scope and the chart is not limited to the three requested sources. Splitting on IP then draws a separate line per address, but the inbound and outbound values of each address are still merged together.",
+					"c": "With no filter, all six IP values in the range remain in the chart, so the three requested addresses are never isolated and the legend grows far beyond the requested scope. Splitting on both dimensions alone cannot narrow the data.",
+					"d": "This correctly restricts the chart to the three addresses, but without splitting the Inbound and Outbound values are combined, so you cannot see each direction on its own line as required."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/analyze-metrics"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/data-platform-metrics"
+				}
+			],
+			"subtopics": [
+				"metrics-explorer",
+				"filtering-and-splitting",
+				"metric-dimensions"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P3XYJQG9F4CG0SP9CMQHR3",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You maintain a Metrics explorer view of a virtual machine's Percentage CPU readings, and four colleagues each need a different look at that same set of readings. Drag the Metrics explorer control that best satisfies each request into the matching target.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Current state of the Metrics explorer view\n\nWindow displayed      : Last 24 hours\nVertical scale        : Adapts to the data automatically\nMeasurement plotted   : Percentage CPU for vm-app-01\n"
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Time picker"
+					},
+					{
+						"id": "i2",
+						"text": "Time brush"
+					},
+					{
+						"id": "i3",
+						"text": "Pan controls"
+					},
+					{
+						"id": "i4",
+						"text": "Y-axis range"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "A colleague wants one of the standard windows the view offers, for example the last 12 hours."
+					},
+					{
+						"id": "s2",
+						"label": "A colleague wants to focus on the two-minute spike in the middle of the current window and see the shape of it."
+					},
+					{
+						"id": "s3",
+						"label": "A colleague wants to reach yesterday afternoon's readings without changing how long the window is."
+					},
+					{
+						"id": "s4",
+						"label": "A colleague wants the drop from 99.9 percent to 99.5 percent to be visible instead of being flattened by the current scale."
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Each request calls for a different Metrics explorer control. The time picker is where the window is chosen, and it offers standard spans such as the last 12 hours or the last 30 days, which fits the request for one of the standard windows. The time brush is the in-view zoom: dragging it over the spike narrows the displayed window to that region, and when granularity is on Automatic the zoom also refines the plotted grain, which fits the request to focus on the two-minute spike and see its shape. The pan controls at the edge of the view shift the existing window sideways while keeping its length, which fits the request to reach yesterday afternoon without changing the length. The Y-axis range setting under Chart settings sets vertical bounds, and fixing the floor exposes a small percentage drop that the automatically scaled vertical axis would otherwise flatten, which fits the last request.",
+				"perChoice": {
+					"i1": "Time picker — this is the control that offers the predefined windows (last 12 hours, last 30 days, and so on) and sets the span shown; it changes which standard period is displayed.",
+					"i2": "Time brush — the zoom control drawn over the view; it narrows the displayed window to the dragged region and, with Automatic granularity, switches to a finer grain, so it is the right choice for studying the spike inside the current window.",
+					"i3": "Pan controls — the arrow controls at the edge of the view move the existing window backwards or forwards in equal steps of half its length, keeping the length unchanged, which is exactly what the colleague asking for yesterday afternoon's readings needs.",
+					"i4": "Y-axis range — the Chart settings option that puts explicit bounds on the vertical scale (or Auto to revert); setting a floor makes the 99.9 to 99.5 percent drop visible, while choosing a different window or brushing would only change which readings are plotted, not the vertical scale."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/analyze-metrics"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/data-platform-metrics"
+				}
+			],
+			"subtopics": [
+				"metrics-explorer",
+				"time-range-and-zoom",
+				"chart-settings"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P42HV0DVA2QM48Z8NSA1E1",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are choosing how metric data will be collected, stored, and charged for across three parts of your Azure estate, and Azure Monitor supports three different data paths for metrics. Drag each data path into the slot that matches its collection behavior, cost, and storage location.",
+				"items": [
+					{
+						"id": "platform",
+						"text": "Platform metrics"
+					},
+					{
+						"id": "advanced",
+						"text": "Advanced platform metrics"
+					},
+					{
+						"id": "workspace",
+						"text": "Metrics in an Azure Monitor workspace"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Every supported resource type publishes its own counters automatically, with no ingestion or storage charge, and the data is kept in the Azure subscription"
+					},
+					{
+						"id": "s2",
+						"label": "A single resource is opted in to obtain deeper data from its provider, the extra telemetry is charged for, and it is still kept in the Azure subscription"
+					},
+					{
+						"id": "s3",
+						"label": "Prometheus and OpenTelemetry series from Kubernetes, virtual machines, and Arc-enabled servers are accepted and kept apart from the subscription, where PromQL is used to query them"
+					}
+				]
+			},
+			"key": {
+				"s1": "platform",
+				"s2": "advanced",
+				"s3": "workspace"
+			},
+			"explanation": {
+				"correct": "Platform metrics are collected automatically for each supported resource type with no setup, carry no ingestion or storage charge, and live in the Azure subscription, so they match the first slot. Advanced platform metrics are a paid public preview that you enable per resource to obtain deeper data from supported providers and are also stored in the Azure subscription, so they match the second slot. Metrics in an Azure Monitor workspace hold Prometheus and OpenTelemetry data separately from the subscription and are queried with PromQL, so they match the third slot.",
+				"perChoice": {
+					"platform": "Platform metrics need no configuration, every resource type emits its own metric set, there is no ingestion or storage cost, and the data sits in the Azure subscription, so this belongs in the slot describing automatic, no-cost collection kept with the subscription.",
+					"advanced": "This path is a paid public preview that is opted into per resource to get deeper data from supported providers, and its data is still stored in the Azure subscription, so it belongs in the slot describing per-resource opt-in for deeper provider data at a charge.",
+					"workspace": "This path accepts Prometheus and OpenTelemetry data from Kubernetes, virtual machines, and Arc-enabled servers, stores it in a workspace rather than the subscription, and is queried with PromQL, so it belongs in the slot describing Prometheus and OpenTelemetry series kept apart from the subscription."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/data-platform-metrics"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/analyze-metrics"
+				}
+			],
+			"subtopics": [
+				"metric-implementations",
+				"metrics-storage-and-cost"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P444CHHMH3PXT7ZYBRQEJ6",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are troubleshooting an Azure App Service web app with a Metrics explorer chart of the Server response time metric, and the chart shows a sharp dip at 14:20. You need to establish three separate things: whether a write operation was made to the app shortly before the dip and who made it, what the service itself recorded for individual requests during that minute, and which queries Microsoft supplies for this kind of anomaly. The drill-down menu attached to the spike offers three destinations. Drag each destination into the slot that matches the need.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Chart context",
+						"Value"
+					],
+					"rows": [
+						[
+							"Resource",
+							"Contoso-WebApp (Azure App Service)"
+						],
+						[
+							"Metric",
+							"Server response time"
+						],
+						[
+							"Time range",
+							"Last 6 hours"
+						],
+						[
+							"Time granularity",
+							"Automatic"
+						],
+						[
+							"Observation",
+							"Sharp dip at 14:20; diagnostic capture is turned on for the app"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "activity",
+						"text": "Activity log"
+					},
+					{
+						"id": "resourcelogs",
+						"text": "Resource logs"
+					},
+					{
+						"id": "recommended",
+						"text": "Recommended log"
+					}
+				],
+				"slots": [
+					{
+						"id": "change",
+						"label": "Whether a write operation changed the app just before the dip, and who made it"
+					},
+					{
+						"id": "requests",
+						"label": "What the service itself recorded for individual requests during the dip"
+					},
+					{
+						"id": "queries",
+						"label": "The queries Microsoft provides for investigating this kind of anomaly"
+					}
+				]
+			},
+			"key": {
+				"change": "activity",
+				"queries": "recommended",
+				"requests": "resourcelogs"
+			},
+			"explanation": {
+				"correct": "The destination that shows what, who and when for write operations (PUT, POST, DELETE) on resources in the subscription, viewed from the management plane, is the Activity log, so it answers the question about who changed the app and when; there is a single Activity log per subscription. The destination that carries the data-plane records of operations performed inside the resource, such as per-request detail, is Resource logs, and those records must be enabled for the resource — the exhibit confirms capture is already turned on. The destination that provides scenario-based queries for investigating anomalies in Metrics explorer is Recommended log. Drill into Logs is offered for Azure App Service, so the app in the exhibit qualifies for all three destinations.",
+				"perChoice": {
+					"activity": "Place it in the slot about who changed the app and when: this destination records management-plane write operations on subscription resources, showing what changed, who changed it and when, and there is one of these per subscription.",
+					"recommended": "Place it in the slot about the queries Microsoft provides: this destination supplies scenario-based queries for investigating anomalies on a chart, rather than the record of a change or of individual request handling.",
+					"requests": "This destination is not about configuration changes or about individual request records; it supplies the scenario-based queries Microsoft provides for investigating anomalies on a chart.",
+					"resourcelogs": "Place it in the slot about what the service itself recorded per request: this destination holds the data-plane operations performed inside the resource, such as request-level detail, and it requires logging to be enabled for the resource."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/analyze-metrics"
+				}
+			],
+			"subtopics": [
+				"drill-into-logs",
+				"metric-anomaly-investigation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P47QNE4YB8DQV9HPTBPMD1",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a Metrics explorer chart for a virtual machine. Every plotted point on the chart is calculated from the samples captured inside the selected interval, and the samples captured during one half-hour interval are listed in the exhibit. Your team needs four specific values to appear on the chart, one for each target below. Drag the aggregation that produces each required value into the matching target.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Metric: Percentage CPU          Unit: percent   Samples captured during the half-hour interval: 12, 48, 96, 60\nMetric: Network Out Total       Unit: bytes     Samples captured during the half-hour interval: 1200, 800, 2400, 600"
+				},
+				"items": [
+					{
+						"id": "sum",
+						"text": "Sum"
+					},
+					{
+						"id": "count",
+						"text": "Count"
+					},
+					{
+						"id": "avg",
+						"text": "Average"
+					},
+					{
+						"id": "min",
+						"text": "Min"
+					},
+					{
+						"id": "max",
+						"text": "Max"
+					}
+				],
+				"slots": [
+					{
+						"id": "t1",
+						"label": "A single plotted point of 54 for the CPU metric"
+					},
+					{
+						"id": "t2",
+						"label": "A single plotted point of 12 for the CPU metric"
+					},
+					{
+						"id": "t3",
+						"label": "A single plotted point of 96 for the CPU metric"
+					},
+					{
+						"id": "t4",
+						"label": "A single plotted point of 5000 for the Network Out Total metric"
+					}
+				]
+			},
+			"key": {
+				"t1": "avg",
+				"t2": "min",
+				"t3": "max",
+				"t4": "sum"
+			},
+			"explanation": {
+				"correct": "Each plotted point is an aggregate of the samples captured in the interval rather than one raw reading, so the aggregation you choose determines the value on the chart. For the CPU metric the four samples (12, 48, 96, 60) total 216, so Average gives 216 / 4 = 54, which satisfies the target that needs a point of 54; the lowest captured CPU sample is 12, so Min satisfies the target that needs 12; the highest captured CPU sample is 96, so Max satisfies the target that needs 96. For the Network Out Total metric the samples (1200, 800, 2400, 600) add up to 5000, so Sum satisfies the target that needs 5000.",
+				"perChoice": {
+					"avg": "This belongs to the target that needs a point of 54 for the CPU metric: the four captured CPU samples total 216 and 216 / 4 = 54.",
+					"count": "This reports how many measurements were captured during the interval, which is four for both metrics here, so it satisfies none of the four targets. It returns the same value as Sum only for metrics that are always recorded as 1, and neither of these metrics behaves that way.",
+					"max": "This belongs to the target that needs a point of 96 for the CPU metric: the highest of the four captured CPU samples is 96.",
+					"min": "This belongs to the target that needs a point of 12 for the CPU metric: the lowest of the four captured CPU samples is 12.",
+					"sum": "This belongs to the target that needs a point of 5000 for the Network Out Total metric: 1200 + 800 + 2400 + 600 = 5000, the full amount of traffic captured in the interval."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/analyze-metrics"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/data-platform-metrics"
+				}
+			],
+			"subtopics": [
+				"metric-aggregations",
+				"metrics-explorer",
+				"interval-samples"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P4DYHYFS44KZTQ83E81B0P",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You look after a Metrics explorer view for the resources listed in the exhibit, and four requests have come in from your colleagues. Drag the Metrics explorer change that meets each request into the matching target.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"View",
+						"Resource",
+						"Metric plotted",
+						"Broken out by"
+					],
+					"rows": [
+						[
+							"View 1",
+							"st-prod-01 (storage account)",
+							"Transactions",
+							"API name"
+						],
+						[
+							"View 2",
+							"vm-web-01 (virtual machine)",
+							"Network In Total",
+							"IP"
+						],
+						[
+							"View 3",
+							"vm-web-01 (virtual machine)",
+							"Percentage CPU",
+							"Nothing"
+						],
+						[
+							"View 4",
+							"vm-web-01 (virtual machine)",
+							"Server response time and Data transferred",
+							"Nothing"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Increase the split display limit"
+					},
+					{
+						"id": "i2",
+						"text": "Set the split sort order to Ascending"
+					},
+					{
+						"id": "i3",
+						"text": "Set the Y-axis range to a fixed lower bound"
+					},
+					{
+						"id": "i4",
+						"text": "Move the latency series to a separate chart"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "View 1 — ten of the selected values are drawn as segments and the rest never appear"
+					},
+					{
+						"id": "s2",
+						"label": "View 2 — the highest value is listed first today and the request is to list the lowest one first"
+					},
+					{
+						"id": "s3",
+						"label": "View 3 — the vertical scale starts at zero so a fall from 99.99 percent to 99.5 percent cannot be seen"
+					},
+					{
+						"id": "s4",
+						"label": "View 4 — Server response time and Data transferred share one vertical scale even though one is in milliseconds and the other in kilobytes"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Each request maps to one chart configuration change. On View 1 the display limit set under Apply splitting caps how many dimension values are drawn (default 10, allowed 1 to 50), so the values that never appear need a higher limit. On View 2 the sort order chosen under Apply splitting decides whether the highest or the lowest value is listed first (Descending is the default), so choosing Ascending puts the lowest one first. On View 3 the Y-axis range under Chart settings can lock the floor of the scale instead of letting it start at zero; a floor set high enough exposes a drop from 99.99 percent to 99.5 percent, and Auto reverts to the automatic behaviour. On View 4 the two readings use unrelated units (milliseconds against kilobytes), and Metrics explorer charts should not mix units or very different scales, so the latency series belongs on a chart of its own.",
+				"perChoice": {
+					"i1": "Belongs with View 1. The display limit configured in Apply splitting caps how many dimension values are drawn (default 10, allowed 1 to 50), so the extra segments that are being left out need a higher limit.",
+					"i2": "Belongs with View 2. Apply splitting offers a sort order of Descending (the default) or Ascending; selecting Ascending lists the segment with the lowest value first instead of the highest.",
+					"i3": "Belongs with View 3. The Y-axis range under Chart settings sets bounds on the scale, or Auto to revert. Locking the floor high enough makes a small drop near the top of the scale visible, which an automatic scale starting at zero hides.",
+					"i4": "Belongs with View 4. Metrics explorer charts should not combine metrics whose readings use unrelated units, so a metric in milliseconds and one in kilobytes need separate charts rather than a shared vertical scale."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/analyze-metrics"
+				}
+			],
+			"subtopics": [
+				"chart-settings",
+				"splitting-limits",
+				"metric-visualization"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P4TABC1DG5ZNQVV7K2K59Y",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a Metrics explorer chart for a virtual machine's CPU readings, shown below. Your team wants to turn this chart into a metric alert rule. You need to know which part of the rule setup corresponds to each point below. Drag each element into the matching target.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Chart property",
+						"Setting in use"
+					],
+					"rows": [
+						[
+							"Resource",
+							"vm-web-01"
+						],
+						[
+							"Metric",
+							"Percentage CPU"
+						],
+						[
+							"Split by",
+							"Drive"
+						],
+						[
+							"Filter",
+							"Drive equals C:"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "The selections applied in the view you started from"
+					},
+					{
+						"id": "i2",
+						"text": "Signal name"
+					},
+					{
+						"id": "i3",
+						"text": "Threshold value"
+					},
+					{
+						"id": "i4",
+						"text": "Name"
+					},
+					{
+						"id": "i5",
+						"text": "Description"
+					},
+					{
+						"id": "i6",
+						"text": "Severity"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Which arrives filled in automatically when the rule is created on the current screen"
+					},
+					{
+						"id": "s2",
+						"label": "Which you change when the rule must evaluate a different measurement than the one plotted"
+					},
+					{
+						"id": "s3",
+						"label": "Which figure the readings are compared against before an alert is raised"
+					},
+					{
+						"id": "s4",
+						"label": "Which short title your team uses to recognize the rule"
+					},
+					{
+						"id": "s5",
+						"label": "Which explanatory note is stored with the rule so operators understand the context"
+					},
+					{
+						"id": "s6",
+						"label": "Which category is recorded with the rule, chosen from Critical, Error, Warning, Informational or Verbose"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5",
+				"s6": "i6"
+			},
+			"explanation": {
+				"correct": "A rule started from a Metrics explorer chart is created with the chart's resource, metric, splitting and filter already populated, so that content is what arrives filled in automatically on the current screen. On the Condition tab, Signal name defaults to the metric on the chart and is the entry you change when the rule must evaluate a different measurement, while Threshold value is the figure the readings are compared against to trigger the alert. On the Details tab, Name is the short title for the rule, Description is the explanatory note stored with it, and Severity is the category recorded with the rule, using the levels Critical, Error, Warning, Informational and Verbose.",
+				"perChoice": {
+					"i1": "This is the part that is already populated: a rule started from a chart arrives with the chart's resource, metric, splitting and filter carried over from the chart you were working in.",
+					"i2": "Signal name defaults to the metric on the chart and is where you pick a different measurement for the rule to evaluate.",
+					"i3": "Threshold value is the number entered on the Condition tab; it is drawn as a line in Preview and is the level the readings are compared against to trigger the alert.",
+					"i4": "Name is the short title you give the rule on the Details tab so your team can recognize it.",
+					"i5": "Description is the free-text explanation stored with the rule to give operators context.",
+					"i6": "Severity is the category set on the Details tab, with the levels Critical, Error, Warning, Informational and Verbose."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/analyze-metrics"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/data-platform-metrics"
+				}
+			],
+			"subtopics": [
+				"chart-to-alert-rule",
+				"metric-alert-setup"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P4WV6D2X7QN1EY6M7G637Z",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your compliance team wants the node CPU totals from your Kubernetes cluster for the last 400 days, and those readings reach your Azure Monitor workspace through the Prometheus collection path. Before you commit to delivering anything, you must confirm the history still exists and plan how the values come out of the workspace.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Metric the compliance team asked for",
+							"node_cpu_seconds_total"
+						],
+						[
+							"Source cluster",
+							"prod-aks-01 (Kubernetes)"
+						],
+						[
+							"How the readings reach Azure Monitor",
+							"Prometheus collection path into the Azure Monitor workspace"
+						],
+						[
+							"Reporting window",
+							"the last 400 days"
+						]
+					]
+				},
+				"statement": "Prometheus metrics in your Azure Monitor workspace {{retention}}, and to extract the readings for the compliance team you {{queryPlan}}.",
+				"slots": [
+					{
+						"id": "retention",
+						"options": [
+							{
+								"id": "a",
+								"text": "are retained for 18 months, which covers the 400-day reporting window"
+							},
+							{
+								"id": "b",
+								"text": "are retained for 93 days, which does not cover the 400-day reporting window"
+							},
+							{
+								"id": "c",
+								"text": "are retained for 32 days, which does not cover the 400-day reporting window"
+							},
+							{
+								"id": "d",
+								"text": "are retained for 30 days, which does not cover the 400-day reporting window"
+							}
+						]
+					},
+					{
+						"id": "queryPlan",
+						"options": [
+							{
+								"id": "a",
+								"text": "need each PromQL query to span no more than 32 days, so you would run several queries over the reporting window"
+							},
+							{
+								"id": "b",
+								"text": "need each PromQL query to span no more than 30 days, so you would run several queries over the reporting window"
+							},
+							{
+								"id": "c",
+								"text": "can be pulled with one PromQL query for the whole reporting window, because no limit applies to the query length"
+							},
+							{
+								"id": "d",
+								"text": "can be pulled with one PromQL query for the whole reporting window, because workspace metric values arrive preaggregated"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"retention": "a",
+				"queryPlan": "a"
+			},
+			"explanation": {
+				"correct": "Prometheus data held in an Azure Monitor workspace is retained for 18 months, so the 400-day reporting window the compliance team asked for is still inside the retention period. A single PromQL query is limited to a 32-day span, so the readings have to be gathered with several queries, each covering at most 32 days.",
+				"perChoice": {
+					"retention:b": "93 days is the retention period for platform and custom metrics, not for Prometheus data kept in a workspace; a 400-day window would fall well outside it.",
+					"retention:c": "32 days is the maximum span of one PromQL query, not a retention period; Prometheus data in a workspace stays available for 18 months.",
+					"retention:d": "30 days is the longest range a single chart can query for platform and custom metrics; Prometheus data stored in an Azure Monitor workspace is retained for 18 months.",
+					"queryPlan:b": "The limit that applies to each PromQL query is 32 days; 30 days is the chart query limit for platform and custom metrics, and choosing it would still cut the readings short.",
+					"queryPlan:c": "There is a 32-day maximum span for a PromQL query, so one query cannot return the whole 400-day reporting window.",
+					"queryPlan:d": "Workspace metrics are kept as raw time series rather than preaggregated values, and the 32-day span limit applies to PromQL queries regardless of how the data is stored."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/data-platform-metrics"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/analyze-metrics"
+				}
+			],
+			"subtopics": [
+				"workspace-metrics-retention",
+				"promql-query-limits"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P5B83BQH86SH95D05R22ZW",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a custom metric in Application Insights that is calculated from a log query, and your compliance team needs a chart reaching back 60 days for that metric. Which statement is correct?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Metric",
+							"Custom metric in Application Insights calculated from a log query"
+						],
+						[
+							"Retention of the Application Insights logs",
+							"90 days"
+						],
+						[
+							"Chart span required by the compliance team",
+							"Last 60 days"
+						]
+					]
+				},
+				"statement": "In this situation, {{outcome}}.",
+				"slots": [
+					{
+						"id": "outcome",
+						"options": [
+							{
+								"id": "a",
+								"text": "a chart for the compliance team can display the entire requested range because the 30-day query limit does not apply to log-based metrics"
+							},
+							{
+								"id": "b",
+								"text": "a chart for the compliance team can display the entire requested range because the 30-day query limit applies to log-based metrics"
+							},
+							{
+								"id": "c",
+								"text": "a chart for the compliance team can display only the most recent 30 days because the 30-day query limit applies to every metric stored in Azure Monitor Metrics including log-based metrics"
+							},
+							{
+								"id": "d",
+								"text": "a chart for the compliance team can display only the most recent 30 days because log-based metrics query the underlying log records which are kept for only 30 days"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"outcome": "a"
+			},
+			"explanation": {
+				"correct": "Log-based metrics are backed by log queries rather than by the metric time series. The documentation states that while platform and custom metrics are stored for 93 days, a single chart can query only 30 days of them, and that this limitation does not apply to log-based metrics. Retention for log-based metrics follows the retention of the underlying log events, and the Application Insights logs behind this metric are stored for 90 days, so the 60-day span the compliance team asked for is both available in the logs and outside the 30-day chart window restriction.",
+				"perChoice": {
+					"outcome:b": "The 30-day chart query window is not a blanket rule for log-based metrics. It is documented for platform and custom metrics stored in Azure Monitor Metrics, and the documentation explicitly states that this limitation doesn't apply to log-based metrics, so this reasoning is incorrect.",
+					"outcome:c": "The 30-day query window does not cover every metric kept in Azure Monitor Metrics. It applies to platform and custom metrics, while log-based metrics are exempt because they are log queries underneath, so the chart is free to span the full requested period.",
+					"outcome:d": "Availability of a log-based metric follows the retention of the underlying log events, which for this Application Insights resource is 90 days as shown in the exhibit. A 30-day log history is therefore not the limiting factor here; the restriction that could have truncated the chart, the 30-day query window, does not apply to this metric."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/data-platform-metrics"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/analyze-metrics"
+				}
+			],
+			"subtopics": [
+				"log-based-metrics",
+				"retention",
+				"chart-time-range"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6P5F27M54ET1GFB92HGS3TQ",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You monitor a busy Linux virtual machine's processor utilization with a chart in Metrics explorer. The readings normally sit at the very top of the scale, and a short dip during the afternoon matters to the on-call team, so a colleague narrowed the y-axis range until the dip became obvious. Today one of the analysts resized the browser window, the points on the chart were redrawn with different spacing, and the narrowed range no longer frames the data the way the team expects. The chart's current configuration is listed in the exhibit. You need the y-axis bounds the team chose to keep giving the same picture of the dip no matter how the browser window is sized. What should you change?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Chart configuration - vm-web-01\n\nMetric ................ Percentage CPU\nScope ................. vm-web-01 (Linux, West Europe)\nTime range ............ Last 24 hours\nTime granularity ...... Automatic\nAggregation ........... Maximum\nY-axis range .......... Minimum 99, Maximum 100\n"
+				},
+				"statement": "To keep the y-axis bounds the team chose giving the same picture of the dip for every viewer, you should {{granularity}}.",
+				"slots": [
+					{
+						"id": "granularity",
+						"options": [
+							{
+								"id": "a",
+								"text": "set the time granularity to a fixed interval"
+							},
+							{
+								"id": "b",
+								"text": "keep the time granularity on automatic and re-apply the y-axis range whenever the chart is resized"
+							},
+							{
+								"id": "c",
+								"text": "set the time granularity to a fixed interval and reset the y-axis range to automatic"
+							},
+							{
+								"id": "d",
+								"text": "keep the time granularity on automatic and change the aggregation from maximum to average"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"granularity": "a"
+			},
+			"explanation": {
+				"correct": "This chart has its y-axis boundaries narrowed around the readings and uses the Maximum aggregation, which is exactly the situation in which the time grain should not be left to the automatic choice. When the grain is selected automatically it can change as soon as a viewer resizes the browser window or changes screen resolution, and the redrawn points no longer match the axis bounds that were chosen, which is the symptom reported here. Pinning the time granularity to a fixed interval keeps the plotted points and the narrow axis bounds aligned for everyone who opens the chart.",
+				"perChoice": {
+					"granularity:b": "Any viewer can resize the window at any time, so re-applying the bounds afterwards only repairs the chart after the fact; the automatically chosen grain can change again and invalidate the range once more.",
+					"granularity:c": "Fixing the grain is the right part of the change, but clearing the y-axis range returns the chart to the default scale, which hides the small dip the team wanted to make visible.",
+					"granularity:d": "Switching the aggregation does not stop the automatically selected grain from changing when the window is resized, so the selected axis bounds can still be invalidated; a fixed grain is the documented remedy for a chart with locked axis boundaries."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/analyze-metrics"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/data-platform-metrics"
+				}
+			],
+			"subtopics": [
+				"y-axis-range",
+				"time-granularity"
+			],
+			"reviewed": false
+		}
+	]
+}
