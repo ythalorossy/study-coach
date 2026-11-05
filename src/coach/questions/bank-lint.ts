@@ -44,7 +44,9 @@ export function lintQuestion(q: BankQuestion, sheet: Set<string>): LintIssue[] {
 				? b.items.map((i) => i.text)
 				: [b.statement, ...b.slots.flatMap((sl) => sl.options.map((o) => o.text))];
 	const texts = [stem, q.explanation.correct, ...Object.values(q.explanation.perChoice), ...choiceTexts];
-	if (texts.some((t) => /\b(?:options?|choices?)\s+\(?[a-d]\)?(?![\w-])/i.test(t))) {
+	// A lowercase "a" is usually the article ("a choice a team makes"), so it counts only before punctuation or a verb.
+	const LETTER = /\b(?:[Oo]ptions?|[Cc]hoices?)\s+(?:\(?[b-dB-D]\)?(?![\w-])|\(?A\)?(?![\w-])|\(a\)|a(?=\s*[,.;:)]|\s+(?:is|are|was|and|or|would|does|says|describes|names|states|gives|has|can|cannot|fails|works)\b|$))/;
+	if (texts.some((t) => LETTER.test(t))) {
 		add("letter-reference", "the text refers to an option by letter, but choices are shown without letters in random order");
 	}
 	if (stem.length < 60) add("short-stem", "the stem is under 60 characters");

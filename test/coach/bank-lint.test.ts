@@ -37,6 +37,12 @@ describe("bank lint", () => {
 		const explanation = { ...mcFixture.explanation, correct: `Option b is right. ${mcFixture.explanation.correct}` };
 		expect(codes(bank({ explanation }))).toContain("letter-reference");
 	});
+	it("does not mistake the article a for an option letter, but still catches a lowercase letter before a verb", () => {
+		const article = { ...mcFixture.explanation, correct: `It is the one choice a vault team makes. ${mcFixture.explanation.correct}` };
+		expect(codes(bank({ explanation: article }))).not.toContain("letter-reference");
+		const letter = { ...mcFixture.explanation, correct: `Choice a is wrong. ${mcFixture.explanation.correct}` };
+		expect(codes(bank({ explanation: letter }))).toContain("letter-reference");
+	});
 	it("treats options that differ only by case as different, but flags identical ones", () => {
 		const body = structuredClone(mcFixture.body);
 		if (body.format !== "multiple-choice") throw new Error("fixture");
