@@ -41,6 +41,19 @@ describe("seeding areas", () => {
 		expect(areaOfSkill("compute.vmss")).toBe("compute");
 	});
 
+	it("seeds the 13 monitoring skills across its two instructors", () => {
+		const db = openCoachDb(":memory:");
+		const rows = db.raw
+			.prepare("SELECT specialist, COUNT(*) AS n FROM skills WHERE area_id = 'monitoring' GROUP BY specialist ORDER BY MIN(position)")
+			.all()
+			.map((r) => ({ ...r }));
+		expect(rows).toEqual([
+			{ specialist: "azure-monitor", n: 6 },
+			{ specialist: "backup-recovery", n: 7 },
+		]);
+		expect(areaOfSkill("monitoring.site-recovery")).toBe("monitoring");
+	});
+
 	it("seeds the 13 networking skills across its three instructors", () => {
 		const db = openCoachDb(":memory:");
 		const rows = db.raw
@@ -70,12 +83,12 @@ describe("seeding areas", () => {
 		first.raw.close();
 		const again = openCoachDb(path, { questionBank: false });
 		expect((again.raw.prepare("SELECT name FROM skills WHERE id = 'identity.sspr'").get() as { name: string }).name).toBe("kept");
-		expect((again.raw.prepare("SELECT COUNT(*) AS n FROM skills").get() as { n: number }).n).toBe(69);
+		expect((again.raw.prepare("SELECT COUNT(*) AS n FROM skills").get() as { n: number }).n).toBe(82);
 	});
 
 	it("orders skills by area, then position", () => {
 		const ids = skillProgress(openCoachDb(":memory:")).map((s) => s.id);
-		expect(ids).toHaveLength(69);
+		expect(ids).toHaveLength(82);
 		expect(ids.indexOf("governance.management-groups")).toBeLessThan(ids.indexOf("storage.firewalls"));
 		expect(ids.indexOf("storage.firewalls")).toBe(15);
 	});

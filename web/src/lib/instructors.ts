@@ -27,6 +27,8 @@ export const WEB_INSTRUCTORS: WebInstructor[] = [
 	{ id: "virtual-networks", areaId: "networking", name: "Virtual networks", initials: "VN", topic: "Subnets, peering, routes" },
 	{ id: "network-security", areaId: "networking", name: "Network security", initials: "NS", topic: "NSGs, Bastion, endpoints" },
 	{ id: "dns-load-balancing", areaId: "networking", name: "DNS and load balancing", initials: "DL", topic: "DNS zones, load balancers" },
+	{ id: "azure-monitor", areaId: "monitoring", name: "Azure Monitor", initials: "AM", topic: "Metrics, logs, alerts" },
+	{ id: "backup-recovery", areaId: "monitoring", name: "Backup and recovery", initials: "BR", topic: "Backup, Site Recovery" },
 ];
 
 /** The lead plus the area's specialists; everyone when the area is unknown. */

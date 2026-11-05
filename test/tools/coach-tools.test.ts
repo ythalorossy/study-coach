@@ -265,9 +265,9 @@ describe("get_progress", () => {
 		expect(r.output.skills.every((s: { areaId: string }) => s.areaId === "storage")).toBe(true);
 	});
 
-	it("returns all 69 skills", async () => {
+	it("returns all 82 skills", async () => {
 		const r = await call(makeProgressTool(() => db), {});
-		expect(r.output.skills).toHaveLength(69);
+		expect(r.output.skills).toHaveLength(82);
 		expect(Object.keys(r.output.skills[0]).sort()).toEqual(["areaId", "id", "name", "readiness", "specialist", "taught"]);
 	});
 });

@@ -19,6 +19,9 @@ const AS = `${L}/azure/app-service`;
 const N = `${L}/azure/virtual-network`;
 const NW = `${L}/azure/network-watcher`;
 const LB = `${L}/azure/load-balancer`;
+const AM = `${L}/azure/azure-monitor`;
+const BK = `${L}/azure/backup`;
+const SR = `${L}/azure/site-recovery`;
 
 // Exported so specialist instructions list the same doc URLs the database is seeded with.
 export const SKILLS: [id: string, specialist: SpecialistId, name: string, docUrls: string[]][] = [
@@ -703,6 +706,133 @@ export const SKILLS: [id: string, specialist: SpecialistId, name: string, docUrl
 			`${LB}/load-balancer-troubleshoot`,
 			`${LB}/load-balancer-custom-probe-overview`,
 			`${LB}/load-balancer-standard-diagnostics`,
+		],
+	],
+	[
+		"monitoring.metrics",
+		"azure-monitor",
+		"Interpret metrics in Azure Monitor",
+		[
+			`${AM}/metrics/data-platform-metrics`,
+			`${AM}/metrics/analyze-metrics`,
+		],
+	],
+	[
+		"monitoring.log-settings",
+		"azure-monitor",
+		"Configure log settings in Azure Monitor",
+		[
+			`${AM}/data-collection/diagnostic-settings`,
+			`${AM}/logs/log-analytics-workspace-overview`,
+			`${AM}/logs/data-platform-logs`,
+		],
+	],
+	[
+		"monitoring.log-queries",
+		"azure-monitor",
+		"Query and analyze logs in Azure Monitor",
+		[
+			`${AM}/logs/log-query-overview`,
+			`${AM}/logs/log-analytics-tutorial`,
+			`${AM}/logs/get-started-queries`,
+		],
+	],
+	[
+		"monitoring.alerts",
+		"azure-monitor",
+		"Set up alert rules, action groups, and alert processing rules in Azure Monitor",
+		[
+			`${AM}/alerts/alerts-overview`,
+			`${AM}/alerts/alerts-create-metric-alert-rule`,
+			`${AM}/alerts/action-groups`,
+			`${AM}/alerts/alerts-processing-rules`,
+		],
+	],
+	[
+		"monitoring.insights",
+		"azure-monitor",
+		"Configure and interpret monitoring of virtual machines, storage accounts, and networks by using Azure Monitor Insights",
+		[
+			`${AM}/vm/vminsights-performance`,
+			`${S}/common/storage-insights-overview`,
+			`${NW}/network-insights-overview`,
+		],
+	],
+	[
+		"monitoring.connection-monitor",
+		"azure-monitor",
+		"Use Azure Network Watcher and Connection Monitor",
+		[
+			`${NW}/network-watcher-overview`,
+			`${NW}/connection-monitor-overview`,
+			`${NW}/connection-monitor-create-using-portal`,
+		],
+	],
+	[
+		"monitoring.recovery-vault",
+		"backup-recovery",
+		"Create a Recovery Services vault",
+		[
+			`${BK}/backup-azure-recovery-services-vault-overview`,
+			`${BK}/backup-create-recovery-services-vault`,
+		],
+	],
+	[
+		"monitoring.backup-vault",
+		"backup-recovery",
+		"Create an Azure Backup vault",
+		[
+			`${BK}/backup-vault-overview`,
+			`${BK}/create-manage-backup-vault`,
+		],
+	],
+	[
+		"monitoring.backup-policy",
+		"backup-recovery",
+		"Create and configure a backup policy",
+		[
+			`${BK}/backup-azure-vms-enhanced-policy`,
+			`${BK}/backup-azure-manage-vms`,
+			`${BK}/backup-architecture`,
+		],
+	],
+	[
+		"monitoring.backup-restore",
+		"backup-recovery",
+		"Perform backup and restore operations by using Azure Backup",
+		[
+			`${BK}/backup-azure-vms-first-look-arm`,
+			`${BK}/backup-azure-arm-restore-vms`,
+			`${BK}/backup-azure-restore-files-from-vm`,
+		],
+	],
+	[
+		"monitoring.site-recovery",
+		"backup-recovery",
+		"Configure Azure Site Recovery for Azure resources",
+		[
+			`${SR}/site-recovery-overview`,
+			`${SR}/azure-to-azure-architecture`,
+			`${SR}/azure-to-azure-tutorial-enable-replication`,
+		],
+	],
+	[
+		"monitoring.site-recovery-failover",
+		"backup-recovery",
+		"Perform a failover to a secondary region by using Site Recovery",
+		[
+			`${SR}/azure-to-azure-tutorial-failover-failback`,
+			`${SR}/azure-to-azure-architecture`,
+		],
+	],
+	[
+		"monitoring.backup-reports",
+		"backup-recovery",
+		"Configure and interpret reports and alerts for backups",
+		[
+			`${BK}/configure-reports`,
+			`${BK}/backup-azure-monitoring-built-in-monitor`,
+			`${BK}/backup-azure-diagnostic-events`,
 		],
 	],
 ];

@@ -21,6 +21,7 @@ describe("web instructors", () => {
 		expect(instructorsFor("identity-governance").map((i) => i.id)).toEqual(["lead", "identity", "access", "governance"]);
 		expect(instructorsFor("compute").map((i) => i.id)).toEqual(["lead", "templates", "virtual-machines", "containers", "app-service"]);
 		expect(instructorsFor("networking").map((i) => i.id)).toEqual(["lead", "virtual-networks", "network-security", "dns-load-balancing"]);
-		expect(instructorsFor(null)).toHaveLength(14);
+		expect(instructorsFor("monitoring").map((i) => i.id)).toEqual(["lead", "azure-monitor", "backup-recovery"]);
+		expect(instructorsFor(null)).toHaveLength(16);
 	});
 });

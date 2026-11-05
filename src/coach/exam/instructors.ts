@@ -101,6 +101,20 @@ export const SPECIALISTS = [
 		title: "DNS and load balancing",
 		description: "DNS and load balancing instructor: Azure DNS public and private zones, internal and public load balancers, and troubleshooting load balancing.",
 	},
+	{
+		id: "azure-monitor",
+		areaId: "monitoring",
+		title: "Azure Monitor",
+		description:
+			"Azure Monitor instructor: interpreting metrics, configuring log settings, querying logs with KQL, alert rules, action groups and alert processing rules, Monitor Insights for virtual machines, storage and networks, and Network Watcher with Connection Monitor.",
+	},
+	{
+		id: "backup-recovery",
+		areaId: "monitoring",
+		title: "backup and recovery",
+		description:
+			"Backup and recovery instructor: Recovery Services vaults and Azure Backup vaults, backup policies, backup and restore operations, Azure Site Recovery replication and failover, and backup reports and alerts.",
+	},
 ] as const satisfies readonly Specialist[];
 
 export function specialistArea(specialistId: string): string {

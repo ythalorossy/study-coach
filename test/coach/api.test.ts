@@ -35,11 +35,11 @@ beforeEach(() => {
 });
 
 describe("GET /skills", () => {
-	it("lists all 69 skills with zero counts on an empty bank", async () => {
+	it("lists all 82 skills with zero counts on an empty bank", async () => {
 		const res = await get("/skills");
 		const body = await res.json();
 		expect(res.status).toBe(200);
-		expect(body.skills).toHaveLength(69);
+		expect(body.skills).toHaveLength(82);
 		expect(body.ready).toBe(false);
 		expect(body.skills[0].questionCounts).toEqual({
 			"multiple-choice": 0,
@@ -225,7 +225,7 @@ describe("GET /coverage", () => {
 		flagQuestion(db, flagged, "dup");
 		const cov = await (await get("/coverage")).json();
 		expect(cov.target).toEqual({ "multiple-choice": 8, "drag-drop": 6, "complete-sentence": 6 });
-		expect(cov.skills).toHaveLength(69);
+		expect(cov.skills).toHaveLength(82);
 		const ext = cov.skills.find((s: { id: string }) => s.id === "identity.external-users");
 		expect(ext.counts).toEqual({ "multiple-choice": 1, "drag-drop": 0, "complete-sentence": 0 });
 		expect(ext.subtopics).toEqual({ "guest-users": 1, "b2b-invitations": 1 });
@@ -248,7 +248,7 @@ describe("areas", () => {
 		expect(body.totalAreas).toBe(5);
 		expect(body.readyAreas).toBe(0);
 		expect(body.areas.map((a: { id: string }) => a.id)).toEqual(["identity-governance", "storage", "compute", "networking", "monitoring"]);
-		expect(body.areas.find((a: { id: string }) => a.id === "monitoring")).toMatchObject({ skillCount: 0, ready: false });
+		expect(body.areas.find((a: { id: string }) => a.id === "monitoring")).toMatchObject({ skillCount: 13, ready: false });
 		expect(body.areas.find((a: { id: string }) => a.id === "storage")).toMatchObject({
 			name: "Implement and manage storage",
 			skillCount: 17,
