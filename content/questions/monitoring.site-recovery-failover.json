@@ -405,6 +405,1052 @@
 				"disaster-recovery-drill"
 			],
 			"reviewed": false
+		},
+		{
+			"id": "q_01M6S7CH0N0QYCQ4BJ54BHTZWQ",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a billing virtual machine named vm-billing01 that Azure Site Recovery protects, with the configuration shown in the exhibit. The business has decided that the copy of the VM that runs in East US 2 must be spread across three availability zones instead of running as a single instance. Which sequence of actions should you perform to make that change effective?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Virtual machine            : vm-billing01\nSource region              : East US\nTarget region              : East US 2\nProtection status          : Protected\nTarget availability type   : Single instance\nTarget resource group      : rg-billing-asr\nTarget virtual network     : vnet-billing-asr\nTarget SKU                 : Standard_D4s_v5"
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Disable replication for the VM, change the target availability type, then enable replication again"
+					},
+					{
+						"id": "b",
+						"text": "Change the target availability type in the protected VM's target settings, then keep replication running so the new value is used at the next failover"
+					},
+					{
+						"id": "c",
+						"text": "Run a test failover to East US 2, then choose the availability type for the instance the test creates"
+					},
+					{
+						"id": "d",
+						"text": "Complete the failover to East US 2, re-protect the VM there, then change the target availability type so it applies when you fail back"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The availability type of a protected VM is the one target setting that cannot be edited while replication is running. The only supported route is to take replication down for that VM, edit the target availability type (single instance, availability set or zone), and then bring replication back up, which recreates the target resources with the new type so a later failover spreads the VM across three availability zones in East US 2.",
+				"perChoice": {
+					"b": "While replication is running you can freely change settings such as the target resource group, the target name and the SKU, but the availability type is excluded from that. Editing it with replication still running has no effect, and the existing single instance target remains in force.",
+					"c": "A test failover is useful for proving that the current configuration can start the workload in the secondary region, but it does not rewrite the target settings stored for the protected VM, so a real failover would still use the single instance target.",
+					"d": "Re-Protect followed by a fail back is how a workload that has already failed over is returned to the primary region; it does not alter the target availability type of the protected VM, which has to be edited while replication is down."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-failover-failback"
+				}
+			],
+			"subtopics": [
+				"site-recovery-failover",
+				"target-availability-type",
+				"replication-settings"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S7DTXDN25K53KC5ZS6TQ1G",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Linux virtual machine named vm-orders02 that is covered by Azure Site Recovery, with the state shown in the exhibit. A regional outage is forcing the order-entry workload to move from East US to the secondary region, East US 2. The source machine is still powered on and serving customer traffic, and the operations team wants the service to attempt an orderly stop of that source machine first, so that the amount of data written shortly prior to the cutover is as small as possible. If the orderly stop cannot be completed, the move to the secondary region must still go ahead. Which action should you take to meet this requirement?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Field",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Source virtual machine",
+							"vm-orders02"
+						],
+						[
+							"Source region",
+							"East US"
+						],
+						[
+							"Target region",
+							"East US 2"
+						],
+						[
+							"Recovery point selected",
+							"Latest processed"
+						],
+						[
+							"Source machine status",
+							"Running, serving customer traffic"
+						],
+						[
+							"Site Recovery state",
+							"Replication enabled"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Shut down machine before beginning failover"
+					},
+					{
+						"id": "b",
+						"text": "Re-Protect the machine in the secondary region"
+					},
+					{
+						"id": "c",
+						"text": "Change the recovery point on the machine's Essentials page"
+					},
+					{
+						"id": "d",
+						"text": "Commit the failover for the machine"
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Select \"Shut down machine before beginning failover\". This option tells Site Recovery to try to shut the source VM down first, which reduces the amount of data that can be lost during the cutover, and the failover continues even if that shutdown attempt fails — which matches the requirement that the move must go ahead regardless. The other choices govern different parts of the recovery lifecycle and do not affect how the source machine is handled while the cutover is being prepared.",
+				"perChoice": {
+					"b": "Re-Protect on the VM Overview page starts reverse replication from the secondary region back to the primary region (sending the initial data and then deltas) so the workload is protected again once the primary region is healthy. It neither stops the source VM nor reduces the data lost at the cutover, so it does not meet the stated requirement.",
+					"c": "Change recovery point on the VM Essentials page is used after a failover has already happened, to bring the failed-over VM up from a different recovery point. It has no effect on how the source machine is handled during the failover itself.",
+					"d": "Commit finalizes the failover: it deletes all available recovery points for that VM in Site Recovery, so the recovery point can no longer be changed. It does not attempt to stop the source machine, and it should only be used once the failed-over VM is confirmed to be running correctly."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-failover-failback"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				}
+			],
+			"subtopics": [
+				"site-recovery-failover",
+				"failover-options"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S7G0DYSC0CNNSJ5PQVVN6F",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a stateless web front-end virtual machine named vm-web02 that Azure Site Recovery protects, with the configuration and state shown in the exhibit. The workload was moved to East US 2 during a regional outage in East US and has been serving customer traffic from there since. The business has confirmed that the workload behaves correctly in East US 2 and wants the protection arrangement for that VM settled in the secondary region, because the monthly charges for keeping the recovery points of vm-web02 in the recovery service are no longer acceptable, and the outage in East US is still under investigation. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Virtual machine",
+							"vm-web02"
+						],
+						[
+							"Role in the tier",
+							"Stateless web front end"
+						],
+						[
+							"Replication source region",
+							"East US"
+						],
+						[
+							"Replication target region",
+							"East US 2"
+						],
+						[
+							"Region the workload is running in now",
+							"East US 2"
+						],
+						[
+							"Primary region (East US) status",
+							"Unavailable - regional outage ongoing"
+						],
+						[
+							"Recovery point retention",
+							"24 hours"
+						],
+						[
+							"App-consistent snapshot frequency",
+							"1 hour"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Select Commit for vm-web02; this finalizes the failover and deletes the recovery points that Site Recovery holds for the VM."
+					},
+					{
+						"id": "b",
+						"text": "Select Re-Protect for vm-web02 so that Site Recovery replicates changes made in East US 2 back to the primary region."
+					},
+					{
+						"id": "c",
+						"text": "Select Change recovery point on the vm-web02 Essentials page so that Site Recovery restarts the VM from one of the other recovery points."
+					},
+					{
+						"id": "d",
+						"text": "Select Test failover for vm-web02 so that Site Recovery validates the arrangement without affecting the live workload."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "Committing the failover is the action that finalizes the move to the secondary region: it deletes the recovery points that Site Recovery holds for the VM, which is exactly what the business is asking for, because those stored states and their associated storage cost are no longer acceptable. The failed-over VM has already been confirmed running and serving traffic in East US 2, so it is safe to commit now rather than earlier. The other actions do not remove the recovery points, and reverse replication cannot be started while the primary region is unavailable.",
+				"perChoice": {
+					"b": "Re-Protect starts reverse replication from the secondary region back to the primary so that new changes are replicated again; it does not delete the recovery points. It also requires the primary region to be available, and East US is currently unavailable because of the ongoing regional outage, so it cannot be used in this situation.",
+					"c": "Change recovery point restarts the failed-over VM from a different recovery point; it keeps the stored recovery points in place rather than removing them. Once the failover is committed, the recovery point of the VM can no longer be changed either.",
+					"d": "Test failover is a disaster recovery drill that proves the setup works without touching production; it neither finalizes the failover nor removes the recovery points that are being held for the VM."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-failover-failback"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				}
+			],
+			"subtopics": [
+				"failover-commit",
+				"recovery-points"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S7MP38WDKCNRDC58Q2AP1W",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Four virtual machines are protected by Azure Site Recovery, and a regional outage means each one has to be moved to its secondary region. Every cutover has a different business constraint, and you need to pick, for each virtual machine, the recovery point choice that satisfies it. Match each virtual machine to the choice offered in the Failover pane that meets its constraint.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Virtual machine   Source region   Secondary region   Workload                  Replicated disks\nvm-orders11       East US         East US 2          Order intake portal       2 managed disks\nvm-ledger03       East US 2       Central US         General ledger service     3 managed disks\nvm-crm05          West Europe     North Europe       Customer records database  3 managed disks\nvm-report04       North Europe    West Europe        Reporting front end        1 managed disk"
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Latest processed"
+					},
+					{
+						"id": "i2",
+						"text": "Latest"
+					},
+					{
+						"id": "i3",
+						"text": "Latest app-consistent"
+					},
+					{
+						"id": "i4",
+						"text": "Custom"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "vm-orders11 - the cutover must fit into the shortest time window the business allows, and writes made moments before the cutover may be lost"
+					},
+					{
+						"id": "s2",
+						"label": "vm-ledger03 - nothing already transferred to the service may be missing from the restored copy, and waiting for the service to build a point is acceptable"
+					},
+					{
+						"id": "s3",
+						"label": "vm-crm05 - the restored copy must contain the content that was only in memory and the transactions that were in flight when the point was taken, even if the cutover takes longer"
+					},
+					{
+						"id": "s4",
+						"label": "vm-report04 - the approved change record names one specific point, by its date and time, that must be used, and no recovery plan is in use for this single virtual machine"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Each virtual machine is paired with the Failover pane choice that matches its business constraint: vm-orders11 gets Latest processed, because that choice restores the newest recovery point the service has already finished handling, so no extra processing time is needed and the workload resumes in the shortest time, which suits a tight time window where very recent writes can be lost. vm-ledger03 gets Latest, because that choice processes all data already sent to the service and creates a recovery point for each virtual machine before the cutover, so nothing already replicated is missing, at the cost of the additional processing time the constraint allows. vm-crm05 gets Latest app-consistent, because that choice uses the newest recovery point that also captured in-memory data and in-flight transactions, which is what the database needs, even though it is slower. vm-report04 gets Custom, because that choice restores a point the operator selects and it is offered only when a single virtual machine is failed over without a recovery plan, which matches this case.",
+				"perChoice": {
+					"i1": "Belongs with vm-orders11. This choice restores the newest recovery point the service has already finished working on, so no time is spent building a new one and the workload resumes fastest; that fits the tight time window and the acceptance that writes made moments before the cutover may be lost.",
+					"i2": "Belongs with vm-ledger03. This choice processes all data already sent to the service and creates a recovery point for each virtual machine before failing over, so all replicated data is included and nothing that reached the service is missing, which suits a cutover where waiting for the service to build a point is acceptable.",
+					"i3": "Belongs with vm-crm05. This choice fails over to the newest recovery point that also includes in-memory data and transactions that were in flight when the point was taken, captured with the VSS copy-only method, so the restored copy satisfies the requirement; the extra time it takes is an acceptable trade-off.",
+					"i4": "Belongs with vm-report04. This choice fails over to a recovery point that the operator selects, and it is available only when a single virtual machine is failed over without a recovery plan, which is exactly the situation described for this virtual machine."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-failover-failback"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				}
+			],
+			"subtopics": [
+				"recovery-point-selection",
+				"failover-recovery-points"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S7TH7TJ43YZV4FWE28SPHS",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have several Azure virtual machines that are covered by Azure Site Recovery between East US and East US 2. When a regional outage struck East US, the operations team worked through its documented runbook, and the exhibit is the log of the five events that were recorded, from the first preparation step until the workload was serving customers from East US again. The runbook author now has to tag each entry of the log with the operation that the entry represents. Match each log entry to the operation.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Operations log - workload recovery, East US to East US 2\n\nLog entry 1 - 2026-03-09 08:00 - vm-checkout01, vm-ledger02, vm-report03\n  A documented proof is run in which the three linked machines are brought up in East US 2,\n  while the live machines in East US keep serving customer traffic throughout.\n\nLog entry 2 - 2026-03-09 22:40 - vm-checkout01\n  East US becomes unreachable and vm-checkout01 is brought up in East US 2 so that the\n  workload can continue.\n\nLog entry 3 - 2026-03-10 08:05 - vm-checkout01\n  The application team signs off on vm-checkout01 running in East US 2, and the stored\n  recovery points for that machine are released.\n\nLog entry 4 - 2026-03-12 11:30 - vm-checkout01\n  East US is reachable again, and vm-checkout01, which now runs in East US 2, starts\n  sending its ongoing changes to East US.\n\nLog entry 5 - 2026-03-12 14:00 - vm-checkout01\n  vm-checkout01 is serving customer traffic from East US again."
+				},
+				"items": [
+					{
+						"id": "t1",
+						"text": "Test failover"
+					},
+					{
+						"id": "t2",
+						"text": "Failover"
+					},
+					{
+						"id": "t3",
+						"text": "Commit"
+					},
+					{
+						"id": "t4",
+						"text": "Re-Protect"
+					},
+					{
+						"id": "t5",
+						"text": "Fail back"
+					},
+					{
+						"id": "t6",
+						"text": "Disable replication"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Entry 1 — the documented proof, with the live workload still serving traffic"
+					},
+					{
+						"id": "s2",
+						"label": "Entry 2 — the move to the secondary region while the original region is unreachable"
+					},
+					{
+						"id": "s3",
+						"label": "Entry 3 — the sign-off, after which the stored recovery points for the machine are released"
+					},
+					{
+						"id": "s4",
+						"label": "Entry 4 — the virtual machine in the secondary region now sends its ongoing changes to the original region"
+					},
+					{
+						"id": "s5",
+						"label": "Entry 5 — the workload serving customer traffic from the original region again"
+					}
+				]
+			},
+			"key": {
+				"s1": "t1",
+				"s2": "t2",
+				"s3": "t3",
+				"s4": "t4",
+				"s5": "t5"
+			},
+			"explanation": {
+				"correct": "Entry 1 is the drill that proves the arrangement works without touching production, which is the test failover. Entry 2 is the real cutover of the workload into the secondary region during the outage, which is the Failover. Entry 3 finalizes that cutover and removes the recovery points of the machine, which is the Commit step. Entry 4 starts the reverse direction so that the machine now running in the secondary region sends its ongoing changes to the original region, which is the Re-Protect step, and it requires the cutover to have been finalized and the original region to be available. Entry 5 is the workload running and serving traffic from its original location again, which is the Fail back step. The sequence overall is: prove the setup, cut over, finalize the cutover, replicate back to the original region, then return the workload there.",
+				"perChoice": {
+					"t1": "Belongs in Entry 1. Running a disaster recovery drill, that is a test failover, demonstrates that the linked machines can be brought up in the secondary region while the live machines in the original region keep serving customer traffic, which is exactly what this entry records.",
+					"t2": "Belongs in Entry 2. This is the genuine cutover: the original region is unreachable and the workload has to be brought up and kept running in the secondary region.",
+					"t3": "Belongs in Entry 3. Committing completes the cutover: it removes all available recovery points of that machine and the recovery point can no longer be changed, which matches the release of the stored recovery points after the application team signs off.",
+					"t4": "Belongs in Entry 4. Once the cutover has been finalized and the original region is available again, this operation starts reverse replication so that the machine in the secondary region sends its initial data and then its deltas on to the original region.",
+					"t5": "Belongs in Entry 5. Failing back returns the workload to its original location, so it runs and serves customer traffic from East US again.",
+					"t6": "Fits no entry. None of the logged events turns the protection arrangement off for a machine; switching it off is how a machine that is staying in the secondary region is settled, and that is not described in this log."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-failover-failback"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				}
+			],
+			"subtopics": [
+				"site-recovery-failover",
+				"failover-commit",
+				"re-protect-fail-back"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S80HZD0F2ZXQ81DG1WARYV",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a virtual machine named vm-orders01 that Azure Site Recovery protects between East US and East US 2, and the exhibit shows its current configuration. You are preparing the cutover of the order-entry workload and, while working through the Failover pane, you note four things about how the service behaves. Match each observation to the explanation that accounts for it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Source region",
+							"East US"
+						],
+						[
+							"Target region",
+							"East US 2"
+						],
+						[
+							"Recovery plan",
+							"vm-orders01 and vm-orders02"
+						],
+						[
+							"Recovery point retention",
+							"24 hours"
+						],
+						[
+							"App-consistent snapshot frequency",
+							"Default value, never modified"
+						],
+						[
+							"Managed disks on vm-orders01",
+							"2"
+						],
+						[
+							"SKU of vm-orders01 in East US",
+							"Standard_D8s_v5"
+						],
+						[
+							"SKU offered in East US 2",
+							"Standard_D8as_v5"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "The frequency set for those snapshots in the replication policy is zero hours, so the service never creates them."
+					},
+					{
+						"id": "i2",
+						"text": "That option is offered only when one machine is moved at once and no recovery plan is involved, and here a recovery plan covers the machine."
+					},
+					{
+						"id": "i3",
+						"text": "The SKU that the workload runs on is not sold in the target region, so the service proposes an alternative."
+					},
+					{
+						"id": "i4",
+						"text": "The extra storage was attached after replication was turned on, so the recovery points captured earlier do not include it."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Data still held in memory is absent from every available choice"
+					},
+					{
+						"id": "s2",
+						"label": "You are unable to choose the exact moment yourself"
+					},
+					{
+						"id": "s3",
+						"label": "A different configuration is put forward for the copy"
+					},
+					{
+						"id": "s4",
+						"label": "A disk is missing from the available choices"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Each observation has a different cause. Because the app-consistent snapshot frequency was left at its default of zero hours, app-consistent snapshots are disabled, so no available point carries data that was still held in memory. The recovery point option that lets you pick a point yourself is offered only for a single virtual machine failed over without a recovery plan, and the exhibit shows a recovery plan covering vm-orders01, so it is hidden. The service proposes a different configuration for the copy because the source SKU (Standard_D8s_v5) is not sold in the target region. The missing disk is explained by that disk having been attached after replication was enabled, so earlier recovery points do not include it and the point shows something like '1 of 2 disks'.",
+				"perChoice": {
+					"i1": "This fits the observation that data still held in memory is absent from every available choice. The default app-consistent snapshot frequency is zero hours, which means app-consistent snapshots are disabled, so no app-consistent recovery points exist to pick from at failover.",
+					"i2": "This fits the observation that you are unable to choose the exact moment yourself. The recovery point option that lets you choose a specific point is only available when a single virtual machine is failed over and no recovery plan is used, and the exhibit shows a recovery plan that covers vm-orders01.",
+					"i3": "This fits the observation that a different configuration is put forward for the copy. The SKU the workload runs on (Standard_D8s_v5) is not available in East US 2, so the service can offer an alternative SKU recommendation for the failed-over virtual machine.",
+					"i4": "This fits the observation that a disk is missing from the available choices. A disk added after replication was enabled is not covered by earlier recovery points, so the replication point displays something like '1 of 2 disks'."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-failover-failback"
+				}
+			],
+			"subtopics": [
+				"failover-recovery-points",
+				"replication-policy-settings",
+				"failover-diagnostics"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S84JAJDE8QQ6AA637GBGX3",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have an order-entry workload of two virtual machines covered by Azure Site Recovery between East US and East US 2. A regional outage in East US has already moved the workload to East US 2, where it is now serving customers, and the cause of the outage is still being investigated. Your team keeps a written runbook made up of five Azure Site Recovery operations for this workload, but the notes that said when each operation belongs were lost in a rewrite. Match each operation to the stage at which the team performs it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Workload",
+							"Order entry (vm-orders01, vm-orders02)"
+						],
+						[
+							"Recovery service",
+							"Azure Site Recovery"
+						],
+						[
+							"Primary region",
+							"East US"
+						],
+						[
+							"Secondary region",
+							"East US 2"
+						],
+						[
+							"Availability type",
+							"Single instance; the two machines do not have to move together"
+						],
+						[
+							"vm-orders01",
+							"Running in East US 2 since the outage"
+						],
+						[
+							"East US",
+							"Partly restored, root cause still being investigated"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Failover"
+					},
+					{
+						"id": "i2",
+						"text": "Commit"
+					},
+					{
+						"id": "i3",
+						"text": "Re-Protect"
+					},
+					{
+						"id": "i4",
+						"text": "Fail back"
+					},
+					{
+						"id": "i5",
+						"text": "Test failover"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "While the primary region is unavailable, to start the workload in the secondary region"
+					},
+					{
+						"id": "s2",
+						"label": "Once the workload is confirmed good in the secondary region, to make that state final"
+					},
+					{
+						"id": "s3",
+						"label": "After the move has been made final, to start copying changes toward the primary region"
+					},
+					{
+						"id": "s4",
+						"label": "Once the primary region is healthy again, to move the workload itself to that region"
+					},
+					{
+						"id": "s5",
+						"label": "Before any real outage, as a rehearsal while the live workload keeps serving traffic"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "The five operations sit at five different stages of the disaster response: Failover brings the workload up in the secondary region while the primary region is unavailable; Commit then makes that new state final and deletes the recovery points that could otherwise still be selected; Re-Protect starts the reverse copying of changes from the secondary region toward the primary region once the move is complete; Fail back moves the workload itself to the primary region once that region is healthy again; and Test failover is the rehearsal done beforehand, while production still serves traffic from the primary region.",
+				"perChoice": {
+					"i1": "Belongs at the stage where the primary region is unavailable and the workload has to be brought up in the secondary region. It is the operation that starts the workload there, not the one that finalizes the move or that returns the workload home.",
+					"i2": "Belongs after the workload has been confirmed to be running well in the secondary region. It completes the move by deleting the recovery points that could otherwise still be chosen, so it is not the operation that starts the workload in the secondary region.",
+					"i3": "Belongs after the move has been completed, when the secondary region must begin sending the initial data and then the deltas toward the primary region. It needs the primary region to be available and the rights to create virtual machines there.",
+					"i4": "Belongs after the primary region is healthy again, when the workload itself has to be returned to its original location; it is not the step that sends changes toward the primary region while the workload still runs in the secondary region.",
+					"i5": "Belongs in the preparation phase, before any real outage, as a rehearsal that proves the arrangement works while the live workload keeps serving traffic from its original region."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-failover-failback"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				}
+			],
+			"subtopics": [
+				"site-recovery-failover",
+				"failover-operations",
+				"disaster-recovery-runbook"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S89M9R18FVMXSC4FQ3DZBE",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have four Azure virtual machines in East US that Azure Site Recovery replicates to East US 2. The exhibit lists the configuration that a readiness review recorded for each machine. You need to move all four workloads into the secondary region during the next outage window, and the operations team has to know which preparation or expected behavior belongs to each machine before the cutover starts. Match each virtual machine to the preparation or expected behavior that applies to it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Virtual machine",
+						"Source configuration recorded by the review"
+					],
+					"rows": [
+						[
+							"vm-alpha01",
+							"D4s_v5, Premium SSD v2 managed disks, single instance"
+						],
+						[
+							"vm-beta02",
+							"D8s_v5, Premium SSD managed disks, placed in availability set app-asr, and the replication settings already point at a target availability set named app-asr that exists in East US 2"
+						],
+						[
+							"vm-gamma03",
+							"D8s_v5, Premium SSD managed disks, Linux, member of replication group rg-report"
+						],
+						[
+							"vm-delta04",
+							"D2s_v5, Standard HDD managed disks, a second data disk was attached after protection was enabled"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Move the cache storage account to High Churn with a Premium Storage Account"
+					},
+					{
+						"id": "i2",
+						"text": "Place the secondary copy in the target availability set that already exists in the target region"
+					},
+					{
+						"id": "i3",
+						"text": "Allow outbound traffic on port 20004 so that the group members can reach each other"
+					},
+					{
+						"id": "i4",
+						"text": "Expect the recovery points taken before the disk was attached to list only one of the two disks"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "vm-alpha01"
+					},
+					{
+						"id": "s2",
+						"label": "vm-beta02"
+					},
+					{
+						"id": "s3",
+						"label": "vm-gamma03"
+					},
+					{
+						"id": "s4",
+						"label": "vm-delta04"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Each virtual machine gets the preparation or behavior that its recorded configuration triggers. vm-alpha01 runs Premium SSD v2 managed disks, and those disks require High Churn plus a Premium Storage Account for the cache. vm-beta02's source is in an availability set and the replication settings already point at a target availability set that exists in the secondary region, so that existing set is reused for the secondary copy instead of a new one being created. vm-gamma03 is a member of a replication group, and members of a replication group talk to each other over port 20004, so that outbound port must be permitted (on Linux it is opened manually). vm-delta04 gained a data disk after protection was enabled, and a disk added after replication was enabled is not covered by earlier recovery points, so the replication point shows one of two disks.",
+				"perChoice": {
+					"i1": "Belongs with vm-alpha01: virtual machines with Premium SSD v2 disks require High Churn and a Premium Storage Account for the cache, so the cache account must be configured that way before the cutover.",
+					"i2": "Belongs with vm-beta02: for a source VM in an availability set, an existing target availability set is reused, and vm-beta02's replication settings point at one that already exists in the target region.",
+					"i3": "Belongs with vm-gamma03: members of a replication group communicate with each other over port 20004, and no firewall appliance may block it; on Linux that outbound port is opened manually.",
+					"i4": "Belongs with vm-delta04: a disk added after replication was enabled is not covered by earlier recovery points, so the replication point for that VM shows something like one of two disks."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-failover-failback"
+				}
+			],
+			"subtopics": [
+				"failover-readiness",
+				"replication-configuration",
+				"recovery-point-coverage"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S8G88DB6Q0YC9PDR0PWFY4",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a virtual machine named vm-orders07 that Azure Site Recovery protects between East US and East US 2, and the exhibit shows the configuration that the readiness review recorded for that machine. The operations team is writing the cutover runbook and wants to describe what the recovery service arranges in the secondary region before the workload is brought up there. You need to attach each record to the object it describes. Match each record to the object it belongs to.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Source region",
+							"East US"
+						],
+						[
+							"Secondary region",
+							"East US 2"
+						],
+						[
+							"Subscription used for the secondary region",
+							"Same as the source subscription"
+						],
+						[
+							"Number of source volumes",
+							"2"
+						],
+						[
+							"Source size",
+							"Standard_D4s_v5"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Created in the secondary region with an asr suffix; it holds the objects that the cutover brings up and, unless another subscription is picked, it sits in the same subscription as the source."
+					},
+					{
+						"id": "i2",
+						"text": "Created in the secondary region with an asr suffix; a mapping is made between it and its source counterpart in both directions."
+					},
+					{
+						"id": "i3",
+						"text": "Reused when the source machine already belongs to one, and otherwise created in the secondary region with an asr suffix."
+					},
+					{
+						"id": "i4",
+						"text": "Copies of the source storage that carry the synchronized data; their state is ActiveSAS."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Target resource group"
+					},
+					{
+						"id": "s2",
+						"label": "Target VNet"
+					},
+					{
+						"id": "s3",
+						"label": "Target availability set"
+					},
+					{
+						"id": "s4",
+						"label": "Replica managed disk"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "Each record describes one of the target-side objects that the cutover relies on. The record that mentions an asr suffix, the objects created for the cutover and the default use of the source subscription belongs to the Target resource group. The record that mentions a mapping to the source counterpart in both directions belongs to the Target VNet. The record about reusing an existing grouping or creating one with the asr suffix belongs to the Target availability set. The record about copies of the source storage with an ActiveSAS state belongs to the Replica managed disk.",
+				"perChoice": {
+					"i1": "This belongs in the Target resource group slot: Site Recovery creates that group in the target region with an asr suffix, and by default it lives in the same subscription as the source machine.",
+					"i2": "This belongs in the Target VNet slot: the target VNet is created with an asr suffix, and a network mapping is made between the source and target VNets in both directions.",
+					"i3": "This belongs in the Target availability set slot: an existing target availability set is reused, and if the source machine is not already part of one, Site Recovery creates one with the asr suffix.",
+					"i4": "This belongs in the Replica managed disk slot: these are copies of the source disks, and their disk state should be ActiveSAS."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-failover-failback"
+				}
+			],
+			"subtopics": [
+				"target-region-resources",
+				"replica-managed-disks",
+				"failover-runbook"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S8N1NZ3KE7W2NGF4N07TD8",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a virtual machine named vm-orders05 that Azure Site Recovery covers between East US and East US 2, and the exhibit lists what the readiness review recorded for it. A regional outage in East US forces the order-entry workload to move to the secondary region, and the business wants customer traffic restored as quickly as possible once the cutover happens, even though the last few seconds of orders written just before the outage may not be present afterwards. After the workload is running in East US 2, the operations team also wants to confirm that the copies of the source disks were set up correctly in the secondary region.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Virtual machine",
+							"vm-orders05"
+						],
+						[
+							"Source region",
+							"East US"
+						],
+						[
+							"Target region",
+							"East US 2"
+						],
+						[
+							"Protection status",
+							"Protected"
+						],
+						[
+							"Source virtual machine state",
+							"Running"
+						],
+						[
+							"Source disk type",
+							"Managed disks"
+						],
+						[
+							"Recovery point retention",
+							"24 hours"
+						],
+						[
+							"App-consistent snapshot frequency",
+							"0 hours"
+						]
+					]
+				},
+				"statement": "To restore service as fast as possible, you select {{recoveryPoint}} in the Failover pane, and the copies of the source disks in East US 2 are {{replicaDisks}}.",
+				"slots": [
+					{
+						"id": "recoveryPoint",
+						"options": [
+							{
+								"id": "r1",
+								"text": "Latest processed"
+							},
+							{
+								"id": "r2",
+								"text": "Latest"
+							},
+							{
+								"id": "r3",
+								"text": "Latest app-consistent"
+							},
+							{
+								"id": "r4",
+								"text": "Custom"
+							}
+						]
+					},
+					{
+						"id": "replicaDisks",
+						"options": [
+							{
+								"id": "d1",
+								"text": "managed disks whose names end in -ASRReplica and whose disk state shows ActiveSAS"
+							},
+							{
+								"id": "d2",
+								"text": "managed disks whose names end in -ASRSnapshot and whose disk state shows Reserved"
+							},
+							{
+								"id": "d3",
+								"text": "managed disks whose names end in -ASRDisk and whose disk state shows Unattached"
+							},
+							{
+								"id": "d4",
+								"text": "managed disks whose names end in -ASRReplica and whose disk state shows Unattached"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"recoveryPoint": "r1",
+				"replicaDisks": "d1"
+			},
+			"explanation": {
+				"correct": "The keyed choice restores the workload from the newest recovery point that Site Recovery has already finished handling, so no extra work is needed before the workload can start and the recovery time is the lowest of the options in the Failover pane — which is exactly what the stated requirement (fastest possible restart) asks for. The exhibit also shows the app-consistent snapshot frequency at 0 hours, so app-consistent snapshots are disabled and there is no app-consistent recovery point to choose, and the team has explicitly accepted losing the last few seconds of writes. For the second slot, the copies of the source disks that Site Recovery maintains in the secondary region are managed disks named with the -ASRReplica suffix, and their disk state should show ActiveSAS; they also automatically carry a tag with the ASR-ReplicaDisk prefix.",
+				"perChoice": {
+					"recoveryPoint:r2": "This choice builds a recovery point for the virtual machine from all the data already sent to the recovery service before the cutover, so it adds time before the workload can start. It is the pick when the smallest possible data loss matters more than a fast restart, which is not the requirement in this scenario.",
+					"recoveryPoint:r3": "This choice fails over to the newest app-consistent recovery point. The exhibit shows the app-consistent snapshot frequency at 0 hours, so app-consistent snapshots are disabled and no such recovery point exists to select; it would also take longer to reach than the fastest choice.",
+					"recoveryPoint:r4": "This choice lets you pick a recovery point yourself and is offered only when a single virtual machine is failed over outside a recovery plan. It requires the service to work with the replicated data before the workload starts, so it does not satisfy the requirement for the quickest restart.",
+					"replicaDisks:d2": "Site Recovery does not name the secondary-region copies of the source disks with the -ASRSnapshot suffix, and Reserved is not the disk state these copies are expected to show.",
+					"replicaDisks:d3": "The suffix used for the copies of the source disks is -ASRReplica, not -ASRDisk, and the expected disk state is ActiveSAS rather than Unattached.",
+					"replicaDisks:d4": "The suffix is right, but Unattached is not the disk state these disk copies should show; once the VM is protected they should show ActiveSAS."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-failover-failback"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				}
+			],
+			"subtopics": [
+				"recovery-point-selection",
+				"replica-managed-disks"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S8TYDBZB44RRQQ029KQQYT",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a virtual machine named vm-billing06 that Azure Site Recovery replicates from East US to East US 2, and the exhibit shows the configuration that the readiness review recorded for it. A regional outage has taken East US offline, and the operations team is opening the Failover pane to bring the billing workload up in East US 2. They can see that the size this machine runs with in East US is not offered in East US 2, and the business needs the workload serving customers from East US 2 without any change to the machine that is already running in the source region. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Virtual machine",
+							"vm-billing06"
+						],
+						[
+							"Source region",
+							"East US"
+						],
+						[
+							"Target region",
+							"East US 2"
+						],
+						[
+							"Size used in the source region",
+							"Standard_D4s_v5"
+						],
+						[
+							"Generation",
+							"Gen 2"
+						],
+						[
+							"Operating system",
+							"Ubuntu 22.04"
+						],
+						[
+							"Availability setting",
+							"Single instance"
+						],
+						[
+							"Managed disks",
+							"Yes"
+						],
+						[
+							"Replication status",
+							"Protected"
+						]
+					]
+				},
+				"statement": "The operations team should {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Start the failover with the alternative size that the service recommends for the target region."
+							},
+							{
+								"id": "b",
+								"text": "Start the failover with the size that the source machine uses for the target region, then resize the copy afterwards."
+							},
+							{
+								"id": "c",
+								"text": "Start the failover with a size from a different generation family for the target region."
+							},
+							{
+								"id": "d",
+								"text": "Resize the source machine first, then start the failover with a size that the target region offers."
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "When the original size is not available in the target region, Site Recovery can surface a recommendation for a different size that the target region does offer, and the cutover should proceed with that size. The target size list only presents SKUs from the same generation family as the source VM (Gen 1 or Gen 2), so the team should accept the size the service proposes for East US 2 rather than trying to force the source size, pick something from another family, or alter the machine in the offline source region.",
+				"perChoice": {
+					"action:b": "The size the source machine runs with cannot be chosen for the copy because East US 2 does not offer it, so resizing the copy after the cutover is not a workable route; the recovery service proposes a size the target region does offer.",
+					"action:c": "The size list offered for the failed-over copy contains only SKUs from the same generation family as the source VM, so a size from a different family is not available for the target VM.",
+					"action:d": "Changing the machine in the source region first is neither required nor workable while that region is offline; the recovery service determines the target size and proposes an alternative when the original size is unavailable in the target region."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-failover-failback"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				}
+			],
+			"subtopics": [
+				"site-recovery-failover",
+				"target-vm-size"
+			],
+			"reviewed": false
 		}
 	]
 }

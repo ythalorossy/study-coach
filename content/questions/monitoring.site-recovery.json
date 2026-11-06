@@ -437,6 +437,1584 @@
 				"azure-to-azure-disaster-recovery"
 			],
 			"reviewed": false
+		},
+		{
+			"id": "q_01M6S7A8KHQ84VX89A58M522VH",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You run an order-processing application on the Azure virtual machine vm-app01, which lives in the eastus region, and you want to cover it with Azure Site Recovery for Azure-to-Azure disaster recovery, with westeurope as the recovery region. Another team created the Recovery Services vault for this work earlier, and its location and the machine details are shown in the exhibit below. When you enable replication for vm-app01, the operation fails with a validation error and the machine never reaches a protected state. You need to change the setup so that replication can be enabled and the machine can later fail over to westeurope. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Name",
+						"Location"
+					],
+					"rows": [
+						[
+							"Recovery Services vault",
+							"asr-vault-prod",
+							"eastus"
+						],
+						[
+							"Recovery Services vault resource group",
+							"rg-dr-infra",
+							"eastus"
+						],
+						[
+							"Virtual machine",
+							"vm-app01",
+							"eastus"
+						],
+						[
+							"Intended recovery region",
+							"westeurope",
+							"westeurope"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Create a Recovery Services vault in a supported Azure region other than the source region of the protected virtual machine."
+					},
+					{
+						"id": "b",
+						"text": "Create a Recovery Services vault in the same region as the protected virtual machine, because a vault in another region adds latency to the replication."
+					},
+					{
+						"id": "c",
+						"text": "Create a Recovery Services vault in South Central India and then enable Azure-to-Azure replication of the source virtual machine to the westeurope region."
+					},
+					{
+						"id": "d",
+						"text": "Create a Recovery Services vault in North East US 5 and then enable Azure-to-Azure replication of the source virtual machine to the westeurope region."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "A Recovery Services vault that carries Azure-to-Azure replication must be created in a region other than the source region of the machines it replicates. The vault in the exhibit sits in eastus, the same region as vm-app01, so the Enable replication validation fails and the machine never becomes protected. Re-creating the vault in a supported Azure region that differs from the source region removes the conflict, allows replication to be enabled, and leaves westeurope available as the recovery region for failover.",
+				"perChoice": {
+					"b": "Placing the vault in the same region as the protected virtual machine is not allowed for this scenario, because the vault must not sit in the source region of the machines it replicates. Keeping it in eastus therefore leaves the Enable replication operation failing, and the latency argument does not change that restriction.",
+					"c": "A vault created in South Central India is not usable for Azure-to-Azure disaster recovery. That region can still be chosen as the source or the target region, but only when the vault itself lives in a supported region, so building the vault here keeps the setup invalid.",
+					"d": "North East US 5 is treated the same way as South Central India: vaults created there are not supported for Azure-to-Azure disaster recovery. The region can be a source or target for replication, but the vault has to be created in a supported region."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-enable-replication"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				}
+			],
+			"subtopics": [
+				"recovery-services-vault-region",
+				"azure-to-azure-replication-setup",
+				"disaster-recovery-fundamentals"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S7EN8CC81N0XPZS007X79E",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have an Azure virtual machine named vm-app-01 that hosts a business application in East US 2. The machine is protected with Azure Site Recovery for Azure-to-Azure disaster recovery, and West Europe is the recovery region. The platform team requires that the instance created in West Europe during a failover be placed in an availability set so that its disks are spread across fault domains. The current target configuration for the protected machine is shown in the exhibit. You need the next failover to produce a machine that meets that requirement. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Target configuration item",
+						"Current value"
+					],
+					"rows": [
+						[
+							"Recovery region",
+							"West Europe"
+						],
+						[
+							"Target subscription",
+							"Same subscription as the source"
+						],
+						[
+							"Target resource group",
+							"rg-westeurope-asr (created by Site Recovery)"
+						],
+						[
+							"Target VNet and subnet",
+							"vnet-westeurope-asr / snet-westeurope-asr (created by Site Recovery)"
+						],
+						[
+							"Target availability type",
+							"Single instance"
+						],
+						[
+							"Target availability set",
+							"Not created"
+						],
+						[
+							"Target VM SKU",
+							"D4s v5 (matches the source VM)"
+						],
+						[
+							"Replica managed disk",
+							"vm-app-01-osdisk-ASRReplica"
+						],
+						[
+							"Protection state",
+							"Protected"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Update the target properties of the replicated virtual machine in the replication settings, change the target availability type to Availability set, and save the update."
+					},
+					{
+						"id": "b",
+						"text": "Disable replication for the virtual machine, modify the target availability type to Availability set, and then enable replication again."
+					},
+					{
+						"id": "c",
+						"text": "Stop the virtual machine and start it again, then set the target availability type to Availability set in the replication settings."
+					},
+					{
+						"id": "d",
+						"text": "Create a recovery plan that adds a manual action which creates an availability set and moves the recovered virtual machine into it before failover."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "Most target resources for a replicated virtual machine can be changed while protection is running, for example the target VM SKU, the target resource group, and the target network. The availability type (single instance, availability set, or availability zones) is the exception: it cannot be updated in place. To move the machine from a single instance layout to an availability set, you must turn protection off for that virtual machine, change the target availability type to Availability set, and then start protection again so the new target layout is used the next time the machine is failed over.",
+				"perChoice": {
+					"a": "Target resources such as the target VM SKU can be updated while the protected machine keeps replicating, but the availability type is the one target setting that cannot be changed in place. Saving a target properties update alone leaves the machine configured to fail over as a single instance, so this does not deliver the required layout.",
+					"c": "Starting and stopping the virtual machine only changes its power state. It has no effect on the target resources that Site Recovery uses when it creates the machine in the recovery region, so the recovered machine would still come up as a single instance.",
+					"d": "A recovery plan orchestrates the order of failover steps and the actions that run around them; it does not set the target availability type of a replicated item. The availability type is configured on the protected item itself and, because it cannot be edited while protection is running, it has to be changed by turning protection off, adjusting the setting, and starting protection again."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-enable-replication"
+				}
+			],
+			"subtopics": [
+				"target-resources",
+				"availability-type",
+				"azure-to-azure-disaster-recovery"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S7FVBSREB3T0TZN3DD0XS2",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You run a SQL Server failover cluster instance on two Windows Server virtual machines in West Europe. Both cluster nodes attach the same data disk, and the cluster is protected by Azure Site Recovery for Azure-to-Azure disaster recovery, and East US is the recovery region. The resource inventory for the cluster is shown below. During a failover test, the virtual machines that were created in East US came up without the shared disk, and the SQL instance could not start. You need to re-establish protection for the cluster so that the shared disk is replicated and attached to the failed-over cluster nodes. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Resource",
+						"Location",
+						"Type",
+						"Disk attachment",
+						"State"
+					],
+					"rows": [
+						[
+							"vm-sqlnode-01",
+							"West Europe",
+							"Source virtual machine",
+							"cl-disk-01 attached",
+							"Protected"
+						],
+						[
+							"vm-sqlnode-02",
+							"West Europe",
+							"Source virtual machine",
+							"cl-disk-01 attached",
+							"Protected"
+						],
+						[
+							"vm-sqlnode-01-asr",
+							"East US",
+							"Replica virtual machine",
+							"No data disk attached",
+							"Protected"
+						],
+						[
+							"vm-sqlnode-02-asr",
+							"East US",
+							"Replica virtual machine",
+							"No data disk attached",
+							"Protected"
+						],
+						[
+							"cl-disk-01-ASRReplica",
+							"East US",
+							"Replica managed disk",
+							"No virtual machine attached",
+							"ActiveSAS"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Add the shared disk to each virtual machine in the cluster through the Add disks operation so that it is replicated with the machines, keeping the current protection."
+					},
+					{
+						"id": "b",
+						"text": "Turn protection off and back on for the whole cluster setup so the shared disk is replicated with the cluster."
+					},
+					{
+						"id": "c",
+						"text": "Enable replication for the cluster so that each node replicates the shared disk independently, keeping the current protection."
+					},
+					{
+						"id": "d",
+						"text": "Turn off protection for one virtual machine in the cluster and turn protection back on for that node so the shared disk is replicated with it."
+					}
+				]
+			},
+			"key": {
+				"optionId": "b"
+			},
+			"explanation": {
+				"correct": "A disk shared by the nodes of a Windows Server Failover Cluster workload (for example the disk that holds a SQL Server failover cluster instance) needs special handling. The documentation states that the generic Add disks operation should be skipped for such a disk and that protection should instead be turned off and back on for the whole cluster setup. Repeating the protection steps for the cluster setup re-establishes the replication of the shared disk as part of the cluster, which is what attaches it to the cluster nodes created in the recovery region.",
+				"perChoice": {
+					"a": "The generic Add disks operation is precisely the flow that should be avoided for a shared cluster disk. Adding the disk as an ordinary data disk to each node treats it as a normal disk, and it ends up as a standalone replica managed disk in the recovery region that is not associated with the cluster nodes.",
+					"c": "Protecting the nodes separately leaves every node replicating the same shared disk on its own, so the disk is still not linked to the cluster in the recovery region. A shared cluster disk has to be handled as part of the cluster setup rather than node by node.",
+					"d": "Re-enabling protection for only one node leaves the other node unprotected and does not re-establish the cluster-wide setup that the shared disk requires. Both nodes of the cluster setup have to be turned off and back on together so the shared disk is replicated as part of the cluster."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-enable-replication"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/site-recovery-overview"
+				}
+			],
+			"subtopics": [
+				"shared-cluster-disks",
+				"azure-to-azure-replication"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S7JWQ3R29T789MM2KZEY29",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are designing the disaster recovery setup for the application described in the exhibit. You need to document which of the existing Azure building blocks take on which responsibility in this setup, so that the tiers can be brought back in the right order after a regional outage. Drag each item to the responsibility it carries.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Workload",
+							"Three-tier web application on three Windows Server virtual machines"
+						],
+						[
+							"Region where the machines run",
+							"East US 2"
+						],
+						[
+							"Region used for recovery",
+							"West Europe"
+						],
+						[
+							"Location of the configuration vault",
+							"West Europe"
+						],
+						[
+							"Resource group used in the recovery region",
+							"rg-west-prod-dr"
+						],
+						[
+							"Settings applied to the machines",
+							"Factory defaults"
+						],
+						[
+							"Application tiers",
+							"Web, application, database"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Cache storage account in the source region"
+					},
+					{
+						"id": "i2",
+						"text": "Replica managed disks in the target region"
+					},
+					{
+						"id": "i3",
+						"text": "Replication policy"
+					},
+					{
+						"id": "i4",
+						"text": "Recovery plan"
+					},
+					{
+						"id": "i5",
+						"text": "Mobility service extension"
+					},
+					{
+						"id": "i6",
+						"text": "Azure Backup service"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Needed so the protected workload keeps running at full speed while its writes wait in the region where the machines live"
+					},
+					{
+						"id": "s2",
+						"label": "Needed so the machines created in the secondary region during a failover come up with their content already in place"
+					},
+					{
+						"id": "s3",
+						"label": "Needed so each protected machine has a defined interval between recovery points and a defined length of kept history"
+					},
+					{
+						"id": "s4",
+						"label": "Needed so the three tiers are grouped and started in the right sequence when an outage happens"
+					},
+					{
+						"id": "s5",
+						"label": "Needed on each protected machine, where it registers the machine and starts passing on that machine's writes"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "Each responsibility in this Azure-to-Azure design is carried by a different building block. The cache storage account is created in the region where the machines run and holds their writes briefly, so the production workload is not slowed down while the data is forwarded. Replica managed disks are created in the recovery region and carry the copied data from which the new virtual machines are built during a failover. The replication policy holds the recovery point retention and the app-consistent snapshot frequency, so it is what determines how often recovery points are produced and how far back the history is kept. The recovery plan groups the protected machines and sequences multi-tier failover and recovery, and it can carry scripts, manual actions and Automation runbooks. The Mobility service extension installs itself on each protected virtual machine, registers it with Site Recovery and starts sending that machine's writes to the cache in the source region.",
+				"perChoice": {
+					"i1": "This belongs to the role about keeping the workload responsive: the cache storage account sits in the region where the protected machines run and buffers their writes before the data is sent onward, so the impact on the application stays minimal.",
+					"i2": "This belongs to the role about what the failed-over machines are built from: replica managed disks are created in the recovery region and hold the copied data that the new virtual machines are created from during a failover.",
+					"i3": "This belongs to the role about how often recovery points are produced and how far back the history goes: the replication policy carries the recovery point retention and app-consistent snapshot frequency values, which can be set while enabling protection or applied to machines later.",
+					"i4": "This belongs to the role about grouping and ordering the tiers: recovery plans group the protected machines and sequence multi-tier application failover and recovery, and they can include scripts, manual actions and Automation runbooks.",
+					"i5": "This belongs to the role on the protected machine itself: the Mobility service extension installs itself on each source virtual machine, registers it with Site Recovery and forwards that machine's writes into the cache in the source region.",
+					"i6": "This fits none of the roles. The Backup service saves and restores data such as files and databases; it does not stage writes for virtual machine replication, hold the copied disks used to build the failed-over machines, define the recovery point settings, order the tiers, or run on the protected machine."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/site-recovery-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-enable-replication"
+				}
+			],
+			"subtopics": [
+				"azure-to-azure-architecture",
+				"replication-policy",
+				"recovery-plan"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S7NBS48JBP0EVR33ZKKMYZ",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You use Azure Site Recovery to protect a small estate of Azure virtual machines for Azure-to-Azure disaster recovery. North Europe is the source region and West Europe is the target region. The protected estate is listed in the exhibit.\n\nOperations has agreed on the outcomes that this setup must deliver, and you have to attach each configuration element that Site Recovery offers to the outcome it produces. Drag each configuration element to the outcome it delivers.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Virtual machine",
+						"Region",
+						"Workload",
+						"Notes"
+					],
+					"rows": [
+						[
+							"vm-web-01",
+							"North Europe",
+							"Catalog web front end",
+							"Serves catalog pages from a read-only cache"
+						],
+						[
+							"vm-order-01",
+							"North Europe",
+							"Order intake with SQL Server",
+							"Orders are frequently committed while the request is still being handled in memory"
+						],
+						[
+							"vm-order-02",
+							"North Europe",
+							"Order intake with SQL Server",
+							"Runs the same workload as vm-order-01 and must never diverge from it"
+						],
+						[
+							"vm-batch-01",
+							"North Europe",
+							"Nightly reconciliation jobs",
+							"Write rate peaks at about 90 MB/s every night"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "app-snap",
+						"text": "App-consistent snapshot frequency"
+					},
+					{
+						"id": "retention",
+						"text": "Recovery point retention"
+					},
+					{
+						"id": "churn",
+						"text": "High Churn"
+					},
+					{
+						"id": "group",
+						"text": "Replication group"
+					},
+					{
+						"id": "plan",
+						"text": "Recovery plan"
+					}
+				],
+				"slots": [
+					{
+						"id": "s-history",
+						"label": "vm-order-01 can be brought back to any moment within the previous two days"
+					},
+					{
+						"id": "s-memory",
+						"label": "vm-order-01 comes back with the order that was still being processed in RAM, and with the workload's in-memory state intact"
+					},
+					{
+						"id": "s-write-rate",
+						"label": "vm-batch-01 keeps up with its peak write rate instead of the copy in the target region falling behind"
+					},
+					{
+						"id": "s-consistent-pair",
+						"label": "vm-order-01 and vm-order-02 come back together at one shared moment in time"
+					},
+					{
+						"id": "s-sequence",
+						"label": "The tiers are brought back in the intended order during an outage, with one step confirmed manually and another carried out by a script"
+					}
+				]
+			},
+			"key": {
+				"s-history": "retention",
+				"s-memory": "app-snap",
+				"s-write-rate": "churn",
+				"s-consistent-pair": "group",
+				"s-sequence": "plan"
+			},
+			"explanation": {
+				"correct": "Each configuration element produces a specific outcome in an Azure-to-Azure setup. Recovery point retention decides how far back in time a machine can be brought back, so the two-day history for vm-order-01 comes from that setting (its default is one day). The app-consistent snapshot frequency decides how often memory contents and transactions in progress are captured, which is what brings back the order that was still in RAM; it is disabled by default at zero hours, and its value must stay below the retention period. High Churn is the option for a workload whose write rate exceeds what the default storage setup absorbs — it uses a premium block blob storage account and covers data churn up to 100 MB/s, which suits the roughly 90 MB/s peak of vm-batch-01. A replication group gives its member machines shared crash-consistent and app-consistent recovery points, so vm-order-01 and vm-order-02 come back at one shared moment; it is only for machines running the same workload and it affects workload performance. A recovery plan groups machines and sequences multi-tier failover and recovery, adding scripts, manual actions and Azure Automation runbooks, which is what produces the ordered, partly automated return of the tiers.",
+				"perChoice": {
+					"s-history": "retention",
+					"s-memory": "app-snap",
+					"s-write-rate": "churn",
+					"s-consistent-pair": "group",
+					"s-sequence": "plan",
+					"retention": "Belongs with the requirement that vm-order-01 can be brought back to any moment within the previous two days: this setting specifies how long recovery points are kept, and it defaults to one day, so it must be raised. A longer retention also raises storage cost because more recovery points are saved.",
+					"app-snap": "Belongs with the requirement that vm-order-01 returns with the order that was still in RAM: this setting controls how often an app-consistent snapshot is taken, and such a snapshot contains everything in a crash-consistent snapshot plus all data in memory and transactions in progress. It defaults to zero hours (disabled) and must always be lower than the retention period.",
+					"churn": "Belongs with the requirement that vm-batch-01 keeps up with its peak write rate: this option uses a premium block blob storage account and covers data churn up to 100 MB/s, while Normal Churn is the default for ordinary workloads and is what the protected machine is using today.",
+					"group": "Belongs with the requirement that vm-order-01 and vm-order-02 return at one shared moment: gathering the machines into a replication group gives them shared crash-consistent and app-consistent recovery points, and it is intended for machines running the same workload, though it impacts workload performance.",
+					"plan": "Belongs with the requirement that the tiers come back in the intended order with a manual step and a scripted step: a recovery plan groups machines and sequences multi-tier failover and recovery, with scripts, manual actions and Azure Automation runbooks. It currently works for region-to-region replication, which is the scenario here."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-enable-replication"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/site-recovery-overview"
+				}
+			],
+			"subtopics": [
+				"replication-policy-settings",
+				"multi-vm-consistency",
+				"recovery-plan-sequencing"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S7V6VVT0MFGREHWV3ME3QB",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a line-of-business application that you want to protect with Azure Site Recovery for Azure-to-Azure disaster recovery, and the estate is listed in the exhibit. Your company rule is that every colleague receives only the access their own task requires. Four of the built-in roles are available to you, and you need to work out which one allows each person to carry out the work described below. Drag each role to the work it authorises.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Source workload",
+							"Four virtual machines in East US 2 (two Windows, two Linux)"
+						],
+						[
+							"Secondary region",
+							"West Europe"
+						],
+						[
+							"Protection container",
+							"Not created yet"
+						],
+						[
+							"Change window",
+							"A regional outage of the source region; the application has to run from the secondary region"
+						],
+						[
+							"Team",
+							"One colleague per workstream, plus yourself"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Owner on the subscription"
+					},
+					{
+						"id": "i2",
+						"text": "Site Recovery Contributor"
+					},
+					{
+						"id": "i3",
+						"text": "Virtual Machine Contributor"
+					},
+					{
+						"id": "i4",
+						"text": "Backup Contributor"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Create the vault that will hold the protection configuration for the estate."
+					},
+					{
+						"id": "s2",
+						"label": "Enable and manage the replication of the protected workloads, then run the switch over to the secondary region when the outage hits."
+					},
+					{
+						"id": "s3",
+						"label": "Create the new instances and attach the copied disks in the secondary region while the workload is switched over."
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3"
+			},
+			"explanation": {
+				"correct": "Each workstream needs a different grant. The protection container has to be created first at subscription scope, which needs admin or owner permissions on the subscription, so Owner on the subscription covers the work of creating the vault. The replication and failover operations performed inside that vault are run with the Site Recovery Contributor built-in role, so that role covers enabling and managing replication and running the switch to the secondary region. When the failover happens, new instances and their disks are created in the secondary region, and that work is covered by the Virtual Machine Contributor role (or the equivalent permissions to create a VM in the selected virtual network, write to an Azure storage account, and write to an Azure managed disk). Backup Contributor is left over, because it belongs to the Backup service, which in Azure Recovery Services only keeps data safe and recoverable.",
+				"perChoice": {
+					"i1": "Owner on the subscription belongs with the work of creating the vault. Creating the Recovery Services vault requires admin or owner permissions on the subscription, and the vault has to exist before any machine can be enabled for replication.",
+					"i2": "Site Recovery Contributor belongs with the work of enabling and managing replication and of running the switch over to the secondary region. This built-in role is what grants the ability to manage Site Recovery operations in the vault, including enabling replication and performing failovers.",
+					"i3": "Virtual Machine Contributor belongs with the work of creating the new instances and attaching the copied disks in the secondary region. The target machines are created as part of the failover, and this role, or the equivalent create-VM-in-VNet, write-to-storage-account and write-to-managed-disk permissions, covers it.",
+					"i4": "Backup Contributor fits none of these workstreams. It belongs to the Backup service, which in Azure Recovery Services only keeps data safe and recoverable, while the work listed here needs the vault creation rights, the Site Recovery operations rights and the rights to create the target machines and disks described above."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-enable-replication"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/site-recovery-overview"
+				}
+			],
+			"subtopics": [
+				"site-recovery-permissions",
+				"azure-to-azure-disaster-recovery",
+				"rbac-built-in-roles"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S7YK0GP2C58BCAVNZM67JG",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are writing the recovery design document for the virtual machines listed in the exhibit, and each row states one requirement that the design has to satisfy. You need to attach the Site Recovery setting or capability that delivers each requirement to the correct row. Drag each item to the row whose requirement it satisfies.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Machine",
+						"Region",
+						"Workload",
+						"Requirement for the recovery design"
+					],
+					"rows": [
+						[
+							"dhcp-01",
+							"East US",
+							"DHCP service for the branch offices",
+							"The service runs no transactional workload of its own, so bringing back the data that sat on the disks is enough, and the team wants it usable again quickly after an outage."
+						],
+						[
+							"sql-orders-01",
+							"East US",
+							"Order database",
+							"Orders that the application had already accepted but that had not yet reached the database files must still be present after the machine is recovered."
+						],
+						[
+							"web-01, api-01, worker-01",
+							"East US",
+							"Three tiers of one web application",
+							"The three machines must always be brought back to one shared moment in time, and the team accepts the extra load that this places on the workload."
+						],
+						[
+							"vm-archive-01",
+							"East US 2",
+							"Reporting server",
+							"The team wants to be able to recover the machine from any point in a seven-day window, and accepts that keeping that many points will raise the storage bill."
+						],
+						[
+							"vm-invoice-01",
+							"West Europe",
+							"Invoice generator",
+							"The instance that is created in the recovery region must not go down together with the source when a single zone in that region fails."
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Crash-consistent recovery point"
+					},
+					{
+						"id": "i2",
+						"text": "App-consistent recovery point"
+					},
+					{
+						"id": "i3",
+						"text": "Replication group"
+					},
+					{
+						"id": "i4",
+						"text": "Recovery point retention"
+					},
+					{
+						"id": "i5",
+						"text": "Target availability type: availability zones"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Requirement for dhcp-01"
+					},
+					{
+						"id": "s2",
+						"label": "Requirement for sql-orders-01"
+					},
+					{
+						"id": "s3",
+						"label": "Requirement for the web application tiers"
+					},
+					{
+						"id": "s4",
+						"label": "Requirement for vm-archive-01"
+					},
+					{
+						"id": "s5",
+						"label": "Requirement for vm-invoice-01"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5"
+			},
+			"explanation": {
+				"correct": "Each row of the exhibit states a recovery requirement, and each Site Recovery setting or capability satisfies exactly one of them: the DHCP service only needs the on-disk data, so a crash-consistent recovery point fits; the order database must keep accepted but unwritten orders, so an app-consistent recovery point fits; the three tiers must return to one shared moment, so they belong to a replication group; the seven-day window of recoverable moments is set by the recovery point retention of the replication policy; and surviving the loss of a single zone in the recovery region requires the target availability type to be availability zones.",
+				"perChoice": {
+					"i1": "Belongs with dhcp-01. Crash-consistent recovery points contain the data that was on the disks, without anything from memory, and they are produced every five minutes by default. They are sufficient for operating systems and for apps such as DHCP servers and print servers, which matches a service that keeps no transactional state of its own.",
+					"i2": "Belongs with sql-orders-01. An app-consistent recovery point contains everything a crash-consistent one holds plus the data in memory and the transactions that were in progress, captured with VSS, so accepted orders that never reached the database files survive the recovery.",
+					"i3": "Belongs with the web application tiers. A replication group gathers machines so they share crash-consistent and app-consistent recovery points at failover, which produces the single shared moment the three tiers need. Multi-machine consistency impacts workload performance, which is the extra load the team accepts.",
+					"i4": "Belongs with vm-archive-01. Recovery point retention is the replication policy setting that specifies how long Site Recovery keeps recovery points, so a seven-day window of recoverable moments is set there. A long retention period also means more recovery points are saved, which raises storage cost.",
+					"i5": "Belongs with vm-invoice-01. To survive the loss of one zone in the recovery region, the target availability type has to be availability zones. When recovering zone to zone, select a logical zone that maps to a different physical zone for the target subscription, because equal logical zone numbers do not identify equal physical zones."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/site-recovery-overview"
+				}
+			],
+			"subtopics": [
+				"recovery-point-consistency",
+				"replication-groups",
+				"target-availability"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S8279MBJNZT1RC55YF023W",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You protect an estate of Azure virtual machines with Azure Site Recovery for Azure-to-Azure disaster recovery, and the estate is listed in the exhibit. Two conditions in the environment shape this rollout: the machines send their outbound traffic through an HTTP proxy, and a web filter in front of that proxy asks the user to sign in before anything is forwarded. Operations has collected four symptoms reported by the Site Recovery service, and you need to decide which corrective action belongs to each of them. Drag each reported symptom to the corrective action that resolves it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Machine",
+						"Region",
+						"Operating system",
+						"Source size",
+						"Target region",
+						"Role"
+					],
+					"rows": [
+						[
+							"vm-app-01",
+							"East US 2",
+							"Ubuntu 22.04",
+							"Standard_D4s_v5",
+							"West Europe",
+							"Web front end"
+						],
+						[
+							"vm-db-01",
+							"East US 2",
+							"Ubuntu 22.04",
+							"Standard_D8s_v5",
+							"West Europe",
+							"Database server"
+						],
+						[
+							"vm-inv-01",
+							"East US 2",
+							"Windows Server 2022",
+							"Standard_D4s_v5",
+							"West Europe",
+							"Invoicing service"
+						],
+						[
+							"vm-file-01",
+							"East US 2",
+							"Windows Server 2022",
+							"Standard_D8s_v5",
+							"West Europe",
+							"File share"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Update the trusted root certificates and the certificate revocation list on the affected machines."
+					},
+					{
+						"id": "i2",
+						"text": "Install the latest Windows updates on the affected machines."
+					},
+					{
+						"id": "i3",
+						"text": "Exclude 169.254.169.254 from the traffic that the proxy forwards."
+					},
+					{
+						"id": "i4",
+						"text": "Confirm that the recovery region and the subscription can host the required size, then select the matching entry from the target size list."
+					},
+					{
+						"id": "i5",
+						"text": "Replace the sign-in filter with an allow-list of destinations that replication is permitted to use."
+					},
+					{
+						"id": "i6",
+						"text": "Enable the Site Recovery authentication proxy for the affected machines."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "vm-app-01 and vm-db-01 never reach a protected state, and the service reports that the registration cannot be completed."
+					},
+					{
+						"id": "s2",
+						"label": "vm-inv-01 stays protected, but the agent cannot work out the security type and the replication status shows an error."
+					},
+					{
+						"id": "s3",
+						"label": "After a failover test of vm-file-01, the workload fails to start because the instance that came up has less memory than the source instance."
+					},
+					{
+						"id": "s4",
+						"label": "The estate cannot reach the endpoints the service needs, because every outbound connection is forced through a component that asks for credentials first."
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i3",
+				"s3": "i4",
+				"s4": "i5"
+			},
+			"explanation": {
+				"correct": "vm-app-01 and vm-db-01 run Ubuntu, and registration with Site Recovery fails on machines whose certificates are out of date; on Linux the fix is to update the trusted root certificates and the certificate revocation list, so that action belongs to the first symptom. The agent on vm-inv-01 cannot determine the machine's security type because the proxy forwards the instance metadata address, and excluding 169.254.169.254 from the proxied traffic restores that call, so it belongs to the second symptom. The instance produced for vm-file-01 was smaller than the source instance because the target size defaults to the source size or the next best available one when the recovery region or the subscription cannot host the required size; confirming capacity and selecting the matching entry in the target size list restores the source size, so it belongs to the third symptom. Finally, Site Recovery needs plain outbound connectivity and does not support an authenticating proxy, so the sign-in filter has to be replaced with an allow-list of destinations, which belongs to the fourth symptom.",
+				"perChoice": {
+					"i1": "This action belongs to the first symptom: vm-app-01 and vm-db-01 are Ubuntu machines, and on Linux an outdated certificate set is corrected by updating the trusted root certificates and the certificate revocation list.",
+					"i2": "This action fits no symptom: the machines whose registration fails are Ubuntu-based rather than Windows, so the Windows update path does not apply to them, and the Windows machines in the exhibit report different symptoms.",
+					"i3": "This action belongs to the second symptom: the Mobility agent needs to reach the instance metadata service at 169.254.169.254 to determine the machine's security type, and a proxy that forwards that address prevents the call.",
+					"i4": "This action belongs to the third symptom: the target size defaults to the source size or the next best available one, so a smaller result means the recovery region or the subscription cannot host the required size; confirming capacity and picking the matching entry restores the source size.",
+					"i5": "This action belongs to the fourth symptom: Site Recovery requires direct outbound connectivity to its service endpoints and does not work through a component that demands credentials, so the sign-in filter must give way to an allow-list of destinations.",
+					"i6": "This action fits no symptom: Site Recovery does not support an authentication proxy for controlling the virtual machine's connectivity, so enabling one would not restore replication."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-enable-replication"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/site-recovery-overview"
+				}
+			],
+			"subtopics": [
+				"azure-to-azure-replication",
+				"mobility-service-connectivity",
+				"target-size-configuration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S87P72Y5XKXK61MN2QRHV4",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are adding Azure Site Recovery coverage to the workloads listed in the exhibit, and every workload has to survive the loss of the environment it runs in today. Azure Site Recovery supports a set of replication scenarios, and exactly one of them covers each environment in the list. Drag each workload onto the replication scenario that covers it.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Workload",
+						"Where it runs today"
+					],
+					"rows": [
+						[
+							"Finance",
+							"Azure virtual machines with managed disks in the East US region"
+						],
+						[
+							"Payroll",
+							"VMware virtual machines in the company's own datacentre"
+						],
+						[
+							"Orders",
+							"Hyper-V virtual machines in the company's own datacentre"
+						],
+						[
+							"Warehouse",
+							"Physical Windows and Linux servers in the company's own datacentre"
+						],
+						[
+							"Marketing",
+							"Windows instances in an AWS account"
+						],
+						[
+							"Edge kiosks",
+							"Virtual machines in an Azure Extended Zone"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Azure-to-Azure (region to region)"
+					},
+					{
+						"id": "i2",
+						"text": "On-premises VMware virtual machines to Azure"
+					},
+					{
+						"id": "i3",
+						"text": "On-premises Hyper-V virtual machines to Azure"
+					},
+					{
+						"id": "i4",
+						"text": "On-premises physical Windows and Linux servers to Azure"
+					},
+					{
+						"id": "i5",
+						"text": "AWS Windows instances to Azure"
+					},
+					{
+						"id": "i6",
+						"text": "Azure Extended Zone to its connected region (preview)"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Finance workload"
+					},
+					{
+						"id": "s2",
+						"label": "Payroll workload"
+					},
+					{
+						"id": "s3",
+						"label": "Orders workload"
+					},
+					{
+						"id": "s4",
+						"label": "Warehouse workload"
+					},
+					{
+						"id": "s5",
+						"label": "Marketing workload"
+					},
+					{
+						"id": "s6",
+						"label": "Edge kiosks workload"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4",
+				"s5": "i5",
+				"s6": "i6"
+			},
+			"explanation": {
+				"correct": "Azure Site Recovery offers one replication scenario per source environment, and each workload in the exhibit has to be paired with the scenario that names its own environment. The Finance workload already runs on Azure virtual machines with managed disks, so it is covered by the region-to-region scenario. Payroll, Orders and Warehouse are all datacentre estates, but they differ in the platform they run on, and each platform has its own scenario that replicates the machines into Azure. The Marketing workload runs on Windows instances in an AWS account, which is itself a supported source that is replicated into Azure. The Edge kiosks workload sits in an Azure Extended Zone, which is covered by the scenario that sends those machines to the region they are connected to, and that scenario is still in preview.",
+				"perChoice": {
+					"i1": "Belongs with the Finance workload: virtual machines already running in an Azure region are replicated to a virtual machine in another Azure region, which is the region-to-region scenario.",
+					"i2": "Belongs with the Payroll workload: Site Recovery replicates on-premises VMware virtual machines into Azure, so this scenario covers the VMware datacentre estate.",
+					"i3": "Belongs with the Orders workload: on-premises Hyper-V virtual machines are a supported source for replication into Azure, so this scenario covers the Hyper-V datacentre estate.",
+					"i4": "Belongs with the Warehouse workload: physical Windows and Linux servers with no virtualization layer in a datacentre can be replicated into Azure, so this scenario covers the bare-metal estate.",
+					"i5": "Belongs with the Marketing workload: Windows instances that run in AWS are a supported source and are replicated into Azure, so this scenario covers the workloads hosted by that provider.",
+					"i6": "Belongs with the Edge kiosks workload: machines placed in an Azure Extended Zone are covered by the scenario that replicates them to the region they are connected to, and that scenario is still in preview."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/site-recovery-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				}
+			],
+			"subtopics": [
+				"replication-scenarios",
+				"azure-to-azure",
+				"disaster-recovery"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S8D3PK4RDQRS52DS7HF2RS",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You protect a group of Linux virtual machines in North Europe with Azure Site Recovery for Azure-to-Azure disaster recovery, and the Mobility service that Site Recovery installed on each machine is still running a build from several months ago. Refreshing each machine by hand would need a change window every time a new build is published, so the platform team wants the service to keep that component current on its own. You need to change the replication configuration and the outbound network rules so that this happens without further manual work. Which two changes should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Replicated item: vm-app-01  (North Europe -> West Europe)\n\n  Update settings                : Not selected\n  Account for the update option  : Not set\n\nOutbound rules on the source subnet (HTTPS 443):\n  *.blob.core.windows.net\n  login.microsoftonline.com\n  *.hypervrecoverymanager.windowsazure.com\n  *.servicebus.windows.net\n"
+				},
+				"statement": "The correct configuration is to {{s1}}, and the outbound rules must permit {{s2}}.",
+				"slots": [
+					{
+						"id": "s1",
+						"options": [
+							{
+								"id": "a",
+								"text": "select Update settings and specify the Automation account"
+							},
+							{
+								"id": "b",
+								"text": "select Update settings and specify the cache storage account"
+							},
+							{
+								"id": "c",
+								"text": "select Update settings and specify the Recovery Services vault"
+							},
+							{
+								"id": "d",
+								"text": "select Update settings and specify the replica managed disk"
+							}
+						]
+					},
+					{
+						"id": "s2",
+						"options": [
+							{
+								"id": "e",
+								"text": "*.automation.ext.azure.com"
+							},
+							{
+								"id": "f",
+								"text": "*.vault.azure.net"
+							},
+							{
+								"id": "g",
+								"text": "*.servicebus.windows.net"
+							},
+							{
+								"id": "h",
+								"text": "*.hypervrecoverymanager.windowsazure.com"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "e"
+			},
+			"explanation": {
+				"correct": "The Mobility service on a replicated virtual machine can be kept current by the platform when the update option in the extension settings is switched on and pointed at an Automation account, which is the pair of values Site Recovery expects on the Manage tab when replication is enabled. The agent then fetches the new build from *.automation.ext.azure.com, so that destination must be reachable outbound over HTTPS from the protected machine; where the rules are written against IP ranges rather than URLs, the GuestAndHybridManagement service tag is the one that covers this path, and it is needed in both the source and the target region. The cache storage account, the Recovery Services vault and the replica managed disk all belong to the replication data path and cannot deliver a new build to the agent.",
+				"perChoice": {
+					"s1:b": "The cache storage account in the source region is where disk writes are staged before they are processed and replicated; it plays no part in delivering a new build to the Mobility service, so pointing the update option at it would leave the component outdated.",
+					"s1:c": "The Recovery Services vault holds the replication configuration, the policies and the recovery points for the protected machines; the update option does not take a vault, so nothing would be kept current automatically.",
+					"s1:d": "A replica managed disk is the copy of a source disk that Site Recovery maintains in the recovery region; it is a storage target for the replicated data, not something the update option can be pointed at.",
+					"s2:f": "This destination is required only for machines protected with Azure Disk Encryption when replication is enabled from the portal; it is not where the Mobility service pulls a newer build from.",
+					"s2:g": "This destination is where the protected machine writes Site Recovery monitoring and diagnostics data; it is not the endpoint used to refresh the Mobility service.",
+					"s2:h": "This destination lets the machine talk to the Site Recovery service for registration and replication status; the refreshed build of the agent is fetched from a different endpoint."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-enable-replication"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				}
+			],
+			"subtopics": [
+				"extension-settings",
+				"outbound-connectivity",
+				"azure-to-azure-replication"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S8GER64R20D1NX6XH8E7FP",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are adding disaster recovery to an Azure virtual machine, vm-app-01, and you want it to be able to fail over to West Europe. The exhibit shows where the pieces of the setup live today. When you run the enable-replication operation for the machine, it stops with a validation error that reports a required storage resource for the replication is missing, and replication never starts. The machine, its disks and the vault are all set up correctly, so the design is only missing one component. Which component must you add, and where must you create it?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Virtual machine",
+							"vm-app-01"
+						],
+						[
+							"Region hosting vm-app-01",
+							"East US"
+						],
+						[
+							"Region where the failed-over machine is created",
+							"West Europe"
+						],
+						[
+							"Region holding the Recovery Services vault",
+							"Central US"
+						],
+						[
+							"Result of the enable-replication operation",
+							"Validation error: a required storage resource was not found"
+						]
+					]
+				},
+				"statement": "Replication for vm-app-01 cannot start until the {{object}} is created in the {{placement}}.",
+				"slots": [
+					{
+						"id": "object",
+						"options": [
+							{
+								"id": "a",
+								"text": "cache storage account"
+							},
+							{
+								"id": "b",
+								"text": "target storage account"
+							},
+							{
+								"id": "c",
+								"text": "premium block blob storage account"
+							},
+							{
+								"id": "d",
+								"text": "replica managed disk"
+							}
+						]
+					},
+					{
+						"id": "placement",
+						"options": [
+							{
+								"id": "a",
+								"text": "the region where the virtual machine is hosted"
+							},
+							{
+								"id": "b",
+								"text": "the region where the failed-over virtual machine is hosted"
+							},
+							{
+								"id": "c",
+								"text": "the region where the Recovery Services vault is hosted"
+							},
+							{
+								"id": "d",
+								"text": "the region where the virtual machine's replica disks are hosted"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"object": "a",
+				"placement": "a"
+			},
+			"explanation": {
+				"correct": "Azure-to-Azure disaster recovery depends on a cache storage account that sits in the source region, the region that hosts the virtual machine being replicated. Disk writes are staged in that account while replication runs and are only then passed on to the recovery region, so the enable-replication operation cannot complete until such an account exists. The cache account therefore belongs in East US, the region hosting vm-app-01, and not in the recovery region, the vault's region, or the region where the replicated disks are created.",
+				"perChoice": {
+					"object:b": "A target storage account holds the data once it has been processed and sent on to the recovery region; it does not provide the staging location in the source region that the missing prerequisite refers to.",
+					"object:c": "A premium block blob storage account is what the High Churn storage configuration uses when a virtual machine's write rate exceeds the normal limits, so it is a churn choice rather than the component this validation error is about.",
+					"object:d": "Replica managed disks are the replicated copies of the machine's managed disks that the service creates in the recovery region; they are produced by the replication process itself and are not provisioned by you in the source region beforehand.",
+					"placement:b": "This is the recovery region, where the failed-over virtual machine is created. The account that stages the write data has to sit in the source region, next to the machine it protects, so that the machine can reach it over its outbound connection.",
+					"placement:c": "This is the region that holds the Recovery Services vault. The vault's own location is independent of the staging account; that account belongs in the region that hosts the virtual machine.",
+					"placement:d": "The replicated disks are created in the recovery region, so this describes the target side of the setup. The account that buffers the write data has to be in the source region, where the writes originate."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-enable-replication"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/site-recovery-overview"
+				}
+			],
+			"subtopics": [
+				"azure-to-azure-replication",
+				"replication-prerequisites",
+				"cache-storage-account"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S8JVGA9G9653AEJV9JNFT4",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You protect a line-of-business application with Azure Site Recovery for Azure-to-Azure disaster recovery. The virtual machine vm-app-01 runs in East US 2 and West Europe is the recovery region, and the machine is already protected, as shown in the exhibit. The recovery region currently has no spare capacity for the size that the machine uses today. You are writing the disaster recovery design document for the business, and you have to record exactly what the protection produces in the recovery region: the size of the instance that a failover would create, and the disk type of the replicated copy of the data disk. Which size would the failed-over instance run, and which disk type would the replicated copy use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Virtual machine",
+							"vm-app-01"
+						],
+						[
+							"Source region",
+							"East US 2"
+						],
+						[
+							"Recovery region",
+							"West Europe"
+						],
+						[
+							"Operating system",
+							"Windows Server 2022"
+						],
+						[
+							"Source size",
+							"D8s_v5 (Gen 2)"
+						],
+						[
+							"Data disk",
+							"Premium SSD v2, 512 GiB"
+						],
+						[
+							"Protection status",
+							"Protected"
+						]
+					]
+				},
+				"statement": "A failover would create the instance in West Europe with {{vm-size}}, and the replicated copy of the data disk that is kept in the recovery region would be a {{replica-disk-type}} disk.",
+				"slots": [
+					{
+						"id": "vm-size",
+						"options": [
+							{
+								"id": "a",
+								"text": "the next best available size in the same family"
+							},
+							{
+								"id": "b",
+								"text": "the same size as the protected machine, if the recovery region has capacity for it"
+							},
+							{
+								"id": "c",
+								"text": "the largest size the recovery region offers"
+							},
+							{
+								"id": "d",
+								"text": "a size from the previous generation of virtual machines"
+							}
+						]
+					},
+					{
+						"id": "replica-disk-type",
+						"options": [
+							{
+								"id": "a",
+								"text": "Premium SSD v1"
+							},
+							{
+								"id": "b",
+								"text": "Premium SSD v2"
+							},
+							{
+								"id": "c",
+								"text": "Ultra Disk"
+							},
+							{
+								"id": "d",
+								"text": "Standard HDD"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"replica-disk-type": "a",
+				"vm-size": "a"
+			},
+			"explanation": {
+				"correct": "The target virtual machine SKU defaults to the source SKU or, when that SKU cannot be placed in the recovery region, to the next best available one, and the SKU list offered for the target only contains SKUs of the same family (Gen 1 or Gen 2) as the protected machine. Because West Europe has no capacity for D8s_v5, the failed-over instance is created with the next best size in that family, not with a size from another family or an arbitrary large size. For the disks, Premium SSD v2 and Ultra Disk are replicated as Premium SSD v1 replica disks, and the source disk type is only applied again when the instance fails over, so the copy kept in the recovery region is a Premium SSD v1 disk.",
+				"perChoice": {
+					"replica-disk-type:b": "Premium SSD v2 is the type of the disk in the source region. The replicated copy that is kept in the recovery region is created as a Premium SSD v1 replica disk; the source disk type is the one that comes back when the instance fails over.",
+					"replica-disk-type:c": "Ultra Disk is not the type of the protected data disk, and it is not used for the replicated copy either, because Ultra Disk and Premium SSD v2 both replicate as Premium SSD v1 replica disks.",
+					"replica-disk-type:d": "Standard HDD is not used for the replicated copy of a managed disk protected as Premium SSD v2; such disks are replicated as Premium SSD v1 replica disks.",
+					"vm-size:b": "This describes the default only when the recovery region can host the exact SKU of the protected machine. The scenario states that there is no spare capacity for that size in West Europe, so Site Recovery falls back to the next best available size in the same family instead of keeping the original size.",
+					"vm-size:c": "Site Recovery does not pick the largest size in the recovery region. The target SKU defaults to the source SKU or to the next best available one, which may be a smaller size than the source.",
+					"vm-size:d": "The list of SKUs offered for the target contains only SKUs from the same family (Gen 1 or Gen 2) as the protected machine, so a size from the previous generation of virtual machines is not an option that can be selected for the target."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-enable-replication"
+				}
+			],
+			"subtopics": [
+				"target-vm-sizing",
+				"replica-disk-types",
+				"azure-to-azure-replication"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S8P8EMRZJSK2A15W0GFVSV",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are adding disaster recovery coverage to the Linux virtual machine shown in the exhibit, and the protection never starts. The machine's installed package revision is only three days old, so it is not missing routine operating system fixes. When you run the enable-replication operation, the Mobility service that Site Recovery installs on the machine reports a registration failure and the machine stays in an unprotected state. You need this machine to become protected so that it can be failed over to the recovery region later. Which action should you take?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Machine: vm-app-01\nOperating system: Ubuntu 22.04 LTS\nImage build date: 2025-04-18\nInstalled package revision: 3 days old\nMobility service version: 9.48.0.0\n\n09:12:03  Starting registration with the recovery service.\n09:12:21  Registration failed: the host rejected the chain presented by the service.\n09:12:21  Protection state: not protected."
+				},
+				"statement": "To let the machine register with the recovery service and reach a protected state, you should {{remedy}}.",
+				"slots": [
+					{
+						"id": "remedy",
+						"options": [
+							{
+								"id": "a",
+								"text": "update the trusted root certificates and the certificate revocation list (CRL) on the virtual machine"
+							},
+							{
+								"id": "b",
+								"text": "install the latest Windows updates on the virtual machine and re-run the enable-replication operation"
+							},
+							{
+								"id": "c",
+								"text": "reinstall the Site Recovery Mobility service extension on the virtual machine and re-run the enable-replication operation"
+							},
+							{
+								"id": "d",
+								"text": "reissue the certificates held in the Recovery Services vault and re-run the enable-replication operation"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"remedy": "a"
+			},
+			"explanation": {
+				"correct": "Site Recovery registration can fail on a guest whose trust material is out of date, and the machine then never reaches a protected state. For a Linux guest the documented remedy is to update the trusted root certificates and the certificate revocation list (CRL) on the machine. This machine runs Ubuntu and its image is 18 months old, so refreshing that material on the guest is what unblocks the registration and lets protection start.",
+				"perChoice": {
+					"remedy:b": "Installing the latest Windows updates is the remedy that applies to Windows virtual machines. This guest runs Ubuntu and its packages are already current, so this action would not resolve the registration failure.",
+					"remedy:c": "The Mobility service extension is already installed and is the component that reports the failure. Reinstalling it does not refresh the stale trust material on the guest, which is what blocks the registration.",
+					"remedy:d": "Reissuing certificates in the Recovery Services vault does not address the stale material held by the guest. The vault and its configuration are already correct, and the failure happens on the machine side during registration."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-enable-replication"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				}
+			],
+			"subtopics": [
+				"enable-replication",
+				"mobility-service",
+				"replication-registration"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S8SN5QFTDB1RCRQM0XSKP3",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You protect an Azure virtual machine with Azure Site Recovery for Azure-to-Azure disaster recovery, and the resources involved today are listed in the exhibit. The machine has just been added to the protection, and every target setting was left at its default. You need to describe to the network and finance teams what this protection produces in the recovery region. Which statement is correct?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Protected virtual machine",
+							"vm-app-02 (East US)"
+						],
+						[
+							"Source resource group",
+							"rg-app-prod"
+						],
+						[
+							"Source virtual network",
+							"vnet-app-prod"
+						],
+						[
+							"Source subscription",
+							"Contoso-Production"
+						],
+						[
+							"Recovery region",
+							"West Europe"
+						],
+						[
+							"Recovery Services vault",
+							"vault-dr-central (subscription Contoso-Platform)"
+						],
+						[
+							"Target resource settings",
+							"Defaults"
+						]
+					]
+				},
+				"statement": "The protection produces {{target}}, and the replicated copy of the source data disk is {{disk}}.",
+				"slots": [
+					{
+						"id": "target",
+						"options": [
+							{
+								"id": "a",
+								"text": "new resources in the recovery region whose names carry the asr suffix, in the same subscription as the source virtual machine"
+							},
+							{
+								"id": "b",
+								"text": "new resources in the recovery region whose names carry the asr suffix, in the subscription that holds the Recovery Services vault"
+							},
+							{
+								"id": "c",
+								"text": "resources in the recovery region whose names match the source resource group and virtual network, in the same subscription as the source virtual machine"
+							},
+							{
+								"id": "d",
+								"text": "new resources in the recovery region whose names carry the asr suffix, in a new subscription that you create for the recovery region"
+							}
+						]
+					},
+					{
+						"id": "disk",
+						"options": [
+							{
+								"id": "a",
+								"text": "a managed disk whose name carries the -ASRReplica suffix and that carries a tag beginning with ASR-ReplicaDisk"
+							},
+							{
+								"id": "b",
+								"text": "a managed disk whose name carries the -ASRReplica suffix and that carries no tag of its own"
+							},
+							{
+								"id": "c",
+								"text": "a page blob whose name carries the -ASRReplica suffix and that carries a tag beginning with ASR-ReplicaDisk"
+							},
+							{
+								"id": "d",
+								"text": "a managed disk whose name carries no suffix and that carries a tag beginning with ASR-ReplicaDisk"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"target": "a",
+				"disk": "a"
+			},
+			"explanation": {
+				"correct": "With every target setting left at its default, Site Recovery builds the recovery-side resources in the recovery region itself: a new target resource group and a new virtual network and subnet whose names carry the asr suffix, created in the same subscription as the source virtual machine (here Contoso-Production). If a target availability set whose name carries the asr suffix already exists in the recovery region, that existing set is reused rather than a second one being created. The replicated copy of each source disk is a replica managed disk whose name carries the -ASRReplica suffix and which carries a tag prefixed with ASR-ReplicaDisk, with its disk state shown as ActiveSAS.",
+				"perChoice": {
+					"target:b": "The subscription that holds the Recovery Services vault is not what the default target configuration uses. By default the target resources are created in the same subscription that already hosts the source virtual machine, which in this estate is Contoso-Production and not Contoso-Platform where the vault sits.",
+					"target:c": "The default target configuration does not copy the names of the source resources. Site Recovery creates new target resources whose names carry the asr suffix; it does not adopt rg-app-prod or vnet-app-prod as the target resource group and network.",
+					"target:d": "Site Recovery does not create a new subscription for the recovery side. The default target resources are created in the subscription that already hosts the source virtual machine, so a purpose-built subscription is not part of the default setup.",
+					"disk:b": "The ASR-ReplicaDisk tag is added to the replica disks automatically, so an untagged replica disk is not what the protection produces.",
+					"disk:c": "The replicated copy of a managed disk is a replica managed disk in the recovery region, not a page blob. The -ASRReplica naming and the ASR-ReplicaDisk tag apply to those replica managed disks.",
+					"disk:d": "Replica managed disks are named with the -ASRReplica suffix by default, so a disk without that suffix is not what the replication creates in the recovery region."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-enable-replication"
+				}
+			],
+			"subtopics": [
+				"azure-to-azure-dr",
+				"target-resources",
+				"replica-disks"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S92B4J7KTR0XX07FA84WJP",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are writing the disaster recovery design for a business application that runs on six virtual machines pinned to an availability zone in East US 2. The estate must be recovered into West Europe inside an availability zone, and the design has to record how the zone in the recovery region is chosen, because the protection the business relies on depends on this choice. The draft of the design simply names zone 1 of West Europe, picked because it is the zone number the machines use today. Which statement should the design use?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Protected estate",
+							"Six virtual machines running the business application"
+						],
+						[
+							"Availability zone in East US 2",
+							"Zone 1"
+						],
+						[
+							"Recovery region",
+							"West Europe"
+						],
+						[
+							"Target availability type in the draft",
+							"Availability zones"
+						],
+						[
+							"Zone named in the draft for the recovery region",
+							"Zone 1"
+						]
+					]
+				},
+				"statement": "The disaster recovery design should tell the operations team to {{placement}}.",
+				"slots": [
+					{
+						"id": "placement",
+						"options": [
+							{
+								"id": "a",
+								"text": "recover into a logical zone of West Europe that maps to a physical zone other than the one reached by the zone number in East US 2"
+							},
+							{
+								"id": "b",
+								"text": "recover into zone 1 of West Europe, because the estate uses zone 1 in East US 2 and an equal zone number identifies the same physical zone across subscriptions and regions"
+							},
+							{
+								"id": "c",
+								"text": "recover the protected estate as a single instance in West Europe, because a standalone instance carries no zone placement and cannot be lost with an availability zone"
+							},
+							{
+								"id": "d",
+								"text": "recover the protected estate into zone 1 of West Europe with an availability set, because fault domains give the estate the separation that the design is looking for"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"placement": "a"
+			},
+			"explanation": {
+				"correct": "For zone-to-zone recovery the zone used in the recovery region has to be chosen from the zone-to-physical-zone mapping that applies to the target subscription. Equal logical zone numbers don't identify equal physical zones across subscriptions or regions, so a design that simply repeats the source zone number does not deliver the separation the business asked for. The design must name a logical zone whose mapped physical zone is not the one the current zone number reaches, and the target availability type (single instance, availability set or availability zones) has to be availability zones for this estate.",
+				"perChoice": {
+					"placement:b": "Matching zone numbers in two subscriptions or regions do not point at the same physical zone, so repeating the number used in East US 2 in West Europe does not deliver the separation the design is looking for. The zone in the recovery region has to be picked from the mapping that applies to the target subscription.",
+					"placement:c": "A single instance carries no zone placement at all, so it does not deliver the zone-level recovery the design calls for; the target availability type for this estate is availability zones.",
+					"placement:d": "An availability set spreads the disks of the instance across fault domains, but it is a different availability type from a zone and does not give the zone-level placement the design calls for. On top of that, the target availability type cannot be changed while replication is running: replication has to be disabled, the setting changed, and replication enabled again."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/site-recovery/site-recovery-overview"
+				}
+			],
+			"subtopics": [
+				"azure-to-azure-dr",
+				"availability-zones",
+				"target-zone-mapping"
+			],
+			"reviewed": false
 		}
 	]
 }

@@ -291,6 +291,860 @@
 				"diagnostic-settings"
 			],
 			"reviewed": false
+		},
+		{
+			"id": "q_01M6S7ZK3F9544YDZ7SP12EEKR",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Backup vault named bv-prod that ships its diagnostic data to the Log Analytics workspace la-backup, and your analysts read the Backup Reports workbook there. The vault's current diagnostic setting is shown below. You need the workbook to keep reporting storage consumption while the vault does not send the same information to the workspace twice. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Diagnostic setting property",
+						"Configured value"
+					],
+					"rows": [
+						[
+							"Diagnostics setting name",
+							"ds-backup-prod"
+						],
+						[
+							"Vault type",
+							"Backup vault"
+						],
+						[
+							"Destination",
+							"Log Analytics workspace la-backup"
+						],
+						[
+							"Resource specific",
+							"Enabled"
+						],
+						[
+							"Events selected",
+							"Core Azure Backup Data; Addon Azure Backup Job Data; Addon Azure Backup Policy Data; Addon Azure Backup Storage Data; Addon Azure Backup Protected Instance Data; Azure Backup Operations"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Remove Addon Azure Backup Storage Data from the diagnostic setting; the storage consumed and frontend size already arrive through Core Azure Backup Data and Addon Azure Backup Protected Instance Data."
+					},
+					{
+						"id": "b",
+						"text": "Remove Core Azure Backup Data from the diagnostic setting; the storage consumed and frontend size already arrive through Addon Azure Backup Storage Data and Addon Azure Backup Protected Instance Data."
+					},
+					{
+						"id": "c",
+						"text": "Remove Addon Azure Backup Protected Instance Data from the diagnostic setting; the storage consumed and frontend size already arrive through Core Azure Backup Data and Addon Azure Backup Storage Data."
+					},
+					{
+						"id": "d",
+						"text": "Keep all six events in the diagnostic setting; the storage consumed and frontend size arrive through separate tables for each of the six events."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "For a Backup vault, the frontend size and the backup storage consumed are already part of Core Azure Backup Data and Addon Azure Backup Protected Instance Data, so the Addon Azure Backup Storage Data event is not applicable to Backup vaults and selecting it only produces a redundant table. Removing that event leaves the workbook's storage figures intact while avoiding a second copy of the same numbers.",
+				"perChoice": {
+					"b": "The Addon Azure Backup Storage Data event does not apply to a Backup vault, and Core Azure Backup Data is the main event that carries the baseline vault data; dropping it would remove information the reports rely on rather than a duplicate of it.",
+					"c": "Addon Azure Backup Protected Instance Data carries the frontend size figures, so removing it would lose values the workbook displays; the event that does not apply to a Backup vault is Addon Azure Backup Storage Data.",
+					"d": "Leaving all six events selected keeps the Addon Azure Backup Storage Data table in place for a Backup vault, where that event is not applicable and yields a redundant table next to the data already delivered by Core Azure Backup Data and Addon Azure Backup Protected Instance Data."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-diagnostic-events"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/configure-reports"
+				}
+			],
+			"subtopics": [
+				"diagnostic-settings",
+				"backup-vault",
+				"resource-specific-tables"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S8200E58TVHBMZ8A9RPBP5",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Recovery Services vault that ships its backup diagnostics to a Log Analytics workspace through a single diagnostic setting, and your operations team still has custom Kusto queries that read the vault data from the shared diagnostics table. You want the Azure Backup workbooks to begin returning job information while those custom queries keep returning rows during the changeover. Which change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Vault",
+							"RSV-prod (Recovery Services vault)"
+						],
+						[
+							"Diagnostic setting name",
+							"diag-legacy"
+						],
+						[
+							"Destination",
+							"Log Analytics workspace la-backup"
+						],
+						[
+							"Logging mode",
+							"Azure diagnostics"
+						],
+						[
+							"Event selected",
+							"Azure Backup Reporting Data"
+						],
+						[
+							"Custom queries read",
+							"AzureDiagnostics table, Category = AzureBackupReport"
+						],
+						[
+							"Backup Job History tiles in the workbook",
+							"No rows returned"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "Change the existing diagnostic setting to enable Resource specific and select the six new Azure Backup events, removing the Azure diagnostics mode."
+					},
+					{
+						"id": "b",
+						"text": "Add a second diagnostic setting to enable Azure diagnostics and select the six new Azure Backup events, and keep the existing diagnostic setting until the custom queries are migrated."
+					},
+					{
+						"id": "c",
+						"text": "Add a second diagnostic setting to enable Resource specific and select the six new Azure Backup events, and keep the existing diagnostic setting until the custom queries are migrated."
+					},
+					{
+						"id": "d",
+						"text": "Remove the existing diagnostic setting and add one that enables Resource specific with the six new Azure Backup events selected."
+					}
+				]
+			},
+			"key": {
+				"optionId": "c"
+			},
+			"explanation": {
+				"correct": "For a Recovery Services vault, the Backup reports only pick up the six new Azure Backup events when they are sent in Resource specific mode, so a setting in that mode is required before the workbook can show job information. The legacy Azure Backup Reporting Data event, by contrast, carries data only in Azure diagnostics mode, so the existing setting has to stay in place while the custom queries that read the shared diagnostics table are rewritten against the new per-event tables. Keeping one setting for the legacy event and a second setting for the six new events lets both operate during the changeover, and the legacy setting can be retired once the queries are migrated.",
+				"perChoice": {
+					"a": "Switching the existing setting over to Resource specific withdraws the Azure diagnostics path that the legacy Azure Backup Reporting Data event depends on, so the custom queries that read the shared diagnostics table stop returning rows as soon as the change is applied instead of after a planned migration.",
+					"b": "The six new Azure Backup events are honoured by the Backup reports only when they are sent in Resource specific mode. A second setting that uses Azure diagnostics mode therefore leaves the workbook without job data.",
+					"d": "Removing the existing setting cuts off the only supported route for the legacy Azure Backup Reporting Data event, which works solely in Azure diagnostics mode, so the custom queries break before they have been rewritten against the new tables."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-diagnostic-events"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/configure-reports"
+				}
+			],
+			"subtopics": [
+				"diagnostic-settings-migration",
+				"resource-specific-mode",
+				"legacy-event"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S82VRW1X0WQ1PJP4SAQF2N",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Recovery Services vault that protects 420 Azure VMs, and your analysts read the Backup Reports workbook in a Log Analytics workspace. The Cloud Storage and Protected Instances tiles return identical figures whichever time range the analysts pick, and they have concluded that the range filter has no effect on the report. You need to correct their understanding of how these two tiles are produced. Which statement is correct?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Time range selected in the workbook",
+						"Cloud Storage tile",
+						"Protected Instances tile"
+					],
+					"rows": [
+						[
+							"Last 7 days",
+							"2.41 TB",
+							"418"
+						],
+						[
+							"Last 30 days",
+							"2.41 TB",
+							"418"
+						],
+						[
+							"Last 90 days",
+							"2.41 TB",
+							"418"
+						],
+						[
+							"Custom range, 1 Jan to 31 Jan",
+							"2.41 TB",
+							"418"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "The values are point-in-time snapshots taken at the end of the selected time range, so narrowing the range does not change them."
+					},
+					{
+						"id": "b",
+						"text": "The values are point-in-time snapshots taken at the start of the selected time range, so narrowing the range does not change them."
+					},
+					{
+						"id": "c",
+						"text": "The values are the sum of the daily values across the selected time range, so narrowing the range should reduce them."
+					},
+					{
+						"id": "d",
+						"text": "The values are the daily average across the selected time range, so narrowing the range should reduce them."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "In the Backup Reports workbook, the Cloud Storage and Protected Instances figures are point-in-time readings captured at the close of the selected time range, not totals accumulated across that range. That is why the exhibit shows the same 2.41 TB and the same 418 items for every range the analysts pick: the tiles reflect the state of the estate at one moment, while job, schedule and policy-adherence widgets re-aggregate the underlying records for each range.",
+				"perChoice": {
+					"b": "This option describes a reading taken when the range opens. The report captures the storage and protected-instance values once, at the close of the selected range, so a start-of-range reading is not what the tiles contain, and a start-of-range value would normally shift when the range is moved.",
+					"c": "A sum would grow as the range widens and shrink as it is narrowed, so the exhibit's constant 2.41 TB could not be a sum. These two tiles report the value as it stands at the close of the selected range rather than a total over the period.",
+					"d": "An average would also vary with the range that is selected, which contradicts the constant figures shown for the Protected Instances tile. The tile reads the instance count once, at the close of the selected range, and repeats that reading for every range."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/configure-reports"
+				}
+			],
+			"subtopics": [
+				"backup-reports",
+				"time-range"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S865H4S9ZVZJB9AYBV11H0",
+			"body": {
+				"format": "multiple-choice",
+				"stem": "You have a Recovery Services vault that protects Azure VMs with Azure Site Recovery and also uses a recovery plan, and your analysts open the Azure Site Recovery Job History report in the Backup Reports workbook. The table below shows the operations that were recorded in the vault on 12 April. You need to identify which of these operations the report is expected to list. Which set of operations should you expect?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Operation recorded in the vault on 12 April",
+						"How it was initiated"
+					],
+					"rows": [
+						[
+							"Nightly backup of the application VMs",
+							"Scheduled backup policy"
+						],
+						[
+							"Failover test of the estate",
+							"Triggered from the recovery plan"
+						],
+						[
+							"Failover of the single VM",
+							"Triggered on the replicated item"
+						],
+						[
+							"Backup of the Azure File share",
+							"Scheduled backup policy"
+						]
+					]
+				},
+				"options": [
+					{
+						"id": "a",
+						"text": "The failover test of the estate triggered from the recovery plan and the failover of the single VM triggered on the replicated item."
+					},
+					{
+						"id": "b",
+						"text": "Only the failover test of the estate triggered from the recovery plan; the failover of the single VM triggered on the replicated item is excluded."
+					},
+					{
+						"id": "c",
+						"text": "Only the failover of the single VM triggered on the replicated item; the failover test of the estate triggered from the recovery plan is excluded."
+					},
+					{
+						"id": "d",
+						"text": "All four operations, including the nightly backup of the application VMs and the backup of the Azure File share along with the failover test of the estate and the failover of the single VM."
+					}
+				]
+			},
+			"key": {
+				"optionId": "a"
+			},
+			"explanation": {
+				"correct": "The Azure Site Recovery Job History report lists only the jobs that were triggered on replicated items and recovery plans. In the exhibit, the failover test of the estate was triggered from the recovery plan and the failover of the single VM was triggered on the replicated item, so both operations belong in this report. The scheduled backups of the application VMs and the Azure File share are backup operations rather than Azure Site Recovery jobs, so they are not listed by this report.",
+				"perChoice": {
+					"b": "This drops the failover of the single VM, but that job was triggered on a replicated item, and jobs triggered on replicated items are included in the Azure Site Recovery Job History report alongside the recovery plan operations.",
+					"c": "This drops the failover test triggered from the recovery plan, yet jobs triggered on recovery plans are also included in the Azure Site Recovery Job History report, so the estate failover test belongs in the results.",
+					"d": "This pulls in the scheduled backup jobs for the application VMs and the Azure File share. Those are backup operations recorded by the vault, and this report covers only the Azure Site Recovery jobs triggered on replicated items and recovery plans."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/configure-reports"
+				}
+			],
+			"subtopics": [
+				"backup-reports-workbooks",
+				"site-recovery-job-history"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S89ERP6DDBPZDKZR1T4P95",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a Recovery Services vault that protects Azure VMs and SQL databases hosted on those VMs, and your analysts read the Azure Backup workbooks in a Log Analytics workspace. Before each review meeting they pick a Time Range in the workbook and export the trend charts for the pack listed below. You need to state how the workbook plots the points for each pack, what it does with a Time Range that starts and ends partway through the day, and whether SQL log backup activity appears at all. Drag each outcome to the matching place.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Review pack",
+						"Time Range entered in the workbook"
+					],
+					"rows": [
+						[
+							"Operations review",
+							"2026-10-01 to 2026-10-07"
+						],
+						[
+							"Service review",
+							"2026-08-01 to 2026-09-29"
+						],
+						[
+							"Annual compliance pack",
+							"2025-11-01 to 2026-10-31"
+						],
+						[
+							"Ad-hoc window",
+							"2026-04-14 16:45 to 2026-04-15 09:30"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Daily grouping"
+					},
+					{
+						"id": "i2",
+						"text": "Weekly grouping"
+					},
+					{
+						"id": "i3",
+						"text": "Monthly grouping"
+					},
+					{
+						"id": "i4",
+						"text": "Excluded — no rows shown"
+					},
+					{
+						"id": "i5",
+						"text": "Widened — 00:00–23:59 UTC"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Operations review"
+					},
+					{
+						"id": "s2",
+						"label": "Service review"
+					},
+					{
+						"id": "s3",
+						"label": "Annual compliance pack"
+					},
+					{
+						"id": "s4",
+						"label": "Ad-hoc window"
+					},
+					{
+						"id": "s5",
+						"label": "SQL log backup activity"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i5",
+				"s5": "i4"
+			},
+			"explanation": {
+				"correct": "Chart aggregation follows the length of the selected Time Range: a span of 30 days or less yields one point per day, a span greater than 30 days and no more than 90 days yields one point per week, and anything larger yields one point per month. The Operations review range (1–7 October, 7 days) is therefore plotted per day, the Service review range (1 August – 29 September, 60 days) per week, and the Annual compliance pack range (1 November 2025 – 31 October 2026, 365 days) per month. A Time Range that starts and ends partway through the day is widened out to whole UTC days, so the ad-hoc window (14 April 16:45 to 15 April 09:30) is really reported as 14 April 00:00 to 15 April 23:59 UTC. SQL log backup jobs are not displayed in the Backup Reports workbook, so that activity is excluded and returns no rows.",
+				"perChoice": {
+					"i1": "Operations review (2026-10-01 to 2026-10-07). The span is 7 days, inside the 30-days-or-less band, so the workbook plots one point per day.",
+					"i2": "Service review (2026-08-01 to 2026-09-29). The span is 60 days, greater than 30 and no more than 90, so the workbook plots one point per week.",
+					"i3": "Annual compliance pack (2025-11-01 to 2026-10-31). The span is 365 days, beyond the 90-day band, so the workbook plots one point per month.",
+					"i4": "SQL log backup activity. SQL log backup jobs are not displayed in the Backup Reports workbook, so the job grid returns nothing for them.",
+					"i5": "Ad-hoc window (2026-04-14 16:45 to 2026-04-15 09:30). The workbook overrides the time part of the selected window and runs the query across whole UTC days, i.e. 14 April 00:00 to 15 April 23:59 UTC."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/configure-reports"
+				}
+			],
+			"subtopics": [
+				"backup-report-granularity",
+				"report-time-range-conventions",
+				"sql-log-backup-jobs"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S8MD5ZHMPXWY4YEB31WS8B",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a Recovery Services vault that protects several hundred Azure VMs; your operations team reviews backup activity in the Azure Backup workbooks in a Log Analytics workspace. After an analyst rearranged the widgets on one of the tabs, the team disagrees about the behaviour of the tiles, the drop-downs, the entries. You need to pin down the behaviour that applies in each situation below. Drag each outcome to the matching place.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Layout of one tab of the Backup Reports workbook\n-------------------------------------------------\nWidget                       Position in the tab\nSubscription drop-down       Top line, first column\nResource group drop-down     Top line, second column\nProtection stopped tile      Top line, third column\nProtected entries list       Second line, first column\nBackup success trend         Second line, second column"
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Reaches only the widgets placed on the right or underneath it; the widgets on its left or above stay untouched"
+					},
+					{
+						"id": "i2",
+						"text": "Cannot be selected, so it cannot filter the widgets below it"
+					},
+					{
+						"id": "i3",
+						"text": "Narrows the grids plus charts underneath it, keeping only the rows carrying the value it displays"
+					},
+					{
+						"id": "i4",
+						"text": "Only items still present when the period ends are included"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "The drop-down you moved to the top of the tab: the widgets it covers"
+					},
+					{
+						"id": "s2",
+						"label": "A tile with no color"
+					},
+					{
+						"id": "s3",
+						"label": "The coloured tile showing a count for a single state of protection: the entries shown underneath it"
+					},
+					{
+						"id": "s4",
+						"label": "A protected resource deleted partway through the window you chose"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "In the Azure Backup reports, filters are applied from left to right and top to bottom, so a filter only reaches the widgets positioned to its right or beneath it and never those to its left or above. Tiles that carry no color are not selectable at all, while choosing a colored tile narrows the grids and charts underneath it to the records that carry the value shown on the tile. Separately, the reports list only the backup items and backup policies that still exist at the end of the selected time range, so anything deleted midway through the range is absent from the report.",
+				"perChoice": {
+					"i1": "Belongs with the drop-down moved to the top of the tab: filters run from left to right and top to bottom, so this drop-down reaches only the widgets to its right or beneath it and leaves the widgets to its left or above unchanged.",
+					"i2": "Belongs with the tile that has no color: tiles that are not colored are not selectable, so such a tile never filters the widgets beneath it.",
+					"i3": "Belongs with the colored tile: selecting a colored tile filters the grids and charts below it so that they show only the records that pertain to the value on the tile (for example, the Protection stopped tile narrows the grids and charts below to the backup items in that state).",
+					"i4": "Belongs with the deleted resource: the reports display only the backup items that exist at the end of the selected time range, so an item deleted in the middle of the range is not displayed, and the same convention applies to backup policies."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/configure-reports"
+				}
+			],
+			"subtopics": [
+				"report-filter-scope",
+				"workbook-tile-selection",
+				"time-range-item-visibility"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S8RHQAH6VFJY36D4YS4A26",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have a Recovery Services vault named rsv-prod, and the workloads it protects are listed below. Five colleagues each want a different view of the vault's backup activity, and you have to point each of them at the right entry in the Azure Backup workbooks. Drag each entry to the request it satisfies.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Vault rsv-prod - protected workloads\n\nAzure virtual machines ............. 12   Daily at 01:00 UTC\nAzure Files file shares ............ 3   Daily at 02:00 UTC\nPostgreSQL server ................. 1   Weekly on Sundays\nAzure Blobs (operational tier) .... 2   Daily at 03:00 UTC\nAzure Disks ....................... 4   Daily at 04:00 UTC"
+				},
+				"items": [
+					{
+						"id": "it1",
+						"text": "Backup Reports"
+					},
+					{
+						"id": "it2",
+						"text": "Backup Configuration Status"
+					},
+					{
+						"id": "it3",
+						"text": "Backup Job History"
+					},
+					{
+						"id": "it4",
+						"text": "Backup Schedule and Retention"
+					},
+					{
+						"id": "it5",
+						"text": "User Triggered Operations"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "One consolidated view of storage usage, protected instances, policy adherence and optimization across every workload type in the vault"
+					},
+					{
+						"id": "s2",
+						"label": "Which of the virtual machines in the vault have a backup policy assigned"
+					},
+					{
+						"id": "s3",
+						"label": "How each backup of the PostgreSQL server, the Azure Blobs and the Azure Disks ended during the period"
+					},
+					{
+						"id": "s4",
+						"label": "The run times and the number of days that the Azure Files shares are kept"
+					},
+					{
+						"id": "s5",
+						"label": "The backup runs that people in the on-call team kicked off manually inside this Recovery Services vault"
+					}
+				]
+			},
+			"key": {
+				"s1": "it1",
+				"s2": "it2",
+				"s3": "it3",
+				"s4": "it4",
+				"s5": "it5"
+			},
+			"explanation": {
+				"correct": "The consolidated request is answered by Backup Reports, which is the single view that brings together jobs, instances, usage, policies, policy adherence and optimization for every supported workload type, matching the colleague who wants an estate-wide overview. The question about which virtual machines are covered is answered by Backup Configuration Status, the entry that states which VMs are configured for backup and which the documentation limits to Azure VM. The request about how each backup of the PostgreSQL server, Azure Blobs and Azure Disks ended is answered by Backup Job History, whose coverage list includes PostgreSQL server, Azure Blobs and Azure Disks. The request about run times and how long the Azure Files shares are kept is answered by Backup Schedule and Retention, which covers Azure VM and Azure Files. The runs the on-call team started by hand are listed by User Triggered Operations, which is scoped to the Recovery Services vault in the scenario.",
+				"perChoice": {
+					"it1": "Fits the request for one consolidated view spanning every workload type: Backup Reports is the single view covering jobs, instances, usage, policies, policy adherence and optimization, so it answers the estate-wide overview request.",
+					"it2": "Fits the request about which virtual machines are covered: Backup Configuration Status is the entry that states which VMs are configured for backup, and it applies to Azure VM only, which matches the request.",
+					"it3": "Fits the request about the outcome of each backup run: Backup Job History covers VM, MARS, MABS, DPM, PostgreSQL server, Azure Blobs and Azure Disks, so it covers the PostgreSQL server, Azure Blobs and Azure Disks named in that request.",
+					"it4": "Fits the request about run times and how long data is kept: Backup Schedule and Retention covers Azure VM and Azure Files, and the request concerns the Azure Files shares in the vault.",
+					"it5": "Fits the request about runs that people started by hand: User Triggered Operations lists those runs and is scoped to the Recovery Services vault described in the scenario."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/configure-reports"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-monitoring-built-in-monitor"
+				}
+			],
+			"subtopics": [
+				"backup-reports",
+				"log-analytics-workbooks",
+				"report-scope"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S8X2C6R6GX13JX0QW5STBC",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are setting up how the backup data from the Recovery Services vault rsv-prod reaches the team's reporting pipeline, and you can create extra resources wherever the current landscape doesn't fit. Four requirements are waiting to be met. Drag each option to the requirement it satisfies.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Component",
+						"Details"
+					],
+					"rows": [
+						[
+							"Recovery Services vault rsv-prod",
+							"Region: West Europe"
+						],
+						[
+							"Log Analytics workspace la-backup",
+							"Region: East US 2"
+						],
+						[
+							"Storage account st-logs",
+							"Region: East US 2"
+						],
+						[
+							"Event hub eh-backup",
+							"Region: West Europe"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "The storage account in East US 2"
+					},
+					{
+						"id": "i2",
+						"text": "A storage account in West Europe"
+					},
+					{
+						"id": "i3",
+						"text": "The event hub in West Europe"
+					},
+					{
+						"id": "i4",
+						"text": "The Log Analytics workspace in East US 2, using Resource specific mode with the six Azure Backup events"
+					},
+					{
+						"id": "i5",
+						"text": "Assign the built-in Azure Policy definition that adds a Backup diagnostic setting to the subscription, with Owner access on each subscription"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Archive the vault's raw data so the team can run its own analysis on it later"
+					},
+					{
+						"id": "s2",
+						"label": "Stream the vault's backup data to a processing platform that runs outside Azure"
+					},
+					{
+						"id": "s3",
+						"label": "Give the analysts the Azure Backup workbooks with their tiles and grids"
+					},
+					{
+						"id": "s4",
+						"label": "Give every vault under your management that currently ships nothing, or only the legacy pooled data, a supported way to send its data, without editing them one by one"
+					}
+				]
+			},
+			"key": {
+				"s1": "i2",
+				"s2": "i3",
+				"s3": "i4",
+				"s4": "i5"
+			},
+			"explanation": {
+				"correct": "Each requirement is met by the destination or configuration that matches its purpose: a Recovery Services vault may write diagnostic logs only to a storage account in its own region, so the archive copy has to go to a West Europe account (st-logs in East US 2 cannot be used); streaming the events to another system is done through an event hub; the Azure Backup reports and workbooks are rendered from a Log Analytics workspace, which may live in a different region from the vault, and for a Recovery Services vault the six new events are honoured in the reports only when they are sent in Resource specific mode; and the built-in Azure Policy definition can add a diagnostic setting to every vault in a scope that has none or only a legacy setting, so assigning it at subscription scope with Owner access on each subscription brings the remaining vaults into reporting without editing them one by one.",
+				"perChoice": {
+					"i1": "The storage account in East US 2 fits no slot: a Recovery Services vault can send diagnostic logs only to a storage account in the same region, and rsv-prod is in West Europe, so this account cannot be used to archive the vault's data.",
+					"i2": "It belongs with the archiving requirement: a storage account is the destination for raw logs kept for custom analysis, and because the vault can only write to a storage account in its own region, an account in West Europe is needed.",
+					"i3": "It belongs with the streaming requirement: an event hub is the destination used when backup events must be streamed to another system.",
+					"i4": "It belongs with the workbooks requirement: the reports and workbooks are read from a Log Analytics workspace, which for this vault can sit in a different region (East US 2), and the six Azure Backup events are honoured in the reports of a Recovery Services vault only in Resource specific mode.",
+					"i5": "It belongs with the estate-wide requirement: the built-in Azure Policy definition can add a diagnostic setting for every vault in a scope that has none or only a legacy setting, and it can be assigned to a whole subscription, provided you have Owner access on each subscription."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-diagnostic-events"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/configure-reports"
+				}
+			],
+			"subtopics": [
+				"backup-diagnostics",
+				"diagnostic-destinations",
+				"log-analytics-reports"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S90VJPH04J982XKQQ6HCV8",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You have the Azure Backup workbooks that a reporting team reads in the Log Analytics workspace la-backup, which is fed by the Recovery Services vault rsv-prod. The team's standing questions about what the workbook contains and how quickly it settles are listed below. You need to pair each answer with the question it answers. Drag each answer to the matching question.",
+				"items": [
+					{
+						"id": "i1",
+						"text": "Up to 24 hours"
+					},
+					{
+						"id": "i2",
+						"text": "About 48 hours after the change"
+					},
+					{
+						"id": "i3",
+						"text": "Only entries that still exist when the range ends"
+					},
+					{
+						"id": "i4",
+						"text": "Weekly and monthly groupings, where a month spans four weeks"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Once the vault's diagnostics are switched on, how soon can the first records be expected in the workspace?"
+					},
+					{
+						"id": "s2",
+						"label": "How long should reviewers be told to wait before treating freshly configured figures as complete?"
+					},
+					{
+						"id": "s3",
+						"label": "Which protected items and their schedules does the workbook include when some were removed partway through the chosen period?"
+					},
+					{
+						"id": "s4",
+						"label": "Which breakdown levels are offered for an item whose protection schedule runs once every seven days?"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i2",
+				"s3": "i3",
+				"s4": "i4"
+			},
+			"explanation": {
+				"correct": "The first push of diagnostic data into a Log Analytics workspace can take up to 24 hours, so \"Up to 24 hours\" answers the question about when the first records can be expected. Microsoft advises starting to view the reports about two days after a diagnostics change, so \"About 48 hours after the change\" answers the waiting-time question. The workbook lists only the backup items and policies that still exist at the end of the selected range, and anything removed partway through disappears from the report, so \"Only entries that still exist when the range ends\" answers the question about which items and schedules appear. In the Policy Adherence grids an item on a weekly schedule has no daily view, offering weekly and monthly breakdowns only, and a \"month\" there counts as four weeks (28 days) with partial weeks excluded, so \"Weekly and monthly groupings, where a month spans four weeks\" answers the breakdown-levels question.",
+				"perChoice": {
+					"i1": "Matches the question about how soon records appear in the workspace: after diagnostics are configured, the initial data push can take up to 24 hours.",
+					"i2": "Matches the question about how long to wait before relying on newly configured figures: Microsoft recommends starting to view the reports about two days (roughly 48 hours) after the change.",
+					"i3": "Matches the question about which protected items and schedules appear: only backup items and policies that still exist at the end of the selected range are listed, so items deleted partway through vanish from the report.",
+					"i4": "Matches the question about breakdown levels for a schedule that runs every seven days: in the Policy Adherence grids such an item offers weekly and monthly views (no daily view), and a \"month\" there counts as four weeks (28 days), so partial weeks are excluded."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/configure-reports"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-diagnostic-events"
+				}
+			],
+			"subtopics": [
+				"backup-report-timing",
+				"policy-adherence-granularity",
+				"workbook-data-freshness"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S9700E66NBD7VWHF2G0J7X",
+			"body": {
+				"format": "drag-drop",
+				"stem": "You are reviewing how backup data from a set of Recovery Services vaults reaches the Azure Backup workbooks in Log Analytics. The notes below list the five points that are still open from that review, and the list of steps that follows holds the moves your team has drafted to close them. You need to attach one step to each open point, and any step that settles none of them should be left out. Drag each step to the matching point.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Point 1: rsv-we runs in West Europe. Every event record it produces must be kept for seven years in a storage account, and the workbook data keeps coming from the workspace la-backup in East US 2.\n\nPoint 2: Twelve vaults in the subscription have no diagnostics setting. They must all reach the workspace, and the operations team does not want to open each vault one by one.\n\nPoint 3: Compliance has asked for the names of the vaults that are still sending the older event instead of the current one.\n\nPoint 4: Governance compares items on a weekly schedule with items on a daily schedule in the policy adherence grids and wants to know how the period buckets behave.\n\nPoint 5: The BI team still runs the old template app that read backup data from a storage account; the platform group has said that route will stop being supported."
+				},
+				"items": [
+					{
+						"id": "i1",
+						"text": "Create the storage account in the same region as the Recovery Services vault."
+					},
+					{
+						"id": "i2",
+						"text": "Replace the Power BI template app and the V1 schema with the Azure Backup workbooks in Log Analytics, because that route is on a deprecation path."
+					},
+					{
+						"id": "i3",
+						"text": "Assign the built-in Azure Policy definition that adds diagnostics settings to the vaults in scope, with Owner access on each subscription."
+					},
+					{
+						"id": "i4",
+						"text": "Run the documented Kusto query that unions AzureDiagnostics with CoreAzureBackup and returns the vaults found only under AzureBackupReport."
+					},
+					{
+						"id": "i5",
+						"text": "Treat a month in the policy adherence grids as four weeks, and expect the items on a weekly policy to have no daily view."
+					},
+					{
+						"id": "i6",
+						"text": "Point the stored copy at a storage account in a different region, since the vault's location does not limit where the copy is written."
+					},
+					{
+						"id": "i7",
+						"text": "Enable the Azure Backup Reporting Data event on the remaining vaults so that their rows appear in the reports."
+					},
+					{
+						"id": "i8",
+						"text": "Add the Addon Azure Backup Alerts event to the diagnostics setting so that the workspace receives the backup alerts."
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Point 1 — archival of the seven-year event records"
+					},
+					{
+						"id": "s2",
+						"label": "Point 2 — covering the estate without manual effort"
+					},
+					{
+						"id": "s3",
+						"label": "Point 3 — the search that names the stragglers still on the old event"
+					},
+					{
+						"id": "s4",
+						"label": "Point 4 — the bucketing rule behind the two schedule types"
+					},
+					{
+						"id": "s5",
+						"label": "Point 5 — the retirement of the team's old tooling"
+					}
+				]
+			},
+			"key": {
+				"s1": "i1",
+				"s2": "i3",
+				"s3": "i4",
+				"s4": "i5",
+				"s5": "i2"
+			},
+			"explanation": {
+				"correct": "Each open point is settled by exactly one of the drafted steps. The archival requirement for rsv-we is met by creating the storage account in the vault's own region, because a Recovery Services vault can only send diagnostic logs to a storage account in the same region, while the Log Analytics workspace may sit in another region or subscription. Bulk coverage of the twelve vaults with no diagnostics setting is met by the built-in Azure Policy definition that adds a diagnostics setting to the vaults in scope, which can be assigned to a subscription or a resource group and requires Owner access on each subscription. The compliance request for names is met by the documented Kusto query that unions AzureDiagnostics with CoreAzureBackup and returns the vaults found only under AzureBackupReport. The policy adherence question is met by treating a month as four weeks (28 days, so partial weeks drop out) and by knowing that items on a weekly policy have no daily view. The retirement of the team's tooling is met by moving onto the Azure Backup workbooks in Log Analytics, since the Power BI template app that sourced data from a storage account and the V1 schema are on a deprecation path. The remaining three steps settle no point: a storage account in another region is not allowed for a Recovery Services vault, the legacy Azure Backup Reporting Data event is honoured only in Azure diagnostics mode and therefore does not populate the backup reports for a Recovery Services vault, and the classic backup alerts event should not be selected at all.",
+				"perChoice": {
+					"i1": "Belongs at Point 1. The seven-year archive of rsv-we's event records goes to a storage account, and a Recovery Services vault may only send diagnostic logs to a storage account located in the same region as the vault, so the storage account is created in West Europe. The workspace in East US 2 is unaffected, because a Log Analytics workspace may be in the same or a different region.",
+					"i2": "Belongs at Point 5. The earlier Power BI template app that sourced backup data from a storage account is on a deprecation path, and the V1 schema is on a deprecation path in favour of the supported V2 schema, so the reporting has to run on the Azure Backup workbooks in Log Analytics.",
+					"i3": "Belongs at Point 2. The built-in Azure Policy definition adds a diagnostics setting to every vault in the assigned scope that has none or only a legacy one, it can be assigned to a whole subscription or a resource group, and you must have Owner access on each subscription to assign it.",
+					"i4": "Belongs at Point 3. The documented Kusto query unions AzureDiagnostics (Category 'AzureBackupReport', OperationName 'Vault', SchemaVersion_s 'V2') with CoreAzureBackup and returns the vaults found only under AzureBackupReport, which is how the vaults still sending the older event are listed by name.",
+					"i5": "Belongs at Point 4. In the policy adherence grids a month is counted as a four-week (28 day) period so that partial weeks are excluded, and items on a weekly backup policy have no daily view at all — only weekly and monthly views exist for them.",
+					"i6": "Settles no point. A Recovery Services vault can send diagnostic logs only to a storage account located in the same region, so the stored copy cannot be redirected to a storage account in a different region.",
+					"i7": "Settles no point. The legacy Azure Backup Reporting Data event is supported only in Azure diagnostics mode, and for a Recovery Services vault the current events are honoured only in Resource specific mode, so enabling the legacy event does not populate the backup reports; that event is also on a deprecation path.",
+					"i8": "Settles no point. The Addon Azure Backup Alerts event belongs to the classic alerts solution, which is deprecated in favour of Azure Monitor-based alerts, so it should not be selected in a diagnostics setting; fired Azure Monitor alerts are routed with an alert processing rule and an action group."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-diagnostic-events"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/configure-reports"
+				}
+			],
+			"subtopics": [
+				"backup-reports",
+				"diagnostic-events",
+				"policy-adherence"
+			],
+			"reviewed": false
 		}
 	]
 }

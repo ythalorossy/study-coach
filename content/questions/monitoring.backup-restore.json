@@ -1157,6 +1157,432 @@
 				"item-level-recovery"
 			],
 			"reviewed": false
+		},
+		{
+			"id": "q_01M6S7C3XPRQGQTSBWTR8BY1MJ",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Your team protects the virtual machines in the exhibit with Azure Backup and uses the file-recovery capability to pull individual files out of recovery points rather than bringing whole machines back up. Each request below needs one preparation step before the work can succeed. Drag each preparation step to the request it satisfies.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Machine",
+						"Role",
+						"Operating system",
+						"Storage layout",
+						"Image origin",
+						"Internet path"
+					],
+					"rows": [
+						[
+							"srv-web-01",
+							"Protected source",
+							"Windows Server 2019",
+							"1 x 512 GB SSD, single volume",
+							"Marketplace",
+							"Direct"
+						],
+						[
+							"srv-erp-02",
+							"Protected source",
+							"Windows Server 2022",
+							"1 x 1 TB SSD, NTFS",
+							"Marketplace",
+							"Direct"
+						],
+						[
+							"srv-fs-03",
+							"Protected source",
+							"Ubuntu 22.04",
+							"LVM volume group across 3 striped disks",
+							"Marketplace",
+							"Direct"
+						],
+						[
+							"srv-app-05",
+							"Protected source",
+							"Ubuntu 20.04",
+							"1 x 256 GB SSD, ext4",
+							"Marketplace",
+							"Direct"
+						],
+						[
+							"srv-mon-04",
+							"Protected source",
+							"Windows Server 2019",
+							"2 x 512 GB disks",
+							"Custom image",
+							"Direct"
+						],
+						[
+							"helper-win-01",
+							"Helper",
+							"Windows Server 2022",
+							"2 x 256 GB SSD",
+							"Marketplace",
+							"Corporate filtering service"
+						],
+						[
+							"helper-linux-01",
+							"Helper",
+							"Ubuntu 20.04",
+							"1 x 256 GB SSD",
+							"Marketplace",
+							"Direct"
+						]
+					]
+				},
+				"items": [
+					{
+						"id": "a",
+						"text": "Install the Azure VM agent on the protected virtual machine"
+					},
+					{
+						"id": "b",
+						"text": "Choose a helper whose operating system generation matches the protected virtual machine"
+					},
+					{
+						"id": "c",
+						"text": "Give the helper direct outbound access to the recovery endpoint"
+					},
+					{
+						"id": "d",
+						"text": "Add the open-iscsi and lshw packages to the Linux helper and switch its locale to English"
+					},
+					{
+						"id": "e",
+						"text": "Run the script on a separate D2v3 virtual machine"
+					},
+					{
+						"id": "f",
+						"text": "Regenerate the script and use the credential it shows at that moment"
+					},
+					{
+						"id": "g",
+						"text": "Restore the virtual machine from the recovery point and copy the document from the restored operating system"
+					},
+					{
+						"id": "h",
+						"text": "Use mount -a on the Linux helper so that every logical volume is attached at once"
+					}
+				],
+				"slots": [
+					{
+						"id": "s1",
+						"label": "Backups of srv-mon-04 fail every night and the job log says the protection component could not be deployed on that virtual machine."
+					},
+					{
+						"id": "s2",
+						"label": "The file extraction for srv-web-01 refuses to start on helper-win-01 because the two machines belong to different operating system releases."
+					},
+					{
+						"id": "s3",
+						"label": "The extraction for srv-erp-02 on helper-win-01 never completes, and that machine can only reach the internet through the corporate filtering service."
+					},
+					{
+						"id": "s4",
+						"label": "On helper-linux-01 the attempt aborts with an error about the block-storage initiator, and the console output appears in a language other than the one the tool expects."
+					},
+					{
+						"id": "s5",
+						"label": "The team must extract a configuration file from srv-fs-03, whose data sits on an LVM volume group spread across several striped disks."
+					},
+					{
+						"id": "s6",
+						"label": "The colleague who produced the extraction script for srv-web-01 has left the company, and the file on the helper is more than twelve hours old, so the session will not start."
+					}
+				]
+			},
+			"key": {
+				"s1": "a",
+				"s2": "b",
+				"s3": "c",
+				"s4": "d",
+				"s5": "e",
+				"s6": "f"
+			},
+			"explanation": {
+				"correct": "Each request is blocked by one specific precondition. srv-mon-04 was built from a custom image, and a machine without the Azure VM agent cannot have the backup extension deployed on it, so the agent has to be added to that machine first. For file extraction, the host that runs the generated script must run the same operating system generation as the protected machine, which rules out helper-win-01 (Server 2022) for srv-web-01 (Server 2019) and makes a generation-matching helper the answer. helper-win-01 reaches the internet only through a corporate filtering service, and proxies commonly break the iSCSI/3260 path, so the script needs direct outbound access for the srv-erp-02 extraction. The Linux helper needs the open-iscsi and lshw packages, and because the script is English-only the system locale should be English. srv-fs-03 stores its data on an LVM volume group across striped disks, and such layouts must be handled by running the script on another machine, with a separate D2v3 virtual machine recommended. Finally, the script is valid for only 12 hours and its password is shown only at the moment it is generated, so the expired copy for srv-web-01 must be replaced by a newly produced script.",
+				"perChoice": {
+					"a": "Belongs to the srv-mon-04 backup failure: machines built from custom images often lack the Azure VM agent, and the backup extension cannot be deployed until the agent is present on the machine.",
+					"b": "Belongs to the srv-web-01 extraction: the script host must run the same operating system generation as the protected machine, and helper-win-01 (Windows Server 2022) does not match srv-web-01 (Windows Server 2019).",
+					"c": "Belongs to the srv-erp-02 extraction on helper-win-01: proxies commonly break the iSCSI/3260 path, so the script has to be run on a host with direct outbound access instead of one whose internet traffic goes through a filtering service.",
+					"d": "Belongs to the helper-linux-01 case: on Linux the script needs open-iscsi and lshw, and because the script itself is English-only the system locale should be English so its output is readable.",
+					"e": "Belongs to the srv-fs-03 extraction: an LVM volume group spread over striped disks is one of the layouts that cannot be mounted on the ordinary helper, so the script should be run on another machine, and a separate D2v3 virtual machine is recommended.",
+					"f": "Belongs to the srv-web-01 script problem: the script is valid for only 12 hours and its password is shown only when it is generated, so a newly generated script is needed to obtain a usable password.",
+					"g": "Fits no request: every request here works on individual files without bringing a whole machine back up, which is exactly the purpose of the file-recovery capability, so restoring the virtual machine is unnecessary.",
+					"h": "Fits no request: mount -a must never be used with these recovery volumes; each logical volume is mounted individually with sudo mount <LV path> <mountpath>, and a separate helper machine is used when the source layout requires it."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-restore-files-from-vm"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-vms-first-look-arm"
+				}
+			],
+			"subtopics": [
+				"item-level-recovery",
+				"restore-prerequisites"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S7J2BAAGESWV3VQYKPV216",
+			"body": {
+				"format": "drag-drop",
+				"stem": "Your team protects the virtual machines listed in the exhibit with Azure Backup, and the business has raised one request per machine. Each request must be met by exactly one Azure Backup configuration. Drag each item to the request it satisfies.",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Request R1 | Virtual machine vm-a\n  Facts on record: Windows Server virtual machine in East US 2\n  Requirement: A recovery point must exist every four hours, and the daily recovery points must still be kept for 30 days.\n\nRequest R2 | Virtual machine vm-b\n  Facts on record: Windows Server virtual machine in East US 2\n  Requirement: A single backup each day at a time the business chooses, with recovery points kept for 30 days.\n\nRequest R3 | Virtual machine vm-c\n  Facts on record: Recovery points are in the vault tier\n  Requirement: Existing recovery points must be usable from an Azure subscription other than the one that hosts the virtual machine.\n\nRequest R4 | Virtual machine vm-d\n  Facts on record: Managed virtual machine, not encrypted, recovery points in the vault tier, pinned to one availability zone, vault configured with ZRS redundancy\n  Requirement: The machine must be recovered into a different availability zone of the same region from an existing recovery point, using the Create new plan.\n\nRequest R5 | Virtual machine vm-e\n  Facts on record: Recovery points are in the vault tier; the vault is in East US 2 with geo-redundancy, so its secondary region is Central US\n  Requirement: The machine must be brought back in Central US after a total outage of the East US 2 region."
+				},
+				"items": [
+					{
+						"id": "i-standard",
+						"text": "Standard policy sub type"
+					},
+					{
+						"id": "i-enhanced",
+						"text": "Enhanced policy sub type"
+					},
+					{
+						"id": "i-cross-sub",
+						"text": "Cross Subscription Restore"
+					},
+					{
+						"id": "i-cross-zone",
+						"text": "Cross Zonal Restore"
+					},
+					{
+						"id": "i-cross-region",
+						"text": "Cross Region Restore"
+					}
+				],
+				"slots": [
+					{
+						"id": "r1",
+						"label": "R1"
+					},
+					{
+						"id": "r2",
+						"label": "R2"
+					},
+					{
+						"id": "r3",
+						"label": "R3"
+					},
+					{
+						"id": "r4",
+						"label": "R4"
+					},
+					{
+						"id": "r5",
+						"label": "R5"
+					}
+				]
+			},
+			"key": {
+				"r1": "i-enhanced",
+				"r2": "i-standard",
+				"r3": "i-cross-sub",
+				"r4": "i-cross-zone",
+				"r5": "i-cross-region"
+			},
+			"explanation": {
+				"correct": "Each requirement in the exhibit is satisfied by one configuration: vm-a's four-hour cadence with daily points kept for 30 days comes from the Enhanced policy sub type; vm-b's single daily backup at a chosen time with 30 days of recovery points comes from the Standard policy sub type; vm-c needs Cross Subscription Restore, which is on by default and allows a vault-tier recovery point to be used from a subscription other than the one hosting the protected VM; vm-d's zone-pinned, unencrypted, vault-tier point brought back into another availability zone of the same region is served by Cross Zonal Restore, which requires a ZRS or CRR vault; and vm-e's rebuild in the vault's secondary region after a full outage of East US 2 is served by Cross Region Restore, which works with vault-tier data only.",
+				"perChoice": {
+					"i-cross-region": "Belongs with vm-e (R5): Cross Region Restore is the option for a full or partial outage of the primary region, it works on vault-tier data only, and the files are staged in the region the vault treats as its secondary region, which is Central US for a geo-redundant East US 2 vault.",
+					"i-cross-sub": "Belongs with vm-c (R3): Cross Subscription Restore is on by default and is toggled at Vault > Properties; with it, a vault-tier recovery point can be restored to a subscription other than the protected VM's, while snapshot-tier points stay in the subscription where the VM runs.",
+					"i-cross-zone": "Belongs with vm-d (R4): Cross Zonal Restore applies to managed virtual machines that are zone-pinned and unencrypted with vault-tier recovery points, needs a vault with ZRS or CRR redundancy, and only shows the Availability Zone picker for the Create new and Restore disks plans.",
+					"i-enhanced": "Belongs with vm-a (R1): the Enhanced sub type backs up every four hours at the scheduled time and keeps the daily backup points for 30 days, satisfying both halves of that request.",
+					"i-standard": "Belongs with vm-b (R2): the Standard sub type backs up once a day at a time you choose and keeps recovery points for 30 days, which is exactly what that request asks for."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-vms-first-look-arm"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-arm-restore-vms"
+				}
+			],
+			"subtopics": [
+				"backup-policy-sub-type",
+				"cross-zonal-restore",
+				"cross-region-restore"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S7N0H3W9JGXX1TZA4TA1D6",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your company reorganized its Azure subscriptions. The virtual machine vm-fin-02 is protected by the Recovery Services vault rsvault-fin, and the recovery points recorded for it are held at the vault tier. After the reorganization the machine has to come back inside subscription Sub-B instead of subscription Sub-A, and you want to work from the recovery points that already exist for it. The exhibit lists the current state of the vault and of the protected item. What should you do?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Vault name",
+							"rsvault-fin"
+						],
+						[
+							"Vault subscription",
+							"Sub-A"
+						],
+						[
+							"Protected virtual machine",
+							"vm-fin-02 (subscription Sub-A)"
+						],
+						[
+							"Recovery point tier",
+							"Vault tier"
+						],
+						[
+							"Cross Subscription Restore",
+							"Off"
+						],
+						[
+							"How the setting was changed",
+							"Ordinary switch, not the permanent one"
+						]
+					]
+				},
+				"statement": "To bring vm-fin-02 back into subscription Sub-B using the recovery points that already exist for it, you should {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Re-enable the Cross Subscription Restore setting on the vault"
+							},
+							{
+								"id": "b",
+								"text": "Grant the owners of subscription Sub-B the Backup Operator role on the vault and keep the Cross Subscription Restore setting off"
+							},
+							{
+								"id": "c",
+								"text": "Move the vault into subscription Sub-B and restore from there, relying on the Cross Subscription Restore setting remaining off"
+							},
+							{
+								"id": "d",
+								"text": "Create a new vault in subscription Sub-B, re-protect vm-fin-02 there and restore it from there, keeping the Cross Subscription Restore setting off on the original vault"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "A vault-tier recovery point can be restored into a subscription other than the one hosting the protected virtual machine only when Cross Subscription Restore is switched on for the vault; snapshot-tier points always stay in the protected machine's subscription. That control lives under Vault > Properties and can be switched on, switched off, or permanently disabled, with only the permanent variant being irreversible. The vault here was switched off with the ordinary switch, so the setting can be turned back on, which allows vm-fin-02 to be restored into subscription Sub-B from the recovery points that already exist.",
+				"perChoice": {
+					"action:b": "Granting the Backup Operator role controls who may manage backups in the vault, but it does not change the vault's cross-subscription restore behaviour. With the setting off, a vault-tier point still cannot be restored into subscription Sub-B.",
+					"action:c": "Moving the vault does not satisfy the requirement, because the protected machine stays in subscription Sub-A, so restoring into Sub-B is still a restore into a subscription other than the protected machine's and therefore still needs the setting turned on. Moving a vault while the setting is off also breaks restores back into the original subscription.",
+					"action:d": "A second vault starts with new recovery points rather than the ones that already exist for vm-fin-02, so it does not meet the stated requirement, and the original vault's setting would still be off for any later restore."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-arm-restore-vms"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-vms-first-look-arm"
+				}
+			],
+			"subtopics": [
+				"cross-subscription-restore",
+				"recovery-services-vault-settings"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S8JNFV1S037DJJGT8ZKVP6",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Recovery Services vault rsvault-web that protects the virtual machine vm-web-03, and you plan to restore that machine's disks from one of its recovery points using the user-assigned managed identity id-web-restore. The exhibit lists the objects that the restore job will work with. You need the restore to complete successfully with that identity. Which access change should you make?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Object",
+						"Value"
+					],
+					"rows": [
+						[
+							"Managed identity selected for the restore",
+							"id-web-restore (user-assigned)"
+						],
+						[
+							"id-web-restore associated with rsvault-web",
+							"Yes"
+						],
+						[
+							"Staging storage account",
+							"stgweb01"
+						],
+						[
+							"Resource group receiving the restored disks",
+							"RG-Web-Restore"
+						],
+						[
+							"Resource group of the protected VM",
+							"RG-Web-Prod"
+						]
+					]
+				},
+				"statement": "To let this restore complete with the selected managed identity, you should {{slot1}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "Add the VM restore operator role assignment on the staging storage account and the target resource group"
+							},
+							{
+								"id": "b",
+								"text": "Add the VM restore operator role assignment on the Recovery Services vault and the target resource group"
+							},
+							{
+								"id": "c",
+								"text": "Add the VM restore operator role assignment on the staging storage account and the protected VM's resource group"
+							},
+							{
+								"id": "d",
+								"text": "Add the Storage Blob Data Contributor role assignment on the staging storage account and the target resource group"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a"
+			},
+			"explanation": {
+				"correct": "A restore that runs with a managed identity needs two things: the identity must already be associated with the Recovery Services vault, which id-web-restore is here, and the VM restore operator role must be assigned on the staging location (the storage account) and on the target resource group where the restore creates its resources. In this scenario that means the assignment must cover stgweb01 and RG-Web-Restore, so the identity can write the restore output and create the restored disks.",
+				"perChoice": {
+					"slot1:b": "This places the assignment on the vault instead of on the staging storage account. The vault is where the identity must already be associated; the staging storage account is the location the restore job writes its template and VHD files to, so the role must be granted there for the job to succeed.",
+					"slot1:c": "The restored disks are created in RG-Web-Restore, so the permissions have to cover that resource group. RG-Web-Prod only holds the original protected VM, and the restore job does not create or modify resources there.",
+					"slot1:d": "Storage Blob Data Contributor grants blob data access only. In addition to the storage account, the restore creates and manages disks and other resources in the target resource group, and the VM restore operator role is the role that covers those restore permissions."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-arm-restore-vms"
+				}
+			],
+			"subtopics": [
+				"managed-identity-restore",
+				"rbac-role-assignment"
+			],
+			"reviewed": false
 		}
 	]
 }

@@ -1433,6 +1433,467 @@
 				"recovery-point-protection"
 			],
 			"reviewed": false
+		},
+		{
+			"id": "q_01M6S7AWQ7XXAAACYBAG2M6VY1",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Backup vault named fin-vault in resource group rg-backup of the Contoso-prod subscription, and the configuration on record is shown below.\n\nThe operations team wants to watch the backup jobs and alerts raised for the protected workload from a single place, and finance has asked which charging model applies to the PostgreSQL recovery points while the vault is set up so that restores can be run from the paired Azure region at any time, without waiting for Microsoft to declare an outage in the primary region.\n\nYou need both answers recorded correctly. Where should the operations team watch backup jobs and alerts, and which charging model applies to the PostgreSQL backups while that setup is active?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Vault property",
+						"Recorded value"
+					],
+					"rows": [
+						[
+							"Vault name",
+							"fin-vault"
+						],
+						[
+							"Resource group",
+							"rg-backup"
+						],
+						[
+							"Subscription",
+							"Contoso-prod"
+						],
+						[
+							"Protected workload",
+							"Azure Database for PostgreSQL - Flexible Server (pg-fin)"
+						],
+						[
+							"Primary copy of the database",
+							"Azure, East US"
+						],
+						[
+							"Paired-region restores",
+							"Permitted at any time, without an outage declaration"
+						]
+					]
+				},
+				"statement": "The operations team should watch the backup jobs and alerts for the protected workload in the {{slot1}}, and while the vault allows restores from the paired region on demand, the PostgreSQL backups it holds are charged at the {{slot2}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "Resiliency blade"
+							},
+							{
+								"id": "b",
+								"text": "Backup Instances page"
+							},
+							{
+								"id": "c",
+								"text": "Backup Policies page"
+							},
+							{
+								"id": "d",
+								"text": "Encryption settings page"
+							}
+						]
+					},
+					{
+						"id": "slot2",
+						"options": [
+							{
+								"id": "a",
+								"text": "RA-GRS rates for the PostgreSQL backups the vault holds"
+							},
+							{
+								"id": "b",
+								"text": "Standard GRS rates for the PostgreSQL backups the vault holds"
+							},
+							{
+								"id": "c",
+								"text": "LRS rates for the PostgreSQL backups the vault holds"
+							},
+							{
+								"id": "d",
+								"text": "ZRS rates for the PostgreSQL backups the vault holds"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a",
+				"slot2": "a"
+			},
+			"explanation": {
+				"correct": "The Resiliency blade is the single place where the vault's V2 workloads can be watched from backup jobs up to alerts, with matching reporting. The behaviour described — restoring from the paired region at any time with no outage declared in the primary region — is the Cross Region Restore capability, and a vault with that capability enabled is billed automatically at RA-GRS rates for the PostgreSQL backups it holds, rather than at plain GRS rates.",
+				"perChoice": {
+					"slot1:b": "The Backup Instances page lists the protected items and their backup instances, and it is the place the portal guidance points engineers to when emptying a vault before deleting it; it is not the surface that shows the running jobs and alerts with matching reporting.",
+					"slot1:c": "Backup policies hold the schedule, retention and protection settings that drive backups; they are configuration to be read or edited, not the place where jobs and alerts for the protected workload are watched.",
+					"slot1:d": "Encryption settings only carries the vault's encryption configuration, such as the choice between Microsoft managed keys and a customer managed key, and provides no view of backup jobs or alerts.",
+					"slot2:b": "Plain GRS keeps the copy in the paired region sealed until Microsoft declares an outage in the primary region, so it is not the model applied while the vault can restore from that region on demand.",
+					"slot2:c": "LRS keeps copies only within the hosting region and is the cheaper option recommended when the primary copy of the data lives outside Azure; it does not match a vault whose PostgreSQL backups are replicated to the paired region and billed at RA-GRS.",
+					"slot2:d": "ZRS spreads copies across availability zones inside a single region and creates no paired-region copy at all, so it cannot be the model applied to a vault that restores from the paired region."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-vault-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/create-manage-backup-vault"
+				}
+			],
+			"subtopics": [
+				"backup-vault-monitoring",
+				"cross-region-restore-billing"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S7JS4VF75Z3PWNHQW9TFS1",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are creating an Azure Backup vault named sec-vault in the Contoso-prod subscription to hold vaulted backup data for an Azure Database for PostgreSQL - Flexible Server named pg-fin. The security and audit teams have attached two conditions to the sign-off for this vault, and the conditions on record are shown below.\n\nYou need the vault to satisfy both conditions. Which statement correctly completes the description of the recovery points it holds?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Condition | Requirement recorded by the audit team\nC1        | A full compromise of the production PostgreSQL server, including its administrator credentials, must not let the stored recovery points be changed or destroyed.\nC2        | The audit evidence must name every party that can open the storage that holds the recovery points, and people outside Contoso who assist with restore drills must not be listed."
+				},
+				"statement": "The recovery points that the Backup vault holds for the protected workload are kept {{location}}, and {{compromise}}.",
+				"slots": [
+					{
+						"id": "location",
+						"options": [
+							{
+								"id": "a",
+								"text": "in a Microsoft-managed subscription and tenant, where guest accounts and external users have no direct route to the storage"
+							},
+							{
+								"id": "b",
+								"text": "in Contoso's own subscription and resource group, with access restricted by the vault's Azure RBAC assignments"
+							},
+							{
+								"id": "c",
+								"text": "in a Microsoft-managed subscription and tenant, where principals with a backup role on the vault have direct reach to the storage"
+							},
+							{
+								"id": "d",
+								"text": "in Contoso's own subscription and resource group, with network rules leaving guest accounts and external users no direct route to the storage"
+							}
+						]
+					},
+					{
+						"id": "compromise",
+						"options": [
+							{
+								"id": "a",
+								"text": "they cannot be altered or wiped through the compromised environment"
+							},
+							{
+								"id": "b",
+								"text": "they can be altered or wiped through the compromised environment whenever a backup role is assigned on the vault"
+							},
+							{
+								"id": "c",
+								"text": "they are removed automatically once the source workload is compromised"
+							},
+							{
+								"id": "d",
+								"text": "they become read-only for anyone working from the compromised environment"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"compromise": "a",
+				"location": "a"
+			},
+			"explanation": {
+				"correct": "A Backup vault keeps the recovery points it accumulates in a Microsoft-managed subscription and tenant, and guests and other external users have no direct route to that storage or its contents. Because the copy of the backup data lives outside the customer's own subscription and outside the reach of the workload's administrators, a compromised source environment cannot be used to alter or wipe the recovery points that already exist. Role-based control on the vault governs which principals may run backup and restore operations; it does not hand out a path into the storage itself.",
+				"perChoice": {
+					"location:b": "The recovery points are not stored in Contoso's own subscription and resource group; they are kept in a Microsoft-managed subscription and tenant. Role assignments on the vault control who may perform backup and restore operations; they are not a restriction applied to storage in the customer's own resource group.",
+					"location:c": "The location is right but the reach is wrong: holding one of the backup roles on the vault grants the ability to run backup and restore operations, not a direct path to the storage that holds the recovery points. Guests and other external users have no direct route to that storage at all.",
+					"location:d": "The recovery points are not held in Contoso's own subscription and resource group, and network rules are not what protects them. The isolation comes from the data being kept in a Microsoft-managed subscription and tenant that guests and external users cannot route to.",
+					"compromise:b": "Even when a principal holds a backup role on the vault, that role covers backup and restore operations rather than the stored recovery points themselves. Data isolation means a compromised source environment has no route to the storage, so existing backups cannot be changed or destroyed through it.",
+					"compromise:c": "Recovery points are not deleted automatically when the workload they protect is compromised. The isolation provided by the Backup vault model is what keeps existing backups intact and out of the compromised environment's reach.",
+					"compromise:d": "Recovery points do not turn read-only for a compromised environment; the guarantee is stronger than that. The data sits in a Microsoft-managed subscription and tenant with no direct route for the compromised source, so it can be neither modified nor deleted from there."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-vault-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/create-manage-backup-vault"
+				}
+			],
+			"subtopics": [
+				"backup-vault",
+				"data-isolation",
+				"azure-rbac"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S7N8WXCY2R12S5H00HRQT2",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are updating the operations handbook for a Backup vault named store-vault in resource group rg-backup of the Contoso-prod subscription. The vault protects an Azure Blob container through vaulted backup, and the handbook must record accurately what the Contoso platform team is responsible for in terms of storage, and which storage decision sits with the team. You need that section to be correct. Which statement should you write?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Backup vault",
+							"store-vault"
+						],
+						[
+							"Resource group",
+							"rg-backup"
+						],
+						[
+							"Subscription",
+							"Contoso-prod"
+						],
+						[
+							"Region",
+							"East US"
+						],
+						[
+							"Protected workload",
+							"Azure Blob container (vaulted backup)"
+						],
+						[
+							"Storage redundancy at creation",
+							"Geo-redundant"
+						]
+					]
+				},
+				"statement": "The recovery points in store-vault {{storage}}.",
+				"slots": [
+					{
+						"id": "storage",
+						"options": [
+							{
+								"id": "a",
+								"text": "sit in storage that Azure manages for you, and the redundancy set at creation is the only storage choice you make"
+							},
+							{
+								"id": "b",
+								"text": "sit in storage that Azure manages for you, and the redundancy set at creation can be changed later in the vault's storage settings"
+							},
+							{
+								"id": "c",
+								"text": "sit in a storage account that you create and administer, and the redundancy set at creation is the only storage choice you make"
+							},
+							{
+								"id": "d",
+								"text": "sit in a storage account that you create and administer, and the redundancy set at creation can be changed later in the vault's storage settings"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"storage": "a"
+			},
+			"explanation": {
+				"correct": "The Backup vault keeps its backup data in storage that the service manages on your behalf, so the Contoso platform team does not create, own or run a storage account for the recovery points. The one storage-related decision that remains theirs is the redundancy level chosen when the vault is created (Geo-redundant for store-vault). Because the vault already protects an Azure Blob container, that level is now locked and is not something the team can adjust afterwards.",
+				"perChoice": {
+					"storage:b": "The first half is right, but the second half is not: the redundancy level is fixed once items are protected in the vault, so it cannot be raised later, and the vault does not expose a storage setting for changing it.",
+					"storage:c": "The redundancy half is right, but the storage half is wrong: the vault's underlying storage is managed by the service for you, so there is no storage account for the team to create and administer.",
+					"storage:d": "Both halves are wrong: the recovery points live in storage that Azure manages for you rather than in a storage account the team owns, and the redundancy level chosen at creation cannot be changed once items are protected in the vault."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-vault-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/create-manage-backup-vault"
+				}
+			],
+			"subtopics": [
+				"backup-vault-storage-model",
+				"storage-redundancy",
+				"vault-creation"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S7QVG0CRP1717R5GNQJKZZ",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have an Azure Backup vault named audit-vault in resource group rg-continuity of the Contoso-prod subscription, and it protects an Azure Database for PostgreSQL - Flexible Server named pg-sales. The audit team has asked for a plain statement of where the recovery points produced for this vault are kept and which parties are able to get at that stored data, and you are writing that statement for the operations handbook. The configuration on record is shown below.",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Backup vault",
+							"audit-vault"
+						],
+						[
+							"Resource group",
+							"rg-continuity"
+						],
+						[
+							"Subscription",
+							"Contoso-prod"
+						],
+						[
+							"Protected workload",
+							"PostgreSQL flexible server pg-sales"
+						],
+						[
+							"Storage redundancy",
+							"Geo-redundant"
+						],
+						[
+							"System assigned managed identity",
+							"Enabled"
+						]
+					]
+				},
+				"statement": "The recovery points that this vault accumulates are kept in {{storageLocation}}.",
+				"slots": [
+					{
+						"id": "storageLocation",
+						"options": [
+							{
+								"id": "a",
+								"text": "a subscription and tenant managed by Microsoft, where guests and other external users have no route to the stored data"
+							},
+							{
+								"id": "b",
+								"text": "the Contoso-prod subscription and tenant, where guests and other external users have no route to the stored data"
+							},
+							{
+								"id": "c",
+								"text": "a subscription and tenant managed by Microsoft, where any principal holding Owner on Contoso-prod can read the stored data directly"
+							},
+							{
+								"id": "d",
+								"text": "the Contoso-prod subscription and tenant, where any principal holding Contributor on rg-continuity can read the stored data directly"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"storageLocation": "a"
+			},
+			"explanation": {
+				"correct": "Azure Backup holds the backup data of a Backup vault in a subscription and tenant that Microsoft manages, and guests and other external users have no route into that storage or its contents. That isolation is what stops a compromised source environment from being used to alter or wipe the recovery points already stored. The vault resource itself lives in Contoso-prod, but the data it holds does not, so the statement that pairs the Microsoft-managed subscription and tenant with the absence of any route for guests and external users is the accurate one.",
+				"perChoice": {
+					"storageLocation:b": "The reachability half is right, but the location is wrong. Only the vault resource itself is created in the Contoso-prod subscription; the backup data it accumulates is kept in a subscription and tenant that Microsoft manages, not in Contoso's own subscription and tenant.",
+					"storageLocation:c": "The location is right, but the reachability is wrong. Because the data is isolated in a subscription and tenant that Microsoft manages, holding Owner on Contoso-prod does not hand an identity direct read access to the raw stored contents.",
+					"storageLocation:d": "Both halves are wrong. The stored data is not kept in the Contoso-prod subscription, and holding Contributor on rg-continuity does not give direct read access to the stored contents either, because the data sits outside that subscription and tenant."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-vault-overview"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/create-manage-backup-vault"
+				}
+			],
+			"subtopics": [
+				"backup-vault-data-isolation",
+				"backup-vault-storage-model"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M6S7XWE119V5D57K1GGQW3P1",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Contoso is decommissioning the Azure Blob container that the vault blob-vault protects, and the platform team would like the vault to go away in the same change. The records compliance group has set a seven-year retrievability rule for the vaulted recovery points of that container, and no other copy of those points exists. The current situation is shown below.\n\nYou need an accurate statement for the change request. Which statement should you write?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Setting",
+						"Value"
+					],
+					"rows": [
+						[
+							"Vault",
+							"blob-vault, an Azure Backup vault in rg-backup of the Contoso-prod subscription"
+						],
+						[
+							"Protected workload",
+							"Blob container contoso-archive, protected through vaulted backup"
+						],
+						[
+							"Recovery points in the vault",
+							"12 points; the newest was taken three days ago"
+						],
+						[
+							"Other copies of these points",
+							"None"
+						],
+						[
+							"Records compliance rule",
+							"The points for this container must remain retrievable for seven years"
+						]
+					]
+				},
+				"statement": "The change request should state that {{slot1}}.",
+				"slots": [
+					{
+						"id": "slot1",
+						"options": [
+							{
+								"id": "a",
+								"text": "the vault stays in place while the recovery points are still required, because removing a vault permanently destroys the backup items and the backup data the vault holds, and the removal cannot be reversed"
+							},
+							{
+								"id": "b",
+								"text": "the vault can be removed now, because the backup data is kept in the Microsoft-managed subscription and is retained independently of the vault"
+							},
+							{
+								"id": "c",
+								"text": "the vault can be removed now and re-created later in the same subscription, after which the earlier recovery points can be reached again"
+							},
+							{
+								"id": "d",
+								"text": "the vault can be removed now once the Blob container is decommissioned, because the recovery points are not tied to the protected workload"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"slot1": "a"
+			},
+			"explanation": {
+				"correct": "Taking a vault out of service is a one-way operation: every backup item and all of the backup data for the protected servers are destroyed permanently, and the removal cannot be reversed. The vaulted recovery points for contoso-archive exist only inside blob-vault, so as long as the compliance rule keeps them retrievable for seven years, the vault has to stay where it is; removing it and later re-creating a vault with the same name would leave the container with no recovery points at all.",
+				"perChoice": {
+					"slot1:b": "This option mistakes the storage model for a retention guarantee. The vaulted data is kept in a Microsoft-managed subscription and tenant, which keeps it out of reach of guests and external users, but that isolation does not preserve the data once the vault itself is gone: removing the vault destroys the backup data it holds for good.",
+					"slot1:c": "A vault accumulates its own recovery points over time. A vault created later with the same name starts out with no recovery points of its own, so the earlier points cannot be reached again through it.",
+					"slot1:d": "The points are held by the vault, not by the protected workload. Once the Blob container is decommissioned the vault still holds them, and removing the vault destroys them, so the state of the workload itself has no bearing on whether they survive."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/create-manage-backup-vault"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-vault-overview"
+				}
+			],
+			"subtopics": [
+				"backup-vault-deletion",
+				"backup-data-retention",
+				"backup-vault-lifecycle"
+			],
+			"reviewed": false
 		}
 	]
 }
