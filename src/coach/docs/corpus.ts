@@ -1,5 +1,5 @@
-// The local copy of the Microsoft docs: MicrosoftDocs/azure-docs,
-// MicrosoftDocs/azure-monitor-docs and MicrosoftDocs/entra-docs, sparse-checked-out under data/docs by
+// The local copy of the Microsoft docs: MicrosoftDocs/azure-docs and the product repos
+// (azure-compute-docs, azure-management-docs, azure-monitor-docs), plus MicrosoftDocs/entra-docs, sparse-checked-out under data/docs by
 // `npm run docs:sync`. A Learn URL maps to its repo file by a fixed rule.
 import { readFileSync } from "node:fs";
 import { join, posix, resolve, sep } from "node:path";
@@ -7,17 +7,19 @@ import type { CoachDb } from "../db.ts";
 import { prepareMarkdown } from "./doc-markdown.ts";
 import { fetchMsDoc, type MsDoc } from "./docs.ts";
 
-export type DocRepo = "azure-docs" | "azure-monitor-docs" | "entra-docs";
+export type DocRepo = "azure-docs" | "azure-compute-docs" | "azure-management-docs" | "azure-monitor-docs" | "entra-docs";
 
 export const DOCS_ROOT = "./data/docs";
 
 const LEARN = "https://learn.microsoft.com/en-us";
 
 // Learn product prefix → repo and the folder its articles live in.
-// `only` limits an entry to Learn URLs whose first path segment after the prefix matches it;
-// Azure Monitor has its own repo, so it comes before the general azure entry.
-const PRODUCTS: { prefix: string; repo: DocRepo; folder: string; only?: string }[] = [
-	{ prefix: "azure", repo: "azure-monitor-docs", folder: "articles", only: "azure-monitor" },
+// `only` limits an entry to Learn URLs whose first path segment after the prefix is one of those
+// sections: some Azure products have their own repo, so those entries come before the general azure one.
+const PRODUCTS: { prefix: string; repo: DocRepo; folder: string; only?: string[] }[] = [
+	{ prefix: "azure", repo: "azure-monitor-docs", folder: "articles", only: ["azure-monitor", "advisor"] },
+	{ prefix: "azure", repo: "azure-compute-docs", folder: "articles", only: ["virtual-machines", "virtual-machine-scale-sets", "container-instances"] },
+	{ prefix: "azure", repo: "azure-management-docs", folder: "articles", only: ["container-registry"] },
 	{ prefix: "azure", repo: "azure-docs", folder: "articles" },
 	{ prefix: "entra", repo: "entra-docs", folder: "docs" },
 ];
@@ -39,7 +41,7 @@ export function learnUrlToRepoPath(url: string): { repo: DocRepo; path: string }
 	const [locale, product, ...rest] = segments;
 	if (locale !== "en-us" || !rest.length) return null;
 	if (rest.some((s) => s === "." || s === ".." || s.includes("/") || s.includes("\\"))) return null;
-	const match = PRODUCTS.find((p) => p.prefix === product && (!p.only || rest[0] === p.only));
+	const match = PRODUCTS.find((p) => p.prefix === product && (!p.only || p.only.includes(rest[0])));
 	if (!match) return null;
 	return { repo: match.repo, path: `${match.folder}/${rest.join("/")}.md` };
 }
@@ -51,13 +53,13 @@ export function repoPathToLearnUrl(repo: DocRepo, path: string): string | null {
 }
 
 export function sparseDirs(urls: string[]): Record<DocRepo, string[]> {
-	const dirs: Record<DocRepo, Set<string>> = { "azure-docs": new Set(), "azure-monitor-docs": new Set(), "entra-docs": new Set() };
+	const dirs = Object.fromEntries(PRODUCTS.map((p) => [p.repo, new Set<string>()])) as Record<DocRepo, Set<string>>;
 	for (const url of urls) {
 		const mapped = learnUrlToRepoPath(url);
 		if (mapped) dirs[mapped.repo].add(mapped.path.split("/").slice(0, 2).join("/"));
 	}
 	const list = (s: Set<string>) => [...s].sort().concat("includes");
-	return { "azure-docs": list(dirs["azure-docs"]), "azure-monitor-docs": list(dirs["azure-monitor-docs"]), "entra-docs": list(dirs["entra-docs"]) };
+	return Object.fromEntries(Object.entries(dirs).map(([repo, set]) => [repo, list(set)])) as Record<DocRepo, string[]>;
 }
 
 export interface SyncState {

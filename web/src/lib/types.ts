@@ -215,5 +215,5 @@ export type DocsPage = {
 	title: string;
 	/** Sanitized on the server. */
 	html: string;
-	source: { repo: "azure-docs" | "azure-monitor-docs" | "entra-docs"; githubUrl: string; license: string };
+	source: { repo: "azure-docs" | "azure-compute-docs" | "azure-management-docs" | "azure-monitor-docs" | "entra-docs"; githubUrl: string; license: string };
 };

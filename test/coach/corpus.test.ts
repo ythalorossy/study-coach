@@ -28,6 +28,15 @@ describe("Learn URL to repo path", () => {
 		expect(learnUrlToRepoPath("https://learn.microsoft.com/en-us/azure/monitor-something/x")?.repo).toBe("azure-docs");
 	});
 
+	it("sends compute, container registry and Advisor URLs to their own repos", () => {
+		expect(learnUrlToRepoPath("https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types")).toEqual({ repo: "azure-compute-docs", path: "articles/virtual-machines/disks-types.md" });
+		expect(learnUrlToRepoPath("https://learn.microsoft.com/en-us/azure/virtual-machine-scale-sets/overview")?.repo).toBe("azure-compute-docs");
+		expect(learnUrlToRepoPath("https://learn.microsoft.com/en-us/azure/container-instances/container-instances-overview")?.repo).toBe("azure-compute-docs");
+		expect(learnUrlToRepoPath("https://learn.microsoft.com/en-us/azure/container-registry/container-registry-intro")?.repo).toBe("azure-management-docs");
+		expect(learnUrlToRepoPath("https://learn.microsoft.com/en-us/azure/advisor/advisor-overview")?.repo).toBe("azure-monitor-docs");
+		expect(repoPathToLearnUrl("azure-compute-docs", "articles/virtual-machines/disks-types.md")).toBe("https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types");
+	});
+
 	it("refuses other hosts, locales, products and traversal", () => {
 		for (const u of [
 			"https://example.com/en-us/azure/x",
@@ -59,7 +68,7 @@ describe("Learn URL to repo path", () => {
 				"https://learn.microsoft.com/en-us/azure/governance/management-groups/overview",
 				"https://learn.microsoft.com/en-us/entra/identity/users/groups-dynamic-membership",
 			]),
-		).toEqual({ "azure-docs": ["articles/governance", "includes"], "azure-monitor-docs": ["includes"], "entra-docs": ["docs/identity", "includes"] });
+		).toEqual({ "azure-docs": ["articles/governance", "includes"], "azure-compute-docs": ["includes"], "azure-management-docs": ["includes"], "azure-monitor-docs": ["includes"], "entra-docs": ["docs/identity", "includes"] });
 	});
 });
 

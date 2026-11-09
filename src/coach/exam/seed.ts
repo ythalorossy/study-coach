@@ -654,7 +654,7 @@ export const SKILLS: [id: string, specialist: SpecialistId, name: string, docUrl
 		[
 			`${L}/azure/bastion/bastion-overview`,
 			`${L}/azure/bastion/configuration-settings`,
-			`${L}/azure/bastion/tutorial-create-host-portal`,
+			`${L}/azure/bastion/quickstart-host-portal`,
 		],
 	],
 	[
