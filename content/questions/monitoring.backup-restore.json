@@ -1583,6 +1583,334 @@
 				"rbac-role-assignment"
 			],
 			"reviewed": false
+		},
+		{
+			"id": "q_01M70E365BPEBYKF74FTTAECK0",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have to bring back the deleted virtual machine vm-api-02, which is protected by the Recovery Services vault rsvault-orders, and the machine has to end up in the availability set AS-PROD next to the other API servers that front the internal load balancer. The exhibit lists what is on record for this workload. Which Azure Backup operation should you use?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "PROPERTY                          VALUE\nProtected item                   vm-api-02\nRecovery Services vault          rsvault-orders\nRegion                           East US 2\nAvailability set to join         AS-PROD\nOther members of AS-PROD         vm-api-01, vm-api-03, vm-api-04\nOriginal vm-api-02 instance      Deleted; no instance remains"
+				},
+				"statement": "The operation to use is {{op}}.",
+				"slots": [
+					{
+						"id": "op",
+						"options": [
+							{
+								"id": "a",
+								"text": "Restore disk"
+							},
+							{
+								"id": "b",
+								"text": "Create a new VM"
+							},
+							{
+								"id": "c",
+								"text": "Replace existing"
+							},
+							{
+								"id": "d",
+								"text": "File recovery"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"op": "a"
+			},
+			"explanation": {
+				"correct": "Restore disk is the operation intended for special machine configurations such as membership of an availability set: it produces the machine's storage together with a downloadable ARM template that you can edit and deploy, or you can build the virtual machine with PowerShell, and that is the supported way to place vm-api-02 into AS-PROD. The other catalogue entries cannot satisfy the requirement: a machine rebuilt with Create a new VM in the portal comes back with no availability set and offers no way to choose one, and Replace existing can only be used while the original instance still exists, which it does not here.",
+				"perChoice": {
+					"op:b": "Create a new VM is the quickest way to get a running machine from a recovery point, but a virtual machine rebuilt that way in the portal has no availability set and gives you no way to pick one, so it cannot be joined to AS-PROD.",
+					"op:c": "Replace existing swaps the protected storage onto the original virtual machine, so it requires that instance to still exist; vm-api-02 has been deleted, and the operation also cannot be pointed at a different availability set.",
+					"op:d": "File recovery mounts a recovery point read-only on a helper machine so that individual files can be copied out; it never produces a running virtual machine and therefore cannot place vm-api-02 in AS-PROD."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-arm-restore-vms"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-vms-first-look-arm"
+				}
+			],
+			"subtopics": [
+				"restore-disk",
+				"availability-set",
+				"vm-restore-operations"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M70E7FV3SYGA9CW2TM3X99PA",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have just brought a new virtual machine back online from one of the existing recovery points of vm-chg-01 with the Create a new VM operation, and that job wrote its output to the storage account stgacct-chg. The job has now finished, and the invoice for stgacct-chg carries charges that the finance team does not recognize and wants gone. Your compliance rules forbid discarding any of the recovery points that vm-chg-01 already has, and stgacct-chg is shared with other recovery jobs, so it has to remain in place. The exhibit lists what is on record for this workload. Which action should you take?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Protected virtual machine",
+							"vm-chg-01"
+						],
+						[
+							"Restore operation used",
+							"Create a new VM"
+						],
+						[
+							"Tier of the recovery point that was used",
+							"Vault tier (Vault-Standard)"
+						],
+						[
+							"Data disks attached to the virtual machine",
+							"2"
+						],
+						[
+							"Largest data disk",
+							"600 GB"
+						],
+						[
+							"Account that received the restore output",
+							"stgacct-chg (Standard LRS, East US 2)"
+						]
+					]
+				},
+				"statement": "To clear the charges that the finance team does not recognize, you should {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "delete the VHD files that the restore copied into the storage account"
+							},
+							{
+								"id": "b",
+								"text": "delete the recovery points that the restore left in the vault tier for vm-chg-01"
+							},
+							{
+								"id": "c",
+								"text": "delete the storage account that the restore used and register a replacement for it"
+							},
+							{
+								"id": "d",
+								"text": "change the backup policy of vm-chg-01 so that its recovery points are kept in the snapshot tier"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "When you create a virtual machine from a recovery point that is held at the vault tier (Vault-Standard), Azure Backup also copies the VHD files of the disks into the staging storage account for machines whose disks are under 4 TB or that have fewer than 16 disks. vm-chg-01 has two data disks with a largest disk of 600 GB, so that condition is met, and the extra items billed on stgacct-chg are those copies. The copies are handed over to managed storage, so deleting them from the staging storage account stops the extra charges. The recovery points that the machine already has in the vault and the registered staging account itself both stay in place, which is what the compliance rule and the shared usage of stgacct-chg require.",
+				"perChoice": {
+					"action:a": "This removes the items that the completed restore left in stgacct-chg, which is what the unexpected invoice line is billed on, while the recovery points in the vault and the storage account itself are untouched.",
+					"action:b": "Discarding the recovery points breaks the protection that vm-chg-01 already has and violates the compliance rule, and it would not remove the copies already sitting in stgacct-chg, so the extra charges would remain.",
+					"action:c": "stgacct-chg is the staging account registered with the vault and is shared with other recovery jobs; deleting it breaks those jobs and contradicts the requirement that the account stays in place.",
+					"action:d": "A policy change only affects where recovery points created from now on are kept; it does not remove the copies that the finished restore already wrote into stgacct-chg, so the charges on the current invoice stay."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-arm-restore-vms"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-vms-first-look-arm"
+				}
+			],
+			"subtopics": [
+				"recovery-point-tiers",
+				"restore-storage-costs"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M70EBD7N0XF7TT5EQNCAR084",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "Your team protects the Linux virtual machine vm-app-09 with Azure Backup. The machine was created from a custom image, and every backup job fails right away with an error saying the backup extension could not be installed. What should you do to get the backups running again?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Protected machine : vm-app-09\nImage source      : custom, built in-house from vm-app-09-image.vhd\nMarketplace image : No\nVM agent          : missing from the machine\nBackup extension  : could not be installed\nPolicy sub type   : Standard\nLast backup status: Failed"
+				},
+				"statement": "To get the backups running again, you should {{action}}.",
+				"slots": [
+					{
+						"id": "action",
+						"options": [
+							{
+								"id": "a",
+								"text": "Install the VM agent on the protected machine so the backup extension can install"
+							},
+							{
+								"id": "b",
+								"text": "Install the backup extension manually on the protected machine from the Extensions blade"
+							},
+							{
+								"id": "c",
+								"text": "Install a new backup policy in the vault and enable it for the protected machine"
+							},
+							{
+								"id": "d",
+								"text": "Rebuild the custom image with the VM agent included, then protect a new machine built from it"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"action": "a"
+			},
+			"explanation": {
+				"correct": "Azure Backup deploys its own extension on top of the VM agent. Marketplace images already contain the agent, but a custom image such as the one used for vm-app-09 does not, so the extension has nothing to install onto and every backup job fails. Installing the VM agent on the protected machine is the prerequisite step; once the agent is present the backup extension installs by itself and Azure Backup keeps it patched afterwards.",
+				"perChoice": {
+					"action:b": "The backup extension is placed and maintained by Azure Backup itself on the VM agent, not deployed by hand from the Extensions blade. With no agent on the machine the extension cannot be installed, so installing the agent first is the required step.",
+					"action:c": "The failure is in the extension installation on the machine rather than in the policy that drives the schedule, so creating and enabling a different policy in the vault leaves the same error in place.",
+					"action:d": "Nothing requires the image to be rebuilt: the agent can be installed on the existing machine, and protecting a newly built machine would not restore backups for vm-app-09."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-vms-first-look-arm"
+				}
+			],
+			"subtopics": [
+				"backup-extension",
+				"vm-agent"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M70ED580XWQGB8KFMVH98YGW",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a helper machine that your team uses to pull individual files out of recovery points with the Azure Backup file-recovery script. The script downloads onto the helper successfully, but the session then fails because the helper cannot open a connection to the recovery endpoint, and the script will not run on the helper either. You need the session to complete so that you can retrieve the quarterly report file from the protected machine. The exhibit lists what is known about both machines. Which outbound rule should you add to the helper, and which operating system should the helper run?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Property",
+						"Value"
+					],
+					"rows": [
+						[
+							"Protected machine",
+							"vm-hr-04"
+						],
+						[
+							"Protected machine operating system",
+							"Windows Server 2016, 64-bit"
+						],
+						[
+							"Protected machine disk",
+							"Premium SSD v2, 2 TB"
+						],
+						[
+							"Recovery point in use",
+							"Vault tier"
+						],
+						[
+							"Helper machine",
+							"vm-helper-01"
+						],
+						[
+							"Helper network security group",
+							"NSG-HELPER, outbound traffic denied by default"
+						],
+						[
+							"Downloading the script",
+							"Succeeds"
+						],
+						[
+							"Session outcome",
+							"Fails while opening a connection to the recovery endpoint"
+						]
+					]
+				},
+				"statement": "On the helper machine, add {{outbound}} so the session can reach the recovery endpoint, and make sure the helper is running {{hostos}} so that the recovery script can run there.",
+				"slots": [
+					{
+						"id": "outbound",
+						"options": [
+							{
+								"id": "a",
+								"text": "Allow outbound to the AzureBackup service tag on TCP port 3260"
+							},
+							{
+								"id": "b",
+								"text": "Allow outbound to the AzureBackup service tag on TCP port 443"
+							},
+							{
+								"id": "c",
+								"text": "Allow outbound to the AzureFrontDoor.FirstParty service tag on TCP port 3260"
+							},
+							{
+								"id": "d",
+								"text": "Allow outbound to the Microsoft.Storage service tag on TCP port 3260"
+							}
+						]
+					},
+					{
+						"id": "hostos",
+						"options": [
+							{
+								"id": "a",
+								"text": "Windows 10"
+							},
+							{
+								"id": "b",
+								"text": "Windows 8.1"
+							},
+							{
+								"id": "c",
+								"text": "Windows 8"
+							},
+							{
+								"id": "d",
+								"text": "Windows 7"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"outbound": "a",
+				"hostos": "a"
+			},
+			"explanation": {
+				"correct": "The file-recovery session reads the recovery point data from the recovery endpoint, and the documented way to allow that traffic is the AzureBackup service tag on TCP port 3260; the script itself already downloads over port 443, so the missing rule is the one for port 3260. The script host must also run the operating system generation that pairs with the protected machine, and a protected machine on Windows Server 2016 pairs with a Windows 10 script host.",
+				"perChoice": {
+					"outbound:b": "This points at port 443, which is the port used to fetch the recovery script itself; that download already succeeds, and the data connection to the recovery endpoint is made on TCP port 3260.",
+					"outbound:c": "This service tag is listed for port 443 for obtaining the script. The service tag documented for reaching the recovery endpoint on port 3260 is AzureBackup, so this rule does not open the path the session needs.",
+					"outbound:d": "Microsoft.Storage is not the service tag documented for the recovery endpoint traffic. The file-recovery data path is allowed with the AzureBackup service tag on TCP port 3260.",
+					"hostos:b": "Windows 8.1 is the script host generation that pairs with a protected machine on Windows Server 2012 R2, not with the Server 2016 machine in the exhibit.",
+					"hostos:c": "Windows 8 is the script host generation that pairs with a protected machine on Windows Server 2012, not with the Server 2016 machine in the exhibit.",
+					"hostos:d": "Windows 7 is the script host generation that pairs with a protected machine on Windows Server 2008 R2, not with the Server 2016 machine in the exhibit."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-restore-files-from-vm"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-arm-restore-vms"
+				}
+			],
+			"subtopics": [
+				"file-recovery-network-access",
+				"file-recovery-script-requirements"
+			],
+			"reviewed": false
 		}
 	]
 }

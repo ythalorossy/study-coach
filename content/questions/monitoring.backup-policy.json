@@ -1398,6 +1398,539 @@
 				"soft-delete"
 			],
 			"reviewed": false
+		},
+		{
+			"id": "q_01M70E222RCH6H8TJYPJKYE90W",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Recovery Services vault named rsvault-prod that protects a Linux virtual machine running an order-processing database with an Azure Virtual Machine backup policy. After the last restore of that machine, the database had to be put through crash recovery by hand and its write-ahead log replayed before the service would start. The business now wants each recovery point for this workload to be application-consistent, so that a restore brings the database up without any manual repair work. You need to change how this workload is protected in the vault. Which change should you make?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Recovery Services vault : rsvault-prod (East US)\nProtected workload    : orders-vm-03 (Azure Virtual Machine)\nOperating system      : Ubuntu 22.04 LTS\nBackup policy name    : OrdersPolicy\nPolicy subtype        : Standard\nBackup schedule       : Daily at 01:00\nRecovery point retention : 30 days\nSnapshot copies kept for fast restore : 7 days\nGuest backup extension : VMSnapshotLinux\nRestore result reported by operations : database required crash recovery by hand and write-ahead log replay before the service started"
+				},
+				"statement": "The change to make is {{change}}.",
+				"slots": [
+					{
+						"id": "change",
+						"options": [
+							{
+								"id": "a",
+								"text": "Configure pre-backup and post-backup scripts so the database is quiesced during the snapshot"
+							},
+							{
+								"id": "b",
+								"text": "Configure the Enhanced policy subtype so the backup captures all attached disks together during a single crash-consistent snapshot"
+							},
+							{
+								"id": "c",
+								"text": "Configure VSS integration so the guest is able to create an application-consistent snapshot of the running database"
+							},
+							{
+								"id": "d",
+								"text": "Configure the MARS agent and use the MARS console to capture the database files and folders"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"change": "a"
+			},
+			"explanation": {
+				"correct": "On a Linux virtual machine, Azure Backup takes a file-consistent backup, and application-consistent recovery points are obtained only by manually customizing pre/post scripts. Adding pre-backup and post-backup scripts lets the database be quiesced (for example, flushed and frozen) around the snapshot, so the recovery point is application-consistent and the restored database starts without manual crash recovery or write-ahead log replay. That is exactly the symptom the operations team reported, so the scripts are the change that fixes it.",
+				"perChoice": {
+					"change:b": "This workload runs Linux, so the Enhanced subtype buys zone-redundant Instant Restore storage, shorter intervals between backups, Trusted Launch support, Premium SSD v2 and Ultra Disk support, and snapshots that capture several disks together, but those snapshots are crash-consistent. A restored database still has to be crash-recovered by hand, so the manual repair work the business wants removed remains. Enhanced is also a one-way move: a virtual machine already protected with Enhanced cannot be switched back to Standard.",
+					"change:c": "Coordinating with VSS is the Windows mechanism: for running Windows virtual machines, Azure Backup coordinates with the Volume Shadow Copy Service to take an app-consistent snapshot (full VSS backup by default, with a file-consistent fallback when an app-consistent snapshot cannot be taken). A Linux guest does not use VSS, so this setting does not apply to the machine in the scenario and would not change the consistency of its recovery points.",
+					"change:d": "The MARS agent covers files, folders and system state, and its file/folder settings are configured in the MARS console rather than in the Azure Virtual Machine backup policy. Because it does not use application VSS writers, it does not capture app-consistent snapshots, so switching this workload to the MARS agent would still leave the database needing crash recovery after a restore. On-premises Linux machines also cannot be backed up directly with the MARS agent."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-architecture"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-vms-enhanced-policy"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-manage-vms"
+				}
+			],
+			"subtopics": [
+				"backup-policy-configuration",
+				"application-consistent-backup",
+				"backup-agents-and-extensions"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M70E8MY5FJ7KMVZMGE5GEZ4Q",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Recovery Services vault named rsvault-prod that protects a group of Azure virtual machines with an Azure Virtual Machine backup policy called CorpPolicy, whose daily recovery points are kept for 90 days to satisfy a compliance limit. Two new requests have come in for this vault. The platform team wants an additional policy for a batch of newer virtual machines, and the exhibit lists what that policy has to deliver. The owner of app-vm-12 also wants one extra recovery point captured by hand today, before a risky change to that machine, and that point must still be available in three years even though CorpPolicy's own retention ends much sooner. You need to deliver both requests inside the vault. Which setting or action should you use for each request?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Requested item",
+						"Approved requirement"
+					],
+					"rows": [
+						[
+							"Policy subtype for the new policy",
+							"Enhanced — the batch includes virtual machines created from Trusted Launch images"
+						],
+						[
+							"Backup frequency",
+							"Two backup runs during every day"
+						],
+						[
+							"Start time of the first run",
+							"20:00"
+						],
+						[
+							"Length of the schedule window",
+							"Must cover the entire day"
+						],
+						[
+							"Extra recovery point for app-vm-12",
+							"Captured by hand today; must remain available for three years"
+						],
+						[
+							"Policy applied to app-vm-12 today",
+							"CorpPolicy — one run each day at 02:00; daily points kept for 90 days"
+						]
+					]
+				},
+				"statement": "To deliver the request for the new policy you should {{policySchedule}}, and to satisfy the request for the extra recovery point for app-vm-12 you should {{extraPoint}}.",
+				"slots": [
+					{
+						"id": "policySchedule",
+						"options": [
+							{
+								"id": "a",
+								"text": "Hourly schedule with a start time of 20:00, a repeat interval of 12 hours and a duration of 24 hours"
+							},
+							{
+								"id": "b",
+								"text": "Hourly schedule with a start time of 20:00, a repeat interval of 4 hours and a duration of 24 hours"
+							},
+							{
+								"id": "c",
+								"text": "Hourly schedule with a start time of 20:00, a repeat interval of 24 hours and a duration of 24 hours"
+							},
+							{
+								"id": "d",
+								"text": "Hourly schedule with a start time of 08:00, a repeat interval of 12 hours and a duration of 24 hours"
+							}
+						]
+					},
+					{
+						"id": "extraPoint",
+						"options": [
+							{
+								"id": "a",
+								"text": "Run Backup Now and set Retain Backup Till to 3 years"
+							},
+							{
+								"id": "b",
+								"text": "Run Backup Now and set Retain Backup Till to 90 days"
+							},
+							{
+								"id": "c",
+								"text": "Wait for the next scheduled backup and set Retain Backup Till to 3 years"
+							},
+							{
+								"id": "d",
+								"text": "Change the daily retention of the policy to 3 years and leave the schedule alone"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"policySchedule": "a",
+				"extraPoint": "a"
+			},
+			"explanation": {
+				"correct": "Two different pieces of work are needed. For the new policy, the schedule must be Hourly, the first run has to start at 20:00, the repeat interval has to be 12 hours — the intervals that can be chosen are 4, 6, 8, 12 and 24 hours, and only 12 hours gives the two runs per day the request asks for — and the duration has to be 24 hours so the window covers the entire day. For app-vm-12, the extra point is produced with the Backup Now operation, and the Retain Backup Till field in that pane sets the retention of the on-demand backup itself: the retention range of an on-demand backup is the value you specify when you trigger it. Entering a date three years out therefore keeps that single point available long after the 90-day retention of CorpPolicy would have removed it.",
+				"perChoice": {
+					"policySchedule:b": "Repeating every 4 hours across a 24-hour window produces six runs per day, not the two the request calls for; 4 hours is a valid interval but the wrong one for this workload.",
+					"policySchedule:c": "A 24-hour repeat interval inside a 24-hour duration produces only one run per day, so the second daily run the request requires would never happen.",
+					"policySchedule:d": "08:00 is the default start time for an hourly schedule, but this request states that the first run of the day starts at 20:00; the repeat interval and duration are otherwise right.",
+					"extraPoint:b": "The value entered when the on-demand backup is triggered decides how long that point survives, so 90 days would make the extra point expire together with the policy's daily points instead of lasting three years.",
+					"extraPoint:c": "Retain Backup Till is a field of the Backup Now pane; scheduled runs take their lifetime from the policy's retention range and cannot be given an individual keep-until date, so this neither produces the extra point today nor extends its life.",
+					"extraPoint:d": "Widening the policy's daily retention affects every recovery point of every machine that uses CorpPolicy, breaks the 90-day compliance limit, and still does not capture the extra point by hand today."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-vms-enhanced-policy"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-manage-vms"
+				}
+			],
+			"subtopics": [
+				"backup-policy-schedule",
+				"on-demand-backup-retention"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M70F2Q6A0VS4A9R87CM6RE74",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You administer a Recovery Services vault named rsvault-westus in the East US region. The vault protects app-vm-07 with an Enhanced Azure Virtual Machine backup policy, and a second virtual machine, new-vm-22, was protected with that same policy earlier today. The exhibit shows the current configuration and the two items the operations team has raised. You need to answer both of them correctly. Which option should you use for each item?",
+				"exhibit": {
+					"kind": "code",
+					"language": "text",
+					"text": "Vault                         : rsvault-westus (East US)\nPolicy on app-vm-07, new-vm-22 : Enhanced Azure Virtual Machine backup policy\nBackup schedule               : Hourly, start 04:00, repeat every 4 hours, duration 24 hours\nInstant Restore retention     : 7 days\nDaily retention range         : 180 days\nJob history for app-vm-07     : Six runs completed successfully in one 24-hour period;\n                                the vault holds one recovery point for that period\nnew-vm-22                     : Created today at 09:15 and protected with the same policy;\n                                its 12:00 run is in progress at the time of the request\nItem raised by operations     : Run an on-demand backup of new-vm-22 right now, ahead of a\n                                configuration change they are about to make\nQuestion from operations      : app-vm-07 shows six successful runs in a single day but only\n                                one recovery point in the vault - why?"
+				},
+				"statement": "The on-demand run requested for new-vm-22 results in {{onDemand}}, and the hourly runs of app-vm-07 reach the vault as follows: {{vaultRuns}}.",
+				"slots": [
+					{
+						"id": "onDemand",
+						"options": [
+							{
+								"id": "a",
+								"text": "the whole virtual machine being transferred to the vault, because the first scheduled backup is still running"
+							},
+							{
+								"id": "b",
+								"text": "only the blocks that changed since the previous run being transferred to the vault, because the first scheduled backup has already produced the baseline"
+							},
+							{
+								"id": "c",
+								"text": "the job waiting for the first scheduled backup to finish and then transferring only the changed blocks to the vault"
+							},
+							{
+								"id": "d",
+								"text": "the job failing and being retried later, because a backup of the virtual machine is already running"
+							}
+						]
+					},
+					{
+						"id": "vaultRuns",
+						"options": [
+							{
+								"id": "a",
+								"text": "every run is transferred to the vault when that run finishes"
+							},
+							{
+								"id": "b",
+								"text": "only the last backup of the day is transferred to the vault, and the first backup of the next day is transferred when that run fails"
+							},
+							{
+								"id": "c",
+								"text": "only the first backup of the day is transferred to the vault, and the remaining runs of that day are dropped"
+							},
+							{
+								"id": "d",
+								"text": "every second run is transferred to the vault, and the number of recovery points kept in the vault is halved"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"onDemand": "a",
+				"vaultRuns": "b"
+			},
+			"explanation": {
+				"correct": "For the on-demand run on new-vm-22, the initial backup is still pending, and when the initial backup is pending an on-demand backup creates a full copy of the virtual machine in the Recovery Services vault; only once the initial backup is complete does an on-demand run send just the changes since the previous snapshot, because every backup to Azure after the first one is incremental. For the hourly runs of app-vm-07, only the last backup of the day is transferred to the vault, and if that run fails the first backup of the next day is transferred instead. That is why six successful runs inside one 24-hour period (a 4-hour interval over a 24-hour duration produces six scheduled snapshots) leave only one recovery point in the vault.",
+				"perChoice": {
+					"onDemand:b": "This describes the behaviour once the initial backup has already completed, where an on-demand run transfers only the blocks that changed since the previous snapshot. new-vm-22's initial backup has not finished yet, so the requested run does not behave this way.",
+					"onDemand:c": "The job is not queued behind the pending initial backup. When the initial backup is pending, the on-demand run creates a full copy of the virtual machine in the vault rather than waiting and then sending only changed blocks.",
+					"onDemand:d": "The run does not fail because another backup is in progress; an on-demand backup can be triggered while the initial backup is pending, and in that situation it creates a full copy of the virtual machine in the vault.",
+					"vaultRuns:a": "Each scheduled run is not transferred to the vault as it completes. With an hourly schedule only the last backup of the day is transferred to the vault, so the intermediate runs do not each produce a vaulted recovery point.",
+					"vaultRuns:c": "It is not the first backup of the day that reaches the vault. The last backup of the day is the one transferred, and if that run fails the first backup of the next day is transferred instead, which is the behaviour that produces a single recovery point for a day of hourly runs.",
+					"vaultRuns:d": "The number of recovery points is not halved by transferring every second run. Only the last backup of the day is transferred to the vault, with the first backup of the next day taking over if that run fails, so a day of six hourly runs yields one vaulted recovery point."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-manage-vms"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-vms-enhanced-policy"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-architecture"
+				}
+			],
+			"subtopics": [
+				"on-demand-backup",
+				"hourly-schedule",
+				"recovery-points"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M70F7VRF1Y35VS2YTXVTRGH6",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You have a Recovery Services vault named rsvault-prod in the East US region that protects a group of Azure Linux virtual machines. The exhibit shows the new Azure Virtual Machine backup policy that an administrator is creating for another team; the schedule frequency has already been chosen, and the business has asked for the remaining schedule values to be left exactly as the portal supplies them, because those values already match the agreed standard. You need to complete the policy. Which schedule values does the portal supply, and how many scheduled backups does the resulting policy take over a full day?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Recovery Services vault",
+							"rsvault-prod (East US)"
+						],
+						[
+							"Machines to protect",
+							"6 Azure Linux virtual machines"
+						],
+						[
+							"Policy type",
+							"Azure Virtual Machine"
+						],
+						[
+							"Policy subtype",
+							"Enhanced"
+						],
+						[
+							"Backup schedule frequency",
+							"Hourly"
+						],
+						[
+							"Schedule start time",
+							"Leave at the value the portal supplies"
+						],
+						[
+							"Schedule repeat interval",
+							"Leave at the value the portal supplies"
+						],
+						[
+							"Schedule duration",
+							"Leave at the value the portal supplies"
+						]
+					]
+				},
+				"statement": "The portal supplies {{scheduleDefaults}} for this schedule, and the resulting policy takes {{dailyCount}}.",
+				"slots": [
+					{
+						"id": "scheduleDefaults",
+						"options": [
+							{
+								"id": "a",
+								"text": "Start time 8 AM, repeat every 4 hours, duration 24 hours"
+							},
+							{
+								"id": "b",
+								"text": "Start time 2 AM, repeat every 6 hours, duration 24 hours"
+							},
+							{
+								"id": "c",
+								"text": "Start time 8 AM, repeat every 12 hours, duration 12 hours"
+							},
+							{
+								"id": "d",
+								"text": "Start time 12 AM, repeat every 8 hours, duration 24 hours"
+							}
+						]
+					},
+					{
+						"id": "dailyCount",
+						"options": [
+							{
+								"id": "a",
+								"text": "Six scheduled backups over a full day"
+							},
+							{
+								"id": "b",
+								"text": "Four scheduled backups over a full day"
+							},
+							{
+								"id": "c",
+								"text": "Eight scheduled backups over a full day"
+							},
+							{
+								"id": "d",
+								"text": "Twelve scheduled backups over a full day"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"dailyCount": "a",
+				"scheduleDefaults": "a"
+			},
+			"explanation": {
+				"correct": "When the backup schedule frequency is set to Hourly, the portal pre-populates the start time with 8 AM, the repeat interval with every 4 hours and the duration with 24 hours; those are the values the business asked to keep unchanged. A 24-hour duration with a 4-hour repeat interval divides into six scheduled snapshots per day, which matches the documented example of a frequency of every 4 hours over a duration of 24 hours producing six scheduled snapshots. Worth knowing alongside this: with hourly schedules only the last backup of the day is transferred into the vault, and if that transfer fails the first backup of the next day is transferred instead.",
+				"perChoice": {
+					"scheduleDefaults:b": "The duration of 24 hours matches, but the portal's default start time is 8 AM and its default repeat interval is 4 hours, so 2 AM and every 6 hours are not the values supplied automatically.",
+					"scheduleDefaults:c": "The start time matches, but the default repeat interval is every 4 hours and the default duration is 24 hours, so a 12-hour repeat over a 12-hour window is not what the portal supplies.",
+					"scheduleDefaults:d": "The duration matches, but the default start time is 8 AM and the default repeat interval is every 4 hours, so 12 AM and every 8 hours are not the values supplied automatically.",
+					"dailyCount:b": "Four runs would need a 6-hour repeat interval across the full day, not the 4-hour interval the portal supplies by default.",
+					"dailyCount:c": "Eight runs would need a 3-hour interval, which is not one of the intervals that can be selected for an hourly schedule (4, 6, 8, 12 or 24 hours).",
+					"dailyCount:d": "Twelve runs would need a 2-hour interval, which is not among the intervals that can be selected for an hourly schedule."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-vms-enhanced-policy"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-architecture"
+				}
+			],
+			"subtopics": [
+				"hourly-schedule",
+				"backup-policy-defaults",
+				"scheduled-snapshots"
+			],
+			"reviewed": false
+		},
+		{
+			"id": "q_01M70FE9J5QZ22RDNAXS255YXG",
+			"body": {
+				"format": "complete-sentence",
+				"stem": "You are the Azure administrator for a new payroll platform. The company operates only in the East US region, and two new Recovery Services vaults plus one new Azure Virtual Machine backup policy are being set up. The exhibit lists what has already been decided. The business requires that the recovery points held in the payroll vault survive the loss of an availability zone while never being copied outside the East US region, that the new policy protect the payroll workload several times a day with the tightest spacing between recovery points that the service supports, and that no single administrator be able to remove recovery points from the analytics vault unless a second administrator has approved the operation first. You need to complete the configuration so that every requirement is met. Which setting should you use for each requirement?",
+				"exhibit": {
+					"kind": "table",
+					"columns": [
+						"Item",
+						"Value"
+					],
+					"rows": [
+						[
+							"Subscription",
+							"contoso-prod"
+						],
+						[
+							"Region",
+							"East US"
+						],
+						[
+							"Vault rsvault-payroll",
+							"New vault that will hold the recovery points of the payroll platform"
+						],
+						[
+							"Vault rsvault-analytics",
+							"New vault owned by the analytics team"
+						],
+						[
+							"Policy PayPolicy",
+							"New Azure Virtual Machine policy to be created inside rsvault-payroll"
+						],
+						[
+							"Policy subtype already chosen for PayPolicy",
+							"Enhanced"
+						],
+						[
+							"Workloads in scope",
+							"pay-web, pay-db and pay-batch, all Azure virtual machines"
+						],
+						[
+							"Recovery points stored so far",
+							"none, both vaults are new"
+						]
+					]
+				},
+				"statement": "To meet all three requirements, configure rsvault-payroll with {{vaultRedundancy}} redundancy, run PayPolicy with {{backupSchedule}}, and {{criticalOperations}} for rsvault-analytics.",
+				"slots": [
+					{
+						"id": "vaultRedundancy",
+						"options": [
+							{
+								"id": "a",
+								"text": "LRS"
+							},
+							{
+								"id": "b",
+								"text": "GRS"
+							},
+							{
+								"id": "c",
+								"text": "ZRS"
+							}
+						]
+					},
+					{
+						"id": "backupSchedule",
+						"options": [
+							{
+								"id": "a",
+								"text": "hourly backups every 4 hours"
+							},
+							{
+								"id": "b",
+								"text": "hourly backups every 6 hours"
+							},
+							{
+								"id": "c",
+								"text": "hourly backups every 12 hours"
+							},
+							{
+								"id": "d",
+								"text": "one backup each day"
+							}
+						]
+					},
+					{
+						"id": "criticalOperations",
+						"options": [
+							{
+								"id": "a",
+								"text": "enable Multi-User Authorization with Azure Resource Guard"
+							},
+							{
+								"id": "b",
+								"text": "enable Multi-User Authorization with Azure Policy assignments"
+							},
+							{
+								"id": "c",
+								"text": "enable soft delete for deleted recovery points in the Azure vault"
+							},
+							{
+								"id": "d",
+								"text": "enable cross-region restore for recovery points in the Azure vault"
+							}
+						]
+					}
+				]
+			},
+			"key": {
+				"vaultRedundancy": "c",
+				"backupSchedule": "a",
+				"criticalOperations": "a"
+			},
+			"explanation": {
+				"correct": "The payroll vault needs ZRS, because zone-redundant storage replicates the recovery points across availability zones and guarantees data residency and resiliency in the same region, which is exactly what the East US zone-failure requirement asks for; LRS only protects against server rack and drive failures, and GRS copies the data to a paired region, which would break the residency requirement. PayPolicy must run hourly backups every 4 hours: with the Enhanced policy subtype Azure Backup can be scheduled as often as every 4 hours, and that is the shortest interval it supports, so this is the tightest spacing that still produces several recovery points per day. The analytics vault needs Multi-User Authorization with Azure Resource Guard, which adds the approval layer in front of critical operations such as deleting recovery points so a second administrator can sign off; soft delete only keeps deleted recovery points recoverable for a while and adds no approval step, and cross-region restore only changes where a restore can be performed.",
+				"perChoice": {
+					"vaultRedundancy:a": "Locally redundant storage keeps three copies of the data in a single datacenter and protects against rack and drive failures only, so it gives no protection against the loss of an availability zone and does not meet the requirement.",
+					"vaultRedundancy:b": "Geo-redundant storage replicates the data to a paired region, which is what protects against a region-wide outage, but it copies the recovery points outside the East US region and provides no in-region zone resilience.",
+					"backupSchedule:b": "A 6-hour interval is one of the permitted values, but it is not the shortest one, so the gap between recovery points stays wider than the platform team asked for.",
+					"backupSchedule:c": "12 hours is the top of the recovery point objective range that an hourly schedule allows, so it leaves three times the loss window of the 4-hour interval and fails the requirement for the tightest spacing.",
+					"backupSchedule:d": "A single backup per day means the workload is protected only once a day, so the spacing between recovery points is a full day and the several-times-a-day requirement is not met.",
+					"criticalOperations:b": "Azure Policy assignments evaluate and enforce configuration and compliance on resources; they do not build the approval workflow for critical vault operations, which is the job of Azure Resource Guard.",
+					"criticalOperations:c": "Soft delete only allows recovery points to be recovered after they have been deleted, for a limited window; it neither prevents one administrator from deleting them nor introduces a second approval step.",
+					"criticalOperations:d": "Cross-region restore lets a recovery point be restored in another region; it says nothing about who is allowed to carry out critical operations inside the vault."
+				}
+			},
+			"sources": [
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-architecture"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-vms-enhanced-policy"
+				},
+				{
+					"url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-manage-vms"
+				}
+			],
+			"subtopics": [
+				"vault-redundancy",
+				"hourly-backup-interval",
+				"multi-user-authorization"
+			],
+			"reviewed": false
 		}
 	]
 }
