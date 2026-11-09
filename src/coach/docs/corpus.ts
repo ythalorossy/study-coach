@@ -89,6 +89,8 @@ export interface CorpusPage {
 	path: string;
 	title: string;
 	markdown: string;
+	/** Includes the page uses that are not in the local docs; its text is missing them. */
+	unresolved: number;
 }
 
 function readInside(repoDir: string, path: string): string | null {
@@ -110,21 +112,31 @@ export function corpusPage(url: string, root = DOCS_ROOT): CorpusPage | null {
 	if (raw === null) return null;
 	const folder = mapped.path.split("/")[0];
 	const pageDir = posix.dirname(mapped.path);
-	const { title, markdown } = prepareMarkdown(raw, {
+	const { title, markdown, unresolved } = prepareMarkdown(raw, {
 		readInclude(rel) {
 			// "~/" is the repo's content folder; anything else is relative to the page.
 			const path = rel.startsWith("~/") ? posix.join(folder, rel.slice(2)) : posix.join(pageDir, rel);
 			return readInside(repoDir, path);
 		},
 	});
-	return { url, ...mapped, title, markdown };
+	return { url, ...mapped, title, markdown, unresolved };
 }
 
-/** Reads a Learn page from the local docs, or live from Learn (cached) when it is not synced. */
+/**
+ * Reads a Learn page from the local docs, or live from Learn (cached) when it is not synced. A local page
+ * that uses includes we do not have (tables in Microsoft's private reusable-content repo) is incomplete,
+ * so the live page is preferred for it, and the local text is the fallback if the live read fails.
+ */
 export async function readDoc(db: CoachDb, url: string, opts: { root?: string; fetchImpl?: typeof fetch } = {}): Promise<MsDoc> {
 	const root = opts.root ?? DOCS_ROOT;
 	const page = corpusPage(url, root);
 	const state = page && readSyncState(root);
-	if (page && state) return { url, text: page.markdown.slice(0, MAX_CHARS), readAt: state.syncedAt };
-	return fetchMsDoc(db, url, { fetchImpl: opts.fetchImpl });
+	const local = page && state ? { url, text: page.markdown.slice(0, MAX_CHARS), readAt: state.syncedAt } : null;
+	if (local && page?.unresolved === 0) return local;
+	try {
+		return await fetchMsDoc(db, url, { fetchImpl: opts.fetchImpl });
+	} catch (error) {
+		if (local) return local;
+		throw error;
+	}
 }

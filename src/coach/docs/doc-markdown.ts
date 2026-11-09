@@ -18,13 +18,16 @@ function splitFrontMatter(md: string): { meta: string; body: string } {
 	return m ? { meta: m[1], body: md.slice(m[0].length) } : { meta: "", body: md };
 }
 
-function expandIncludes(md: string, base: string, opts: PrepareOptions, depth: number): string {
+function expandIncludes(md: string, base: string, opts: PrepareOptions, depth: number, stats: { unresolved: number }): string {
 	return md.replace(INCLUDE, (_all, rel: string) => {
 		if (depth >= MAX_INCLUDE_DEPTH) return "";
 		const path = posix.normalize(posix.join(posix.dirname(base), rel));
 		const text = opts.readInclude(path);
-		if (text === null) return "";
-		return expandIncludes(splitFrontMatter(text).body, path, opts, depth + 1).trim();
+		if (text === null) {
+			stats.unresolved++;
+			return "";
+		}
+		return expandIncludes(splitFrontMatter(text).body, path, opts, depth + 1, stats).trim();
 	});
 }
 
@@ -38,9 +41,11 @@ function label(kind: string): string {
 	return kind[0].toUpperCase() + kind.slice(1).toLowerCase();
 }
 
-export function prepareMarkdown(md: string, opts: PrepareOptions): { title: string; markdown: string } {
+/** `unresolved` counts the includes that could not be read (for example Microsoft's private reusable-content repo): the text is missing them. */
+export function prepareMarkdown(md: string, opts: PrepareOptions): { title: string; markdown: string; unresolved: number } {
 	const { meta, body } = splitFrontMatter(md);
-	const expanded = expandIncludes(body, "", opts, 0).replace(/<!--[\s\S]*?-->/g, "");
+	const stats = { unresolved: 0 };
+	const expanded = expandIncludes(body, "", opts, 0, stats).replace(/<!--[\s\S]*?-->/g, "");
 
 	const out: string[] = [];
 	let tab: "none" | "first" | "skip" = "none";
@@ -90,5 +95,5 @@ export function prepareMarkdown(md: string, opts: PrepareOptions): { title: stri
 	const markdown = out.join("\n").replace(/\n{3,}/g, "\n\n").trim();
 	const metaTitle = /^title:\s*(.+?)\s*$/m.exec(meta)?.[1].replace(/^(["'])(.*)\1$/, "$2");
 	const heading = /^#\s+(.+?)\s*$/m.exec(markdown)?.[1];
-	return { title: metaTitle || heading || "", markdown };
+	return { title: metaTitle || heading || "", markdown, unresolved: stats.unresolved };
 }

@@ -107,6 +107,23 @@ describe("readDoc", () => {
 		expect(fetchImpl).not.toHaveBeenCalled();
 	});
 
+	it("prefers the live page when a local page uses includes we do not have", async () => {
+		const withMissing = { "azure-docs/articles/governance/policy/overview.md": "# Overview\nIntro.\n[!INCLUDE [t](~/reusable-content/x/table.md)]" };
+		const fetchImpl = liveFetch();
+		const doc = await readDoc(openCoachDb(":memory:"), POLICY, { root: corpus(withMissing), fetchImpl: fetchImpl as unknown as typeof fetch });
+		expect(doc.text).toBe("Live page text");
+		expect(corpusPage(POLICY, corpus(withMissing))?.unresolved).toBe(1);
+	});
+
+	it("uses the local text when the live read of an incomplete page fails", async () => {
+		const withMissing = { "azure-docs/articles/governance/policy/overview.md": "# Overview\nIntro text.\n[!INCLUDE [t](~/reusable-content/x/table.md)]" };
+		const failing = vi.fn(async () => {
+			throw new Error("offline");
+		});
+		const doc = await readDoc(openCoachDb(":memory:"), POLICY, { root: corpus(withMissing), fetchImpl: failing as unknown as typeof fetch });
+		expect(doc.text).toContain("Intro text.");
+	});
+
 	it("falls back to the live fetch for a page outside the corpus", async () => {
 		const fetchImpl = liveFetch();
 		const url = "https://learn.microsoft.com/en-us/azure/advisor/advisor-overview";
