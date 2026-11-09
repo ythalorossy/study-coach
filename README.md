@@ -4,7 +4,7 @@ A local study coach for Microsoft certification exams, starting with AZ-104, bui
 
 ## Supported exams
 
-**[AZ-104: Microsoft Azure Administrator](https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/az-104)**: 4 of its 5 areas are supported, about 70–90% of the exam by weight.
+**[AZ-104: Microsoft Azure Administrator](https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/az-104)**: all 5 of its areas are supported.
 
 | Exam area | Weight | Status | Skills | Instructors |
 |---|---|---|---|---|
@@ -12,16 +12,16 @@ A local study coach for Microsoft certification exams, starting with AZ-104, bui
 | Implement and manage storage | 15–20% | Supported | 17 | Storage security, Storage accounts, Files and blobs |
 | Deploy and manage Azure compute resources | 20–25% | Supported | 24 | Templates, Virtual machines, Containers, App Service |
 | Implement and manage virtual networking | 15–20% | Supported | 13 | Virtual networks, Network security, DNS and load balancing |
-| Monitor and maintain Azure resources | 10–15% | Planned | — | — |
+| Monitor and maintain Azure resources | 10–15% | Supported | 13 | Azure Monitor, Backup and recovery |
 
-Every supported skill has a fact sheet in `content/fact-sheets/` and a bank of up to 20 questions in `content/questions/` (1,380 in all). Planned areas appear on Home as coming later. Other Microsoft certifications may follow; see [CONTRIBUTING.md](CONTRIBUTING.md) to help.
+Every supported skill has a fact sheet in `content/fact-sheets/` and a bank of up to 20 questions in `content/questions/` (1,640 in all). Other Microsoft certifications may follow; see [CONTRIBUTING.md](CONTRIBUTING.md) to help.
 
 ## The agents
 
 | Agent | Runs | What it does |
 |---|---|---|
 | Coach, the lead instructor (`src/agents/coach.ts`) | in every lesson, in the Room screen | Picks the skill when you let the lead choose (staying in that area), and moves the lesson through intro, scenario, check and done. It speaks, draws the whiteboard diagram and hands the scenario to the skill's instructor. Then it presents a check question from the bank and waits for your answer. A wrong answer gets the instructor's explanation and one follow-up question. |
-| Area instructors (`src/subagents/specialists.ts`) | when the lead hands over | One per instructor: Identity, Access and Governance; Storage security, Storage accounts, and Files and blobs; Templates, Virtual machines, Containers and App Service; Virtual networks, Network security, and DNS and load balancing. Each explains its skills with a fictional company scenario in at most 150 words, checking facts against its Learn pages. They stay idle while a question waits for your answer. |
+| Area instructors (`src/subagents/specialists.ts`) | when the lead hands over | One per instructor: Identity, Access and Governance; Storage security, Storage accounts, and Files and blobs; Templates, Virtual machines, Containers and App Service; Virtual networks, Network security, and DNS and load balancing; Azure Monitor, and Backup and recovery. Each explains its skills with a fictional company scenario in at most 150 words, checking facts against its Learn pages. They stay idle while a question waits for your answer. |
 | Question writer (`src/agents/question-writer.ts`) | `npm run generate`, one run per question | Writes one original question for a skill and format from the skill's fact sheet. Before saving, it checks the question's shape and cited pages, and that it neither gives the answer away nor repeats another question. |
 | Verifier | inside each question writer run | A separate model call that answers the new question from the fact sheet alone, without the key. The question is saved only if its answer matches. |
 | Fact-sheet writer (`src/agents/fact-sheet-writer.ts`) | `npm run docs:sheets` | Reads a skill's downloaded Microsoft pages and writes its fact sheet in original wording, every fact linked to its page. A sheet that is too long, has too few linked facts or copies Microsoft's wording is sent back. |
