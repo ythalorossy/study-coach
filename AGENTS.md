@@ -16,7 +16,7 @@ Study Coach is a [Flue](https://flueframework.com) project: agents are TypeScrip
 - `scripts/` — command-line jobs: database setup, docs sync, fact sheets, question generation and review. `scripts/README.md` maps them all.
 - `web/` — the React web app (Vite).
 - `content/fact-sheets/` — committed fact sheets, one per skill.
-- `content/questions/` — the committed question bank, one JSON file per skill, loaded on first run (`src/coach/questions/question-bank.ts`).
+- `content/questions/` — the committed question bank, one JSON file per skill, loaded for any skill that has no questions (`src/coach/questions/question-bank.ts`).
 - `test/` — unit tests; live-model evals are in `src/evals/`.
 
 ## Commands

@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { importQuestionBankIfEmpty } from "./questions/question-bank.ts";
+import { importQuestionBankForEmptySkills } from "./questions/question-bank.ts";
 import { specialistArea } from "./exam/instructors.ts";
 import { AREAS, GUIDE_VERSION, SKILLS } from "./exam/seed.ts";
 
@@ -82,7 +82,7 @@ function migrate(raw: DatabaseSync): void {
 	if (!columns.includes("area_id")) raw.exec("ALTER TABLE sessions ADD COLUMN area_id TEXT");
 }
 
-/** `questionBank`: the folder to load on first run (default content/questions), or false to skip loading. */
+/** `questionBank`: the folder to load for skills with no questions (default content/questions), or false to skip loading. */
 export function openCoachDb(path: string, opts: { questionBank?: string | false } = {}): CoachDb {
 	if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
 	const raw = new DatabaseSync(path);
@@ -97,26 +97,29 @@ export function openCoachDb(path: string, opts: { questionBank?: string | false 
 	seedCoachDb(db);
 	// A database on disk with no questions yet gets the committed bank; in-memory ones start empty.
 	if (path !== ":memory:" && opts.questionBank !== false) {
-		const loaded = importQuestionBankIfEmpty(db, opts.questionBank);
+		const loaded = importQuestionBankForEmptySkills(db, opts.questionBank);
 		if (loaded) console.log(`Loaded ${loaded.added} questions from the question bank (${loaded.invalid.length} invalid).`);
 	}
 	return db;
 }
 
-// Areas and skills from the exam data; INSERT OR IGNORE keeps existing rows
+// Areas and skills from the exam data. New rows are added; existing rows get their name, instructor and
+// doc pages refreshed from the data, and keep their position.
 export function seedCoachDb(db: CoachDb): void {
 	const area = db.raw.prepare(
-		"INSERT OR IGNORE INTO areas (id, name, weight_min, weight_max, position) VALUES (?, ?, ?, ?, ?)",
+		`INSERT INTO areas (id, name, weight_min, weight_max, position) VALUES (?, ?, ?, ?, ?)
+		 ON CONFLICT(id) DO UPDATE SET name = excluded.name, weight_min = excluded.weight_min, weight_max = excluded.weight_max`,
 	);
 	const skill = db.raw.prepare(
-		"INSERT OR IGNORE INTO skills (id, area_id, specialist, name, position, guide_version, doc_urls) VALUES (?, ?, ?, ?, ?, ?, ?)",
+		`INSERT INTO skills (id, area_id, specialist, name, position, guide_version, doc_urls) VALUES (?, ?, ?, ?, ?, ?, ?)
+		 ON CONFLICT(id) DO UPDATE SET specialist = excluded.specialist, name = excluded.name, doc_urls = excluded.doc_urls`,
 	);
 	db.raw.exec("BEGIN");
 	try {
 		AREAS.forEach(([id, name, min, max], i) => {
 			area.run(id, name, min, max, i + 1);
 		});
-		// Positions count within each area, so existing rows keep theirs.
+		// Positions count within each area; an existing row keeps the position it has.
 		const inArea = new Map<string, number>();
 		for (const [id, specialist, name, docUrls] of SKILLS) {
 			const areaId = specialistArea(specialist);

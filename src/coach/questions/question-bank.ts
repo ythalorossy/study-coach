@@ -72,8 +72,8 @@ export function exportQuestionBank(db: CoachDb, root = QUESTION_BANK_ROOT): { sk
 	return { skills: bySkill.size, questions: rows.length };
 }
 
-/** Loads the bank into the database. Questions already there (same id) are left alone; invalid ones are reported and skipped. */
-export function importQuestionBank(db: CoachDb, root = QUESTION_BANK_ROOT): ImportResult {
+/** Loads the bank into the database, or only the skills in `only`. Questions already there (same id) are left alone; invalid ones are reported and skipped. */
+export function importQuestionBank(db: CoachDb, root = QUESTION_BANK_ROOT, only?: Set<string>): ImportResult {
 	const result: ImportResult = { added: 0, existing: 0, invalid: [] };
 	const knownSkills = new Set(db.raw.prepare("SELECT id FROM skills").all().map((r) => r.id as string));
 	const insert = db.raw.prepare(
@@ -83,6 +83,7 @@ export function importQuestionBank(db: CoachDb, root = QUESTION_BANK_ROOT): Impo
 	const now = new Date().toISOString();
 	for (const name of bankFiles(root)) {
 		const file = readBankFile(join(root, name));
+		if (only && !only.has(file.skill)) continue;
 		if (!knownSkills.has(file.skill)) {
 			result.invalid.push(`${name}: unknown skill ${file.skill}`);
 			continue;
@@ -120,8 +121,13 @@ export function importQuestionBank(db: CoachDb, root = QUESTION_BANK_ROOT): Impo
 	return result;
 }
 
-/** First run: a database with no questions at all gets the committed bank. */
-export function importQuestionBankIfEmpty(db: CoachDb, root = QUESTION_BANK_ROOT): ImportResult | null {
-	const { n } = db.raw.prepare("SELECT COUNT(*) AS n FROM questions").get() as { n: number };
-	return n === 0 ? importQuestionBank(db, root) : null;
+/** A skill with no questions at all (not even flagged ones) gets its questions from the committed bank, so a new area reaches an existing database; skills that have questions are left alone. */
+export function importQuestionBankForEmptySkills(db: CoachDb, root = QUESTION_BANK_ROOT): ImportResult | null {
+	const empty = new Set(
+		db.raw
+			.prepare("SELECT s.id FROM skills s WHERE NOT EXISTS (SELECT 1 FROM questions q WHERE q.skill_id = s.id)")
+			.all()
+			.map((r) => r.id as string),
+	);
+	return empty.size ? importQuestionBank(db, root, empty) : null;
 }

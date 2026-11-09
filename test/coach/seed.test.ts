@@ -76,13 +76,17 @@ describe("seeding areas", () => {
 		expect(areaName("storage")).toBe("Implement and manage storage");
 	});
 
-	it("leaves an existing database's rows untouched when reopened", () => {
+	it("refreshes names and doc pages from the exam data when reopened, and keeps positions", () => {
 		const path = join(mkdtempSync(join(tmpdir(), "seed-")), "coach.db");
 		const first = openCoachDb(path, { questionBank: false });
-		first.raw.prepare("UPDATE skills SET name = 'kept' WHERE id = 'identity.sspr'").run();
+		const original = first.raw.prepare("SELECT name, position, doc_urls FROM skills WHERE id = 'identity.sspr'").get() as { name: string; position: number; doc_urls: string };
+		first.raw.prepare("UPDATE skills SET name = 'stale', doc_urls = '[]', position = 99 WHERE id = 'identity.sspr'").run();
 		first.raw.close();
 		const again = openCoachDb(path, { questionBank: false });
-		expect((again.raw.prepare("SELECT name FROM skills WHERE id = 'identity.sspr'").get() as { name: string }).name).toBe("kept");
+		const row = again.raw.prepare("SELECT name, position, doc_urls FROM skills WHERE id = 'identity.sspr'").get() as { name: string; position: number; doc_urls: string };
+		expect(row.name).toBe(original.name);
+		expect(row.doc_urls).toBe(original.doc_urls);
+		expect(row.position).toBe(99);
 		expect((again.raw.prepare("SELECT COUNT(*) AS n FROM skills").get() as { n: number }).n).toBe(82);
 	});
 

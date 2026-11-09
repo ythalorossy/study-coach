@@ -6,7 +6,7 @@ import { openCoachDb, type CoachDb } from "../../src/coach/db.ts";
 import {
 	exportQuestionBank,
 	importQuestionBank,
-	importQuestionBankIfEmpty,
+	importQuestionBankForEmptySkills,
 	readBankFile,
 } from "../../src/coach/questions/question-bank.ts";
 import { flagQuestion, insertQuestion } from "../../src/coach/questions/questions.ts";
@@ -59,8 +59,30 @@ describe("question bank", () => {
 		add(db, mcFixture);
 		exportQuestionBank(db, root);
 		const fresh = openCoachDb(":memory:");
-		expect(importQuestionBankIfEmpty(fresh, root)?.added).toBe(1);
-		expect(importQuestionBankIfEmpty(fresh, root)).toBeNull();
+		expect(importQuestionBankForEmptySkills(fresh, root)?.added).toBe(1);
+		expect(importQuestionBankForEmptySkills(fresh, root)?.added).toBe(0);
+	});
+
+	it("gives a skill with no questions its bank questions on an existing database, and leaves other skills alone", () => {
+		add(db, mcFixture);
+		add(db, dragDropFixture);
+		exportQuestionBank(db, root);
+		const fresh = openCoachDb(":memory:");
+		// One skill already has a question, with a different id from the bank's; it must not be topped up.
+		insertQuestion(fresh, mcFixture, readAt(mcFixture.sources.map((s) => s.url)));
+		const res = importQuestionBankForEmptySkills(fresh, root);
+		expect(res?.added).toBe(1);
+		const count = (skill: string) => (fresh.raw.prepare("SELECT COUNT(*) AS n FROM questions WHERE skill_id = ?").get(skill) as { n: number }).n;
+		expect(count(mcFixture.skillId)).toBe(1);
+		expect(count(dragDropFixture.skillId)).toBe(1);
+	});
+
+	it("does not bring back a skill's flagged question", () => {
+		add(db, mcFixture);
+		exportQuestionBank(db, root);
+		const fresh = openCoachDb(":memory:");
+		flagQuestion(fresh, insertQuestion(fresh, mcFixture, readAt(mcFixture.sources.map((s) => s.url))), "wrong");
+		expect(importQuestionBankForEmptySkills(fresh, root)?.added ?? 0).toBe(0);
 	});
 
 	it("skips questions that fail validation and files for unknown skills", () => {

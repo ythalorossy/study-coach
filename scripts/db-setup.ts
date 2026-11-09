@@ -27,9 +27,10 @@ if (values.reset && existsSync(path)) {
 }
 
 const existed = existsSync(path);
-// Creates the file if missing, adds any new areas and skills, and loads the bank when there are no questions
+// Creates the file if missing, adds new areas and skills, refreshes their names and doc pages from the exam data,
+// and loads the bank's questions for any skill that has none
 const db = openCoachDb(path);
 const count = (table: string) => (db.raw.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get() as { n: number }).n;
 console.log(`${existed ? "Updated" : "Created"} ${path}: ${count("skills")} skills, ${count("questions")} questions.`);
-if (existed) console.log("Existing questions and progress were kept; run with --reset to start over.");
+if (existed) console.log("Existing questions and progress were kept (skills with no questions got the bank's); run with --reset to start over.");
 db.raw.close();
