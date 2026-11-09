@@ -14,7 +14,7 @@ A local study coach for Microsoft certification exams, starting with AZ-104, bui
 | Implement and manage virtual networking | 15–20% | Supported | 13 | Virtual networks, Network security, DNS and load balancing |
 | Monitor and maintain Azure resources | 10–15% | Supported | 13 | Azure Monitor, Backup and recovery |
 
-Every supported skill has a fact sheet in `content/fact-sheets/` and a bank of up to 20 questions in `content/questions/` (1,640 in all). Other Microsoft certifications may follow; see [CONTRIBUTING.md](CONTRIBUTING.md) to help.
+Every supported skill has a fact sheet in `content/fact-sheets/` and a bank of up to 20 questions in `content/questions/` (1,639 in all; `compute.vm-sizes` has 19). Other Microsoft certifications may follow; see [CONTRIBUTING.md](CONTRIBUTING.md) to help.
 
 ## The agents
 
@@ -137,6 +137,7 @@ Every question carries `"reviewed": false` until a person has checked it, and th
 ```sh
 npm run review:sheet -- --skill storage.explorer-azcopy   # fact sheet + sample questions in data/review/ (--area <prefix>, --all, --count <n>)
 npm run questions:lint   # structural checks over the whole bank (no model): missing exhibits, sources the fact sheet doesn't link, key-position skew
+npm run questions:reverify -- --skill compute.vm-sizes   # a blind model re-answers a skill's questions from its current fact sheet and lists the ones that disagree with the stored keys
 npm run questions:review -- --skill storage.explorer-azcopy   # mark a skill's questions reviewed (--id <q>, --undo)
 npm run questions:export   # rewrite content/questions/ from your local database
 ```

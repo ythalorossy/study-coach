@@ -12,6 +12,7 @@ Command-line jobs, each run through `npm run <command>`. The header of every scr
 | `docs:review` | Checks each fact-sheet bullet against the Learn page it cites and lists the ones that look wrong | API key (model quota) | `data/review/fact-check/` |
 | `generate` | Writes questions until each skill and format reaches its target | API key (model quota) | `data/coach.db`, `data/` logs |
 | `generate:stats` | Rejection and flag rates for one area | nothing | nothing (prints) |
+| `questions:reverify` | Re-answers a skill's questions from its current fact sheet without the keys and lists the disagreements | API key (one model call) | `data/review/reverify/` |
 | `questions:export` | Writes the verified questions from the database to the bank | nothing | **`content/questions/`** |
 | `questions:lint` | Structural checks over the bank | nothing | `data/review/lint.md` |
 | `review:sheet` | A fact sheet with sample questions, for reviewing a skill | nothing | `data/review/<skill>.md` |

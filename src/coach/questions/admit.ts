@@ -26,14 +26,14 @@ export type AdmitResult =
 			detail: string;
 	  };
 
-function renderExhibit(exhibit: NonNullable<QuestionBody["exhibit"]>): string {
+export function renderExhibit(exhibit: NonNullable<QuestionBody["exhibit"]>): string {
 	if (exhibit.kind === "table") {
 		return [exhibit.columns.join(" | "), ...exhibit.rows.map((r) => r.join(" | "))].join("\n");
 	}
 	return `\`\`\`${exhibit.language}\n${exhibit.text}\n\`\`\``;
 }
 
-function renderChoices(body: QuestionBody): string {
+export function renderChoices(body: QuestionBody): string {
 	if (body.format === "multiple-choice") {
 		return `Options:\n${body.options.map((o) => `- ${o.id}: ${o.text}`).join("\n")}`;
 	}
@@ -49,7 +49,7 @@ function renderChoices(body: QuestionBody): string {
 	].join("\n\n");
 }
 
-function responseShape(body: QuestionBody): string {
+export function responseShape(body: QuestionBody): string {
 	if (body.format === "multiple-choice") return `{ "optionId": "<id of the one correct option>" }`;
 	const what = body.format === "drag-drop" ? "item" : "option";
 	return `a JSON object mapping every slot id to the id of its correct ${what}, for example { ${body.slots
