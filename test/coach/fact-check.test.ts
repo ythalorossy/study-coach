@@ -36,4 +36,9 @@ describe("fact check", () => {
 		expect(md).toContain("8 to 128 characters");
 		expect(formatFactCheck({ skillId: "s", model: "m", bullets: 2, findings: [], checked: "" })).toContain("Nothing flagged");
 	});
+	it("says so when findings were dropped, and never claims a sheet is clear then", () => {
+		const md = formatFactCheck({ skillId: "s", model: "m", bullets: 2, findings: [], dropped: 2, checked: "" });
+		expect(md).toContain("2 more finding(s) could not be checked");
+		expect(md).not.toContain("Nothing flagged");
+	});
 });

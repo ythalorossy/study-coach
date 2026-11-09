@@ -27,7 +27,7 @@ Reviewing is the most useful contribution: all 1,120 questions are model-written
 - **Original wording only.** Fact sheets and questions are written in our own words, and every fact links to its Microsoft Learn page. Never copy from books, exam dumps or third-party question sites.
 - **Exam facts live in data**, never in prompts or code paths: areas and skills in `src/coach/exam/seed.ts`, instructors in `src/coach/exam/instructors.ts`.
 - **`reviewed: true` means a person checked it** against the linked Learn pages. A model's opinion doesn't count.
-- **Model steps cost money.** `docs:sheets`, `generate` and `evals` use your own API quota. `generate` prints an estimated cost at the end of a run.
+- **Model steps cost money.** `docs:sheets`, `docs:review`, `generate` and `evals` use your own API quota. `generate` prints an estimated cost at the end of a run.
 - **Before every commit:** `npm test` and `npm run check:types`. For content changes, also `npm run questions:lint`.
 - **Never commit** `.env` or anything in `data/`.
 
@@ -35,7 +35,7 @@ Reviewing is the most useful contribution: all 1,120 questions are model-written
 
 Point your agent at this file and name the recipe, for example: "Follow CONTRIBUTING.md, Review a skill, for storage.blob-tiers." The agent should:
 
-- ask before running `docs:sheets`, `generate` or `evals`, because they spend your quota;
+- ask before running `docs:sheets`, `docs:review`, `generate` or `evals`, because they spend your quota;
 - never set `reviewed: true` itself; it can prepare the review sheet and point out doubts, but you decide;
 - keep the diff to what the recipe names, and show you the diff before committing;
 - stop at "done when" and report, rather than going on to the next thing.
@@ -79,7 +79,7 @@ AZ-104's networking and monitoring areas are listed in `AREAS` but have no skill
 2. **Instructors.** Add the area's specialists to `SPECIALISTS` in `src/coach/exam/instructors.ts`, the same list in `web/src/lib/instructors.ts` (a test checks they match), and a `--c-<id>` colour for each in `web/src/styles.css`.
 3. **Tests.** Add the area to `test/coach/seed.test.ts`, like the other areas. Run `npm test` and `npm run check:types`.
 4. **Links.** `npm run check:doc-urls` must pass.
-5. **Fact sheets.** `npm run docs:sync`, then `npm run docs:sheets`, which builds only the missing sheets. Read them before going on: questions are written from these sheets.
+5. **Fact sheets.** `npm run docs:sync`, then `npm run docs:sheets`, which builds only the missing sheets. Run `npm run docs:review -- --area <prefix>` over new sheets and fix what it flags (it varies between runs, so a clean result is not proof), then read them before going on: questions are written from these sheets.
 6. **Questions.** `npm run generate -- --until-target`, then `npm run questions:export` and `npm run questions:lint`.
 7. **Try it.** `npm run db:setup` adds the new skills to your database. Then teach yourself a lesson in the new area with `npm run dev`. To run the live checks: `EVAL_SWEEP_AREA=<area> npm run evals -- -t "area sweep" --maxConcurrency 2`
 8. **Docs.** Update the Supported exams table in `README.md`.

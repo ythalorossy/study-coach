@@ -83,7 +83,7 @@ async function main(): Promise<void> {
 					}
 					const result = JSON.parse(readFileSync(outPath, "utf8")) as FactCheckResult;
 					writeFileSync(join(FACT_CHECK_ROOT, `${skillId}.md`), formatFactCheck(result));
-					results.set(skillId, `${result.findings.length} to look at of ${result.bullets} bullets`);
+					results.set(skillId, `${result.findings.length} to look at of ${result.bullets} bullets${result.dropped ? `, ${result.dropped} dropped (not clear, run again)` : ""}`);
 					console.log(`${skillId}: ${results.get(skillId)}`);
 				},
 			},

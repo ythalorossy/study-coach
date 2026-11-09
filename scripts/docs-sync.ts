@@ -1,5 +1,5 @@
-// Downloads the folders of MicrosoftDocs/azure-docs and MicrosoftDocs/entra-docs
-// that the skills' doc URLs live in, as shallow sparse git checkouts under
+// Downloads the folders of MicrosoftDocs/azure-docs, MicrosoftDocs/azure-monitor-docs and
+// MicrosoftDocs/entra-docs that the skills' doc URLs live in, as shallow sparse git checkouts under
 // data/docs. Rerunning it pulls Microsoft's updates.
 //
 // Usage: npm run docs:sync   (no flags)

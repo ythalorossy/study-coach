@@ -22,6 +22,8 @@ export interface FactCheckResult {
 	model: string;
 	bullets: number;
 	findings: Finding[];
+	/** Findings the reviewer submitted that did not quote the sheet or page, so they could not be shown. */
+	dropped?: number;
 	checked: string;
 }
 
@@ -55,8 +57,11 @@ export function validateFindings(findings: Finding[], body: string, pages: { url
 
 /** The findings as a Markdown worksheet for a person to confirm against the Learn pages. */
 export function formatFactCheck(result: FactCheckResult): string {
-	const head = `# Fact check: ${result.skillId}\n\nChecked ${result.bullets} bullets with ${result.model}. ${result.findings.length} to look at. A model's check narrows the review; it does not replace it.\n`;
-	if (!result.findings.length) return `${head}\nNothing flagged.\n`;
+	const dropped = result.dropped
+		? `\n**${result.dropped} more finding(s) could not be checked against the sheet and page text and were dropped. This sheet is not clear; run the review again.**\n`
+		: "";
+	const head = `# Fact check: ${result.skillId}\n\nChecked ${result.bullets} bullets with ${result.model}. ${result.findings.length} to look at. A model's check narrows the review; it does not replace it.\n${dropped}`;
+	if (!result.findings.length) return result.dropped ? head : `${head}\nNothing flagged.\n`;
 	const items = result.findings.map(
 		(f, i) =>
 			`## ${i + 1}. ${f.verdict}\n\n> ${f.bullet}\n\n${f.explanation}\n\n${f.evidence.trim() ? `Page says: "${f.evidence.trim()}"\n\n` : ""}Page: ${f.pageUrl}\n`,

@@ -74,6 +74,7 @@ export function makeReportFindingsTool(deps: ReportDeps) {
 				model: deps.model,
 				bullets: sheetBullets(deps.sheetBody).length,
 				findings: kept,
+				dropped: findings.length - kept.length,
 				checked: deps.now().toISOString(),
 			};
 			mkdirSync(dirname(deps.outPath), { recursive: true });

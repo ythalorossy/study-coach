@@ -9,6 +9,7 @@ Command-line jobs, each run through `npm run <command>`. The header of every scr
 | `db:setup` | Creates the local database from the committed exam data and question bank; `--reset` backs it up and rebuilds it | nothing | `data/coach.db` |
 | `docs:sync` | Downloads the Microsoft docs folders the skills link to | git, network | `data/docs/` |
 | `docs:sheets` | Writes the fact sheets that are missing or stale | API key (model quota) | **`content/fact-sheets/`**, `data/` logs |
+| `docs:review` | Checks each fact-sheet bullet against the Learn page it cites and lists the ones that look wrong | API key (model quota) | `data/review/fact-check/` |
 | `generate` | Writes questions until each skill and format reaches its target | API key (model quota) | `data/coach.db`, `data/` logs |
 | `generate:stats` | Rejection and flag rates for one area | nothing | nothing (prints) |
 | `questions:export` | Writes the verified questions from the database to the bank | nothing | **`content/questions/`** |
@@ -19,7 +20,7 @@ Command-line jobs, each run through `npm run <command>`. The header of every scr
 
 Bold paths are committed, so their changes show up in `git diff` for review. Everything under `data/` is local and git-ignored. Scripts that open the database use `COACH_DB_PATH` (default `./data/coach.db`).
 
-`flue-jobs.ts` is not a command. It is the shared runner that `generate` and `docs:sheets` use to run agents several at once and slow down on rate limits.
+`flue-jobs.ts` is not a command. It is the shared runner that `generate`, `docs:sheets` and `docs:review` use to run agents several at once and slow down on rate limits.
 
 ## How they fit together
 
