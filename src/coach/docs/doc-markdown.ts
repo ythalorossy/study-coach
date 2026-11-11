@@ -10,7 +10,7 @@ export interface PrepareOptions {
 
 const MAX_INCLUDE_DEPTH = 3;
 const INCLUDE = /\[!INCLUDE\s*\[[^\]]*\]\(([^)\s]+)\)\]/gi;
-const TAB_HEADING = /^#{1,6}\s*\[[^\]]*\]\(#tab\/[^)]*\)\s*$/;
+const TAB_HEADING = /^#{1,6}\s*\[([^\]]*)\]\(#tab\/[^)]*\)\s*$/;
 const CALLOUT = /^\s*>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*$/i;
 
 function splitFrontMatter(md: string): { meta: string; body: string } {
@@ -48,18 +48,21 @@ export function prepareMarkdown(md: string, opts: PrepareOptions): { title: stri
 	const expanded = expandIncludes(body, "", opts, 0, stats).replace(/<!--[\s\S]*?-->/g, "");
 
 	const out: string[] = [];
-	let tab: "none" | "first" | "skip" = "none";
+	let inTabs = false;
 	let zone: "none" | "first" | "skip" = "none";
 	let zonesSeen = 0;
 	let callout: string | null = null;
 
 	for (const line of expanded.split(/\r?\n/)) {
-		if (TAB_HEADING.test(line)) {
-			tab = tab === "none" ? "first" : "skip";
+		// Every tab is kept, labelled, so the CLI, PowerShell and Terraform steps are not lost.
+		const tabMatch = TAB_HEADING.exec(line);
+		if (tabMatch) {
+			inTabs = true;
+			out.push("", `**Tab: ${tabMatch[1].trim()}**`, "");
 			continue;
 		}
-		if (tab !== "none" && /^-{3,}$/.test(line.trim())) {
-			tab = "none";
+		if (inTabs && /^-{3,}$/.test(line.trim())) {
+			inTabs = false;
 			continue;
 		}
 		if (/^\s*:::\s*zone\s+(pivot|target)=/.test(line)) {
@@ -70,7 +73,7 @@ export function prepareMarkdown(md: string, opts: PrepareOptions): { title: stri
 			zone = "none";
 			continue;
 		}
-		if (tab === "skip" || zone === "skip") continue;
+		if (zone === "skip") continue;
 
 		const callMatch = CALLOUT.exec(line);
 		if (callMatch) {

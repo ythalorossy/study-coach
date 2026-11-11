@@ -38,14 +38,17 @@ describe("prepareMarkdown", () => {
 	it("ends a tab group at any line of three or more dashes", () => {
 		const r = prepareMarkdown("Before\n# [Portal](#tab/portal)\nportal-step\n# [CLI](#tab/cli)\ncli-step\n-----\nAfter", none);
 		expect(r.markdown).toContain("portal-step");
-		expect(r.markdown).not.toContain("cli-step");
+		expect(r.markdown).toContain("cli-step");
 		expect(r.markdown).toContain("After");
+		expect(r.markdown).not.toMatch(/^-{3,}$/m);
 	});
 
-	it("keeps only the first tab", () => {
-		const r = prepareMarkdown("Before\n# [Portal](#tab/portal)\nA\n# [CLI](#tab/cli)\nB\n---\nAfter", none);
-		expect(r.markdown).toContain("A");
-		expect(r.markdown).not.toMatch(/\bB\b/);
+	it("keeps every tab, each under its label", () => {
+		const r = prepareMarkdown("Before\n# [Portal](#tab/portal)\nA\n# [Azure CLI](#tab/cli)\nB\n---\nAfter", none);
+		expect(r.markdown).toContain("**Tab: Portal**");
+		expect(r.markdown).toContain("**Tab: Azure CLI**");
+		expect(r.markdown).toMatch(/\bA\b/);
+		expect(r.markdown).toMatch(/\bB\b/);
 		expect(r.markdown).not.toContain("#tab/");
 		expect(r.markdown).toContain("Before");
 		expect(r.markdown).toContain("After");
