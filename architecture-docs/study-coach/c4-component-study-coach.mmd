@@ -4,8 +4,8 @@ title: "Coach server"
 flowchart TB
     subgraph boundary["Coach server [Container]"]
         src__files["src (root files)<br/>[Component]<br/>Server entry (Hono app: agent<br/>routers and the coach API) and the<br/>Flue persistence adapter"]
-        src_agents["agents<br/>[Component]<br/>Flue agents: Coach (lead<br/>instructor), QuestionWriter,<br/>FactSheetWriter, FactSheetReviewer<br/>(checks each sheet bullet against<br/>its Learn page), and the scaffold<br/>Assistant"]
-        src_coach["coach<br/>[Component]<br/>Domain core in three subfolders:<br/>exam/ (skills, areas,<br/>instructors), questions/ (schema,<br/>admission with leak check and<br/>verifier, committed bank import<br/>and export, lint, delivery<br/>shuffle) and docs/ (corpus, fact<br/>sheets, fact check); plus the<br/>database, models, readiness and<br/>the HTTP API"]
+        src_agents["agents<br/>[Component]<br/>Flue agents: Coach (lead<br/>instructor), QuestionWriter,<br/>FactSheetWriter, FactSheetReviewer<br/>(checks each sheet bullet against<br/>its Learn page),<br/>QuestionReverifier (re-answers<br/>stored questions from the current<br/>sheet, blind), and the scaffold<br/>Assistant"]
+        src_coach["coach<br/>[Component]<br/>Domain core in three subfolders:<br/>exam/ (skills, areas,<br/>instructors), questions/ (schema,<br/>admission with leak check and<br/>verifier, committed bank import<br/>and export, lint, delivery<br/>shuffle, re-check against a sheet)<br/>and docs/ (corpus and repo<br/>mapping, page conversion, fact<br/>sheets, fact check); plus the<br/>database, models, readiness and<br/>the HTTP API"]
         src_evals["evals<br/>[Component]<br/>Live lesson evals against the real<br/>model (vitest)"]
         src_subagents["subagents<br/>[Component]<br/>One specialist instructor subagent<br/>per catalog entry, delegated to by<br/>the lead"]
         src_tools["tools<br/>[Component]<br/>Agent tools: speak, show_diagram,<br/>progress, present_question,<br/>set_lesson, read_ms_docs, and the<br/>waiting gates"]
@@ -21,11 +21,11 @@ flowchart TB
     boundary -->|"Reads skills and questions,<br/>records sessions and<br/>attempts in<br/>[node:sqlite]"| coach_db
     flue_db[("Conversation store<br/>[Container: SQLite (Flue sqlite adapter)]<br/>Durable Flue conversations for<br/>lessons; batch runs use an in-<br/>memory store instead")]
     boundary -->|"Persists lesson<br/>conversations in<br/>[Flue sqlite adapter]"| flue_db
-    docs_corpus[("Docs corpus and fact sheets<br/>[Container: Markdown files (data/docs, content/fact-sheets)]<br/>Markdown-only sparse clones of<br/>azure-docs and entra-docs, one<br/>committed fact sheet per skill<br/>that the writer, verifier and<br/>reviewer read, and the committed<br/>question bank (content/questions,<br/>one JSON file per skill)")]
+    docs_corpus[("Docs corpus and fact sheets<br/>[Container: Markdown files (data/docs, content/fact-sheets)]<br/>Markdown-only sparse clones of<br/>five MicrosoftDocs repos (azure-<br/>docs, azure-compute-docs, azure-<br/>management-docs, azure-monitor-<br/>docs, entra-docs), one committed<br/>fact sheet per skill that the<br/>writer, verifier and reviewer<br/>read, and the committed question<br/>bank (content/questions, one JSON<br/>file per skill)")]
     boundary -->|"Reads doc pages and fact<br/>sheets from<br/>[fs]"| docs_corpus
     ext_minimax["MiniMax API<br/>[Software System]<br/>Language model (MiniMax-M3 by<br/>default; M3.1 Flash is used for<br/>the fact-sheet reviewer) for every<br/>role: lead, specialists, writer,<br/>verifier, fact-sheet writer and<br/>reviewer"]
     boundary -->|"Runs the lead and specialist<br/>instructors on<br/>[HTTPS]"| ext_minimax
-    ext_learn["Microsoft Learn<br/>[Software System]<br/>Live documentation pages, fetched<br/>and cached when a page is not in<br/>the local corpus"]
+    ext_learn["Microsoft Learn<br/>[Software System]<br/>Live documentation pages, fetched<br/>and cached when a page is not in<br/>the local corpus or when its local<br/>copy is missing includes from<br/>Microsoft's private reusable-<br/>content repo"]
     boundary -->|"Fetches pages missing from<br/>the corpus from<br/>[HTTPS, fetch]"| ext_learn
     classDef person fill:#08427b,stroke:#052e56,color:#ffffff
     classDef container fill:#1168bd,stroke:#0b4884,color:#ffffff

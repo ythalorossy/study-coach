@@ -50,7 +50,7 @@
       "id": "content-cli",
       "name": "Content pipeline",
       "technology": "Node.js scripts, flue run",
-      "description": "docs:sync, docs:sheets, docs:review, generate and the questions:* commands: clones the Microsoft docs, runs the FactSheetWriter, FactSheetReviewer and QuestionWriter agents as child processes (one per sheet, review or question), and exports, lints and imports the committed question bank",
+      "description": "docs:sync, docs:sheets, docs:review, generate and the questions:* commands (export, lint, review, reverify): syncs the Microsoft docs repos, runs the FactSheetWriter, FactSheetReviewer, QuestionWriter and QuestionReverifier agents as child processes (one per sheet, review, question or batch), and exports, lints and imports the committed question bank",
       "evidence": [
         "package.json:11-14",
         "scripts/flue-jobs.ts:110-115",
@@ -83,7 +83,7 @@
       "name": "Docs corpus and fact sheets",
       "technology": "Markdown files (data/docs, content/fact-sheets)",
       "type": "database",
-      "description": "Markdown-only sparse clones of azure-docs and entra-docs, one committed fact sheet per skill that the writer, verifier and reviewer read, and the committed question bank (content/questions, one JSON file per skill)",
+      "description": "Markdown-only sparse clones of five MicrosoftDocs repos (azure-docs, azure-compute-docs, azure-management-docs, azure-monitor-docs, entra-docs), one committed fact sheet per skill that the writer, verifier and reviewer read, and the committed question bank (content/questions, one JSON file per skill)",
       "evidence": [
         "src/coach/docs/corpus.ts:12",
         "src/coach/docs/fact-sheets.ts:10"
@@ -103,7 +103,7 @@
     {
       "id": "ext-learn",
       "name": "Microsoft Learn",
-      "description": "Live documentation pages, fetched and cached when a page is not in the local corpus",
+      "description": "Live documentation pages, fetched and cached when a page is not in the local corpus or when its local copy is missing includes from Microsoft's private reusable-content repo",
       "evidence": [
         "src/coach/docs/docs.ts:49-68",
         "src/coach/docs/corpus.ts:119"
@@ -112,7 +112,7 @@
     {
       "id": "ext-github-docs",
       "name": "MicrosoftDocs on GitHub",
-      "description": "Source repositories (azure-docs, entra-docs) cloned sparsely into the local corpus",
+      "description": "Source repositories (azure-docs, azure-compute-docs, azure-management-docs, azure-monitor-docs, entra-docs) cloned sparsely into the local corpus",
       "evidence": [
         "scripts/docs-sync.ts:25-26"
       ]
@@ -201,8 +201,8 @@
   "components": {
     "study-coach": {
       "src (files)": "Server entry (Hono app: agent routers and the coach API) and the Flue persistence adapter",
-      "src/agents": "Flue agents: Coach (lead instructor), QuestionWriter, FactSheetWriter, FactSheetReviewer (checks each sheet bullet against its Learn page), and the scaffold Assistant",
-      "src/coach": "Domain core in three subfolders: exam/ (skills, areas, instructors), questions/ (schema, admission with leak check and verifier, committed bank import and export, lint, delivery shuffle) and docs/ (corpus, fact sheets, fact check); plus the database, models, readiness and the HTTP API",
+      "src/agents": "Flue agents: Coach (lead instructor), QuestionWriter, FactSheetWriter, FactSheetReviewer (checks each sheet bullet against its Learn page), QuestionReverifier (re-answers stored questions from the current sheet, blind), and the scaffold Assistant",
+      "src/coach": "Domain core in three subfolders: exam/ (skills, areas, instructors), questions/ (schema, admission with leak check and verifier, committed bank import and export, lint, delivery shuffle, re-check against a sheet) and docs/ (corpus and repo mapping, page conversion, fact sheets, fact check); plus the database, models, readiness and the HTTP API",
       "src/subagents": "One specialist instructor subagent per catalog entry, delegated to by the lead",
       "src/tools": "Agent tools: speak, show_diagram, progress, present_question, set_lesson, read_ms_docs, and the waiting gates",
       "src/evals": "Live lesson evals against the real model (vitest)"
@@ -434,7 +434,7 @@
   ],
   "excluded": [],
   "summary": {
-    "overview": "Study Coach is a single-user application run locally. A React web app talks to one Node server that hosts a Flue Coach agent (a lead instructor delegating to per-area specialist subagents) and a Hono JSON API over a SQLite database. A separate command-line pipeline syncs the Microsoft documentation into a local corpus, builds a fact sheet per skill and generates the question bank by running a writer agent once per question, and a reviewer agent checks each fact-sheet bullet against the page it cites. The verified questions are committed as JSON and load into a fresh database on first run, admitting a question only after a leak check and an independent verifier agree with its key. Every model call goes to MiniMax (M3 by default; M3.1 Flash is available). Generation retries a slow or failing question once on a fallback model and logs each call's tokens and cost.",
+    "overview": "Study Coach is a single-user application run locally. A React web app talks to one Node server that hosts a Flue Coach agent (a lead instructor delegating to per-area specialist subagents) and a Hono JSON API over a SQLite database. A separate command-line pipeline syncs the Microsoft documentation into a local corpus, builds a fact sheet per skill and generates the question bank by running a writer agent once per question, and a reviewer agent checks each fact-sheet bullet against the page it cites, while a re-checker agent answers stored questions from the current sheet to catch ones whose key no longer holds. The verified questions are committed as JSON and load into a fresh database on first run, admitting a question only after a leak check and an independent verifier agree with its key. Every model call goes to MiniMax (M3 by default; M3.1 Flash is available). Generation retries a slow or failing question once on a fallback model and logs each call's tokens and cost.",
     "findings": [
       "Every role defaults to one provider, `minimax/MiniMax-M3` (`src/coach/models.ts:1`, fallbacks at `src/coach/models.ts:16`). Generation retries a question that times out or ends in a model error once on a fallback model (`scripts/generate.ts:141`, flag at `scripts/generate.ts:258`), but a used-up usage window (a 429, \"usage limit reached\") stops generation after about an hour and twenty minutes of work and stops lessons outright, which have no fallback at all.",
       "The server and generation runs share `data/coach.db`; this is handled with WAL and a 5 s busy timeout (`src/coach/db.ts:91-92`). Flue's own store has no such setting, so batch runs avoid it with an in-memory store (`scripts/flue-jobs.ts:119`), which means generation conversations are not kept.",
@@ -444,14 +444,17 @@
       "The lead's tools and hand-overs are gated by a read-only \"learner has the floor\" flag (`src/tools/coach-tools.ts:185`, `src/agents/coach.ts:69`). Flue renders a subagent at delegation time and throws on any state write during a render, so the check must never write. An earlier version wrote there, and every hand-over failed while the evals still passed because they checked only speaker names; the eval now fails on any failed hand-over (`src/evals/coach.eval.ts:85`).",
       "Generation runs each question as its own `flue run` process (`scripts/flue-jobs.ts:123`), so usage is recorded from inside the agent module through Flue's `observe()` (`src/coach/usage-log.ts:55`) and tied to the run by `GENERATE_RUN_ID` (`scripts/generate.ts:214`); the verifier's scratch conversation would otherwise be counted separately.",
       "The committed question bank is unreviewed: the `reviewed` flag exists on every question (`src/coach/questions/question-bank.ts:20`) but only a person sets it, and the fact sheets are checked by a model reviewer whose findings differ between runs (`src/agents/fact-sheet-reviewer.ts:25`), so a clean result is not proof.",
-      "A page that is not in the local corpus is read live from Learn (`src/coach/docs/corpus.ts:124`), and a live read can return a partial page, which made the reviewer flag correct bullets as unsupported. Pages in the local corpus were once cut short by a tab-group bug (`src/coach/docs/doc-markdown.ts:56`), now fixed."
+      "A skill page is read from the local docs when its includes all resolve, and live from Learn otherwise (`src/coach/docs/corpus.ts:135`). 17 pages across 16 skills use includes from Microsoft's private reusable-content repo, so they are read live; 10 more pages (`.yml` pages in private repos, three Entra licensing pages that now redirect to Microsoft 365 docs, one support-repo page) are always live. A live read can return a partial page, which made the reviewer flag correct bullets, so sheets for those pages are the least checkable.",
+      "Every tab of a tabbed page is now kept under a label, and a tab group ends at any line of three or more dashes (`src/coach/docs/doc-markdown.ts:64`). Before this, only the first tab was kept and the rest of the page was cut at the first longer terminator, so the sheet writer and the reviewer could not see CLI and PowerShell steps; pages and sheets built before the change may still reflect that.",
+      "A stored question is only as good as the sheet it was verified against: the writer's verifier reads the sheet, not the pages, so a sheet error reaches the bank. `questions:reverify` re-answers a skill's questions from the current sheet without the keys (`src/coach/questions/reverify.ts:40`) and found one unsupported question in the 20 for `compute.vm-sizes`; it has been run on that one skill only."
     ],
     "recommendations": [
       "Extend the fallback model to lessons, and to a usage-limit 429, so a used-up plan does not stop lessons.",
       "Remove the scaffold Assistant route, or stop mounting it, since nothing uses it.",
       "Keep the server bound to localhost; add authentication before exposing it on any other interface.",
       "Run the fact-sheet reviewer more than once, or on a second provider's model, and treat bullets citing live-read pages as unchecked rather than unsupported.",
-      "Derive the web instructor list and colours from the server catalog (for example via /api/skills) so a new area is data in one place."
+      "Derive the web instructor list and colours from the server catalog (for example via /api/skills) so a new area is data in one place.",
+      "Run `questions:reverify` on every skill whose fact sheet was rebuilt or corrected after its questions were written, and keep the corrected sheets out of a plain `docs:sheets` run, which would overwrite them."
     ]
   }
 }

@@ -29,7 +29,7 @@ The automated dependency checks found no structural concerns.
 
 ## Architecture overview
 
-Study Coach is a single-user application run locally. A React web app talks to one Node server that hosts a Flue Coach agent (a lead instructor delegating to per-area specialist subagents) and a Hono JSON API over a SQLite database. A separate command-line pipeline syncs the Microsoft documentation into a local corpus, builds a fact sheet per skill and generates the question bank by running a writer agent once per question, and a reviewer agent checks each fact-sheet bullet against the page it cites. The verified questions are committed as JSON and load into a fresh database on first run, admitting a question only after a leak check and an independent verifier agree with its key. Every model call goes to MiniMax (M3 by default; M3.1 Flash is available). Generation retries a slow or failing question once on a fallback model and logs each call's tokens and cost.
+Study Coach is a single-user application run locally. A React web app talks to one Node server that hosts a Flue Coach agent (a lead instructor delegating to per-area specialist subagents) and a Hono JSON API over a SQLite database. A separate command-line pipeline syncs the Microsoft documentation into a local corpus, builds a fact sheet per skill and generates the question bank by running a writer agent once per question, and a reviewer agent checks each fact-sheet bullet against the page it cites, while a re-checker agent answers stored questions from the current sheet to catch ones whose key no longer holds. The verified questions are committed as JSON and load into a fresh database on first run, admitting a question only after a leak check and an independent verifier agree with its key. Every model call goes to MiniMax (M3 by default; M3.1 Flash is available). Generation retries a slow or failing question once on a fallback model and logs each call's tokens and cost.
 
 ### Findings
 
@@ -41,7 +41,9 @@ Study Coach is a single-user application run locally. A React web app talks to o
 - The lead's tools and hand-overs are gated by a read-only "learner has the floor" flag (`src/tools/coach-tools.ts:185`, `src/agents/coach.ts:69`). Flue renders a subagent at delegation time and throws on any state write during a render, so the check must never write. An earlier version wrote there, and every hand-over failed while the evals still passed because they checked only speaker names; the eval now fails on any failed hand-over (`src/evals/coach.eval.ts:85`).
 - Generation runs each question as its own `flue run` process (`scripts/flue-jobs.ts:123`), so usage is recorded from inside the agent module through Flue's `observe()` (`src/coach/usage-log.ts:55`) and tied to the run by `GENERATE_RUN_ID` (`scripts/generate.ts:214`); the verifier's scratch conversation would otherwise be counted separately.
 - The committed question bank is unreviewed: the `reviewed` flag exists on every question (`src/coach/questions/question-bank.ts:20`) but only a person sets it, and the fact sheets are checked by a model reviewer whose findings differ between runs (`src/agents/fact-sheet-reviewer.ts:25`), so a clean result is not proof.
-- A page that is not in the local corpus is read live from Learn (`src/coach/docs/corpus.ts:124`), and a live read can return a partial page, which made the reviewer flag correct bullets as unsupported. Pages in the local corpus were once cut short by a tab-group bug (`src/coach/docs/doc-markdown.ts:56`), now fixed.
+- A skill page is read from the local docs when its includes all resolve, and live from Learn otherwise (`src/coach/docs/corpus.ts:135`). 17 pages across 16 skills use includes from Microsoft's private reusable-content repo, so they are read live; 10 more pages (`.yml` pages in private repos, three Entra licensing pages that now redirect to Microsoft 365 docs, one support-repo page) are always live. A live read can return a partial page, which made the reviewer flag correct bullets, so sheets for those pages are the least checkable.
+- Every tab of a tabbed page is now kept under a label, and a tab group ends at any line of three or more dashes (`src/coach/docs/doc-markdown.ts:64`). Before this, only the first tab was kept and the rest of the page was cut at the first longer terminator, so the sheet writer and the reviewer could not see CLI and PowerShell steps; pages and sheets built before the change may still reflect that.
+- A stored question is only as good as the sheet it was verified against: the writer's verifier reads the sheet, not the pages, so a sheet error reaches the bank. `questions:reverify` re-answers a skill's questions from the current sheet without the keys (`src/coach/questions/reverify.ts:40`) and found one unsupported question in the 20 for `compute.vm-sizes`; it has been run on that one skill only.
 
 ### Recommendations
 
@@ -50,6 +52,7 @@ Study Coach is a single-user application run locally. A React web app talks to o
 - Keep the server bound to localhost; add authentication before exposing it on any other interface.
 - Run the fact-sheet reviewer more than once, or on a second provider's model, and treat bullets citing live-read pages as unchecked rather than unsupported.
 - Derive the web instructor list and colours from the server catalog (for example via /api/skills) so a new area is data in one place.
+- Run `questions:reverify` on every skill whose fact sheet was rebuilt or corrected after its questions were written, and keep the corrected sheets out of a plain `docs:sheets` run, which would overwrite them.
 
 ## Architecture (C4 model)
 
@@ -87,8 +90,8 @@ flowchart TB
     maintainer("Content maintainer<br/>[Person]<br/>Syncs the docs, builds fact sheets<br/>and generates the question bank<br/>from the command line (the same<br/>person as the learner)")
     system["Study Coach<br/>[Software System]<br/>A local study coach for Microsoft<br/>certification exams, starting with<br/>AZ-104: AI instructors teach each<br/>skill and the learner practises<br/>with original, documentation-<br/>checked questions"]
     ext_minimax["MiniMax API<br/>[Software System]<br/>Language model (MiniMax-M3 by<br/>default; M3.1 Flash is used for<br/>the fact-sheet reviewer) for every<br/>role: lead, specialists, writer,<br/>verifier, fact-sheet writer and<br/>reviewer"]
-    ext_learn["Microsoft Learn<br/>[Software System]<br/>Live documentation pages, fetched<br/>and cached when a page is not in<br/>the local corpus"]
-    ext_github_docs["MicrosoftDocs on GitHub<br/>[Software System]<br/>Source repositories (azure-docs,<br/>entra-docs) cloned sparsely into<br/>the local corpus"]
+    ext_learn["Microsoft Learn<br/>[Software System]<br/>Live documentation pages, fetched<br/>and cached when a page is not in<br/>the local corpus or when its local<br/>copy is missing includes from<br/>Microsoft's private reusable-<br/>content repo"]
+    ext_github_docs["MicrosoftDocs on GitHub<br/>[Software System]<br/>Source repositories (azure-docs,<br/>azure-compute-docs, azure-<br/>management-docs, azure-monitor-<br/>docs, entra-docs) cloned sparsely<br/>into the local corpus"]
     learner -->|"Takes lessons and practises<br/>in<br/>[Browser]"| system
     maintainer -->|"Runs<br/>[npm scripts]"| system
     system -->|"Runs the lead and specialist<br/>instructors on<br/>[HTTPS]"| ext_minimax
@@ -124,14 +127,14 @@ flowchart TB
     subgraph boundary["Study Coach [Software System]"]
         coach_web["Web app<br/>[Container: React 18, Vite]<br/>Home, Room (live lesson),<br/>Practice, Coverage and Docs<br/>screens in the browser; proxies<br/>/api and /agents to the server"]
         study_coach["Coach server<br/>[Container: Node.js, Hono, Flue 2.3 runtime (vite dev on 127.0.0.1:8787)]<br/>Hosts the Coach agent (lead plus<br/>specialist subagents) behind<br/>Flue's agent router and the coach<br/>JSON API for skills, sessions,<br/>practice, answers, coverage and<br/>docs"]
-        content_cli["Content pipeline<br/>[Container: Node.js scripts, flue run]<br/>docs:sync, docs:sheets,<br/>docs:review, generate and the<br/>questions:* commands: clones the<br/>Microsoft docs, runs the<br/>FactSheetWriter, FactSheetReviewer<br/>and QuestionWriter agents as child<br/>processes (one per sheet, review<br/>or question), and exports, lints<br/>and imports the committed question<br/>bank"]
+        content_cli["Content pipeline<br/>[Container: Node.js scripts, flue run]<br/>docs:sync, docs:sheets,<br/>docs:review, generate and the<br/>questions:* commands (export,<br/>lint, review, reverify): syncs the<br/>Microsoft docs repos, runs the<br/>FactSheetWriter,<br/>FactSheetReviewer, QuestionWriter<br/>and QuestionReverifier agents as<br/>child processes (one per sheet,<br/>review, question or batch), and<br/>exports, lints and imports the<br/>committed question bank"]
         coach_db[("Coach database<br/>[Container: SQLite (node:sqlite, WAL)]<br/>Skills, areas, verified questions,<br/>sessions, attempts, flags and<br/>cached Learn pages; shared by the<br/>server and generation runs; a new<br/>database loads the committed<br/>question bank on first run")]
         flue_db[("Conversation store<br/>[Container: SQLite (Flue sqlite adapter)]<br/>Durable Flue conversations for<br/>lessons; batch runs use an in-<br/>memory store instead")]
-        docs_corpus[("Docs corpus and fact sheets<br/>[Container: Markdown files (data/docs, content/fact-sheets)]<br/>Markdown-only sparse clones of<br/>azure-docs and entra-docs, one<br/>committed fact sheet per skill<br/>that the writer, verifier and<br/>reviewer read, and the committed<br/>question bank (content/questions,<br/>one JSON file per skill)")]
+        docs_corpus[("Docs corpus and fact sheets<br/>[Container: Markdown files (data/docs, content/fact-sheets)]<br/>Markdown-only sparse clones of<br/>five MicrosoftDocs repos (azure-<br/>docs, azure-compute-docs, azure-<br/>management-docs, azure-monitor-<br/>docs, entra-docs), one committed<br/>fact sheet per skill that the<br/>writer, verifier and reviewer<br/>read, and the committed question<br/>bank (content/questions, one JSON<br/>file per skill)")]
     end
     ext_minimax["MiniMax API<br/>[Software System]<br/>Language model (MiniMax-M3 by<br/>default; M3.1 Flash is used for<br/>the fact-sheet reviewer) for every<br/>role: lead, specialists, writer,<br/>verifier, fact-sheet writer and<br/>reviewer"]
-    ext_learn["Microsoft Learn<br/>[Software System]<br/>Live documentation pages, fetched<br/>and cached when a page is not in<br/>the local corpus"]
-    ext_github_docs["MicrosoftDocs on GitHub<br/>[Software System]<br/>Source repositories (azure-docs,<br/>entra-docs) cloned sparsely into<br/>the local corpus"]
+    ext_learn["Microsoft Learn<br/>[Software System]<br/>Live documentation pages, fetched<br/>and cached when a page is not in<br/>the local corpus or when its local<br/>copy is missing includes from<br/>Microsoft's private reusable-<br/>content repo"]
+    ext_github_docs["MicrosoftDocs on GitHub<br/>[Software System]<br/>Source repositories (azure-docs,<br/>azure-compute-docs, azure-<br/>management-docs, azure-monitor-<br/>docs, entra-docs) cloned sparsely<br/>into the local corpus"]
     learner -->|"Takes lessons and practises<br/>in<br/>[Browser]"| coach_web
     maintainer -->|"Runs<br/>[npm scripts]"| content_cli
     coach_web -->|"Calls the coach API and<br/>streams lesson conversations<br/>from<br/>[JSON/HTTP, Flue client]"| study_coach
@@ -163,10 +166,10 @@ flowchart TB
 |---|---|---|---|
 | **Web app** (container) | React 18, Vite | Home, Room (live lesson), Practice, Coverage and Docs screens in the browser; proxies /api and /agents to the server | — |
 | **Coach server** (container) | Node.js, Hono, Flue 2.3 runtime (vite dev on 127.0.0.1:8787) | Hosts the Coach agent (lead plus specialist subagents) behind Flue's agent router and the coach JSON API for skills, sessions, practice, answers, coverage and docs | `.` |
-| **Content pipeline** (container) | Node.js scripts, flue run | docs:sync, docs:sheets, docs:review, generate and the questions:* commands: clones the Microsoft docs, runs the FactSheetWriter, FactSheetReviewer and QuestionWriter agents as child processes (one per sheet, review or question), and exports, lints and imports the committed question bank | — |
+| **Content pipeline** (container) | Node.js scripts, flue run | docs:sync, docs:sheets, docs:review, generate and the questions:* commands (export, lint, review, reverify): syncs the Microsoft docs repos, runs the FactSheetWriter, FactSheetReviewer, QuestionWriter and QuestionReverifier agents as child processes (one per sheet, review, question or batch), and exports, lints and imports the committed question bank | — |
 | **Coach database** (data store) | SQLite (node:sqlite, WAL) | Skills, areas, verified questions, sessions, attempts, flags and cached Learn pages; shared by the server and generation runs; a new database loads the committed question bank on first run | — |
 | **Conversation store** (data store) | SQLite (Flue sqlite adapter) | Durable Flue conversations for lessons; batch runs use an in-memory store instead | — |
-| **Docs corpus and fact sheets** (data store) | Markdown files (data/docs, content/fact-sheets) | Markdown-only sparse clones of azure-docs and entra-docs, one committed fact sheet per skill that the writer, verifier and reviewer read, and the committed question bank (content/questions, one JSON file per skill) | — |
+| **Docs corpus and fact sheets** (data store) | Markdown files (data/docs, content/fact-sheets) | Markdown-only sparse clones of five MicrosoftDocs repos (azure-docs, azure-compute-docs, azure-management-docs, azure-monitor-docs, entra-docs), one committed fact sheet per skill that the writer, verifier and reviewer read, and the committed question bank (content/questions, one JSON file per skill) | — |
 
 ### Level 3: Components
 
@@ -188,8 +191,8 @@ title: "Coach server"
 flowchart TB
     subgraph boundary["Coach server [Container]"]
         src__files["src (root files)<br/>[Component]<br/>Server entry (Hono app: agent<br/>routers and the coach API) and the<br/>Flue persistence adapter"]
-        src_agents["agents<br/>[Component]<br/>Flue agents: Coach (lead<br/>instructor), QuestionWriter,<br/>FactSheetWriter, FactSheetReviewer<br/>(checks each sheet bullet against<br/>its Learn page), and the scaffold<br/>Assistant"]
-        src_coach["coach<br/>[Component]<br/>Domain core in three subfolders:<br/>exam/ (skills, areas,<br/>instructors), questions/ (schema,<br/>admission with leak check and<br/>verifier, committed bank import<br/>and export, lint, delivery<br/>shuffle) and docs/ (corpus, fact<br/>sheets, fact check); plus the<br/>database, models, readiness and<br/>the HTTP API"]
+        src_agents["agents<br/>[Component]<br/>Flue agents: Coach (lead<br/>instructor), QuestionWriter,<br/>FactSheetWriter, FactSheetReviewer<br/>(checks each sheet bullet against<br/>its Learn page),<br/>QuestionReverifier (re-answers<br/>stored questions from the current<br/>sheet, blind), and the scaffold<br/>Assistant"]
+        src_coach["coach<br/>[Component]<br/>Domain core in three subfolders:<br/>exam/ (skills, areas,<br/>instructors), questions/ (schema,<br/>admission with leak check and<br/>verifier, committed bank import<br/>and export, lint, delivery<br/>shuffle, re-check against a sheet)<br/>and docs/ (corpus and repo<br/>mapping, page conversion, fact<br/>sheets, fact check); plus the<br/>database, models, readiness and<br/>the HTTP API"]
         src_evals["evals<br/>[Component]<br/>Live lesson evals against the real<br/>model (vitest)"]
         src_subagents["subagents<br/>[Component]<br/>One specialist instructor subagent<br/>per catalog entry, delegated to by<br/>the lead"]
         src_tools["tools<br/>[Component]<br/>Agent tools: speak, show_diagram,<br/>progress, present_question,<br/>set_lesson, read_ms_docs, and the<br/>waiting gates"]
@@ -205,11 +208,11 @@ flowchart TB
     boundary -->|"Reads skills and questions,<br/>records sessions and<br/>attempts in<br/>[node:sqlite]"| coach_db
     flue_db[("Conversation store<br/>[Container: SQLite (Flue sqlite adapter)]<br/>Durable Flue conversations for<br/>lessons; batch runs use an in-<br/>memory store instead")]
     boundary -->|"Persists lesson<br/>conversations in<br/>[Flue sqlite adapter]"| flue_db
-    docs_corpus[("Docs corpus and fact sheets<br/>[Container: Markdown files (data/docs, content/fact-sheets)]<br/>Markdown-only sparse clones of<br/>azure-docs and entra-docs, one<br/>committed fact sheet per skill<br/>that the writer, verifier and<br/>reviewer read, and the committed<br/>question bank (content/questions,<br/>one JSON file per skill)")]
+    docs_corpus[("Docs corpus and fact sheets<br/>[Container: Markdown files (data/docs, content/fact-sheets)]<br/>Markdown-only sparse clones of<br/>five MicrosoftDocs repos (azure-<br/>docs, azure-compute-docs, azure-<br/>management-docs, azure-monitor-<br/>docs, entra-docs), one committed<br/>fact sheet per skill that the<br/>writer, verifier and reviewer<br/>read, and the committed question<br/>bank (content/questions, one JSON<br/>file per skill)")]
     boundary -->|"Reads doc pages and fact<br/>sheets from<br/>[fs]"| docs_corpus
     ext_minimax["MiniMax API<br/>[Software System]<br/>Language model (MiniMax-M3 by<br/>default; M3.1 Flash is used for<br/>the fact-sheet reviewer) for every<br/>role: lead, specialists, writer,<br/>verifier, fact-sheet writer and<br/>reviewer"]
     boundary -->|"Runs the lead and specialist<br/>instructors on<br/>[HTTPS]"| ext_minimax
-    ext_learn["Microsoft Learn<br/>[Software System]<br/>Live documentation pages, fetched<br/>and cached when a page is not in<br/>the local corpus"]
+    ext_learn["Microsoft Learn<br/>[Software System]<br/>Live documentation pages, fetched<br/>and cached when a page is not in<br/>the local corpus or when its local<br/>copy is missing includes from<br/>Microsoft's private reusable-<br/>content repo"]
     boundary -->|"Fetches pages missing from<br/>the corpus from<br/>[HTTPS, fetch]"| ext_learn
     classDef person fill:#08427b,stroke:#052e56,color:#ffffff
     classDef container fill:#1168bd,stroke:#0b4884,color:#ffffff
@@ -233,7 +236,7 @@ The classes and interfaces of the key components: inheritance, implemented inter
 
 The lead Coach and the QuestionWriter: hooks, tools and instructions
 
-> Sources: ReportDeps → `src/agents/fact-sheet-reviewer.ts:50`, SaveFactSheetDeps → `src/agents/fact-sheet-writer.ts:60`, SaveQuestionDeps → `src/agents/question-writer.ts:36`, SourcePage → `src/agents/fact-sheet-writer.ts:28`, WriterContext → `src/agents/question-writer.ts:215`
+> Sources: ReportDeps → `src/agents/fact-sheet-reviewer.ts:50`, SaveFactSheetDeps → `src/agents/fact-sheet-writer.ts:60`, SaveQuestionDeps → `src/agents/question-writer.ts:36`, SourcePage → `src/agents/fact-sheet-writer.ts:28`, SubmitDeps → `src/agents/question-reverifier.ts:18`, WriterContext → `src/agents/question-writer.ts:215`
 
 ![c4-code-study-coach-src-agents](c4-code-study-coach-src-agents.svg)
 
@@ -261,6 +264,9 @@ classDiagram
     class SourcePage {
         <<interface>>
     }
+    class SubmitDeps {
+        <<interface>>
+    }
     class WriterContext {
         <<interface>>
     }
@@ -268,6 +274,7 @@ classDiagram
     style SaveFactSheetDeps fill:#85bbf0,stroke:#5d82a8,color:#000000
     style SaveQuestionDeps fill:#85bbf0,stroke:#5d82a8,color:#000000
     style SourcePage fill:#85bbf0,stroke:#5d82a8,color:#000000
+    style SubmitDeps fill:#85bbf0,stroke:#5d82a8,color:#000000
     style WriterContext fill:#85bbf0,stroke:#5d82a8,color:#000000
 ```
 
@@ -277,8 +284,8 @@ classDiagram
 
 Question admission, persistence and the instructor catalog
 
-> Sources: AdmitDeps → `src/coach/questions/admit.ts:14`, BankFile → `src/coach/questions/question-bank.ts:23`, BankQuestion → `src/coach/questions/question-bank.ts:12`, CoachDb → `src/coach/db.ts:8`, CorpusPage → `src/coach/docs/corpus.ts:81`, DocFetchError → `src/coach/docs/docs.ts:5`, DocsApiOptions → `src/coach/docs/docs-api.ts:8`, FactCheckResult → `src/coach/docs/fact-check.ts:20`, FactSheet → `src/coach/docs/fact-sheets.ts:16`, Finding → `src/coach/docs/fact-check.ts:9`, ImportResult → `src/coach/questions/question-bank.ts:28`, LintIssue → `src/coach/questions/bank-lint.ts:5`
-> Not drawn: 17 more types (MsDoc, PrepareOptions, PublicQuestion, QuestionRow, Readiness, RenderContext, Skill, SkillProgress, Specialist, StoredSource, …)
+> Sources: AdmitDeps → `src/coach/questions/admit.ts:14`, Answer → `src/coach/questions/reverify.ts:12`, BankFile → `src/coach/questions/question-bank.ts:23`, BankQuestion → `src/coach/questions/question-bank.ts:12`, CoachDb → `src/coach/db.ts:8`, CorpusPage → `src/coach/docs/corpus.ts:86`, DocFetchError → `src/coach/docs/docs.ts:5`, DocsApiOptions → `src/coach/docs/docs-api.ts:8`, FactCheckResult → `src/coach/docs/fact-check.ts:20`, FactSheet → `src/coach/docs/fact-sheets.ts:16`, Finding → `src/coach/docs/fact-check.ts:9`, ImportResult → `src/coach/questions/question-bank.ts:28`
+> Not drawn: 20 more types (LintIssue, MsDoc, PrepareOptions, PublicQuestion, QuestionRow, Readiness, RenderContext, ReverifyResult, Skill, SkillProgress, …)
 
 ![c4-code-study-coach-src-coach](c4-code-study-coach-src-coach.svg)
 
@@ -295,6 +302,9 @@ config:
 classDiagram
     direction LR
     class AdmitDeps {
+        <<interface>>
+    }
+    class Answer {
         <<interface>>
     }
     class BankFile {
@@ -325,14 +335,12 @@ classDiagram
     class ImportResult {
         <<interface>>
     }
-    class LintIssue {
-        <<interface>>
-    }
     class Error {
         <<external>>
     }
     Error <|-- DocFetchError
     style AdmitDeps fill:#85bbf0,stroke:#5d82a8,color:#000000
+    style Answer fill:#85bbf0,stroke:#5d82a8,color:#000000
     style BankFile fill:#85bbf0,stroke:#5d82a8,color:#000000
     style BankQuestion fill:#85bbf0,stroke:#5d82a8,color:#000000
     style CoachDb fill:#85bbf0,stroke:#5d82a8,color:#000000
@@ -343,7 +351,6 @@ classDiagram
     style FactSheet fill:#85bbf0,stroke:#5d82a8,color:#000000
     style Finding fill:#85bbf0,stroke:#5d82a8,color:#000000
     style ImportResult fill:#85bbf0,stroke:#5d82a8,color:#000000
-    style LintIssue fill:#85bbf0,stroke:#5d82a8,color:#000000
     style Error fill:#dbe9f6,stroke:#5d82a8,color:#000000,stroke-dasharray:4 3
 ```
 
