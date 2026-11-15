@@ -34,7 +34,7 @@ Study Coach is a [Flue](https://flueframework.com) project: agents are TypeScrip
 Task recipes (review a skill, fix a question, generate questions, add an area) are numbered steps with a "done when" check in `CONTRIBUTING.md`. Follow the matching recipe rather than improvising. In particular:
 
 - Ask before running `docs:sheets`, `generate` or `evals`: they spend the contributor's model quota.
-- Never set `reviewed: true` on a question yourself; only a person who checked the Learn pages does.
+- `reviewed: true` means an AI agent compared the skill's facts with the linked Learn pages and the maintainer approved the evidence (claim next to page text). Never set it without showing that evidence and getting the maintainer's approval.
 - Stop at the recipe's "done when" and report; show the diff before committing.
 - Only AZ-104 is supported; the multi-exam plan is `docs/multi-exam-design.md`.
 
@@ -43,6 +43,6 @@ Task recipes (review a skill, fix a question, generate questions, add an area) a
 - Run `npm test` and `npm run check:types` before every commit.
 - Keep exam-specific facts (areas, skills, instructors, documentation pages) in data, not in prompts or code paths, so other certifications can be added later.
 - Fact sheets and questions must be original wording, every fact linked to its Microsoft Learn page; never copy text from books, exam dumps or third-party question sites.
-- Questions are edited in `content/questions/*.json` and carry a `reviewed` flag; set it only after checking against the linked Learn pages.
+- Questions are edited in `content/questions/*.json` and carry a `reviewed` flag; set it only as described above, after checking against the linked Learn pages.
 - Every script starts with the standard header (what it does, usage and flags, reads, writes, needs) shown in `scripts/README.md`; a new script also gets a row in that file's table.
 - Never commit secrets or local data: `.env` and `data/` are git-ignored; `.env.sample` documents the settings.

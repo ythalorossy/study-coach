@@ -132,7 +132,7 @@ To compare runs, `npm run generate:stats -- --area storage` prints an area's att
 
 The verified questions are committed as one JSON file per skill in `content/questions/`, so a fresh clone can study straight away. When `data/coach.db` is created, `npm run db:setup` or the app loads them. On an existing database, a skill that has no questions (for example one in a newly added area) gets its questions from the bank, and skills that already have questions are left alone. Flagged questions are not included.
 
-Every question carries `"reviewed": false` until a person has checked it, and the fact sheet it came from, against the linked Learn pages. Questions are written and verified by models, so treat unreviewed ones as unofficial practice material that can contain mistakes. These are original questions, not real exam items.
+Everything in the bank is made by AI: the questions are written by a model, answered again by a second model from the fact sheet, and the fact sheets are checked by a reviewer agent against the Microsoft pages they cite. None of it has been reviewed by an Azure specialist. A question marked `"reviewed": true` has also had its skill's facts compared with the linked Learn pages by an AI agent, with the evidence (each claim next to the page text) shown to the maintainer, who approved it; so far that is only a few skills, and every other question is `"reviewed": false`. Treat all of it as unofficial practice material that can contain mistakes, and check Microsoft's page when an answer surprises you (the **flag** button reports it). These are original questions, not real exam items.
 
 ```sh
 npm run review:sheet -- --skill storage.explorer-azcopy   # fact sheet + sample questions in data/review/ (--area <prefix>, --all, --count <n>)

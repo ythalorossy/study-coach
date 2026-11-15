@@ -12,7 +12,7 @@ Thanks for helping. This project is built with AI coding agents (Claude Code, Co
 | Add an AZ-104 area (networking, monitoring) | API key, model quota | [Add an area](#add-an-area) |
 | Add another exam | not possible yet | [Other exams](#other-exams) |
 
-Reviewing is the most useful contribution: all 1,120 questions are model-written and still marked `"reviewed": false`.
+Reviewing is the most useful contribution: all 1,639 questions are written and checked by AI agents, and only a few skills carry `"reviewed": true`. Nobody with Azure expertise has reviewed the bank yet.
 
 ## Set up
 
@@ -26,7 +26,7 @@ Reviewing is the most useful contribution: all 1,120 questions are model-written
 
 - **Original wording only.** Fact sheets and questions are written in our own words, and every fact links to its Microsoft Learn page. Never copy from books, exam dumps or third-party question sites.
 - **Exam facts live in data**, never in prompts or code paths: areas and skills in `src/coach/exam/seed.ts`, instructors in `src/coach/exam/instructors.ts`.
-- **`reviewed: true` means a person checked it** against the linked Learn pages. A model's opinion doesn't count.
+- **`reviewed: true` means the facts were checked against the linked Learn pages and the maintainer approved the evidence.** So far that check is done by an AI agent, not by an Azure specialist; if you are one and you check more, say so in your pull request.
 - **Model steps cost money.** `docs:sheets`, `docs:review`, `generate` and `evals` use your own API quota. `generate` prints an estimated cost at the end of a run.
 - **Before every commit:** `npm test` and `npm run check:types`. For content changes, also `npm run questions:lint`.
 - **Never commit** `.env` or anything in `data/`.
@@ -36,7 +36,7 @@ Reviewing is the most useful contribution: all 1,120 questions are model-written
 Point your agent at this file and name the recipe, for example: "Follow CONTRIBUTING.md, Review a skill, for storage.blob-tiers." The agent should:
 
 - ask before running `docs:sheets`, `docs:review`, `generate` or `evals`, because they spend your quota;
-- never set `reviewed: true` itself; it can prepare the review sheet and point out doubts, but you decide;
+- never set `reviewed: true` without showing you the evidence (each claim next to the page text) and getting your approval;
 - keep the diff to what the recipe names, and show you the diff before committing;
 - stop at "done when" and report, rather than going on to the next thing.
 
