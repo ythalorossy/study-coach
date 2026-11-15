@@ -7,7 +7,12 @@ import {
 	type PublicQuestion,
 } from "./types.ts";
 
-/** instructor is usually an InstructorId; an id the page does not know yet still renders. */
+/** The id used for the learner's own typed messages in the transcript. */
+export const LEARNER = "learner";
+/** The message the Room sends to open a lesson; it is not shown in the transcript. */
+export const START_MESSAGE = "Start the lesson.";
+
+/** instructor is usually an InstructorId, or LEARNER for the learner's own words; an id the page does not know yet still renders. */
 export type RoomTurn = { instructor: InstructorId | string; text: string; toolCallId: string };
 export type PendingQuestion = { question: PublicQuestion; purpose: string };
 export type RoomView = {
@@ -84,6 +89,15 @@ export function toRoomView(messages: FlueConversationMessage[], opts: { streamin
 			continue;
 		}
 		if (message.display === "hidden" || message.display === "diagnostic") continue;
+		if (message.role === "user") {
+			// The learner's typed questions stay in the transcript; the lesson's opening message does not.
+			for (const [partIndex, part] of message.parts.entries()) {
+				if (part.type === "text" && hasWords(part.text) && part.text.trim() !== START_MESSAGE) {
+					turns.push({ instructor: LEARNER, text: part.text, toolCallId: `${message.id}:text:${partIndex}` });
+				}
+			}
+			continue;
+		}
 		if (message.role !== "assistant") continue;
 		for (const [partIndex, part] of message.parts.entries()) {
 			if (part.type === "text") {
@@ -105,6 +119,7 @@ export function toRoomView(messages: FlueConversationMessage[], opts: { streamin
 		}
 	}
 
-	const last = turns[turns.length - 1];
+	// The strip highlights whoever spoke last among the instructors, never the learner.
+	const last = turns.filter((t) => t.instructor !== LEARNER).at(-1);
 	return { turns, speaking: opts.streaming && last ? last.instructor : null, diagram, pendingQuestion };
 }

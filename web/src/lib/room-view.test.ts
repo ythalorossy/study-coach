@@ -1,6 +1,6 @@
 import type { FlueConversationMessage } from "@flue/react";
 import { describe, expect, it } from "vitest";
-import { toRoomView } from "./room-view.ts";
+import { LEARNER, START_MESSAGE, toRoomView } from "./room-view.ts";
 
 let n = 0;
 function msg(
@@ -112,6 +112,19 @@ describe("toRoomView", () => {
 			tool("present_question", {}, "output-available", { question, purpose: "lesson-check" }),
 		]);
 		expect(toRoomView([present, answerSignal("q-other")]).pendingQuestion?.question.id).toBe("q1");
+	});
+
+	it("shows the learner's typed messages as learner turns, but not the lesson's opening message", () => {
+		const start = msg("user", [{ type: "text", text: START_MESSAGE, state: "done" }]);
+		const typed = msg("user", [{ type: "text", text: "Can you explain scopes again?", state: "done" }]);
+		const reply = msg("assistant", [speak("lead", "Of course.")]);
+		const view = toRoomView([start, typed, reply], { streaming: true });
+		expect(view.turns.map((t) => [t.instructor, t.text])).toEqual([
+			[LEARNER, "Can you explain scopes again?"],
+			["lead", "Of course."],
+		]);
+		expect(view.speaking).toBe("lead");
+		expect(toRoomView([reply, typed], { streaming: true }).speaking).toBe("lead");
 	});
 
 	it("keeps pendingQuestion when the learner types a question while it is on screen", () => {

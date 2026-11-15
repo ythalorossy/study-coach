@@ -1,9 +1,10 @@
 import { useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
-import type { RoomTurn } from "../lib/room-view.ts";
+import { LEARNER, type RoomTurn } from "../lib/room-view.ts";
 import { instructorsFor, WEB_INSTRUCTORS } from "../lib/instructors.ts";
 
 export function instructorName(id: string): string {
+	if (id === LEARNER) return "You";
 	return WEB_INSTRUCTORS.find((i) => i.id === id)?.name ?? id;
 }
 
@@ -40,7 +41,7 @@ export function Transcript({ turns, busy }: { turns: RoomTurn[]; busy: boolean }
 			{turns.length === 0 && !busy && <p className="muted">Nothing said yet.</p>}
 			<ol>
 				{turns.map((t) => (
-					<li key={t.toolCallId} className="turn" style={colorOf(t.instructor)}>
+					<li key={t.toolCallId} className={t.instructor === LEARNER ? "turn turn-learner" : "turn"} style={colorOf(t.instructor)}>
 						<span className="turn-name">{instructorName(t.instructor)}</span>
 						<p className="turn-text">{t.text}</p>
 					</li>

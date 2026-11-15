@@ -8,7 +8,7 @@ import { QuestionView } from "../components/QuestionView.tsx";
 import type { QuestionResult } from "../components/QuestionView.tsx";
 import { flagQuestion, getSession, submitAnswer } from "../lib/api.ts";
 import type { PendingQuestion } from "../lib/room-view.ts";
-import { toRoomView } from "../lib/room-view.ts";
+import { toRoomView, START_MESSAGE } from "../lib/room-view.ts";
 import type { AnswerPurpose, PublicQuestion, QuestionResponse, SessionSummary } from "../lib/types.ts";
 
 function message(e: unknown): string {
@@ -193,7 +193,7 @@ export function Room({ sessionId }: { sessionId: string }) {
 		if (!session || session.kind !== "lesson" || started.current) return;
 		if (!agent.historyReady || agent.messages.length > 0) return;
 		started.current = true;
-		agent.sendMessage("Start the lesson.", { initialData }).catch(() => {});
+		agent.sendMessage(START_MESSAGE, { initialData }).catch(() => {});
 	}, [session, agent.historyReady, agent.messages.length, agent.sendMessage, initialData]);
 
 	const send = (e: FormEvent) => {
