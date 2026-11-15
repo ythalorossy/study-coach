@@ -9,7 +9,7 @@ Thanks for helping. This project is built with AI coding agents (Claude Code, Co
 | Review questions and fact sheets against Microsoft Learn | no API key | [Review a skill](#review-a-skill) |
 | Fix a wrong or unclear question | no API key | [Fix a question](#fix-a-question) |
 | Fill or rewrite a skill's questions | API key, model quota | [Generate questions for a skill](#generate-questions-for-a-skill) |
-| Add an AZ-104 area (networking, monitoring) | API key, model quota | [Add an area](#add-an-area) |
+| Add an area (for a future exam) | API key, model quota | [Add an area](#add-an-area) |
 | Add another exam | not possible yet | [Other exams](#other-exams) |
 
 Reviewing is the most useful contribution: all 1,639 questions are written and checked by AI agents, and only a few skills carry `"reviewed": true`. Nobody with Azure expertise has reviewed the bank yet.
@@ -73,7 +73,7 @@ Use this when a skill is under its target of 8 multiple-choice, 6 drag-drop and 
 
 ### Add an area
 
-AZ-104's networking and monitoring areas are listed in `AREAS` but have no skills yet. The identity, storage and compute areas were built this way; their skills in `seed.ts` and instructors in `instructors.ts` are the examples to follow.
+All five AZ-104 areas are built, so this recipe now applies to a new exam's areas once the multi-exam work lands (see [Other exams](#other-exams)), or to restructuring an existing area. The networking and monitoring areas were the last built this way; their skills in `seed.ts` and instructors in `instructors.ts` are the examples to follow.
 
 1. **Skills.** Add the area's skills to `SKILLS` in `src/coach/exam/seed.ts`, from the [AZ-104 study guide](https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/az-104). Each skill needs an id prefixed with the area (`networking.vnet-peering`), its instructor, a name, and the Learn pages that teach it.
 2. **Instructors.** Add the area's specialists to `SPECIALISTS` in `src/coach/exam/instructors.ts`, the same list in `web/src/lib/instructors.ts` (a test checks they match), and a `--c-<id>` colour for each in `web/src/styles.css`.

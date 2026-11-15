@@ -25,6 +25,8 @@ Every supported skill has a fact sheet in `content/fact-sheets/` and a bank of u
 | Question writer (`src/agents/question-writer.ts`) | `npm run generate`, one run per question | Writes one original question for a skill and format from the skill's fact sheet. Before saving, it checks the question's shape and cited pages, and that it neither gives the answer away nor repeats another question. |
 | Verifier | inside each question writer run | A separate model call that answers the new question from the fact sheet alone, without the key. The question is saved only if its answer matches. |
 | Fact-sheet writer (`src/agents/fact-sheet-writer.ts`) | `npm run docs:sheets` | Reads a skill's downloaded Microsoft pages and writes its fact sheet in original wording, every fact linked to its page. A sheet that is too long, has too few linked facts or copies Microsoft's wording is sent back. |
+| Fact-sheet reviewer (`src/agents/fact-sheet-reviewer.ts`) | `npm run docs:review` | Compares each bullet of a sheet with the Learn page it links and reports the ones that look wrong, quoting the page as evidence. |
+| Question re-checker (`src/agents/question-reverifier.ts`) | `npm run questions:reverify` | Answers a skill's stored questions blind, from the current fact sheet, and lists the ones whose answer disagrees with the stored key. |
 | Assistant (`src/agents/assistant.ts`) | not used | The starter agent from the Flue project template, still served at `/agents/assistant`. |
 
 ## Requirements
@@ -41,7 +43,7 @@ Every supported skill has a fact sheet in `content/fact-sheets/` and a bank of u
    npm install
    ```
 
-2. Copy the sample settings and add your API key (`.env` is git-ignored):
+2. Copy the sample settings and add your API key: `MINIMAX_API_KEY` for the default models, or another provider's key with the matching `*_MODEL` settings (see [Choose models](#choose-models)). `.env` is git-ignored:
 
    ```sh
    cp .env.sample .env
@@ -66,7 +68,7 @@ Every agent runs on `minimax/MiniMax-M3` unless you pick another model in `.env`
 | `COACH_MODEL` | lead instructor | MiniMax |
 | `SPECIALIST_MODEL` | area instructors | same as `COACH_MODEL` |
 | `WRITER_MODEL` | question writer (`npm run generate`) | MiniMax |
-| `VERIFIER_MODEL` | blind re-answer of each new question | same as `WRITER_MODEL` |
+| `VERIFIER_MODEL` | blind re-answer of each new question, and `npm run questions:reverify` | same as `WRITER_MODEL` |
 | `FACT_SHEET_MODEL` | fact-sheet writer (`npm run docs:sheets`) | same as `WRITER_MODEL` |
 | `REVIEWER_MODEL` | fact-sheet reviewer (`npm run docs:review`) | same as `WRITER_MODEL` |
 
@@ -80,6 +82,8 @@ ANTHROPIC_API_KEY=your-key-here
 
 A verifier on a different model from the writer catches more wrong answer keys. After switching the coach to a new model, run `npm run evals` once to confirm the lessons still behave.
 
+`COACH_DB_PATH` moves the database somewhere other than `data/coach.db`; the app and every script honour it.
+
 ## Study
 
 ```sh
@@ -90,13 +94,17 @@ Then open http://127.0.0.1:5173. Both servers listen on 127.0.0.1 only: the page
 
 Home lists every exam area with its weight and its own Ready badge; the top shows how many areas are ready. An area is "Ready" when every skill in it scores at least 80% over your recent answers: a study rule of thumb, not Microsoft's scaled score. "Let the lead choose" in an area starts a lesson on that area's weakest untaught skill.
 
+The other screens: **Room** is the live lesson; **Practice** serves questions from the bank without a lesson; **Coverage** shows how many questions each skill has; **Docs** shows each skill's fact sheet and its Microsoft pages. When an answer or explanation looks wrong, press **Flag** on the question: it is kept out of lessons and listed for review, and the Docs screen links the Microsoft page so you can check.
+
 ## Read the docs
 
 ```sh
 npm run docs:sync
 ```
 
-This downloads the Markdown of the Microsoft documentation the skills use, from [MicrosoftDocs/azure-docs](https://github.com/MicrosoftDocs/azure-docs), [MicrosoftDocs/azure-monitor-docs](https://github.com/MicrosoftDocs/azure-monitor-docs) and [MicrosoftDocs/entra-docs](https://github.com/MicrosoftDocs/entra-docs), into `data/docs/` (about 100 MB, no images). Rerun it to pick up Microsoft's updates. The azure-docs and azure-monitor-docs content is licensed CC BY 4.0 and the entra-docs content MIT; each page in the Docs screen names its source and license. A few skill pages live in other Microsoft repositories; the app reads those live from Learn.
+This downloads the Markdown of the Microsoft documentation the skills use into `data/docs/` (about 200 MB, no images), from five MicrosoftDocs repositories: [azure-docs](https://github.com/MicrosoftDocs/azure-docs), [azure-compute-docs](https://github.com/MicrosoftDocs/azure-compute-docs), [azure-management-docs](https://github.com/MicrosoftDocs/azure-management-docs), [azure-monitor-docs](https://github.com/MicrosoftDocs/azure-monitor-docs) and [entra-docs](https://github.com/MicrosoftDocs/entra-docs). Rerun it to pick up Microsoft's updates. The Azure repositories are licensed CC BY 4.0 and entra-docs MIT; each page in the Docs screen names its source and license.
+
+Two kinds of page are read live from Learn instead: the few whose source is not in a public repository, and pages whose local copy pulls tables from Microsoft's private reusable-content repository (the sync prints the first kind; the app detects the second). A live read can come back incomplete, so fact sheets built from those pages are the hardest to check.
 
 To check that every Learn page the skills link to still loads, run `npm run check:doc-urls`. It lists the failures and exits with an error if any link is dead.
 
@@ -105,6 +113,8 @@ npm run docs:sheets
 ```
 
 This writes a fact sheet per skill into `content/fact-sheets/`: the settings, limits, comparisons and which-one-to-use points the exam tests, in original wording, every fact linked to its Learn page. It builds only the sheets that are missing or whose source pages changed since the last sync; `--skill <id>` builds one, `--all` rebuilds every sheet, and `--parallel <n>` sets how many run at once. The sheets are committed, so a rebuild shows up as a diff you can review. `npm run docs:sync` lists which sheets are out of date.
+
+A rebuild replaces the whole sheet, including corrections made by hand after the reviewer found errors. Many sheets show as "stale" simply because Microsoft edited a page, so don't rebuild them all at once: rebuild one skill, read the diff, then run `npm run questions:reverify -- --skill <id>` so its questions are checked against the new sheet.
 
 ```sh
 npm run docs:review -- --skill identity.sspr   # or --area <prefix>, --all
@@ -120,11 +130,13 @@ Open the Docs screen to read a skill's fact sheet and its source pages. Links be
 npm run generate -- --until-target
 ```
 
-This fills the question bank to 8 multiple-choice, 6 drag-drop and 6 complete-sentence questions per skill. Each question is written in its own short conversation from the skill's fact sheet, and several skills are written at once: 6 by default, set with `--parallel <n>` or the `GENERATE_PARALLEL` environment variable. If the provider answers "too many requests", the run halves its parallelism and carries on, and the summary says so. A skill without a fact sheet is written from its Learn pages. You can stop and restart it at any time: it picks up from the questions already saved. Each question is kept only if an independent verifier answers it correctly from the fact sheet (or the cited pages) alone. Every result is logged to `data/generate-log.jsonl`, and the summary shows the time taken, questions per hour and each rejection reason's share of attempts.
+This fills the question bank to 8 multiple-choice, 6 drag-drop and 6 complete-sentence questions per skill. Each question is written in its own short conversation from the skill's fact sheet, and several skills are written at once: 6 by default, set with `--parallel <n>` or the `GENERATE_PARALLEL` shell variable (it is not read from `.env`). If the provider answers "too many requests", the run halves its parallelism and carries on, and the summary says so. A skill without a fact sheet is written from its Learn pages. You can stop and restart it at any time: it picks up from the questions already saved. Each question is kept only if an independent verifier answers it correctly from the fact sheet (or the cited pages) alone. Every result is logged to `data/generate-log.jsonl`, and the summary shows the time taken, questions per hour and each rejection reason's share of attempts.
 
 A question that runs longer than 10 minutes (`--question-timeout <minutes>`), or whose model reply ends in an error, is stopped and retried once with `minimax/MiniMax-M3` (`--fallback-model <provider/model>`); the verifier stays the same. The summary counts these retries per skill, and ends with the tokens each model used and their estimated cost, in total and per saved question (every model call is logged to `data/generate-usage.jsonl`).
 
 To fill one skill or format: `npm run generate -- --skill identity.sspr --format drag-drop`. The Coverage page shows how full the bank is.
+
+When the provider's plan limit is reached (MiniMax answers "usage limit reached"), the run stops with that message and keeps everything saved so far. Run it again after the limit resets and it carries on from where it stopped. The same applies to `docs:sheets`, `docs:review` and `evals`.
 
 To compare runs, `npm run generate:stats -- --area storage` prints an area's attempts, the share of each rejection reason and the share of its questions you flagged, read from `data/generate-log.jsonl` and `data/coach.db`.
 
@@ -142,7 +154,7 @@ npm run questions:review -- --skill storage.explorer-azcopy   # mark a skill's q
 npm run questions:export   # rewrite content/questions/ from your local database
 ```
 
-To fix a question, edit its JSON file and open a pull request; the diff shows exactly what changed. Importing validates every question and skips invalid ones with a message.
+To fix a question, edit its JSON file and open a pull request; the diff shows exactly what changed. Importing validates every question and skips invalid ones with a message. A fix in the JSON does not reach a database that already has that skill's questions: to see it in your own app, run `npm run db:setup -- --reset` (your progress is backed up first), or wait for a fresh database.
 
 ## Tests and evals
 
@@ -152,6 +164,8 @@ npm run check:types   # typecheck
 npm run evals -- --maxConcurrency 2   # live-model checks of the coach (uses your key; results vary a little between runs)
 EVAL_SWEEP_AREA=compute npm run evals -- -t "area sweep" --maxConcurrency 2   # one live lesson per skill of an area
 ```
+
+An eval that fails with a provider error ("stream ended without a stop reason", overloaded, rate limited) is the provider, not the lesson: rerun that one case with `-t "<skill id>"`. A failure that repeats is real.
 
 ## Back up
 
@@ -169,7 +183,7 @@ To restore, stop the servers and copy the backup back to `data/`.
 
 | Path | What it holds |
 |---|---|
-| `src/agents/` | Flue agents: the lead Coach, the question writer, the fact-sheet writer and the fact-sheet reviewer |
+| `src/agents/` | Flue agents: the lead Coach, the question writer, the fact-sheet writer, the fact-sheet reviewer and the question re-checker |
 | `src/subagents/` | The area instructors the lead hands lessons to |
 | `src/tools/` | Tools the agents call (lesson state, questions, Microsoft docs) |
 | `src/coach/` | The app's data layer and logic: skills and areas, questions, answer checking, readiness, docs corpus |
@@ -185,4 +199,4 @@ To restore, stop the servers and copy the backup back to `data/`.
 
 The code is released under the [MIT License](LICENSE).
 
-The fact sheets in `content/fact-sheets/` are original summaries of Microsoft Learn documentation, and every fact links to its source page. The source documentation belongs to Microsoft: [azure-docs](https://github.com/MicrosoftDocs/azure-docs) and [azure-monitor-docs](https://github.com/MicrosoftDocs/azure-monitor-docs) are licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) and [entra-docs](https://github.com/MicrosoftDocs/entra-docs) is licensed MIT. This project is not affiliated with or endorsed by Microsoft. Microsoft, Azure and AZ-104 are trademarks of Microsoft Corporation.
+The fact sheets in `content/fact-sheets/` are original summaries of Microsoft Learn documentation, and every fact links to its source page. The source documentation belongs to Microsoft: [azure-docs](https://github.com/MicrosoftDocs/azure-docs), [azure-compute-docs](https://github.com/MicrosoftDocs/azure-compute-docs), [azure-management-docs](https://github.com/MicrosoftDocs/azure-management-docs) and [azure-monitor-docs](https://github.com/MicrosoftDocs/azure-monitor-docs) are licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) and [entra-docs](https://github.com/MicrosoftDocs/entra-docs) is licensed MIT. This project is not affiliated with or endorsed by Microsoft. Microsoft, Azure and AZ-104 are trademarks of Microsoft Corporation.
